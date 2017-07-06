@@ -1,0 +1,27 @@
+common --color=yes
+common --logging=6
+common --show_progress
+common --curses=auto
+common --show_progress_rate_limit=0
+
+build --verbose_failures
+build --crosstool_top=//tools/cpp:default-toolchain
+
+build:asan --copt -fsanitize=address,undefined
+build:asan --copt -DCHECK_SANITY
+build:asan --copt -Wall
+build:asan --copt -Wextra
+build:asan --copt -pedantic
+build:asan --linkopt -fsanitize=address,undefined
+build:asan --define tcmalloc=disabled
+build:asan --build_tag_filters=-no_asan
+build:asan --test_tag_filters=-no_asan
+build:asan --define signal_trace=disabled
+
+build:release --copt -Ofast
+build:release --copt -DNDEBUG
+
+test --crosstool_top=//tools/cpp:default-toolchain
+test --verbose_failures
+test --test_output=all
+test --test_verbose_timeout_warnings

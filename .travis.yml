@@ -1,0 +1,27 @@
+language: c++
+
+dist: trusty
+sudo: required
+
+jdk:
+  - oraclejdk8
+
+addons:
+  apt:
+    sources:
+    - sourceline: 'deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8'
+      key_url: 'https://bazel.build/bazel-release.pub.gpg'
+    - ubuntu-toolchain-r-test
+    packages:
+    - build-essential
+    - bazel
+    - g++-7
+    - gcc-7
+
+install:
+- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
+- sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
+
+script:
+- bazel build --config=asan //...
+- bazel test --config=asan //...

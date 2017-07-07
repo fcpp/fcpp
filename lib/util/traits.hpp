@@ -4,6 +4,7 @@
 #define FCPP_UTIL_TRAITS_H_
 
 #include <cstddef>
+#include <type_traits>
 
 
 namespace fcpp {
@@ -38,6 +39,12 @@ constexpr bool is_template = false;
 
 template <template<class...> class T, class... A>
 constexpr bool is_template<T, T<A...>> = true;
+
+
+template <template<class...> class T, class A>
+struct to_template {
+    typedef typename std::conditional<is_template<T, A>, A, T<A>>::type type;
+};
 
 
 }

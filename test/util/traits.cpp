@@ -1,5 +1,7 @@
 // Copyright © 2017 Giorgio Audrito. All Rights Reserved.
 
+#include <string>
+#include <typeinfo>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -8,11 +10,11 @@
 
 
 TEST(TraitsTest, Index) {
-    size_t t;
+    int t;
     t = fcpp::type_index<int,int,double,char>;
-    EXPECT_EQ(t, 0);
+    EXPECT_EQ(0, t);
     t = fcpp::type_index<double,int,char,double>;
-    EXPECT_EQ(t, 2);
+    EXPECT_EQ(2, t);
 }
 
 TEST(TraitsTest, Contains) {
@@ -31,7 +33,7 @@ TEST(TraitsTest, Repeated) {
     EXPECT_FALSE(b);
 }
 
-TEST(TraitsTest, Template) {
+TEST(TraitsTest, IsTemplate) {
     bool b;
     b = fcpp::is_template<std::vector, std::vector<double>>;
     EXPECT_TRUE(b);
@@ -39,8 +41,12 @@ TEST(TraitsTest, Template) {
     EXPECT_FALSE(b);
 }
 
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+TEST(TraitsTest, ToTemplate) {
+    std::string ex, res;
+    ex  = typeid(double).name();
+    res = typeid(typename fcpp::to_template<std::vector, std::vector<double>>::type::value_type).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(int).name();
+    res = typeid(typename fcpp::to_template<std::vector, int>::type::value_type).name();
+    EXPECT_EQ(ex, res);
 }

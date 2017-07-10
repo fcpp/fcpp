@@ -9,3 +9,15 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'field',
+    hdrs = ['field.hpp'],
+    srcs = ['field.cpp'],
+    deps = [
+        "//lib/util:traits",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)

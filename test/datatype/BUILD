@@ -9,3 +9,15 @@ cc_test(
     args = ['--gtest_color=yes'],
     timeout = 'short',
 )
+
+cc_test(
+    name = "field",
+    srcs = ["field.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/datatype:field",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)

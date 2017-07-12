@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
     curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
     add-apt-repository ppa:ubuntu-toolchain-r/test -y
     apt-get update
-    apt-get install -y bazel build-essential gcc-7 g++-7
+    apt-get install -y bazel build-essential gcc-7 g++-7 doxygen
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
   SHELL
 end

@@ -26,11 +26,11 @@ namespace fcpp {
  * Indexes are computed starting with 0.
  */
 //@{
-//! @brief general recursive pattern
+//! @brief General recursive pattern.
 template <typename A, typename B, typename... Ts>
 constexpr size_t type_index = type_index<A, Ts...> + 1;
 
-//! @brief base case (the searched type is first)
+//! @brief Base case (the searched type is first).
 template <typename A, typename... Ts>
 constexpr size_t type_index<A, A, Ts...> = 0;
 //@}
@@ -42,15 +42,15 @@ constexpr size_t type_index<A, A, Ts...> = 0;
  * Constant which is true if and only if the first type parameter is among the subsequent ones.
  */
 //@{
-//! @brief base case (false if not found)
+//! @brief Base case (false if not found).
 template <typename A, typename... Ts>
 constexpr bool type_contains = false;
 
-//! @brief general recursive pattern
+//! @brief General recursive pattern.
 template <typename A, typename B, typename... Ts>
 constexpr bool type_contains<A, B, Ts...> = type_contains<A, Ts...>;
 
-//! @brief base case (the searched type is first)
+//! @brief Base case (the searched type is first).
 template <typename A, typename... Ts>
 constexpr bool type_contains<A, A, Ts...> = true;
 //@}
@@ -63,13 +63,13 @@ constexpr bool type_contains<A, A, Ts...> = true;
  */
 //@{
 /**
- * @brief recursive pattern: either the first type occurs among the following, or the
+ * @brief Recursive pattern: either the first type occurs among the following, or the
  * following has a repetition.
  */
 template <typename A, typename... Ts>
 constexpr bool type_repeated = type_contains<A, Ts...> or type_repeated<Ts...>;
 
-//! @brief base case (a single type cannot be repeated)
+//! @brief Base case (a single type cannot be repeated).
 template <typename A>
 constexpr bool type_repeated<A> = false;
 //@}
@@ -82,11 +82,11 @@ constexpr bool type_repeated<A> = false;
  * the first (template) parameter.
  */
 //@{
-//! @brief false in general
+//! @brief False in general.
 template <template<class...> class T, class A>
 constexpr bool is_template = false;
 
-//! @brief true if second parameter is of the form T<A...>
+//! @brief True if second parameter is of the form T<A...>.
 template <template<class...> class T, class... A>
 constexpr bool is_template<T, T<A...>> = true;
 //@}

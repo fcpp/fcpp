@@ -9,25 +9,19 @@
 // class trace
 //  - keeps updated representation of the current stack trace
 //  - works for function calls, if used as:
-//      T func(trace_t x, ...) {
-//          push(x);
+//      T func(trace_t __, ...) {
+//          push(__);
 //          ...
 //          pop()
 //      }
 //      ... func(___, ...) ...
-//  - works for branching, if used as:
-//      if (...) { push(___); ...; pop(); }
-//      else { push(___); ...; pop(); }
-//      switch (..) {
-//        case ...:
-//          push(___);
-//          ...;
-//          pop();
-//      ... }
 //  - works for cycles, if used as:
 //      push_cycle(___);
 //      someway_repeating { push(___); ....; }
 //      pop_cycle();
+//  - for branching, we use "delayed alignment" through:
+//      ... ? align(___, ...) : align(___, ...)
+//      ... = align(___, ...)
 
 // members:
 //  - vector of trace_t (used as a stack)

@@ -1,24 +1,9 @@
 // Copyright © 2017 Giorgio Audrito. All Rights Reserved.
 
-// class field
-
-// methods:
-//  - constructors, assignment
-
-// external methods:
-//  - map_hood(fun, fields...): return result of pointwise mapping
-//  - mod_hood(fun, field, fields...): modify field in-place according to fun
-//  - fold_hood(fun, field, people): align and folds
-
-//  - other(data): access to default
-//  - self(data, people): access to data if not field, data[people] otherwise
-//  - align(data, people): data if not field, data.align(people) otherwise
-//  - every possible operator is overloaded
-
-// WHERE AN IMPLICIT CONTEXT IS AVAILABLE (defined in program class):
-//  - self(data) senza people
-//  - align(data) senza people
-//  - fold_hood(fun, field) senza people
+/**
+ * @file field.hpp
+ * @brief Implementation and helper functions for the field<T> class template for neighboring fields.
+ */
 
 #ifndef FCPP_DATATYPES_FIELD_H_
 #define FCPP_DATATYPES_FIELD_H_
@@ -31,13 +16,22 @@
 #include "lib/util/traits.hpp"
 
 
+/**
+ * @brief Namespace containing all the objects in the FCPP library.
+ */
 namespace fcpp {
 
 
+//! @cond INTERNAL
 template<typename T> class field;
+//! @endcond
 
 
+/**
+ * @brief Namespace containing implementation details, which should <b>never</b> be used in FCPP programs.
+ */
 namespace details {
+//! @cond INTERNAL
     template <typename A>
     field<A> make_field(A, std::unordered_map<size_t, A>);
     
@@ -48,14 +42,8 @@ namespace details {
     const A& self(const field<A>&, size_t);
     
     template <typename A>
-    typename std::enable_if<not is_template<field, A>, A&>::type self(A& x, size_t i) {
-        return x;
-    }
-    
-    template <typename A>
-    typename std::enable_if<not is_template<field, A>, const A&>::type self(const A& x, size_t i) {
-        return x;
-    }
+    typename std::enable_if<not is_template<field, A>, const A&>::type
+    self(const A&, size_t);
     
     template <typename A>
     field<A> align(field<A>&&, const std::unordered_set<size_t>&);
@@ -64,14 +52,8 @@ namespace details {
     field<A> align(const field<A>&, const std::unordered_set<size_t>&);
     
     template <typename A>
-    typename std::enable_if<not is_template<field, A>, A&>::type align(A& x, const std::unordered_set<size_t>& s) {
-        return x;
-    }
-    
-    template <typename A>
-    typename std::enable_if<not is_template<field, A>, const A&>::type align(const A& x, const std::unordered_set<size_t>& s) {
-        return x;
-    }
+    typename std::enable_if<not is_template<field, A>, const A&>::type
+    align(const A&, const std::unordered_set<size_t>&);
 
     template <typename... T>
     void ignore(T... t) {}
@@ -83,35 +65,71 @@ namespace details {
     }
     
     template <typename F, typename A>
-    typename std::result_of<F(A,A)>::type fold_hood(F&&, const field<A>&, const std::unordered_set<size_t>&);
+    typename std::result_of<F(A,A)>::type
+    fold_hood(F&&, const field<A>&, const std::unordered_set<size_t>&);
+    
+    template <typename F, typename A>
+    typename std::enable_if<not is_template<field, A>, typename std::result_of<F(A,A)>::type>::type
+    fold_hood(F&&, const A&, const std::unordered_set<size_t>&);
+//! @endcond
 }
 
 
+/**
+ * @brief Class representing a neighboring field of T values.
+ */
 template <typename T>
 class field {
+    //! @cond INTERNAL
     template <typename A>
     friend class field;
+    //! @endcond
     
   private:
+    // Exceptions, as associations device id -> value
     std::unordered_map<size_t, T> data;
+    
+    // Default value, retained almost everywhere in the field
     T def;
     
+    // Member constructor, for internal use only
     field(T _def, std::unordered_map<size_t, T> _data) : data(_data), def(_def) {}
   
   public:
-    // deprecated but convenient sometimes
+    //! @name constructors
+    //@{
+    /**
+     * @brief Default constructor (dangerous).
+     *
+     * Creates a field constantly equal to the default value for T.
+     * Use only if you know the field will be overwritten, or if you
+     * are <b>really</b> sure that the default value for T is a
+     * reasonable value for your field.
+     */
     field() = default;
     
+    //! @brief Constant field.
     field(const T& d) : data(), def(d) {}
     
+    //! @brief Copy constructor.
     field(const field<T>&) = default;
     
+    //! @brief Move constructor.
     field(field<T>&&) = default;
+    //@}
     
+    //! @name assignment operators
+    //@{
+    //! @brief Copy assignment.
     field<T>& operator=(const field<T>&) = default;
     
+    //! @brief Move assignment.
     field<T>& operator=(field<T>&&) = default;
+    //@}
     
+    /**
+     * @brief Casts to fields of compatible base type.
+     */
     template <typename A, typename = typename std::enable_if<std::is_convertible<T,A>::value>::type>
     operator field<A>() const {
         field<A> r(static_cast<A>(def));
@@ -120,15 +138,27 @@ class field {
         return r;
     }
     
+    //! @cond INTERNAL
     template <typename A>
     friend field<A> details::make_field(A, std::unordered_map<size_t, A>);
+    //! @endcond
     
+    /**
+     * @name other
+     *
+     * Accessor method selecting the default value of a given field.
+     */
+    //@{
+    //! @brief Write access.
     template<typename A>
     friend A& other(field<A>&);
     
+    //! @brief Read-only access.
     template<typename A>
     friend const A& other(const field<A>&);
+    //@}
     
+    //! @cond INTERNAL
     template<typename A>
     friend A& details::self(field<A>&, size_t);
     
@@ -140,53 +170,90 @@ class field {
     
     template<typename A>
     friend field<A> details::align(const field<A>&, const std::unordered_set<size_t>&);
+    //! @endcond
     
+    /**
+     * @name map_hood
+     *
+     * Applies an operator pointwise on a sequence of fields.
+     */
+    //@{
     template <typename F, typename... A>
     friend field<typename std::result_of<F(A...)>::type> map_hood(F&&, const field<A>&...);
     
     template <typename F, typename A>
     friend field<typename std::result_of<F(A)>::type> map_hood(F&&, const field<A>&);
+    //@}
     
+    /**
+     * @name mod_hood
+     *
+     * Modifies a field in-place, by applying an operator pointwise (with a sequence of parameters).
+     */
+    //@{
+    //! @brief General case.
     template <typename F, typename A, typename... B>
     friend field<A>& mod_hood(F&&, field<A>&, const field<B>&...);
     
+    //! @brief Optimization for unary operators.
     template <typename F, typename A>
     friend field<A>& mod_hood(F&&, field<A>&);
+    //@}
     
+    //! @cond INTERNAL
     template <typename F, typename A>
     friend typename std::result_of<F(A,A)>::type details::fold_hood(F&&, const field<A>&, const std::unordered_set<size_t>&);
+    //! @endcond
     
+    //! @brief Prints a field in dictionary-like format.
     template <typename A>
     friend std::ostream& operator<<(std::ostream&, const field<A>&);
 };
 
 
+//! @cond INTERNAL
 template <typename A>
 field<A> details::make_field(A def, std::unordered_map<size_t, A> data) {
     field<A> r(def, data);
     return r;
 }
+//! @endcond
 
+/**
+ * @name other
+ *
+ * Accessor method selecting the default value of a given field.
+ */
+//@{
+//! @brief Write access.
 template <typename A>
 A& other(field<A>& x) {
     return x.def;
 }
 
+//! @brief Read-only access.
 template <typename A>
 const A& other(const field<A>& x) {
     return x.def;
 }
 
+//! @brief Write access for non-field values (treated as constant fields).
 template <typename A>
 typename std::enable_if<not is_template<field, A>, A&>::type other(A& x) {
     return x;
 }
 
+//! @brief Read-only access for non-field values (treated as constant fields).
 template <typename A>
 typename std::enable_if<not is_template<field, A>, const A&>::type other(const A& x) {
     return x;
 }
+//@}
 
+/*
+ * Accesses the value from a field corresponing to a certain device.
+ */
+//! @cond INTERNAL
 template <typename A>
 A& details::self(field<A>& x, size_t i) {
     if (x.data.count(i)) return x.data.at(i);
@@ -199,6 +266,15 @@ const A& details::self(const field<A>& x, size_t i) {
     return x.def;
 }
 
+template <typename A>
+typename std::enable_if<not is_template<field, A>, const A&>::type
+details::self(const A& x, size_t i) {
+    return x;
+}
+
+/*
+ * Computes the restriction of a field to a given domain.
+ */
 template <typename A>
 field<A> details::align(field<A>&& x, const std::unordered_set<size_t>& s) {
     for (auto it = x.data.begin(); it != x.data.end(); ) {
@@ -213,6 +289,19 @@ field<A> details::align(const field<A>& x, const std::unordered_set<size_t>& s) 
     return details::align(field<A>(x), s);
 }
 
+template <typename A>
+typename std::enable_if<not is_template<field, A>, const A&>::type
+details::align(const A& x, const std::unordered_set<size_t>& s) {
+    return x;
+}
+//! @endcond
+
+/**
+ * @name map_hood
+ *
+ * Applies an operator pointwise on a sequence of fields.
+ */
+//@{
 template <typename F, typename... A>
 field<typename std::result_of<F(A...)>::type> map_hood(F&& op, const field<A>&... args) {
     field<typename std::result_of<F(A...)>::type> r(op(args.def...));
@@ -228,6 +317,15 @@ field<typename std::result_of<F(A)>::type> map_hood(F&& op, const field<A>& a) {
     for (const auto& x : a.data) r.data[x.first] = op(x.second);
     return r;
 }
+//@}
+
+/**
+ * @name mod_hood
+ *
+ * Modifies a field in-place, by applying an operator pointwise (with a sequence of parameters).
+ */
+//@{
+//! @brief General case.
 template <typename F, typename A, typename... B>
 field<A>& mod_hood(F&& op, field<A>& f, const field<B>&... args) {
     std::unordered_set<size_t> domain;
@@ -240,14 +338,19 @@ field<A>& mod_hood(F&& op, field<A>& f, const field<B>&... args) {
     return f;
 }
 
+//! @brief Optimization for unary operators.
 template <typename F, typename A>
 field<A>& mod_hood(F&& op, field<A>& f) {
     f.def = op(f.def);
     for (auto& x : f.data) x.second = op(x.second);
     return f;
 }
+//@}
 
-// assumes that domain is non-empty
+/*
+ * Reduces the values in a part of a field (determined by domain) to a single value through a binary operation.
+ */
+//! @cond INTERNAL
 template <typename F, typename A>
 typename std::result_of<F(A,A)>::type details::fold_hood(F&& op, const field<A>& f, const std::unordered_set<size_t>& domain) {
     auto it = domain.begin();
@@ -257,6 +360,17 @@ typename std::result_of<F(A,A)>::type details::fold_hood(F&& op, const field<A>&
     return res;
 }
 
+template <typename F, typename A>
+typename std::enable_if<not is_template<field, A>, typename std::result_of<F(A,A)>::type>::type
+details::fold_hood(F&& op, const A& x, const std::unordered_set<size_t>& domain) {
+    int n = domain.size();
+    typename std::result_of<F(A,A)>::type res = x;
+    for (--n; n>0; --n) res = op(x, res);
+    return res;
+}
+//! @endcond
+
+//! @brief Prints a field in dictionary-like format.
 template <typename A>
 std::ostream& operator<<(std::ostream& o, const field<A>& x) {
     o << "{";
@@ -267,6 +381,7 @@ std::ostream& operator<<(std::ostream& o, const field<A>& x) {
 }
 
 
+//! @cond INTERNAL
 #define _UOP_TYPE(op,A)                                                     \
 field<decltype(op std::declval<A>())>
 
@@ -278,13 +393,26 @@ typename std::enable_if<not is_template<field,A> and not std::is_convertible<A,s
 
 #define _BOP_IFTB(A,op,B)                                                   \
 typename std::enable_if<not is_template<field,B>, _BOP_TYPE(A,op,B)>::type
+//! @endcond
 
+/**
+ * @brief Overloads unary operators for fields.
+ *
+ * Used to overload every operator available for the base type.
+ * Macro not available outside of the scope of this file.
+ */
 #define _DEF_UOP(op)                                                        \
 template <typename A>                                                       \
 _UOP_TYPE(op,A) operator op(const field<A>& x) {                            \
     return map_hood([] (const A& a) {return op a;}, x);                     \
 }
 
+/**
+ * @brief Overloads binary operators for fields.
+ *
+ * Used to overload every operator available for the base type.
+ * Macro not available outside of the scope of this file.
+ */
 #define _DEF_BOP(op)                                                        \
 template <typename A, typename B>                                           \
 _BOP_TYPE(A,op,B) operator op(const field<A>& x, const field<B>& y) {       \
@@ -299,6 +427,12 @@ _BOP_IFTB(A,op,B) operator op(const field<A>& x, const B& y) {              \
     return map_hood([&y](const A& a) { return a op y; }, x);                \
 }
 
+/**
+ * @brief Overloads composite assignment operators for fields.
+ *
+ * Used to overload every operator available for the base type.
+ * Macro not available outside of the scope of this file.
+ */
 #define _DEF_IOP(op)                                                        \
 template <typename A, typename B>                                           \
 _BOP_TYPE(A,op,B) operator op##=(field<A>& x, const field<B>& y) {          \

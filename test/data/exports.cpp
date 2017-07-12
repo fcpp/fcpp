@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/datatype/exports.hpp"
+#include "lib/data/exports.hpp"
 
 
 class ExportsTest : public ::testing::Test {

@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/datatype/field.hpp"
+#include "lib/data/field.hpp"
 
 
 class FieldTest : public ::testing::Test {
@@ -60,6 +60,8 @@ TEST_F(FieldTest, MapReduce) {
     EXPECT_DOUBLE_EQ(4.25, sum);
     sum = fcpp::details::fold_hood([] (double i, double j) {return i+j;}, fi1, {0,1,2});
     EXPECT_DOUBLE_EQ(5, sum);
+    sum = fcpp::details::fold_hood([] (double i, double j) {return i+j;}, 1, {0,1,2});
+    EXPECT_DOUBLE_EQ(3, sum);
 }
 
 TEST_F(FieldTest, Conversion) {

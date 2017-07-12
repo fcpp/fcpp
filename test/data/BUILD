@@ -3,7 +3,7 @@ cc_test(
     srcs = ["exports.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/datatype:exports",
+        "//lib/data:exports",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -15,7 +15,7 @@ cc_test(
     srcs = ["field.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/datatype:field",
+        "//lib/data:field",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

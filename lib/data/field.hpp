@@ -56,7 +56,7 @@ namespace details {
     align(const A&, const std::unordered_set<size_t>&);
 
     template <typename... T>
-    void ignore(T... t) {}
+    void ignore(T...) {}
     
     template <typename T>
     bool add_domain(const std::unordered_map<size_t,T>& data, std::unordered_set<size_t>& domain) {
@@ -268,12 +268,13 @@ const A& details::self(const field<A>& x, size_t i) {
 
 template <typename A>
 typename std::enable_if<not is_template<field, A>, const A&>::type
-details::self(const A& x, size_t i) {
+details::self(const A& x, size_t) {
     return x;
 }
 
 /*
  * Computes the restriction of a field to a given domain.
+ * The resulting field has exactly the given domain.
  */
 template <typename A>
 field<A> details::align(field<A>&& x, const std::unordered_set<size_t>& s) {
@@ -281,6 +282,7 @@ field<A> details::align(field<A>&& x, const std::unordered_set<size_t>& s) {
         if (s.count(it->first)) ++it;
         else it = x.data.erase(it);
     }
+    for (size_t i : s) if (not x.data.count(i)) x.data[i] = x.def;
     return x;
 }
 
@@ -291,7 +293,7 @@ field<A> details::align(const field<A>& x, const std::unordered_set<size_t>& s) 
 
 template <typename A>
 typename std::enable_if<not is_template<field, A>, const A&>::type
-details::align(const A& x, const std::unordered_set<size_t>& s) {
+details::align(const A& x, const std::unordered_set<size_t>&) {
     return x;
 }
 //! @endcond

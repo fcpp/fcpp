@@ -21,3 +21,13 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'trace',
+    hdrs = ['trace.hpp'],
+    srcs = ['trace.cpp'],
+    deps = [    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)

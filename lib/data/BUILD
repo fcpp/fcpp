@@ -3,6 +3,7 @@ cc_library(
     hdrs = ['exports.hpp'],
     srcs = ['exports.cpp'],
     deps = [
+        "//lib/data:trace",
         "//lib/util:traits",
     ],
     visibility = [

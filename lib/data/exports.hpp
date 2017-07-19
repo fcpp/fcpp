@@ -31,13 +31,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "lib/data/trace.hpp"
 #include "lib/util/traits.hpp"
 
 
 namespace fcpp {
-
-
-typedef uint64_t trace_t; // TODO: move definition to trace.hpp, include it here and in BUILD
 
 
 template <typename... Ts>

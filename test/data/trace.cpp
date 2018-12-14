@@ -1,4 +1,4 @@
-// Copyright © 2017 Roberto Poletti. All Rights Reserved.
+// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -30,6 +30,7 @@ TEST_F(TraceTest, PushPop) {
 	EXPECT_EQ(50682392596649L, data.hash(0));
 	data.push(50);
 	EXPECT_EQ(124024032043141L, data.hash(0));
+    EXPECT_EQ(false, data.empty());
 
 	data.pop();
 	EXPECT_EQ(50682392596649L, data.hash(0));
@@ -41,6 +42,7 @@ TEST_F(TraceTest, PushPop) {
 	EXPECT_EQ(15L, data.hash(0));
 	data.pop();
 	EXPECT_EQ(0L, data.hash(0));
+    EXPECT_EQ(true, data.empty());
 }
 
 TEST_F(TraceTest, PushPopCycle) {
@@ -56,4 +58,6 @@ TEST_F(TraceTest, PushPopCycle) {
 	EXPECT_EQ(124024032043141L, data.hash(0));
 	data.pop_cycle();
 	EXPECT_EQ(15L, data.hash(0));
+    data.pop();
+    EXPECT_EQ(true, data.empty());
 }

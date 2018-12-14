@@ -1,4 +1,6 @@
-// Copyright © 2017 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+
+// TODO: details::self on vector/tuple of fields; write other should build fields; un-friend some methods
 
 /**
  * @file field.hpp
@@ -22,6 +24,52 @@
 namespace fcpp {
 
 
+#ifdef UID_8_BIT
+#define UID_BIT
+//! @brief Type for device identifiers.
+typedef uint8_t device_t;
+constexpr int k_device_size = 8;
+#endif
+#ifdef UID_16_BIT
+#define UID_BIT
+//! @brief Type for device identifiers.
+typedef uint16_t device_t;
+constexpr int k_device_size = 16;
+#endif
+#ifdef UID_24_BIT
+#define UID_BIT
+//! @brief Type for device identifiers.
+typedef uint32_t device_t;
+constexpr int k_device_size = 24;
+#endif
+#ifdef UID_32_BIT
+#define UID_BIT
+//! @brief Type for device identifiers.
+typedef uint32_t device_t;
+constexpr int k_device_size = 32;
+#endif
+#ifdef UID_48_BIT
+#define UID_BIT
+//! @brief Type for device identifiers.
+typedef uint64_t device_t;
+constexpr int k_device_size = 48;
+#endif
+#ifdef UID_64_BIT
+#define UID_BIT
+//! @brief Type for device identifiers.
+typedef uint64_t device_t;
+constexpr int k_device_size = 64;
+#endif
+#ifndef UID_BIT
+//! @cond INTERNAL
+#define UID_16_BIT
+//! @endcond
+//! @brief Type for device identifiers.
+typedef uint16_t device_t;
+constexpr int k_device_size = 16;
+#endif
+
+
 //! @cond INTERNAL
 template<typename T> class field;
 //! @endcond
@@ -33,44 +81,44 @@ template<typename T> class field;
 namespace details {
 //! @cond INTERNAL
     template <typename A>
-    field<A> make_field(A, std::unordered_map<size_t, A>);
+    field<A> make_field(A, std::unordered_map<device_t, A>);
     
     template <typename A>
-    A& self(field<A>&, size_t);
+    A& self(field<A>&, device_t);
     
     template <typename A>
-    const A& self(const field<A>&, size_t);
-    
-    template <typename A>
-    typename std::enable_if<not is_template<field, A>, const A&>::type
-    self(const A&, size_t);
-    
-    template <typename A>
-    field<A> align(field<A>&&, const std::unordered_set<size_t>&);
-    
-    template <typename A>
-    field<A> align(const field<A>&, const std::unordered_set<size_t>&);
+    const A& self(const field<A>&, device_t);
     
     template <typename A>
     typename std::enable_if<not is_template<field, A>, const A&>::type
-    align(const A&, const std::unordered_set<size_t>&);
+    self(const A&, device_t);
+    
+    template <typename A>
+    field<A> align(field<A>&&, const std::unordered_set<device_t>&);
+    
+    template <typename A>
+    field<A> align(const field<A>&, const std::unordered_set<device_t>&);
+    
+    template <typename A>
+    typename std::enable_if<not is_template<field, A>, const A&>::type
+    align(const A&, const std::unordered_set<device_t>&);
 
     template <typename... T>
     void ignore(T...) {}
     
     template <typename T>
-    bool add_domain(const std::unordered_map<size_t,T>& data, std::unordered_set<size_t>& domain) {
+    bool add_domain(const std::unordered_map<device_t,T>& data, std::unordered_set<device_t>& domain) {
         for (const auto& t : data) domain.insert(t.first);
         return true;
     }
     
     template <typename F, typename A>
     typename std::result_of<F(A,A)>::type
-    fold_hood(F&&, const field<A>&, const std::unordered_set<size_t>&);
+    fold_hood(F&&, const field<A>&, const std::unordered_set<device_t>&);
     
     template <typename F, typename A>
     typename std::enable_if<not is_template<field, A>, typename std::result_of<F(A,A)>::type>::type
-    fold_hood(F&&, const A&, const std::unordered_set<size_t>&);
+    fold_hood(F&&, const A&, const std::unordered_set<device_t>&);
 //! @endcond
 }
 
@@ -86,14 +134,14 @@ class field {
     //! @endcond
     
   private:
-    // Exceptions, as associations device id -> value
-    std::unordered_map<size_t, T> data;
+    //! @brief Exceptions, as associations device id -> value.
+    std::unordered_map<device_t, T> data;
     
-    // Default value, retained almost everywhere in the field
+    //! @brief Default value, retained almost everywhere in the field.
     T def;
     
-    // Member constructor, for internal use only
-    field(T _def, std::unordered_map<size_t, T> _data) : data(_data), def(_def) {}
+    //! @brief Member constructor, for internal use only.
+    field(T _def, std::unordered_map<device_t, T> _data) : data(_data), def(_def) {}
   
   public:
     //! @name constructors
@@ -140,7 +188,7 @@ class field {
     
     //! @cond INTERNAL
     template <typename A>
-    friend field<A> details::make_field(A, std::unordered_map<size_t, A>);
+    friend field<A> details::make_field(A, std::unordered_map<device_t, A>);
     //! @endcond
     
     /**
@@ -160,16 +208,16 @@ class field {
     
     //! @cond INTERNAL
     template<typename A>
-    friend A& details::self(field<A>&, size_t);
+    friend A& details::self(field<A>&, device_t);
     
     template<typename A>
-    friend const A& details::self(const field<A>&, size_t);
+    friend const A& details::self(const field<A>&, device_t);
     
     template<typename A>
-    friend field<A> details::align(field<A>&&, const std::unordered_set<size_t>&);
+    friend field<A> details::align(field<A>&&, const std::unordered_set<device_t>&);
     
     template<typename A>
-    friend field<A> details::align(const field<A>&, const std::unordered_set<size_t>&);
+    friend field<A> details::align(const field<A>&, const std::unordered_set<device_t>&);
     //! @endcond
     
     /**
@@ -202,7 +250,7 @@ class field {
     
     //! @cond INTERNAL
     template <typename F, typename A>
-    friend typename std::result_of<F(A,A)>::type details::fold_hood(F&&, const field<A>&, const std::unordered_set<size_t>&);
+    friend typename std::result_of<F(A,A)>::type details::fold_hood(F&&, const field<A>&, const std::unordered_set<device_t>&);
     //! @endcond
     
     //! @brief Prints a field in dictionary-like format.
@@ -213,7 +261,7 @@ class field {
 
 //! @cond INTERNAL
 template <typename A>
-field<A> details::make_field(A def, std::unordered_map<size_t, A> data) {
+field<A> details::make_field(A def, std::unordered_map<device_t, A> data) {
     field<A> r(def, data);
     return r;
 }
@@ -255,20 +303,20 @@ typename std::enable_if<not is_template<field, A>, const A&>::type other(const A
  */
 //! @cond INTERNAL
 template <typename A>
-A& details::self(field<A>& x, size_t i) {
+A& details::self(field<A>& x, device_t i) {
     if (x.data.count(i)) return x.data.at(i);
     return x.data[i] = x.def;
 }
 
 template <typename A>
-const A& details::self(const field<A>& x, size_t i) {
+const A& details::self(const field<A>& x, device_t i) {
     if (x.data.count(i)) return x.data.at(i);
     return x.def;
 }
 
 template <typename A>
 typename std::enable_if<not is_template<field, A>, const A&>::type
-details::self(const A& x, size_t) {
+details::self(const A& x, device_t) {
     return x;
 }
 
@@ -277,23 +325,23 @@ details::self(const A& x, size_t) {
  * The resulting field has exactly the given domain.
  */
 template <typename A>
-field<A> details::align(field<A>&& x, const std::unordered_set<size_t>& s) {
+field<A> details::align(field<A>&& x, const std::unordered_set<device_t>& s) {
     for (auto it = x.data.begin(); it != x.data.end(); ) {
         if (s.count(it->first)) ++it;
         else it = x.data.erase(it);
     }
-    for (size_t i : s) if (not x.data.count(i)) x.data[i] = x.def;
+    for (device_t i : s) if (not x.data.count(i)) x.data[i] = x.def;
     return x;
 }
 
 template <typename A>
-field<A> details::align(const field<A>& x, const std::unordered_set<size_t>& s) {
+field<A> details::align(const field<A>& x, const std::unordered_set<device_t>& s) {
     return details::align(field<A>(x), s);
 }
 
 template <typename A>
 typename std::enable_if<not is_template<field, A>, const A&>::type
-details::align(const A& x, const std::unordered_set<size_t>&) {
+details::align(const A& x, const std::unordered_set<device_t>&) {
     return x;
 }
 //! @endcond
@@ -307,9 +355,9 @@ details::align(const A& x, const std::unordered_set<size_t>&) {
 template <typename F, typename... A>
 field<typename std::result_of<F(A...)>::type> map_hood(F&& op, const field<A>&... args) {
     field<typename std::result_of<F(A...)>::type> r(op(args.def...));
-    std::unordered_set<size_t> domain;
+    std::unordered_set<device_t> domain;
     details::ignore(details::add_domain(args.data, domain)...);
-    for (size_t x : domain) r.data[x] = op(details::self(args,x)...);
+    for (device_t x : domain) r.data[x] = op(details::self(args,x)...);
     return r;
 }
 
@@ -330,9 +378,9 @@ field<typename std::result_of<F(A)>::type> map_hood(F&& op, const field<A>& a) {
 //! @brief General case.
 template <typename F, typename A, typename... B>
 field<A>& mod_hood(F&& op, field<A>& f, const field<B>&... args) {
-    std::unordered_set<size_t> domain;
+    std::unordered_set<device_t> domain;
     details::ignore(details::add_domain(f.data, domain), details::add_domain(args.data, domain)...);
-    for (size_t x : domain) {
+    for (device_t x : domain) {
         A z = op(details::self(f,x), details::self(args,x)...);
         f.data[x] = z;
     }
@@ -354,7 +402,7 @@ field<A>& mod_hood(F&& op, field<A>& f) {
  */
 //! @cond INTERNAL
 template <typename F, typename A>
-typename std::result_of<F(A,A)>::type details::fold_hood(F&& op, const field<A>& f, const std::unordered_set<size_t>& domain) {
+typename std::result_of<F(A,A)>::type details::fold_hood(F&& op, const field<A>& f, const std::unordered_set<device_t>& domain) {
     auto it = domain.begin();
     typename std::result_of<F(A,A)>::type res = details::self(f, *it);
     for (++it; it != domain.end(); ++it)
@@ -364,7 +412,7 @@ typename std::result_of<F(A,A)>::type details::fold_hood(F&& op, const field<A>&
 
 template <typename F, typename A>
 typename std::enable_if<not is_template<field, A>, typename std::result_of<F(A,A)>::type>::type
-details::fold_hood(F&& op, const A& x, const std::unordered_set<size_t>& domain) {
+details::fold_hood(F&& op, const A& x, const std::unordered_set<device_t>& domain) {
     int n = domain.size();
     typename std::result_of<F(A,A)>::type res = x;
     for (--n; n>0; --n) res = op(x, res);

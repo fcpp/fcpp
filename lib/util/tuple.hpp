@@ -1,3 +1,3 @@
 // TODO: all
 
-// overload pointwise operators for tuple<...>
+// overload pointwise operators for tuple<Ts...>

@@ -14,6 +14,19 @@ FCPP is a C++14 implementation of the Pure Field Calculus, for fast and effectiv
 
 ## Getting Started
 
+You can do (from the repository root folder):
+```
+vagrant up
+vagrant ssh
+cd fcpp
+./build_all.sh
+```
+Then you should get output about building and testing the whole library (in the Vagrant virtual machine). After that you can exit the virtual machine through:
+```
+exit
+vagrant halt
+```
+
 ## Contribute
 
 ### Authors

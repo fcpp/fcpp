@@ -1,4 +1,4 @@
-// Copyright © 2017 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file traits.hpp

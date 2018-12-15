@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "lib/util/traits.hpp"
+#include "lib/common/traits.hpp"
 
 
 /**

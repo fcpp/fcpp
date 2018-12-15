@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/data/twin.hpp"
+#include "lib/common/twin.hpp"
 
 
 class TwinTest : public ::testing::Test {

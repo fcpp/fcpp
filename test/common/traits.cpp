@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/util/traits.hpp"
+#include "lib/common/traits.hpp"
 
 
 TEST(TraitsTest, Index) {

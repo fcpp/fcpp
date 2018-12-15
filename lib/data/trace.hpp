@@ -2,7 +2,7 @@
 
 /**
  * @file trace.hpp
- * @brief Implementation of the trace class for identifying code points.
+ * @brief Implementation of the `trace` class for identifying code points.
  */
 
 #ifndef FCPP_DATA_TRACE_H_
@@ -14,6 +14,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "lib/settings.hpp"
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -21,52 +23,62 @@
 namespace fcpp {
 
 
-#ifdef TRACE_32_BIT
-//! @brief Type for trace hashes.
-typedef uint32_t trace_t;
-
-//! @brief Bit size of a trace hash.
-constexpr int k_hash_len = 20;
-
-//! @brief The factor by which the hash is multiplied when a new item enters the trace.
-constexpr trace_t k_hash_factor = 33;
-
-//! @brief The inverse of the factor modulo the hash length.
-constexpr trace_t k_hash_inverse = 1016801;
+#if   FCPP_SETTING_TRACE == 24
+    typedef uint32_t trace_t;
+    constexpr int k_hash_len = 16;
+    constexpr trace_t k_hash_factor = 17;
+    constexpr trace_t k_hash_inverse = 61681;
+#elif FCPP_SETTING_TRACE == 32
+    typedef uint32_t trace_t;
+    constexpr int k_hash_len = 20;
+    constexpr trace_t k_hash_factor = 33;
+    constexpr trace_t k_hash_inverse = 1016801;
+#elif FCPP_SETTING_TRACE == 48
+    typedef uint64_t trace_t;
+    constexpr int k_hash_len = 34;
+    constexpr trace_t k_hash_factor = 3251L;
+    constexpr trace_t k_hash_inverse = 10500276859L;
+#elif FCPP_SETTING_TRACE == 64
+    typedef uint64_t trace_t;
+    constexpr int k_hash_len = 48;
+    constexpr trace_t k_hash_factor = 4871L;
+    constexpr trace_t k_hash_inverse = 33111303973559L;
 #else
-//! @brief Type for trace hashes.
-typedef uint64_t trace_t;
-
-//! @brief Bit size of a trace hash.
-constexpr int k_hash_len = 48;
-
-//! @brief The factor by which the hash is multiplied when a new item enters the trace.
-constexpr trace_t k_hash_factor = 4871L;
-
-//! @brief The inverse of the factor modulo the hash length.
-constexpr trace_t k_hash_inverse = 33111303973559L;
+    static_assert(false, "invalid value for FCPP_SETTING_TRACE");
+    //! @brief Type for trace hashes (depends on @ref FCPP_SETTING_TRACE).
+    typedef uint32_t trace_t;
+    //! @brief Bit size of a trace hash.
+    constexpr int k_hash_len = 0;
+    //! @brief The factor by which the hash is multiplied when a new item enters the trace.
+    constexpr trace_t k_hash_factor = 0;
+    //! @brief The inverse of the factor modulo the hash length.
+    constexpr trace_t k_hash_inverse = 0;
 #endif
 
-//! @brief Value for quickly computing the reduction to k_hash_len bits.
+//! @brief Value for quickly computing the reduction to @ref k_hash_len bits.
 constexpr trace_t k_hash_mod = (trace_t(1)<<k_hash_len)-1;
+
+//! @brief Maximium value allowed for code counters.
+constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_SETTING_TRACE - k_hash_len);
 
     
 /** @brief Keeps an updated representation of the current stack trace.
  *  The intended usage is:
  *  - for function definition and call,
  *    ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *    T func(trace_t __, ...) {
- *        push(__);
+ *    template<trace_t __>
+ *    T func(...) {
+ *        push<__>();
  *        ...
  *        pop();
  *    }
- *    ... func(___, ...) ...
+ *    ... func<___>(...) ...
  *    ~~~~~~~~~~~~~~~~~~~~~~~~~
  *  - for cycles,
  *    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *    push_cycle(___);
+ *    push_cycle<___>();
  *    someway_repeating {
- *        push(___);
+ *        push<___>();
  *        ....
  *    }
  *    pop_cycle();
@@ -74,8 +86,8 @@ constexpr trace_t k_hash_mod = (trace_t(1)<<k_hash_len)-1;
  *  - to handle branching, we follow "delayed alignment" by inserting `align`
  *    calls into conditional operators and assignments.
  *    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *    ... ? align(___, ...) : align(___, ...)
- *    ... = align(___, ...)
+ *    ... ? align<___>(...) : align<___>(...)
+ *    ... = align<___>(...)
  *    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class trace {
@@ -100,13 +112,17 @@ class trace {
         stack.clear();
     }
     
-    //! @brief Returns the hash together with the argument into a @ref trace_t.
-    trace_t hash(trace_t x) {
+    //! @brief Returns the hash together with the template argument into a @ref trace_t.
+    template<trace_t x>
+    trace_t hash() {
+        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
     	return stack_hash + (x << k_hash_len);
     }
 
     //! @brief Add a function call to the stack trace updating the hash.
-    void push(trace_t x) {
+    template<trace_t x>
+    void push() {
+        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
     	stack_hash = (stack_hash * k_hash_factor + x) & k_hash_mod;
     	stack.push_back(x);
     }
@@ -119,8 +135,10 @@ class trace {
     }
 
     //! @brief Calls push with `x + k_hash_mod+1`.
-    void push_cycle(trace_t x) {
-    	push(x);
+    template<trace_t x>
+    void push_cycle() {
+        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+    	push<x>();
         stack.back() += k_hash_mod+1;
     }
 
@@ -139,4 +157,4 @@ thread_local trace thread_trace;
 
 }
 
-#endif
+#endif // FCPP_DATA_TRACE_H_

@@ -6,7 +6,7 @@
 // * maximum amount of neighbours allowed
 // * maximum export metric value allowed
 // * context (messages received from neighbours, possibly including sensor data, and including self value)
-// * export (currently producing twin export---for self and/or others)
+// * export (as twin<multitype_map, !SETTING_DUPLICATE_EXPORTS>, true for some real deployments, false for simulation)
 
 // functions:
 // * constructor given self ID and export allowances
@@ -14,7 +14,6 @@
 // * body/loop classes proxying to global trace methods (for functions and cycles)
 
 // parameters:
-// * E boolean whether to split self_export and other_export (yes for some real deployments, no for simulation)
 // * M filtering metric export*export -> fully ordered type (based on available sensors)
 
 // direct subclasses should provide:

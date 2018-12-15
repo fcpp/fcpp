@@ -16,6 +16,7 @@ cc_library(
     hdrs = ['field.hpp'],
     srcs = ['field.cpp'],
     deps = [
+        "//lib/settings",
         "//lib/util:traits",
     ],
     visibility = [
@@ -27,7 +28,19 @@ cc_library(
     name = 'trace',
     hdrs = ['trace.hpp'],
     srcs = ['trace.cpp'],
-    deps = [    ],
+    deps = [
+        "//lib/settings",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'twin',
+    hdrs = ['twin.hpp'],
+    srcs = ['twin.cpp'],
+    deps = [ ],
     visibility = [
         '//visibility:public',
     ],

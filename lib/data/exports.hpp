@@ -4,11 +4,11 @@
 
 /**
  * @file exports.hpp
- * @brief Implementation of the exports<Ts...> class template for handling message data.
+ * @brief Implementation of the `exports<Ts...>` class template for handling message data.
  */
 
-#ifndef FCPP_DATATYPE_EXPORTS_H_
-#define FCPP_DATATYPE_EXPORTS_H_
+#ifndef FCPP_DATA_EXPORTS_H_
+#define FCPP_DATA_EXPORTS_H_
 
 #include <type_traits>
 #include <unordered_map>
@@ -105,4 +105,4 @@ public:
 
 }
 
-#endif  // FCPP_DATATYPE_EXPORT_H_
+#endif // FCPP_DATA_EXPORT_H_

@@ -4,17 +4,18 @@
 
 /**
  * @file field.hpp
- * @brief Implementation and helper functions for the field<T> class template for neighboring fields.
+ * @brief Implementation and helper functions for the `field<T>` class template for neighboring fields.
  */
 
-#ifndef FCPP_DATATYPES_FIELD_H_
-#define FCPP_DATATYPES_FIELD_H_
+#ifndef FCPP_DATA_FIELD_H_
+#define FCPP_DATA_FIELD_H_
 
 #include <ostream>
 #include <unordered_map>
 #include <unordered_set>
 #include <type_traits>
 
+#include "lib/settings.hpp"
 #include "lib/util/traits.hpp"
 
 
@@ -24,49 +25,22 @@
 namespace fcpp {
 
 
-#ifdef UID_8_BIT
-#define UID_BIT
-//! @brief Type for device identifiers.
-typedef uint8_t device_t;
-constexpr int k_device_size = 8;
-#endif
-#ifdef UID_16_BIT
-#define UID_BIT
-//! @brief Type for device identifiers.
-typedef uint16_t device_t;
-constexpr int k_device_size = 16;
-#endif
-#ifdef UID_24_BIT
-#define UID_BIT
-//! @brief Type for device identifiers.
-typedef uint32_t device_t;
-constexpr int k_device_size = 24;
-#endif
-#ifdef UID_32_BIT
-#define UID_BIT
-//! @brief Type for device identifiers.
-typedef uint32_t device_t;
-constexpr int k_device_size = 32;
-#endif
-#ifdef UID_48_BIT
-#define UID_BIT
-//! @brief Type for device identifiers.
-typedef uint64_t device_t;
-constexpr int k_device_size = 48;
-#endif
-#ifdef UID_64_BIT
-#define UID_BIT
-//! @brief Type for device identifiers.
-typedef uint64_t device_t;
-constexpr int k_device_size = 64;
-#endif
-#ifndef UID_BIT
-//! @cond INTERNAL
-#define UID_16_BIT
-//! @endcond
-//! @brief Type for device identifiers.
-typedef uint16_t device_t;
-constexpr int k_device_size = 16;
+#if   FCPP_SETTING_DEVICE == 8
+    typedef uint8_t device_t;
+#elif FCPP_SETTING_DEVICE == 16
+    typedef uint16_t device_t;
+#elif FCPP_SETTING_DEVICE == 24
+    typedef uint32_t device_t;
+#elif FCPP_SETTING_DEVICE == 32
+    typedef uint32_t device_t;
+#elif FCPP_SETTING_DEVICE == 48
+    typedef uint64_t device_t;
+#elif FCPP_SETTING_DEVICE == 64
+    typedef uint64_t device_t;
+#else
+    static_assert(false, "invalid value for FCPP_SETTING_DEVICE");
+    //! @brief Type for device identifiers (depends on @ref FCPP_SETTING_DEVICE).
+    typedef uint64_t device_t;
 #endif
 
 
@@ -540,4 +514,4 @@ _DEF_IOP(<<)
 
 }
 
-#endif  // FCPP_DATATYPES_FIELD_H_
+#endif // FCPP_DATA_FIELD_H_

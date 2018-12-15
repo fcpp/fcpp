@@ -4,7 +4,7 @@ cc_library(
     srcs = ['field.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/util:traits",
+        "//lib/common:traits",
     ],
     visibility = [
         '//visibility:public',

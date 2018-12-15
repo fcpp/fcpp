@@ -3,7 +3,7 @@ cc_library(
     hdrs = ['multitype_map.hpp'],
     srcs = ['multitype_map.cpp'],
     deps = [
-        "//lib/util:traits",
+        "//lib/common:traits",
     ],
     visibility = [
         '//visibility:public',

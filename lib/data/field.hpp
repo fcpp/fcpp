@@ -16,7 +16,7 @@
 #include <type_traits>
 
 #include "lib/settings.hpp"
-#include "lib/util/traits.hpp"
+#include "lib/common/traits.hpp"
 
 
 /**

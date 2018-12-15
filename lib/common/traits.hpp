@@ -5,8 +5,8 @@
  * @brief Constants and typedefs for andvanced operations and querying on types.
  */
 
-#ifndef FCPP_UTIL_TRAITS_H_
-#define FCPP_UTIL_TRAITS_H_
+#ifndef FCPP_COMMON_TRAITS_H_
+#define FCPP_COMMON_TRAITS_H_
 
 #include <cstddef>
 #include <type_traits>
@@ -106,4 +106,4 @@ struct to_template {
 
 }
 
-#endif  // FCPP_UTILS_TRAITS_H_
+#endif  // FCPP_COMMON_TRAITS_H_

@@ -5,8 +5,8 @@
  * @brief Implementation of the `twin` class for handling two variables, possibly identical.
  */
 
-#ifndef FCPP_DATA_TWIN_H_
-#define FCPP_DATA_TWIN_H_
+#ifndef FCPP_COMMON_TWIN_H_
+#define FCPP_COMMON_TWIN_H_
 
 
 /**
@@ -83,4 +83,4 @@ public:
 
 }
 
-#endif // FCPP_DATA_TWIN_H_
+#endif // FCPP_COMMON_TWIN_H_

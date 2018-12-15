@@ -11,35 +11,11 @@ cc_test(
 )
 
 cc_test(
-    name = "multitype_map",
-    srcs = ["multitype_map.cpp"],
-    deps = [
-        "@gtest//:main",
-        "//lib/data:multitype_map",
-    ],
-    copts = ['-Iexternal/gtest/googletest/include/'],
-    args = ['--gtest_color=yes'],
-    timeout = 'short',
-)
-
-cc_test(
     name = "trace",
     srcs = ["trace.cpp"],
     deps = [
         "@gtest//:main",
         "//lib/data:trace",
-    ],
-    copts = ['-Iexternal/gtest/googletest/include/'],
-    args = ['--gtest_color=yes'],
-    timeout = 'short',
-)
-
-cc_test(
-    name = "twin",
-    srcs = ["twin.cpp"],
-    deps = [
-        "@gtest//:main",
-        "//lib/data:twin",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

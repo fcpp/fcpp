@@ -5,8 +5,8 @@
  * @brief Implementation of the `multitype_map<T, Ts...>` class template for handling heterogeneous indexed data.
  */
 
-#ifndef FCPP_DATA_MULTITYPE_MAP_H_
-#define FCPP_DATA_MULTITYPE_MAP_H_
+#ifndef FCPP_COMMON_MULTITYPE_MAP_H_
+#define FCPP_COMMON_MULTITYPE_MAP_H_
 
 #include <type_traits>
 #include <unordered_map>
@@ -100,4 +100,4 @@ public:
 
 }
 
-#endif // FCPP_DATA_MULTITYPE_MAP_H_
+#endif // FCPP_COMMON_MULTITYPE_MAP_H_

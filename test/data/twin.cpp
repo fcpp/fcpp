@@ -22,7 +22,7 @@ TEST_F(TwinTest, Mirrored) {
     EXPECT_EQ(17, mirrored.first());
 }
 
-TEST_F(TraceTest, Separate) {
+TEST_F(TwinTest, Separate) {
     separate.first() = 42;
     separate.second() = 17;
     EXPECT_EQ(42, separate.first());

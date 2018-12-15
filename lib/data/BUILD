@@ -1,9 +1,9 @@
 cc_library(
-    name = 'exports',
-    hdrs = ['exports.hpp'],
-    srcs = ['exports.cpp'],
+    name = 'field',
+    hdrs = ['field.hpp'],
+    srcs = ['field.cpp'],
     deps = [
-        "//lib/data:trace",
+        "//lib:settings",
         "//lib/util:traits",
     ],
     visibility = [
@@ -12,11 +12,10 @@ cc_library(
 )
 
 cc_library(
-    name = 'field',
-    hdrs = ['field.hpp'],
-    srcs = ['field.cpp'],
+    name = 'multitype_map',
+    hdrs = ['multitype_map.hpp'],
+    srcs = ['multitype_map.cpp'],
     deps = [
-        "//lib/settings",
         "//lib/util:traits",
     ],
     visibility = [
@@ -29,7 +28,7 @@ cc_library(
     hdrs = ['trace.hpp'],
     srcs = ['trace.cpp'],
     deps = [
-        "//lib/settings",
+        "//lib:settings",
     ],
     visibility = [
         '//visibility:public',

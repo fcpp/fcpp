@@ -1,9 +1,9 @@
 cc_test(
-    name = "exports",
-    srcs = ["exports.cpp"],
+    name = "multitype_map",
+    srcs = ["multitype_map.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/data:exports",
+        "//lib/data:multitype_map",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

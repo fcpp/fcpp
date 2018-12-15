@@ -4,8 +4,8 @@ common --show_progress
 common --curses=auto
 common --show_progress_rate_limit=0
 
+build --copt --std=c++14
 build --verbose_failures
-build --crosstool_top=//tools/cpp:default-toolchain
 
 build:asan --copt -fsanitize=address,undefined
 build:asan --copt -DCHECK_SANITY
@@ -21,7 +21,7 @@ build:asan --define signal_trace=disabled
 build:release --copt -Ofast
 build:release --copt -DNDEBUG
 
-test --crosstool_top=//tools/cpp:default-toolchain
+test --copt --std=c++14
 test --verbose_failures
 test --test_output=all
 test --test_verbose_timeout_warnings

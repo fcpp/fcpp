@@ -4,41 +4,42 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/data/exports.hpp"
+#include "lib/data/multitype_map.hpp"
 
 
-class ExportsTest : public ::testing::Test {
+class MultitypeMapTest : public ::testing::Test {
 protected:
     virtual void SetUp() {
-        data.insert<char>(7, 'a');
+        data.insert(7, 'a');
         data.insert<char>(7, 'b');
         data.insert<char>(42, '+');
-        data.insert<int>(18, 999);
+        data.insert<int>(18, 31);
+        data.insert(18, 999);
         data.insert(2);
         data.insert(3);
         data.insert(3);
     }
     
-    fcpp::exports<int, double, char> data;
+    fcpp::multitype_map<short, int, double, char> data;
 };
 
 
-TEST_F(ExportsTest, Values) {
+TEST_F(MultitypeMapTest, Values) {
     EXPECT_TRUE(data.count<char>(42));
     EXPECT_FALSE(data.count<double>(42));
     EXPECT_EQ(999, data.at<int>(18));
     EXPECT_EQ('b', data.at<char>(7));
 }
 
-TEST_F(ExportsTest, Points) {
+TEST_F(MultitypeMapTest, Points) {
     EXPECT_TRUE(data.contains(2));
     EXPECT_TRUE(data.contains(3));
     EXPECT_FALSE(data.contains(0));
     EXPECT_FALSE(data.contains(999));
 }
 
-TEST_F(ExportsTest, Operators) {
-    fcpp::exports<int, double, char> x(data), y, z;
+TEST_F(MultitypeMapTest, Operators) {
+    fcpp::multitype_map<short, int, double, char> x(data), y, z;
     z = y;
     y = x;
     z = std::move(y);

@@ -7,19 +7,12 @@
 #include "lib/data/trace.hpp"
 
 
-class TraceTest : public ::testing::Test {
-protected:
-    virtual void SetUp() {
-    }
-};
-
-
-TEST_F(TraceTest, Hash) {
+TEST(TraceTest, Hash) {
 	EXPECT_EQ((fcpp::trace_t)0, fcpp::thread_trace.hash<0>());
 	EXPECT_EQ((fcpp::trace_t)12L<<fcpp::k_hash_len, fcpp::thread_trace.hash<12>());
 }
 
-TEST_F(TraceTest, PushPop) {
+TEST(TraceTest, PushPop) {
     std::vector<fcpp::trace_t> stack;
     stack.push_back(fcpp::thread_trace.hash<0>());
     fcpp::thread_trace.push<15>();
@@ -49,7 +42,7 @@ TEST_F(TraceTest, PushPop) {
     EXPECT_EQ((fcpp::trace_t)15, stack[1]);
 }
 
-TEST_F(TraceTest, PushPopCycle) {
+TEST(TraceTest, PushPopCycle) {
     fcpp::thread_trace.push<15>();
     fcpp::thread_trace.push_cycle<120>();
     fcpp::thread_trace.push<48>();

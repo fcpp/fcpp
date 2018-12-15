@@ -54,11 +54,11 @@ class twin<T, true> {
 //! @brief Class offering access to different values through `first()` and `second()`.
 template <typename T>
 class twin<T, false> {
-private:
+  private:
     //! @brief The content of the class.
     T data1, data2;
     
-public:
+  public:
     //! @brief Access to the first element.
     T& first() {
         return data1;

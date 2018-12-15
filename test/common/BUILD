@@ -1,4 +1,16 @@
 cc_test(
+    name = "flat_ptr",
+    srcs = ["flat_ptr.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:flat_ptr",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "multitype_map",
     srcs = ["multitype_map.cpp"],
     deps = [

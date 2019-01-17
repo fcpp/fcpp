@@ -26,6 +26,10 @@ class flat_ptr;
 //! @brief Class managing a `T` object exactly as a `shared_ptr`.
 template <typename T>
 class flat_ptr<T, false> {
+  public:
+    //! @brief The type of the content.
+    typedef T type;
+    
   private:
     //! @brief The content of the class.
     std::shared_ptr<T> data;
@@ -106,6 +110,10 @@ class flat_ptr<T, false> {
 //! @brief Class managing a `T` object directly.
 template <typename T>
 class flat_ptr<T, true> {
+  public:
+    //! @brief The type of the content.
+    typedef T type;
+    
   private:
     //! @brief The content of the class.
     T data;

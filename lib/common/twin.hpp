@@ -24,6 +24,10 @@ class twin;
 //! @brief Class offering access to a single value through `first()` and `second()`.
 template <typename T>
 class twin<T, true> {
+  public:
+    //! @brief The type of the content.
+    typedef T type;
+    
   private:
     //! @brief The content of the class.
     T data;
@@ -54,6 +58,10 @@ class twin<T, true> {
 //! @brief Class offering access to different values through `first()` and `second()`.
 template <typename T>
 class twin<T, false> {
+  public:
+    //! @brief The type of the content.
+    typedef T type;
+    
   private:
     //! @brief The content of the class.
     T data1, data2;

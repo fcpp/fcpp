@@ -67,4 +67,9 @@
 #endif
 
 
+#ifndef FCPP_WARNING_TRACE
+    #define FCPP_WARNING_TRACE true
+#endif
+
+
 #endif // FCPP_SETTINGS_H_

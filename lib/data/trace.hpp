@@ -122,7 +122,8 @@ class trace {
     //! @brief Add a function call to the stack trace updating the hash.
     template<trace_t x>
     void push() {
-        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+        static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
     	stack_hash = (stack_hash * k_hash_factor + x) & k_hash_mod;
     	stack.push_back(x);
     }
@@ -137,7 +138,8 @@ class trace {
     //! @brief Calls push with `x + k_hash_mod+1`.
     template<trace_t x>
     void push_cycle() {
-        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+        static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
     	push<x>();
         stack.back() += k_hash_mod+1;
     }

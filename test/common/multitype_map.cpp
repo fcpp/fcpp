@@ -26,6 +26,8 @@ protected:
 
 TEST_F(MultitypeMapTest, Values) {
     EXPECT_TRUE(data.count<char>(42));
+    data.erase<char>(42);
+    EXPECT_FALSE(data.count<char>(42));
     EXPECT_FALSE(data.count<double>(42));
     EXPECT_EQ(999, data.at<int>(18));
     EXPECT_EQ('b', data.at<char>(7));
@@ -34,6 +36,8 @@ TEST_F(MultitypeMapTest, Values) {
 TEST_F(MultitypeMapTest, Points) {
     EXPECT_TRUE(data.contains(2));
     EXPECT_TRUE(data.contains(3));
+    data.remove(3);
+    EXPECT_FALSE(data.contains(3));
     EXPECT_FALSE(data.contains(0));
     EXPECT_FALSE(data.contains(999));
 }

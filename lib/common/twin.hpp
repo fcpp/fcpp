@@ -26,7 +26,7 @@ template <typename T>
 class twin<T, true> {
   public:
     //! @brief The type of the content.
-    typedef T type;
+    typedef T value_type;
     
   private:
     //! @brief The content of the class.
@@ -60,7 +60,7 @@ template <typename T>
 class twin<T, false> {
   public:
     //! @brief The type of the content.
-    typedef T type;
+    typedef T value_type;
     
   private:
     //! @brief The content of the class.

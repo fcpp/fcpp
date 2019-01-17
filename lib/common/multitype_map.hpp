@@ -31,6 +31,10 @@ template <typename T, typename... Ts>
 class multitype_map {
     static_assert(not type_repeated<Ts...>, "cannot instantiate multitype_map with repeated types");
     
+  public:
+    //! @brief The type of the keys.
+    typedef T key_type;
+    
   private:
     //! @brief Map associating keys to data.
     std::tuple<std::unordered_map<T, Ts>...> data;

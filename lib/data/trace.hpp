@@ -63,6 +63,7 @@ constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_SETTING_TRACE - k_hash_len);
 
     
 /** @brief Keeps an updated representation of the current stack trace.
+ *
  *  The intended usage is:
  *  - for function definition and call,
  *    ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}

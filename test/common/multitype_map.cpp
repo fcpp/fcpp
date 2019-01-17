@@ -24,13 +24,12 @@ protected:
 };
 
 
-TEST_F(MultitypeMapTest, Values) {
-    EXPECT_TRUE(data.count<char>(42));
-    data.erase<char>(42);
-    EXPECT_FALSE(data.count<char>(42));
-    EXPECT_FALSE(data.count<double>(42));
-    EXPECT_EQ(999, data.at<int>(18));
-    EXPECT_EQ('b', data.at<char>(7));
+TEST_F(MultitypeMapTest, Operators) {
+    fcpp::multitype_map<short, int, double, char> x(data), y, z;
+    z = y;
+    y = x;
+    z = std::move(y);
+    EXPECT_EQ(data, z);
 }
 
 TEST_F(MultitypeMapTest, Points) {
@@ -42,10 +41,11 @@ TEST_F(MultitypeMapTest, Points) {
     EXPECT_FALSE(data.contains(999));
 }
 
-TEST_F(MultitypeMapTest, Operators) {
-    fcpp::multitype_map<short, int, double, char> x(data), y, z;
-    z = y;
-    y = x;
-    z = std::move(y);
-    EXPECT_EQ(data, z);
+TEST_F(MultitypeMapTest, Values) {
+    EXPECT_TRUE(data.count<char>(42));
+    data.erase<char>(42);
+    EXPECT_FALSE(data.count<char>(42));
+    EXPECT_FALSE(data.count<double>(42));
+    EXPECT_EQ(999, data.at<int>(18));
+    EXPECT_EQ('b', data.at<char>(7));
 }

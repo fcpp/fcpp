@@ -9,6 +9,8 @@
 #define FCPP_COMMON_TRAITS_H_
 
 #include <cstddef>
+#include <array>
+#include <tuple>
 #include <type_traits>
 
 
@@ -76,31 +78,92 @@ constexpr bool type_repeated<A> = false;
 
 
 /**
- * @name is_template
+ * @name boolean operators
  *
- * Constant which is true if and only if the second (type) parameter is a specialization of
- * the first (template) parameter.
+ * Constexpr computing boolean combinations of their arguments.
  */
 //@{
-//! @brief False in general.
-template <template<class...> class T, class A>
-constexpr bool is_template = false;
+//! @brief Helper class holding arbitrary boolean template parameters.
+template <bool...> struct bool_pack;
 
-//! @brief True if second parameter is of the form T<A...>.
-template <template<class...> class T, class... A>
-constexpr bool is_template<T, T<A...>> = true;
+//! @brief Checks if every argument is `true`.
+template <bool... v>
+constexpr bool all_true = std::is_same<bool_pack<true, v...>, bool_pack<v..., true>>::value;
+
+//! @brief Checks if every argument is `false`.
+template <bool... v>
+constexpr bool all_false = std::is_same<bool_pack<false, v...>, bool_pack<v..., false>>::value;
+
+//! @brief Checks if some argument is `true`.
+template <bool... v>
+constexpr bool some_true = !all_false<v...>;
+
+//! @brief Checks if some argument is `false`.
+template <bool... v>
+constexpr bool some_false = !all_true<v...>;
 //@}
 
 
 /**
- * @brief Helper class for implicit conversion to a template type.
+ * @name has_template
+ *
+ * Constant which is true if and only if the second (type) parameter is built through arrays and tuples
+ * from specializations of the first (template) parameter.
  */
+//@{
+//! @brief False in general.
 template <template<class...> class T, class A>
-struct to_template {
-    /**
-     * @brief A if it is an instance of T, T<A> otherwise.
-     */
-    typedef typename std::conditional<is_template<T, A>, A, T<A>>::type type;
+constexpr bool has_template = false;
+
+//! @brief True if second parameter is of the form T<A>.
+template <template<class...> class T, class... A>
+constexpr bool has_template<T, T<A...>> = true;
+
+//! @brief Recurse on std::array value type arguments.
+template <template<class...> class T, class A, size_t N>
+constexpr bool has_template<T, std::array<A, N>> = has_template<T, A>;
+
+//! @brief Recurse on std::tuple value type arguments.
+template <template<class...> class T, class... A>
+constexpr bool has_template<T, std::tuple<A...>> = some_true<has_template<T, A>...>;
+//@}
+
+
+/**
+ * @brief Deletes occurrences of the first (template) parameter within the second (type) parameter, which is built through arrays and tuples.
+ */
+// If no occurrences of the template are present.
+template <template<class> class T, class A>
+struct del_template {
+    //! @brief The result of the conversion.
+    typedef A type;
+};
+//! @cond INTERNAL
+// If the second parameter is of the form T<A>.
+template <template<class> class T, class A>
+struct del_template<T, T<A>> {
+    typedef A type;
+};
+
+// Removes occurrences from the argument of an std::array value type.
+template <template<class> class T, class A, size_t N>
+struct del_template<T, std::array<A, N>> {
+    typedef std::array<typename del_template<T, A>::type, N> type;
+};
+
+// Removes occurrences from the arguments of an std::tuple value types.
+template <template<class> class T, class... A>
+struct del_template<T, std::tuple<A...>> {
+    typedef std::tuple<typename del_template<T, A>::type...> type;
+};
+//! @endcond
+
+    
+//! @brief Converts the second (type) parameter into a specialization of the first (template) parameter.
+template <template<class> class T, class A>
+struct add_template {
+    //! @brief The result of the conversion.
+    typedef T<typename del_template<T, A>::type> type;
 };
 
 

@@ -59,7 +59,7 @@
     #endif
 #elif FCPP_SETTING_ENVIRONMENT == FCPP_DEPLOYMENT
     #ifndef FCPP_SETTING_EXPORTS
-//! @brief Settings defining whether exports for self and other devices should be separated (2, default for deployed systems) or together in a `shared_ptr` (1, default for simulated systems).
+    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for deployed systems) or together in a `shared_ptr` (1, default for simulated systems).
     #define FCPP_SETTING_EXPORTS 2
     #endif
 #else
@@ -68,6 +68,7 @@
 
 
 #ifndef FCPP_WARNING_TRACE
+    //! @brief Settings defining whether hash colliding of code points is admissible.
     #define FCPP_WARNING_TRACE true
 #endif
 

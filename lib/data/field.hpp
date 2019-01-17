@@ -1,6 +1,6 @@
 // Copyright © 2019 Giorgio Audrito. All Rights Reserved.
 
-// TODO: details::self on vector/tuple of fields; write other should build fields; un-friend some methods
+// TODO: details::self on array/tuple of fields; write other should build fields; un-friend some methods
 
 /**
  * @file field.hpp
@@ -54,6 +54,9 @@ template<typename T> class field;
  */
 namespace details {
 //! @cond INTERNAL
+    template <class T>
+    struct field_base {};
+    
     template <typename A>
     field<A> make_field(A, std::unordered_map<device_t, A>);
     
@@ -64,7 +67,7 @@ namespace details {
     const A& self(const field<A>&, device_t);
     
     template <typename A>
-    typename std::enable_if<not is_template<field, A>, const A&>::type
+    typename std::enable_if<not has_template<field, A>, const A&>::type
     self(const A&, device_t);
     
     template <typename A>
@@ -74,7 +77,7 @@ namespace details {
     field<A> align(const field<A>&, const std::unordered_set<device_t>&);
     
     template <typename A>
-    typename std::enable_if<not is_template<field, A>, const A&>::type
+    typename std::enable_if<not has_template<field, A>, const A&>::type
     align(const A&, const std::unordered_set<device_t>&);
 
     template <typename... T>
@@ -91,7 +94,7 @@ namespace details {
     fold_hood(F&&, const field<A>&, const std::unordered_set<device_t>&);
     
     template <typename F, typename A>
-    typename std::enable_if<not is_template<field, A>, typename std::result_of<F(A,A)>::type>::type
+    typename std::enable_if<not has_template<field, A>, typename std::result_of<F(A,A)>::type>::type
     fold_hood(F&&, const A&, const std::unordered_set<device_t>&);
 //! @endcond
 }
@@ -101,11 +104,19 @@ namespace details {
  * @brief Class representing a neighboring field of T values.
  */
 template <typename T>
-class field {
+class field : public details::field_base<T> {
+    static_assert(not has_template<field, T>, "cannot instantiate a field of fields");
+    
     //! @cond INTERNAL
     template <typename A>
     friend class field;
+    template <typename A>
+    friend class details::field_base;
     //! @endcond
+  
+  public:
+    //! @brief The type of the content.
+    typedef T value_type;
     
   private:
     //! @brief Exceptions, as associations device id -> value.
@@ -149,9 +160,7 @@ class field {
     field<T>& operator=(field<T>&&) = default;
     //@}
     
-    /**
-     * @brief Casts to fields of compatible base type.
-     */
+    //! @brief Casts to fields of compatible base type.
     template <typename A, typename = typename std::enable_if<std::is_convertible<T,A>::value>::type>
     operator field<A>() const {
         field<A> r(static_cast<A>(def));
@@ -234,6 +243,16 @@ class field {
 
 
 //! @cond INTERNAL
+template <>
+struct details::field_base<bool> {
+    operator bool() const {
+        const field<bool>* f = static_cast<const field<bool>*>(this);
+        if (not f->def) return false;
+        for (const auto& x : f->data) if (not x.second) return false;
+        return true;
+    }
+};
+
 template <typename A>
 field<A> details::make_field(A def, std::unordered_map<device_t, A> data) {
     field<A> r(def, data);
@@ -261,13 +280,13 @@ const A& other(const field<A>& x) {
 
 //! @brief Write access for non-field values (treated as constant fields).
 template <typename A>
-typename std::enable_if<not is_template<field, A>, A&>::type other(A& x) {
+typename std::enable_if<not has_template<field, A>, A&>::type other(A& x) {
     return x;
 }
 
 //! @brief Read-only access for non-field values (treated as constant fields).
 template <typename A>
-typename std::enable_if<not is_template<field, A>, const A&>::type other(const A& x) {
+typename std::enable_if<not has_template<field, A>, const A&>::type other(const A& x) {
     return x;
 }
 //@}
@@ -289,7 +308,7 @@ const A& details::self(const field<A>& x, device_t i) {
 }
 
 template <typename A>
-typename std::enable_if<not is_template<field, A>, const A&>::type
+typename std::enable_if<not has_template<field, A>, const A&>::type
 details::self(const A& x, device_t) {
     return x;
 }
@@ -314,7 +333,7 @@ field<A> details::align(const field<A>& x, const std::unordered_set<device_t>& s
 }
 
 template <typename A>
-typename std::enable_if<not is_template<field, A>, const A&>::type
+typename std::enable_if<not has_template<field, A>, const A&>::type
 details::align(const A& x, const std::unordered_set<device_t>&) {
     return x;
 }
@@ -385,7 +404,7 @@ typename std::result_of<F(A,A)>::type details::fold_hood(F&& op, const field<A>&
 }
 
 template <typename F, typename A>
-typename std::enable_if<not is_template<field, A>, typename std::result_of<F(A,A)>::type>::type
+typename std::enable_if<not has_template<field, A>, typename std::result_of<F(A,A)>::type>::type
 details::fold_hood(F&& op, const A& x, const std::unordered_set<device_t>& domain) {
     int n = domain.size();
     typename std::result_of<F(A,A)>::type res = x;
@@ -413,10 +432,10 @@ field<decltype(op std::declval<A>())>
 field<decltype(std::declval<A>() op std::declval<B>())>
 
 #define _BOP_IFTA(A,op,B)                                                   \
-typename std::enable_if<not is_template<field,A> and not std::is_convertible<A,std::ostream>::value, _BOP_TYPE(A,op,B)>::type
+typename std::enable_if<not has_template<field,A> and not std::is_convertible<A,std::ostream>::value, _BOP_TYPE(A,op,B)>::type
 
 #define _BOP_IFTB(A,op,B)                                                   \
-typename std::enable_if<not is_template<field,B>, _BOP_TYPE(A,op,B)>::type
+typename std::enable_if<not has_template<field,B>, _BOP_TYPE(A,op,B)>::type
 //! @endcond
 
 /**

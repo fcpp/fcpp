@@ -1,4 +1,20 @@
 cc_library(
+    name = 'context',
+    hdrs = ['context.hpp'],
+    srcs = ['context.cpp'],
+    deps = [
+        "//lib/common:flat_ptr",
+        "//lib/common:multitype_map",
+        "//lib/common:traits",
+        "//lib/data:field",
+        "//lib/data:trace",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'field',
     hdrs = ['field.hpp'],
     srcs = ['field.cpp'],

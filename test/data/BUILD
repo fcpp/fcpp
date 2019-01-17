@@ -1,4 +1,16 @@
 cc_test(
+    name = "context",
+    srcs = ["context.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/data:context",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "field",
     srcs = ["field.cpp"],
     deps = [

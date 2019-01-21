@@ -8,10 +8,8 @@
 #ifndef FCPP_DATA_CONTEXT_H_
 #define FCPP_DATA_CONTEXT_H_
 
-#include <memory>
-#include <type_traits>
 #include <unordered_map>
-#include <vector>
+#include <unordered_set>
 
 #include "lib/common/flat_ptr.hpp"
 #include "lib/common/multitype_map.hpp"
@@ -37,11 +35,11 @@ template <typename... Ts>
 class context {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef flat_ptr<multitype_map<trace_t, Ts...>, FCPP_SETTING_EXPORTS == 2> exports;
+    typedef flat_ptr<multitype_map<trace_t, Ts...>, FCPP_SETTING_EXPORTS == 2> export_type;
 
   private:
     //! @brief Map associating devices to exports.
-    std::unordered_map<device_t, exports> data;
+    std::unordered_map<device_t, export_type> data;
     //! @brief The identifier of the local device.
     device_t self;
     
@@ -71,14 +69,19 @@ class context {
     bool operator==(const context<Ts...>& o) const {
         return self == o.self && data == o.data;
     }
+
+    //! @brief Access to the local device identifier.
+    device_t self_id() {
+        return self;
+    }
     
     //! @brief Inserts an export for a device.
-    void insert(device_t device, const exports& e) {
+    void insert(device_t device, const export_type& e) {
         data[device] = e;
     }
     
     //! @brief Inserts an export for a device by moving.
-    void insert(device_t device, exports&& e) {
+    void insert(device_t device, export_type&& e) {
         data[device] = e;
     }
     
@@ -88,11 +91,12 @@ class context {
     }
     
     //! @brief Returns list of devices with specified trace.
-    std::vector<device_t> align(trace_t trace) const {
-        std::vector<device_t> v;
+    std::unordered_set<device_t> align(trace_t trace) const {
+        std::unordered_set<device_t> v;
         for (const auto& d : data)
             if (d.second->contains(trace))
-                v.push_back(d.first);
+                v.insert(d.first);
+        v.insert(self);
         return v;
     }
     

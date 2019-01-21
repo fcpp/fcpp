@@ -8,7 +8,7 @@
 
 
 class MultitypeMapTest : public ::testing::Test {
-protected:
+  protected:
     virtual void SetUp() {
         data.insert(7, 'a');
         data.insert<char>(7, 'b');

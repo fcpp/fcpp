@@ -12,6 +12,24 @@ TEST(FlatPtrTest, Size) {
     EXPECT_EQ(sizeof(std::shared_ptr<char>), sizeof(fcpp::flat_ptr<char, false>));
 }
 
+TEST(FlatPtrTest, TrueOperators) {
+    fcpp::flat_ptr<char, true> data('a');
+    fcpp::flat_ptr<char, true> x(data), y, z;
+    z = y;
+    y = x;
+    z = std::move(y);
+    EXPECT_EQ(data, z);
+}
+
+TEST(FlatPtrTest, FalseOperators) {
+    fcpp::flat_ptr<char, false> data('a');
+    fcpp::flat_ptr<char, false> x(data), y, z;
+    z = y;
+    y = x;
+    z = std::move(y);
+    EXPECT_EQ(data, z);
+}
+
 TEST(FlatPtrTest, Dereferencing) {
     fcpp::flat_ptr<std::vector<int>, false> fdata;
     fcpp::flat_ptr<std::vector<int>, true> tdata;

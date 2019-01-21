@@ -1,8 +1,7 @@
 // Copyright © 2019 Giorgio Audrito. All Rights Reserved.
 
-#include <algorithm>
+#include <unordered_set>
 #include <utility>
-#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -10,7 +9,7 @@
 
 
 class ContextTest : public ::testing::Test {
-protected:
+  protected:
     virtual void SetUp() {
         m.insert(7, 'a');
         m.insert(42,'+');
@@ -43,14 +42,12 @@ TEST_F(ContextTest, InsertErase) {
 TEST_F(ContextTest, Align) {
     m.insert(9);
     data.insert(2, m);
-    std::vector<fcpp::device_t> ex, res;
-    ex = std::vector<fcpp::device_t>{1,2};
+    std::unordered_set<fcpp::device_t> ex, res;
+    ex = std::unordered_set<fcpp::device_t>{0,1,2};
     res = data.align(8);
-    std::sort(res.begin(), res.end());
     EXPECT_EQ(ex, res);
-    ex = std::vector<fcpp::device_t>{2};
+    ex = std::unordered_set<fcpp::device_t>{0,2};
     res = data.align(9);
-    std::sort(res.begin(), res.end());
     EXPECT_EQ(ex, res);
 }
 

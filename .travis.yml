@@ -18,6 +18,7 @@ addons:
     - g++-7
     - gcc-7
     - doxygen
+    - texlive-font-utils
 
 install:
 - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90

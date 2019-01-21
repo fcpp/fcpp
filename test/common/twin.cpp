@@ -6,7 +6,7 @@
 
 
 class TwinTest : public ::testing::Test {
-protected:
+  protected:
     virtual void SetUp() {
     }
     
@@ -14,6 +14,22 @@ protected:
     fcpp::twin<int, false> separate;
 };
 
+
+TEST_F(TwinTest, TrueOperators) {
+    fcpp::twin<int, true> x(mirrored), y, z;
+    z = y;
+    y = x;
+    z = std::move(y);
+    EXPECT_EQ(mirrored, z);
+}
+
+TEST_F(TwinTest, FalseOperators) {
+    fcpp::twin<int, false> x(separate), y, z;
+    z = y;
+    y = x;
+    z = std::move(y);
+    EXPECT_EQ(separate, z);
+}
 
 TEST_F(TwinTest, Mirrored) {
     mirrored.first() = 42;

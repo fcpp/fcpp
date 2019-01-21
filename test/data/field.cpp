@@ -6,7 +6,7 @@
 
 
 class FieldTest : public ::testing::Test {
-protected:
+  protected:
     virtual void SetUp() {
         fi1 = fcpp::details::make_field(2, {{1,1},{3,-1}});
         fi2 = fcpp::details::make_field(1, {{1,4},{2,3}});

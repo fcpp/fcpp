@@ -8,7 +8,6 @@
 #ifndef FCPP_COMMON_TRAITS_H_
 #define FCPP_COMMON_TRAITS_H_
 
-#include <cstddef>
 #include <array>
 #include <tuple>
 #include <type_traits>

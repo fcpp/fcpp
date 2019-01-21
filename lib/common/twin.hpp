@@ -33,6 +33,32 @@ class twin<T, true> {
     T data;
     
   public:
+    //! @name constructors
+    //@{
+    //! @brief Default constructor.
+    twin() = default;
+    
+    //! @brief Copy constructor.
+    twin(const twin<T, true>&) = default;
+    
+    //! @brief Move constructor.
+    twin(twin<T, true>&&) = default;
+    //@}
+
+    //! @name assignment operators
+    //@{
+    //! @brief Copy assignment.
+    twin<T, true>& operator=(const twin<T, true>&) = default;
+    
+    //! @brief Move assignment.
+    twin<T, true>& operator=(twin<T, true>&&) = default;
+    //@}
+
+    //! @brief Equality operator.
+    bool operator==(const twin<T, true>& o) const {
+        return data == o.data;
+    }
+    
     //! @brief Access to the first element.
     T& first() {
         return data;
@@ -67,6 +93,32 @@ class twin<T, false> {
     T data1, data2;
     
   public:
+    //! @name constructors
+    //@{
+    //! @brief Default constructor.
+    twin() = default;
+    
+    //! @brief Copy constructor.
+    twin(const twin<T, false>&) = default;
+    
+    //! @brief Move constructor.
+    twin(twin<T, false>&&) = default;
+    //@}
+
+    //! @name assignment operators
+    //@{
+    //! @brief Copy assignment.
+    twin<T, false>& operator=(const twin<T, false>&) = default;
+    
+    //! @brief Move assignment.
+    twin<T, false>& operator=(twin<T, false>&&) = default;
+    //@}
+
+    //! @brief Equality operator.
+    bool operator==(const twin<T, false>& o) const {
+        return data1 == o.data1 && data2 == o.data2;
+    }
+    
     //! @brief Access to the first element.
     T& first() {
         return data1;

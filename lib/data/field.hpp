@@ -1,7 +1,5 @@
 // Copyright © 2019 Giorgio Audrito. All Rights Reserved.
 
-// TODO: details::self on array/tuple of fields; write other should build fields; un-friend some methods
-
 /**
  * @file field.hpp
  * @brief Implementation and helper functions for the `field<T>` class template for neighboring fields.

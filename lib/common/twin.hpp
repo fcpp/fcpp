@@ -30,7 +30,7 @@ class twin<T, true> {
     
   private:
     //! @brief The content of the class.
-    T data;
+    T m_data;
     
   public:
     //! @name constructors
@@ -56,27 +56,27 @@ class twin<T, true> {
 
     //! @brief Equality operator.
     bool operator==(const twin<T, true>& o) const {
-        return data == o.data;
+        return m_data == o.m_data;
     }
     
     //! @brief Access to the first element.
     T& first() {
-        return data;
+        return m_data;
     }
 
     //! @brief Const access to the first element.
     const T& first() const {
-        return data;
+        return m_data;
     }
 
     //! @brief Access to the second element.
     T& second() {
-        return data;
+        return m_data;
     }
 
     //! @brief Const access to the second element.
     const T& second() const {
-        return data;
+        return m_data;
     }
 };
 
@@ -90,7 +90,7 @@ class twin<T, false> {
     
   private:
     //! @brief The content of the class.
-    T data1, data2;
+    T m_data1, m_data2;
     
   public:
     //! @name constructors
@@ -116,27 +116,27 @@ class twin<T, false> {
 
     //! @brief Equality operator.
     bool operator==(const twin<T, false>& o) const {
-        return data1 == o.data1 && data2 == o.data2;
+        return m_data1 == o.m_data1 && m_data2 == o.m_data2;
     }
     
     //! @brief Access to the first element.
     T& first() {
-        return data1;
+        return m_data1;
     }
 
     //! @brief Const access to the first element.
     const T& first() const {
-        return data1;
+        return m_data1;
     }
 
     //! @brief Access to the second element.
     T& second() {
-        return data2;
+        return m_data2;
     }
 
     //! @brief Const access to the second element.
     const T& second() const {
-        return data2;
+        return m_data2;
     }
 };
 

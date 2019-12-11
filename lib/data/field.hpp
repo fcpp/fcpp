@@ -118,13 +118,13 @@ class field : public details::field_base<T> {
     
   private:
     //! @brief Exceptions, as associations device id -> value.
-    std::unordered_map<device_t, T> data;
+    std::unordered_map<device_t, T> m_data;
     
     //! @brief Default value, retained almost everywhere in the field.
     T def;
     
     //! @brief Member constructor, for internal use only.
-    field(T _def, std::unordered_map<device_t, T> _data) : data(_data), def(_def) {}
+    field(T _def, std::unordered_map<device_t, T> data) : m_data(data), def(_def) {}
   
   public:
     //! @name constructors
@@ -140,7 +140,7 @@ class field : public details::field_base<T> {
     field() = default;
     
     //! @brief Constant field.
-    field(const T& d) : data(), def(d) {}
+    field(const T& d) : m_data(), def(d) {}
     
     //! @brief Copy constructor.
     field(const field<T>&) = default;
@@ -162,8 +162,8 @@ class field : public details::field_base<T> {
     template <typename A, typename = typename std::enable_if<std::is_convertible<T,A>::value>::type>
     operator field<A>() const {
         field<A> r(static_cast<A>(def));
-        for (const auto& x : data)
-            r.data[x.first] = static_cast<A>(x.second);
+        for (const auto& x : m_data)
+            r.m_data[x.first] = static_cast<A>(x.second);
         return r;
     }
     
@@ -246,7 +246,7 @@ struct details::field_base<bool> {
     operator bool() const {
         const field<bool>* f = static_cast<const field<bool>*>(this);
         if (not f->def) return false;
-        for (const auto& x : f->data) if (not x.second) return false;
+        for (const auto& x : f->m_data) if (not x.second) return false;
         return true;
     }
 };
@@ -295,13 +295,13 @@ typename std::enable_if<not has_template<field, A>, const A&>::type other(const 
 //! @cond INTERNAL
 template <typename A>
 A& details::self(field<A>& x, device_t i) {
-    if (x.data.count(i)) return x.data.at(i);
-    return x.data[i] = x.def;
+    if (x.m_data.count(i)) return x.m_data.at(i);
+    return x.m_data[i] = x.def;
 }
 
 template <typename A>
 const A& details::self(const field<A>& x, device_t i) {
-    if (x.data.count(i)) return x.data.at(i);
+    if (x.m_data.count(i)) return x.m_data.at(i);
     return x.def;
 }
 
@@ -317,11 +317,11 @@ details::self(const A& x, device_t) {
  */
 template <typename A>
 field<A> details::align(field<A>&& x, const std::unordered_set<device_t>& s) {
-    for (auto it = x.data.begin(); it != x.data.end(); ) {
+    for (auto it = x.m_data.begin(); it != x.m_data.end(); ) {
         if (s.count(it->first)) ++it;
-        else it = x.data.erase(it);
+        else it = x.m_data.erase(it);
     }
-    for (device_t i : s) if (not x.data.count(i)) x.data[i] = x.def;
+    for (device_t i : s) if (not x.m_data.count(i)) x.m_data[i] = x.def;
     return x;
 }
 
@@ -347,15 +347,15 @@ template <typename F, typename... A>
 field<typename std::result_of<F(A...)>::type> map_hood(F&& op, const field<A>&... args) {
     field<typename std::result_of<F(A...)>::type> r(op(args.def...));
     std::unordered_set<device_t> domain;
-    details::ignore(details::add_domain(args.data, domain)...);
-    for (device_t x : domain) r.data[x] = op(details::self(args,x)...);
+    details::ignore(details::add_domain(args.m_data, domain)...);
+    for (device_t x : domain) r.m_data[x] = op(details::self(args,x)...);
     return r;
 }
 
 template <typename F, typename A>
 field<typename std::result_of<F(A)>::type> map_hood(F&& op, const field<A>& a) {
     field<typename std::result_of<F(A)>::type> r(op(a.def));
-    for (const auto& x : a.data) r.data[x.first] = op(x.second);
+    for (const auto& x : a.m_data) r.m_data[x.first] = op(x.second);
     return r;
 }
 //@}
@@ -370,10 +370,10 @@ field<typename std::result_of<F(A)>::type> map_hood(F&& op, const field<A>& a) {
 template <typename F, typename A, typename... B>
 field<A>& mod_hood(F&& op, field<A>& f, const field<B>&... args) {
     std::unordered_set<device_t> domain;
-    details::ignore(details::add_domain(f.data, domain), details::add_domain(args.data, domain)...);
+    details::ignore(details::add_domain(f.m_data, domain), details::add_domain(args.m_data, domain)...);
     for (device_t x : domain) {
         A z = op(details::self(f,x), details::self(args,x)...);
-        f.data[x] = z;
+        f.m_data[x] = z;
     }
     f.def = op(f.def, args.def...);
     return f;
@@ -383,7 +383,7 @@ field<A>& mod_hood(F&& op, field<A>& f, const field<B>&... args) {
 template <typename F, typename A>
 field<A>& mod_hood(F&& op, field<A>& f) {
     f.def = op(f.def);
-    for (auto& x : f.data) x.second = op(x.second);
+    for (auto& x : f.m_data) x.second = op(x.second);
     return f;
 }
 //@}
@@ -415,7 +415,7 @@ details::fold_hood(F&& op, const A& x, const std::unordered_set<device_t>& domai
 template <typename A>
 std::ostream& operator<<(std::ostream& o, const field<A>& x) {
     o << "{";
-    for (const auto& i : x.data) {
+    for (const auto& i : x.m_data) {
         o << i.first << ":" << i.second << ", ";
     }
     return o << "*:" << x.def << "}";

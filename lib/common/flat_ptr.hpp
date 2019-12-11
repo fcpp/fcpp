@@ -32,24 +32,24 @@ class flat_ptr<T, false> {
     
   private:
     //! @brief The content of the class.
-    std::shared_ptr<T> data;
+    std::shared_ptr<T> m_data;
     
   public:
     //! @name constructors
     //@{
     //! @brief Default constructor.
     flat_ptr() {
-        data.reset(new T());
+        m_data.reset(new T());
     }
     
     //! @brief Default copying constructor.
     flat_ptr(const T& d) {
-        data.reset(new T(d));
+        m_data.reset(new T(d));
     };
     
     //! @brief Default moving constructor.
     flat_ptr(T&& d) {
-        data.reset(new T(d));
+        m_data.reset(new T(d));
     };
     
     //! @brief Copy constructor.
@@ -63,13 +63,13 @@ class flat_ptr<T, false> {
     //@{
     //! @brief Default copying assignment.
     flat_ptr<T, false>& operator=(const T& d) {
-        data.reset(new T(d));
+        m_data.reset(new T(d));
         return *this;
     };
     
     //! @brief Default moving assignment.
     flat_ptr<T, false>& operator=(T&& d) {
-        data.reset(new T(d));
+        m_data.reset(new T(d));
         return *this;
     };
     
@@ -82,27 +82,27 @@ class flat_ptr<T, false> {
 
     //! @brief Equality operator.
     bool operator==(const flat_ptr<T, false>& o) const {
-        return *data == *(o.data);
+        return *m_data == *(o.m_data);
     }
     
     //! @brief Access to the content.
     T& operator*() {
-        return *data.get();
+        return *m_data.get();
     }
     
     //! @brief Arrow access to the content.
     T* operator->() {
-        return data.get();
+        return m_data.get();
     }
     
     //! @brief Const access to the content.
     const T& operator*() const {
-        return *data.get();
+        return *m_data.get();
     }
     
     //! @brief Const arrow access to the content.
     const T* operator->() const {
-        return data.get();
+        return m_data.get();
     }
 };
 
@@ -116,7 +116,7 @@ class flat_ptr<T, true> {
     
   private:
     //! @brief The content of the class.
-    T data;
+    T m_data;
     
   public:
     //! @name constructors
@@ -125,10 +125,10 @@ class flat_ptr<T, true> {
     flat_ptr() = default;
     
     //! @brief Default copying constructor.
-    flat_ptr(const T& d) : data(d) {};
+    flat_ptr(const T& d) : m_data(d) {};
     
     //! @brief Default moving constructor.
-    flat_ptr(T&& d) : data(d) {};
+    flat_ptr(T&& d) : m_data(d) {};
     
     //! @brief Copy constructor.
     flat_ptr(const flat_ptr<T, true>&) = default;
@@ -141,13 +141,13 @@ class flat_ptr<T, true> {
     //@{
     //! @brief Default copying assignment.
     flat_ptr<T, true>& operator=(const T& d) {
-        data = d;
+        m_data = d;
         return *this;
     };
     
     //! @brief Default moving assignment.
     flat_ptr<T, true>& operator=(T&& d) {
-        data = d;
+        m_data = d;
         return *this;
     };
     
@@ -160,27 +160,27 @@ class flat_ptr<T, true> {
 
     //! @brief Equality operator.
     bool operator==(const flat_ptr<T, true>& o) const {
-        return data == o.data;
+        return m_data == o.m_data;
     }
     
     //! @brief Access to the content.
     T& operator*() {
-        return data;
+        return m_data;
     }
     
     //! @brief Arrow access to the content.
     T* operator->() {
-        return &data;
+        return &m_data;
     }
     
     //! @brief Const access to the content.
     const T& operator*() const {
-        return data;
+        return m_data;
     }
     
     //! @brief Const arrow access to the content.
     const T* operator->() const {
-        return &data;
+        return &m_data;
     }
 };
 

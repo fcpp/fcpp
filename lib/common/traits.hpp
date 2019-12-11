@@ -128,43 +128,96 @@ constexpr bool has_template<T, std::tuple<A...>> = some_true<has_template<T, A>.
 //@}
 
 
+namespace details {
+//! @cond INTERNAL
+    // If no occurrences of the template are present.
+    template <template<class> class T, class A>
+    struct del_template {
+        typedef A type;
+    };
+    
+    // If the second parameter is of the form T<A>.
+    template <template<class> class T, class A>
+    struct del_template<T, T<A>> {
+        typedef A type;
+    };
+
+    // Removes occurrences from the argument of an std::array value type.
+    template <template<class> class T, class A, size_t N>
+    struct del_template<T, std::array<A, N>> {
+        typedef std::array<typename del_template<T, A>::type, N> type;
+    };
+
+    // Removes occurrences from the arguments of an std::tuple value types.
+    template <template<class> class T, class... A>
+    struct del_template<T, std::tuple<A...>> {
+        typedef std::tuple<typename del_template<T, A>::type...> type;
+    };
+//! @endcond
+}
+
+
 /**
  * @brief Deletes occurrences of the first (template) parameter within the second (type) parameter, which is built through arrays and tuples.
  */
-// If no occurrences of the template are present.
 template <template<class> class T, class A>
-struct del_template {
-    //! @brief The result of the conversion.
-    typedef A type;
-};
-//! @cond INTERNAL
-// If the second parameter is of the form T<A>.
-template <template<class> class T, class A>
-struct del_template<T, T<A>> {
-    typedef A type;
-};
-
-// Removes occurrences from the argument of an std::array value type.
-template <template<class> class T, class A, size_t N>
-struct del_template<T, std::array<A, N>> {
-    typedef std::array<typename del_template<T, A>::type, N> type;
-};
-
-// Removes occurrences from the arguments of an std::tuple value types.
-template <template<class> class T, class... A>
-struct del_template<T, std::tuple<A...>> {
-    typedef std::tuple<typename del_template<T, A>::type...> type;
-};
-//! @endcond
+using del_template = typename details::del_template<T, A>::type;
 
     
 //! @brief Converts the second (type) parameter into a specialization of the first (template) parameter.
 template <template<class> class T, class A>
-struct add_template {
-    //! @brief The result of the conversion.
-    typedef T<typename del_template<T, A>::type> type;
-};
+using add_template = T<del_template<T, A>>;
 
+
+/**
+ * @name nested_template
+ *
+ * Constant which is true if and only if the second (type) parameter is built by using the first (template) parameter, possibly nested within other templates.
+ */
+//@{
+//! @brief False if the second argument is not a template.
+template <template<class> class T, class A>
+constexpr bool nested_template = false;
+
+//! @brief True if second argument is T<A> or T is found in A.
+template <template<class> class T, template<class> class S, class A>
+constexpr bool nested_template<T, S<A>> = std::is_same<T<A>, S<A>>::value || nested_template<T, A>;
+//@}
+
+
+namespace details {
+//! @cond INTERNAL
+    // General form.
+    template <class A, template<class> class... Ts>
+    struct nest_template;
+
+    // Nesting no templates.
+    template <class A>
+    struct nest_template<A> {
+        typedef A type;
+    };
+    
+    // Nesting a single template.
+    template <class A, template<class> class T>
+    struct nest_template<A, T> {
+        typedef std::conditional_t<fcpp::nested_template<T, A>, A, T<A>> type;
+    };
+    
+    // Nesting more templates.
+    template <class A, template<class> class T, template<class> class... Ts>
+    struct nest_template<A, T, Ts...> {
+        typedef typename nest_template<typename nest_template<A, Ts...>::type, T>::type type;
+    };
+//! @endcond
+}
+
+/**
+ * @name nest_templates
+ *
+ * Nests (one or more) template to a type only if the template is not already present in the type.
+ */
+template <class A, template<class> class... Ts>
+using nest_template = typename details::nest_template<A, Ts...>::type;
 
 }
 

@@ -8,6 +8,7 @@
 #ifndef FCPP_COMMON_MULTITYPE_MAP_H_
 #define FCPP_COMMON_MULTITYPE_MAP_H_
 
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -37,9 +38,9 @@ class multitype_map {
     
   private:
     //! @brief Map associating keys to data.
-    std::tuple<std::unordered_map<T, Ts>...> data;
+    std::tuple<std::unordered_map<T, Ts>...> m_data;
     //! @brief Set of keys (for void data).
-    std::unordered_set<T> keys;
+    std::unordered_set<T> m_keys;
     
   public:
     //! @name constructors
@@ -67,64 +68,64 @@ class multitype_map {
 
     //! @brief Equality operator.
     bool operator==(const multitype_map<T, Ts...>& o) const {
-        return keys == o.keys && data == o.data;
+        return m_keys == o.m_keys && m_data == o.m_data;
     }
     
     //! @brief Inserts value at corresponding key.
     template<typename A>
     void insert(T key, const A& value) {
         static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(data)[key] = value;
+        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
     }
     
     //! @brief Inserts value at corresponding key by moving.
     template<typename A>
     void insert(T key, A&& value) {
         static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(data)[key] = value;
+        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
     }
 
     //! @brief Inserts void value at corresponding key.
     void insert(T key) {
-        keys.insert(key);
+        m_keys.insert(key);
     }
     
     //! @brief Deletes value at corresponding key.
     template<typename A>
     void erase(T key) {
         static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(data).erase(key);
+        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).erase(key);
     }
 
     //! @brief Deletes void value at corresponding key.
     void remove(T key) {
-        keys.erase(key);
+        m_keys.erase(key);
     }
 
     //! @brief Immutable reference to the value of a certain type at a given key.
     template<typename A>
     const A& at(T key) const {
         static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(data).at(key);
+        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
     }
 
     //! @brief Mutable reference to the value of a certain type at a given key.
     template<typename A>
     A& at(T key) {
         static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(data).at(key);
+        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
     }
 
     //! @brief Whether the key is present in the value map or not for a certain type.
     template<typename A>
     bool count(T key) const {
         static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(data).count(key);
+        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).count(key);
     }
     
     //! @brief Whether the key is present in the value map or not for the void type.
     bool contains(T key) const {
-        return keys.count(key);
+        return m_keys.count(key);
     }
 };
 

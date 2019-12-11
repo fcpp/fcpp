@@ -94,30 +94,30 @@ constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_SETTING_TRACE - k_hash_len);
 class trace {
   private:
     //! @brief Stack trace.
-    std::vector<trace_t> stack;
+    std::vector<trace_t> m_stack;
     //! @brief Summarising hash (@ref k_hash_len bits used, starting from 0).
-    trace_t stack_hash;
+    trace_t m_stack_hash;
 
   public:
     //! @brief Constructs an empty trace.
-    trace() : stack(), stack_hash(0) {};
+    trace() : m_stack(), m_stack_hash(0) {};
 
     //! @brief `true` if the trace is empty, `false` otherwise.
     bool empty() const {
-        return stack.size() == 0;
+        return m_stack.size() == 0;
     }
     
     //! @brief Clears the trace.
     void clear() {
-        stack_hash = 0;
-        stack.clear();
+        m_stack_hash = 0;
+        m_stack.clear();
     }
     
     //! @brief Returns the hash together with the template argument into a @ref trace_t.
     template<trace_t x>
     trace_t hash() {
         static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
-    	return stack_hash + (x << k_hash_len);
+    	return m_stack_hash + (x << k_hash_len);
     }
 
     //! @brief Add a function call to the stack trace updating the hash.
@@ -125,15 +125,15 @@ class trace {
     void push() {
         static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
         static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
-    	stack_hash = (stack_hash * k_hash_factor + x) & k_hash_mod;
-    	stack.push_back(x);
+    	m_stack_hash = (m_stack_hash * k_hash_factor + x) & k_hash_mod;
+    	m_stack.push_back(x);
     }
 
     //! @brief Remove the last function call from the stack trace updating the hash.
     void pop() {
-    	trace_t x = stack.back();
-    	stack.pop_back();
-    	stack_hash = ((stack_hash + k_hash_mod+1 - x) * k_hash_inverse) & k_hash_mod;
+    	trace_t x = m_stack.back();
+    	m_stack.pop_back();
+    	m_stack_hash = ((m_stack_hash + k_hash_mod+1 - x) * k_hash_inverse) & k_hash_mod;
     }
 
     //! @brief Calls push with `x + k_hash_mod+1`.
@@ -142,13 +142,13 @@ class trace {
         static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
         static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
     	push<x>();
-        stack.back() += k_hash_mod+1;
+        m_stack.back() += k_hash_mod+1;
     }
 
     //! @brief Calls pop until removing value larger than @ref k_hash_mod.
     void pop_cycle() {
-    	while (stack.back() <= k_hash_mod) pop();
-        stack.back() -= k_hash_mod+1;
+    	while (m_stack.back() <= k_hash_mod) pop();
+        m_stack.back() -= k_hash_mod+1;
     	pop();
     }
 };

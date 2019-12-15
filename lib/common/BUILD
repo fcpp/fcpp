@@ -21,6 +21,18 @@ cc_library(
 )
 
 cc_library(
+    name = 'tagged_tuple',
+    hdrs = ['tagged_tuple.hpp'],
+    srcs = ['tagged_tuple.cpp'],
+    deps = [
+        "//lib/common:traits",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'traits',
     hdrs = ['traits.hpp'],
     srcs = ['traits.cpp'],

@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <array>
 #include <string>
@@ -9,6 +9,48 @@
 
 #include "lib/common/traits.hpp"
 
+
+TEST(TraitsTest, Sequence) {
+    int i = fcpp::type_sequence<int,double,double,char>::size();
+    EXPECT_EQ(4, i);
+    std::string ex, res;
+    ex  = typeid(fcpp::type_sequence<int,double,double,char>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::append<>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<int,double,double>::append<char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<int,double>::append<double,char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<int>::append<double,double,char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<>::append<int,double,double,char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<double,char>::prepend<int,double>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<short,int,double,double,char>::tail).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(short).name();
+    res = typeid(fcpp::type_sequence<short,int,double,double,char>::head).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<double,char>).name();
+    res = typeid(fcpp::type_subseq<2,1,int,double,double,char>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<int,char>).name();
+    res = typeid(fcpp::type_subseq<3,0,int,double,double,char>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<double>).name();
+    res = typeid(fcpp::type_subseq<5,2,int,double,double,char>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(double).name();
+    res = typeid(fcpp::nth_type<2,int,int,double,char>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<int,char>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::intersect<short,char,int>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<double,double>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::intersect<double>).name();
+    EXPECT_EQ(ex, res);
+}
 
 TEST(TraitsTest, Index) {
     int t;
@@ -31,6 +73,8 @@ TEST(TraitsTest, Repeated) {
     b = fcpp::type_repeated<int,double,char,int>;
     EXPECT_TRUE(b);
     b = fcpp::type_repeated<void*,int,double,char>;
+    EXPECT_FALSE(b);
+    b = fcpp::type_repeated<>;
     EXPECT_FALSE(b);
 }
 
@@ -68,19 +112,45 @@ TEST(TraitsTest, HasTemplate) {
     bool b;
     b = fcpp::has_template<proxy, proxy<double>>;
     EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, const proxy<double>>;
+    EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, proxy<double>&>;
+    EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, proxy<double>&&>;
+    EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, const proxy<double>&>;
+    EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, const proxy<double>&&>;
+    EXPECT_TRUE(b);
     b = fcpp::has_template<proxy, int>;
+    EXPECT_FALSE(b);
+    b = fcpp::has_template<proxy, const int>;
     EXPECT_FALSE(b);
     b = fcpp::has_template<proxy, std::array<proxy<double>,4>>;
     EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, const std::array<proxy<double>,4>>;
+    EXPECT_TRUE(b);
     b = fcpp::has_template<proxy, std::array<int,4>>;
+    EXPECT_FALSE(b);
+    b = fcpp::has_template<proxy, const std::array<int,4>>;
     EXPECT_FALSE(b);
     b = fcpp::has_template<proxy, std::tuple<proxy<double>,char>>;
     EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, const std::tuple<proxy<double>,char>>;
+    EXPECT_TRUE(b);
     b = fcpp::has_template<proxy, std::tuple<int,char>>;
+    EXPECT_FALSE(b);
+    b = fcpp::has_template<proxy, const std::tuple<int,char>>;
     EXPECT_FALSE(b);
     b = fcpp::has_template<proxy, std::array<std::tuple<std::array<proxy<double>,3>,char>,4>>;
     EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, const std::array<std::tuple<std::array<proxy<double>,3>,char>,4>&>;
+    EXPECT_TRUE(b);
+    b = fcpp::has_template<proxy, std::array<std::tuple<std::array<proxy<double>,3>,char>,4>&&>;
+    EXPECT_TRUE(b);
     b = fcpp::has_template<proxy, std::array<std::tuple<std::array<double,3>,char>,4>>;
+    EXPECT_FALSE(b);
+    b = fcpp::has_template<proxy, const std::array<std::tuple<std::array<double,3>,char>,4>&>;
     EXPECT_FALSE(b);
 }
 
@@ -91,6 +161,15 @@ TEST(TraitsTest, DelTemplate) {
     EXPECT_EQ(ex, res);
     res = typeid(fcpp::del_template<proxy, proxy<double>>).name();
     EXPECT_EQ(ex, res);
+    bool b;
+    b = std::is_same<const double, fcpp::del_template<proxy, const double>>::value;
+    EXPECT_TRUE(b);
+    b = std::is_same<const double, fcpp::del_template<proxy, const proxy<double>>>::value;
+    EXPECT_TRUE(b);
+    b = std::is_same<const double&, fcpp::del_template<proxy, const proxy<double>&>>::value;
+    EXPECT_TRUE(b);
+    b = std::is_same<double&&, fcpp::del_template<proxy, proxy<double>&&>>::value;
+    EXPECT_TRUE(b);
     ex  = typeid(std::array<double,4>).name();
     res = typeid(fcpp::del_template<proxy, std::array<proxy<double>,4>>).name();
     EXPECT_EQ(ex, res);

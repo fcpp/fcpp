@@ -32,7 +32,7 @@ TEST_F(FieldTest, Constructors) {
 
 TEST_F(FieldTest, Access) {
     EXPECT_EQ(2, fcpp::other(fi1));
-    fcpp::other(fi1) = 3;
+    fcpp::details::other(fi1) = 3;
     EXPECT_EQ(3, fcpp::other(fi1));
     EXPECT_EQ(5, fcpp::other(5));
     EXPECT_EQ(-1, fcpp::details::self(fi1, 3));

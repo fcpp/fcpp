@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file traits.hpp
@@ -63,17 +63,136 @@ constexpr bool type_contains<A, A, Ts...> = true;
  * Constant which is true if and only if the type parameter list contains a repeated type.
  */
 //@{
+//! @brief Base case (for 1 or 0 types).
+template <typename... Ts>
+constexpr bool type_repeated = false;
+
 /**
  * @brief Recursive pattern: either the first type occurs among the following, or the
  * following has a repetition.
  */
 template <typename A, typename... Ts>
-constexpr bool type_repeated = type_contains<A, Ts...> or type_repeated<Ts...>;
-
-//! @brief Base case (a single type cannot be repeated).
-template <typename A>
-constexpr bool type_repeated<A> = false;
+constexpr bool type_repeated<A, Ts...> = type_contains<A, Ts...> or type_repeated<Ts...>;
 //@}
+
+
+/**
+ * @name type_sequence
+ *
+ * Helper empty class encapsulating a sequence of types.
+ * Allows easy prepending, appending, counting and extracting types.
+ */
+//@{
+//! @brief General form.
+template <typename... Ts>
+struct type_sequence;
+
+//! @cond INTERNAL
+namespace details {
+    // Base case.
+    template <typename, typename>
+    struct type_intersect {
+        using type = type_sequence<>;
+    };
+
+    // Recursive form.
+    template <typename T, typename... Ts, typename... Ss>
+    struct type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>> {
+        using type = std::conditional_t<
+            !type_contains<T, Ss...>,
+            typename type_intersect<type_sequence<Ts...>, type_sequence<Ss...>>::type,
+            typename type_intersect<type_sequence<Ts...>, type_sequence<Ss...>>::type::template prepend<T>
+        >;
+    };
+}
+//! @endcond
+
+//! @brief Non-empty form, allows for extracting index, head and tail.
+template <typename T, typename... Ts>
+struct type_sequence<T, Ts...> {
+    template <typename... Ss>
+    using prepend = type_sequence<Ss..., T, Ts...>;
+    
+    template <typename... Ss>
+    using append = type_sequence<T, Ts..., Ss...>;
+    
+    template<typename... Ss>
+    using intersect = typename details::type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
+    
+    using head = T;
+    
+    using tail = type_sequence<Ts...>;
+    
+    template <typename S>
+    static constexpr size_t index() {
+        return type_index<S, T, Ts...>;
+    }
+    
+    static constexpr size_t size() {
+        return 1 + sizeof...(Ts);
+    }
+};
+
+//! @brief Empty form, cannot extract index, head and tail.
+template <>
+struct type_sequence<> {
+    template <typename... Ss>
+    using prepend = type_sequence<Ss...>;
+    
+    template <typename... Ss>
+    using append = type_sequence<Ss...>;
+    
+    template<typename... Ss>
+    using intersect = type_sequence<>;
+    
+    static constexpr size_t size() {
+        return 0;
+    }
+};
+//@}
+
+//! @cond INTERNAL
+namespace details {
+    // General form.
+    template<int n, int m, typename... Ts>
+    struct type_subseq;
+
+    // Subsequence element not found.
+    template<int n, int m, typename T, typename... Ts>
+    struct type_subseq<n, m, T, Ts...> : type_subseq<n, m - 1, Ts...> {};
+
+    // Subsequence element found.
+    template<int n, typename T, typename... Ts>
+    struct type_subseq<n, 0, T, Ts...> {
+        typedef typename type_subseq<n, n - 1, Ts...>::type::template prepend<T> type;
+    };
+
+    // Base case (empty sequence)
+    template<int n, int m>
+    struct type_subseq<n, m> {
+        typedef type_sequence<> type;
+    };
+}
+//! @endcond
+
+/**
+ * @name type_subseq
+ *
+ * Extracts a subsequence from a parameter pack.
+ * @param n distance between elements extracted
+ * @param m first element extracted
+ */
+template<int n, int m, typename... Ts>
+using type_subseq = typename details::type_subseq<n, m, Ts...>::type;
+
+/**
+ * @name nth_type
+ *
+ * Extracts the n-th type from a parameter pack.
+ * Special case of `type_subseq`.
+ */
+template <int n, typename... Ts>
+using nth_type = typename type_subseq<sizeof...(Ts), n, Ts...>::head;
 
 
 /**
@@ -95,11 +214,11 @@ constexpr bool all_false = std::is_same<bool_pack<false, v...>, bool_pack<v..., 
 
 //! @brief Checks if some argument is `true`.
 template <bool... v>
-constexpr bool some_true = !all_false<v...>;
+constexpr bool some_true = not all_false<v...>;
 
 //! @brief Checks if some argument is `false`.
 template <bool... v>
-constexpr bool some_false = !all_true<v...>;
+constexpr bool some_false = not all_true<v...>;
 //@}
 
 
@@ -113,6 +232,18 @@ constexpr bool some_false = !all_true<v...>;
 //! @brief False in general.
 template <template<class...> class T, class A>
 constexpr bool has_template = false;
+
+//! @brief Ignore constness.
+template <template<class...> class T, class A>
+constexpr bool has_template<T, const A> = has_template<T, A>;
+
+//! @brief Ignore lvalue references.
+template <template<class...> class T, class A>
+constexpr bool has_template<T, A&> = has_template<T, A>;
+
+//! @brief Ignore rvalue references.
+template <template<class...> class T, class A>
+constexpr bool has_template<T, A&&> = has_template<T, A>;
 
 //! @brief True if second parameter is of the form T<A>.
 template <template<class...> class T, class... A>
@@ -128,12 +259,30 @@ constexpr bool has_template<T, std::tuple<A...>> = some_true<has_template<T, A>.
 //@}
 
 
-namespace details {
 //! @cond INTERNAL
+namespace details {
     // If no occurrences of the template are present.
     template <template<class> class T, class A>
     struct del_template {
         typedef A type;
+    };
+    
+    // Propagate constness.
+    template <template<class> class T, class A>
+    struct del_template<T, const A> {
+        typedef const typename del_template<T, A>::type type;
+    };
+    
+    // Propagate lvalue references.
+    template <template<class> class T, class A>
+    struct del_template<T, A&> {
+        typedef typename del_template<T, A>::type& type;
+    };
+    
+    // Propagate rvalue references.
+    template <template<class> class T, class A>
+    struct del_template<T, A&&> {
+        typedef typename del_template<T, A>::type&& type;
     };
     
     // If the second parameter is of the form T<A>.
@@ -153,8 +302,8 @@ namespace details {
     struct del_template<T, std::tuple<A...>> {
         typedef std::tuple<typename del_template<T, A>::type...> type;
     };
-//! @endcond
 }
+//! @endcond
 
 
 /**
@@ -181,7 +330,7 @@ constexpr bool nested_template = false;
 
 //! @brief True if second argument is T<A> or T is found in A.
 template <template<class> class T, template<class> class S, class A>
-constexpr bool nested_template<T, S<A>> = std::is_same<T<A>, S<A>>::value || nested_template<T, A>;
+constexpr bool nested_template<T, S<A>> = std::is_same<T<A>, S<A>>::value or nested_template<T, A>;
 //@}
 
 

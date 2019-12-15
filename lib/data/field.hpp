@@ -48,6 +48,29 @@ template<typename T> class field;
 
 
 /**
+ * @name field traits
+ *
+ * Type operators convenient for field manipulation.
+ */
+//@{
+//! @brief Corresponds to T only if A is a field type.
+template <typename A, typename T>
+using if_field = std::enable_if_t<has_template<field, A>, T>;
+//! @brief Corresponds to T only if A is a field type which is not a reference.
+template <typename A, typename T>
+using if_plain_field = std::enable_if_t<has_template<field, A> and not std::is_reference<A>::value, T>;
+//! @brief Corresponds to T only if A is a local type.
+template <typename A, typename T>
+using if_local = std::enable_if_t<not has_template<field, A>, T>;
+//! @brief Corresponds to T only if A is a local type which is not a reference.
+template <typename A, typename T>
+using if_plain_local = std::enable_if_t<not has_template<field, A> and not std::is_reference<A>::value, T>;
+//! @brief Computes the result of applying F to local versions of A.
+template <typename F, typename... A>
+using local_result = std::result_of_t<F(del_template<field, A>...)>;
+//@}
+
+/**
  * @brief Namespace containing implementation details, which should <b>never</b> be used in FCPP programs.
  */
 namespace details {
@@ -59,40 +82,49 @@ namespace details {
     field<A> make_field(A, std::unordered_map<device_t, A>);
     
     template <typename A>
+    A& other(field<A>&);
+    
+    template <typename A>
     A& self(field<A>&, device_t);
+    
+    template <typename A>
+    A&& self(field<A>&&, device_t);
     
     template <typename A>
     const A& self(const field<A>&, device_t);
     
     template <typename A>
-    typename std::enable_if<not has_template<field, A>, const A&>::type
-    self(const A&, device_t);
+    if_local<A, const A&> self(const A&, device_t);
     
     template <typename A>
-    field<A> align(field<A>&&, const std::unordered_set<device_t>&);
+    if_plain_local<A, A&&> self(A&&, device_t);
+    
+    template <typename A>
+    field<A>& align(field<A>&, const std::unordered_set<device_t>&);
+    
+    template <typename A>
+    field<A>&& align(field<A>&&, const std::unordered_set<device_t>&);
     
     template <typename A>
     field<A> align(const field<A>&, const std::unordered_set<device_t>&);
     
     template <typename A>
-    typename std::enable_if<not has_template<field, A>, const A&>::type
-    align(const A&, const std::unordered_set<device_t>&);
+    if_local<A, A> align(A&&, const std::unordered_set<device_t>&);
+    
+    std::unordered_set<device_t> joined_domain();
+    
+    template <typename A, typename... B>
+    std::unordered_set<device_t> joined_domain(const field<A>& f, const B&... data);
+    
+    template <typename A, typename... B>
+    if_local<A, std::unordered_set<device_t>> joined_domain(const A& f, const B&... data);
 
-    template <typename... T>
-    void ignore(T...) {}
-    
-    template <typename T>
-    bool add_domain(const std::unordered_map<device_t,T>& data, std::unordered_set<device_t>& domain) {
-        for (const auto& t : data) domain.insert(t.first);
-        return true;
-    }
-    
     template <typename F, typename A>
-    typename std::result_of<F(A,A)>::type
+    std::result_of_t<F(A,A)>
     fold_hood(F&&, const field<A>&, const std::unordered_set<device_t>&);
     
     template <typename F, typename A>
-    typename std::enable_if<not has_template<field, A>, typename std::result_of<F(A,A)>::type>::type
+    if_local<A, std::result_of_t<F(A,A)>>
     fold_hood(F&&, const A&, const std::unordered_set<device_t>&);
 //! @endcond
 }
@@ -159,7 +191,7 @@ class field : public details::field_base<T> {
     //@}
     
     //! @brief Casts to fields of compatible base type.
-    template <typename A, typename = typename std::enable_if<std::is_convertible<T,A>::value>::type>
+    template <typename A, typename = std::enable_if_t<std::is_convertible<T,A>::value>>
     operator field<A>() const {
         field<A> r(static_cast<A>(def));
         for (const auto& x : m_data)
@@ -178,9 +210,13 @@ class field : public details::field_base<T> {
      * Accessor method selecting the default value of a given field.
      */
     //@{
-    //! @brief Write access.
+    //! @brief Write access. WARNING: may lead to unexpected results if the argument is not aligned.
     template<typename A>
-    friend A& other(field<A>&);
+    friend A& details::other(field<A>&);
+    
+    //! @brief Move access.
+    template<typename A>
+    friend A&& other(field<A>&&);
     
     //! @brief Read-only access.
     template<typename A>
@@ -191,14 +227,23 @@ class field : public details::field_base<T> {
     template<typename A>
     friend A& details::self(field<A>&, device_t);
     
+    template <typename A>
+    friend A&& details::self(field<A>&&, device_t);
+
     template<typename A>
     friend const A& details::self(const field<A>&, device_t);
     
     template<typename A>
-    friend field<A> details::align(field<A>&&, const std::unordered_set<device_t>&);
+    friend field<A>& details::align(field<A>&, const std::unordered_set<device_t>&);
+    
+    template<typename A>
+    friend field<A>&& details::align(field<A>&&, const std::unordered_set<device_t>&);
     
     template<typename A>
     friend field<A> details::align(const field<A>&, const std::unordered_set<device_t>&);
+    
+    template <typename A, typename... B>
+    friend std::unordered_set<device_t> details::joined_domain(const field<A>&, const B&...);
     //! @endcond
     
     /**
@@ -207,11 +252,12 @@ class field : public details::field_base<T> {
      * Applies an operator pointwise on a sequence of fields.
      */
     //@{
-    template <typename F, typename... A>
-    friend field<typename std::result_of<F(A...)>::type> map_hood(F&&, const field<A>&...);
-    
     template <typename F, typename A>
-    friend field<typename std::result_of<F(A)>::type> map_hood(F&&, const field<A>&);
+    friend field<local_result<F,A>> map_hood(F&&, const field<A>&);
+    template <typename F, typename A, typename B>
+    friend if_local<B, field<local_result<F,A,B>>> map_hood(F&&, const field<A>&, const B&);
+    template <typename F, typename A, typename B>
+    friend if_local<A, field<local_result<F,A,B>>> map_hood(F&&, const A&, const field<B>&);
     //@}
     
     /**
@@ -220,19 +266,11 @@ class field : public details::field_base<T> {
      * Modifies a field in-place, by applying an operator pointwise (with a sequence of parameters).
      */
     //@{
-    //! @brief General case.
-    template <typename F, typename A, typename... B>
-    friend field<A>& mod_hood(F&&, field<A>&, const field<B>&...);
-    
-    //! @brief Optimization for unary operators.
     template <typename F, typename A>
     friend field<A>& mod_hood(F&&, field<A>&);
+    template <typename F, typename A, typename B>
+    friend if_local<B, field<A>&> mod_hood(F&&, field<A>&, const B&);
     //@}
-    
-    //! @cond INTERNAL
-    template <typename F, typename A>
-    friend typename std::result_of<F(A,A)>::type details::fold_hood(F&&, const field<A>&, const std::unordered_set<device_t>&);
-    //! @endcond
     
     //! @brief Prints a field in dictionary-like format.
     template <typename A>
@@ -264,10 +302,16 @@ field<A> details::make_field(A def, std::unordered_map<device_t, A> data) {
  * Accessor method selecting the default value of a given field.
  */
 //@{
-//! @brief Write access.
+//! @brief Write access. WARNING: may lead to unexpected results if the argument is not aligned.
 template <typename A>
-A& other(field<A>& x) {
+A& details::other(field<A>& x) {
     return x.def;
+}
+
+//! @brief Move access.
+template <typename A>
+A&& other(field<A>&& x) {
+    return std::move(x.def);
 }
 
 //! @brief Read-only access.
@@ -276,16 +320,16 @@ const A& other(const field<A>& x) {
     return x.def;
 }
 
-//! @brief Write access for non-field values (treated as constant fields).
+//! @brief Read-only access for non-field values (treated as constant fields).
 template <typename A>
-typename std::enable_if<not has_template<field, A>, A&>::type other(A& x) {
+if_local<A, const A&> other(const A& x) {
     return x;
 }
 
-//! @brief Read-only access for non-field values (treated as constant fields).
+//! @brief Move access for non-field values (treated as constant fields).
 template <typename A>
-typename std::enable_if<not has_template<field, A>, const A&>::type other(const A& x) {
-    return x;
+if_plain_local<A, A&&> other(A&& x) {
+    return std::move(x);
 }
 //@}
 
@@ -300,15 +344,25 @@ A& details::self(field<A>& x, device_t i) {
 }
 
 template <typename A>
+A&& details::self(field<A>&& x, device_t i) {
+    if (x.m_data.count(i)) return std::move(x.m_data.at(i));
+    return std::move(x.def);
+}
+
+template <typename A>
 const A& details::self(const field<A>& x, device_t i) {
     if (x.m_data.count(i)) return x.m_data.at(i);
     return x.def;
 }
 
 template <typename A>
-typename std::enable_if<not has_template<field, A>, const A&>::type
-details::self(const A& x, device_t) {
+if_local<A, const A&> details::self(const A& x, device_t) {
     return x;
+}
+
+template <typename A>
+if_plain_local<A, A&&> details::self(A&& x, device_t) {
+    return std::move(x);
 }
 
 /*
@@ -316,7 +370,7 @@ details::self(const A& x, device_t) {
  * The resulting field has exactly the given domain.
  */
 template <typename A>
-field<A> details::align(field<A>&& x, const std::unordered_set<device_t>& s) {
+field<A>& details::align(field<A>& x, const std::unordered_set<device_t>& s) {
     for (auto it = x.m_data.begin(); it != x.m_data.end(); ) {
         if (s.count(it->first)) ++it;
         else it = x.m_data.erase(it);
@@ -326,14 +380,57 @@ field<A> details::align(field<A>&& x, const std::unordered_set<device_t>& s) {
 }
 
 template <typename A>
+field<A>&& details::align(field<A>&& x, const std::unordered_set<device_t>& s) {
+    return std::move(details::align(x, s));
+}
+
+template <typename A>
 field<A> details::align(const field<A>& x, const std::unordered_set<device_t>& s) {
     return details::align(field<A>(x), s);
 }
 
 template <typename A>
-typename std::enable_if<not has_template<field, A>, const A&>::type
-details::align(const A& x, const std::unordered_set<device_t>&) {
-    return x;
+if_local<A, A> details::align(A&& x, const std::unordered_set<device_t>&) {
+    return std::forward<A>(x);
+}
+//! @endcond
+    
+std::unordered_set<device_t> details::joined_domain() {
+    return {};
+}
+
+template <typename A, typename... B>
+std::unordered_set<device_t> details::joined_domain(const field<A>& f, const B&... data) {
+    std::unordered_set<device_t> domain = joined_domain(data...);
+    for (const auto& t : f.m_data) domain.insert(t.first);
+    return domain;
+}
+
+template <typename A, typename... B>
+if_local<A, std::unordered_set<device_t>> details::joined_domain(const A& f, const B&... data) {
+    return joined_domain(data...);
+}
+
+/*
+ * Reduces the values in a part of a field (determined by domain) to a single value through a binary operation.
+ */
+//! @cond INTERNAL
+template <typename F, typename A>
+std::result_of_t<F(A,A)> details::fold_hood(F&& op, const field<A>& f, const std::unordered_set<device_t>& domain) {
+    auto it = domain.begin();
+    std::result_of_t<F(A,A)> res = details::self(f, *it);
+    for (++it; it != domain.end(); ++it)
+        res = op(details::self(f, *it), res);
+    return res;
+}
+
+template <typename F, typename A>
+if_local<A, std::result_of_t<F(A,A)>>
+details::fold_hood(F&& op, const A& x, const std::unordered_set<device_t>& domain) {
+    int n = domain.size();
+    std::result_of_t<F(A,A)> res = x;
+    for (--n; n>0; --n) res = op(x, res);
+    return res;
 }
 //! @endcond
 
@@ -343,19 +440,36 @@ details::align(const A& x, const std::unordered_set<device_t>&) {
  * Applies an operator pointwise on a sequence of fields.
  */
 //@{
+//! @brief General case.
 template <typename F, typename... A>
-field<typename std::result_of<F(A...)>::type> map_hood(F&& op, const field<A>&... args) {
-    field<typename std::result_of<F(A...)>::type> r(op(args.def...));
-    std::unordered_set<device_t> domain;
-    details::ignore(details::add_domain(args.m_data, domain)...);
-    for (device_t x : domain) r.m_data[x] = op(details::self(args,x)...);
+field<local_result<F,A...>>
+map_hood(F&& op, const A&... a) {
+    field<local_result<F,A...>> r(op(other(a)...));
+    for (device_t x : details::joined_domain(a...)) details::self(r,x) = op(details::self(a,x)...);
     return r;
 }
-
+//! @brief Optimisation for a single field argument.
 template <typename F, typename A>
-field<typename std::result_of<F(A)>::type> map_hood(F&& op, const field<A>& a) {
-    field<typename std::result_of<F(A)>::type> r(op(a.def));
+field<local_result<F,A>>
+map_hood(F&& op, const field<A>& a) {
+    field<local_result<F,A>> r(op(other(a)));
     for (const auto& x : a.m_data) r.m_data[x.first] = op(x.second);
+    return r;
+}
+//! @brief Optimisation for a single field argument in a binary operator.
+template <typename F, typename A, typename B>
+if_local<B, field<local_result<F,A,B>>>
+map_hood(F&& op, const field<A>& a, const B& b) {
+    field<local_result<F,A,B>> r(op(other(a), b));
+    for (const auto& x : a.m_data) r.m_data[x.first] = op(x.second, b);
+    return r;
+}
+//! @brief Optimisation for a single field argument in a binary operator.
+template <typename F, typename A, typename B>
+if_local<A, field<local_result<F,A,B>>>
+map_hood(F&& op, const A& a, const field<B>& b) {
+    field<local_result<F,A,B>> r(op(a, other(b)));
+    for (const auto& x : b.m_data) r.m_data[x.first] = op(a, x.second);
     return r;
 }
 //@}
@@ -368,48 +482,27 @@ field<typename std::result_of<F(A)>::type> map_hood(F&& op, const field<A>& a) {
 //@{
 //! @brief General case.
 template <typename F, typename A, typename... B>
-field<A>& mod_hood(F&& op, field<A>& f, const field<B>&... args) {
-    std::unordered_set<device_t> domain;
-    details::ignore(details::add_domain(f.m_data, domain), details::add_domain(args.m_data, domain)...);
-    for (device_t x : domain) {
-        A z = op(details::self(f,x), details::self(args,x)...);
-        f.m_data[x] = z;
-    }
-    f.def = op(f.def, args.def...);
-    return f;
+field<A>& mod_hood(F&& op, field<A>& a, const B&... b) {
+    for (device_t x : details::joined_domain(a, b...))
+        details::self(a,x) = op(details::self(a,x), details::self(b,x)...);
+    details::other(a) = op(other(a), other(b)...);
+    return a;
 }
-
 //! @brief Optimization for unary operators.
 template <typename F, typename A>
-field<A>& mod_hood(F&& op, field<A>& f) {
-    f.def = op(f.def);
-    for (auto& x : f.m_data) x.second = op(x.second);
-    return f;
+field<A>& mod_hood(F&& op, field<A>& a) {
+    for (auto& x : a.m_data) x.second = op(x.second);
+    a.def = op(a.def);
+    return a;
+}
+//! @brief Optimization for binary operators with a local argument.
+template <typename F, typename A, typename B>
+if_local<B, field<A>&> mod_hood(F&& op, field<A>& a, const B& b) {
+    for (auto& x : a.m_data) x.second = op(x.second, b);
+    a.def = op(a.def, b);
+    return a;
 }
 //@}
-
-/*
- * Reduces the values in a part of a field (determined by domain) to a single value through a binary operation.
- */
-//! @cond INTERNAL
-template <typename F, typename A>
-typename std::result_of<F(A,A)>::type details::fold_hood(F&& op, const field<A>& f, const std::unordered_set<device_t>& domain) {
-    auto it = domain.begin();
-    typename std::result_of<F(A,A)>::type res = details::self(f, *it);
-    for (++it; it != domain.end(); ++it)
-        res = op(details::self(f, *it), res);
-    return res;
-}
-
-template <typename F, typename A>
-typename std::enable_if<not has_template<field, A>, typename std::result_of<F(A,A)>::type>::type
-details::fold_hood(F&& op, const A& x, const std::unordered_set<device_t>& domain) {
-    int n = domain.size();
-    typename std::result_of<F(A,A)>::type res = x;
-    for (--n; n>0; --n) res = op(x, res);
-    return res;
-}
-//! @endcond
 
 //! @brief Prints a field in dictionary-like format.
 template <typename A>
@@ -430,10 +523,10 @@ field<decltype(op std::declval<A>())>
 field<decltype(std::declval<A>() op std::declval<B>())>
 
 #define _BOP_IFTA(A,op,B)                                                   \
-typename std::enable_if<not has_template<field,A> and not std::is_convertible<A,std::ostream>::value, _BOP_TYPE(A,op,B)>::type
+std::enable_if_t<not has_template<field,A> and not std::is_convertible<A,std::ostream>::value, _BOP_TYPE(A,op,B)>
 
 #define _BOP_IFTB(A,op,B)                                                   \
-typename std::enable_if<not has_template<field,B>, _BOP_TYPE(A,op,B)>::type
+if_local<B, _BOP_TYPE(A,op,B)>
 //! @endcond
 
 /**

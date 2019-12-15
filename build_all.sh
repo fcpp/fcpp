@@ -10,7 +10,7 @@ elif [ "$1" != "" ]; then
     target=`echo test/*/"$1"* | sed -E 's|/([^/]*)\.cpp|:\1|'`
     bazel test  --config=asan --incompatible_remove_native_http_archive=false //"$target"
 else
-    doxygen Doxyfile
+#    doxygen Doxyfile
     bazel clean
     bazel build --config=asan --incompatible_remove_native_http_archive=false //lib/...
     bazel build --config=asan --incompatible_remove_native_http_archive=false //test/...

@@ -30,7 +30,7 @@ namespace fcpp {
  */
 template <typename T, typename... Ts>
 class multitype_map {
-    static_assert(not type_repeated<Ts...>, "cannot instantiate multitype_map with repeated types");
+    static_assert(type_repeated<Ts...>::size == 0, "cannot instantiate multitype_map with repeated types");
     
   public:
     //! @brief The type of the keys.
@@ -74,15 +74,15 @@ class multitype_map {
     //! @brief Inserts value at corresponding key.
     template<typename A>
     void insert(T key, const A& value) {
-        static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
+        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
+        std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
     }
     
     //! @brief Inserts value at corresponding key by moving.
     template<typename A>
     void insert(T key, A&& value) {
-        static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
+        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
+        std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
     }
 
     //! @brief Inserts void value at corresponding key.
@@ -93,8 +93,8 @@ class multitype_map {
     //! @brief Deletes value at corresponding key.
     template<typename A>
     void erase(T key) {
-        static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).erase(key);
+        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
+        std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).erase(key);
     }
 
     //! @brief Deletes void value at corresponding key.
@@ -105,22 +105,22 @@ class multitype_map {
     //! @brief Immutable reference to the value of a certain type at a given key.
     template<typename A>
     const A& at(T key) const {
-        static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
+        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
+        return std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
     }
 
     //! @brief Mutable reference to the value of a certain type at a given key.
     template<typename A>
     A& at(T key) {
-        static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
+        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
+        return std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
     }
 
     //! @brief Whether the key is present in the value map or not for a certain type.
     template<typename A>
     bool count(T key) const {
-        static_assert(type_contains<typename std::remove_reference<A>::type, Ts...>, "non-supported type access");
-        return std::get<type_index<typename std::remove_reference<A>::type, Ts...>>(m_data).count(key);
+        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
+        return std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).count(key);
     }
     
     //! @brief Whether the key is present in the value map or not for the void type.

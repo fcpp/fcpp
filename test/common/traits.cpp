@@ -10,72 +10,89 @@
 #include "lib/common/traits.hpp"
 
 
-TEST(TraitsTest, Sequence) {
-    int i = fcpp::type_sequence<int,double,double,char>::size();
-    EXPECT_EQ(4, i);
+TEST(TraitsTest, QueueOp) {
     std::string ex, res;
-    ex  = typeid(fcpp::type_sequence<int,double,double,char>).name();
-    res = typeid(fcpp::type_sequence<int,double,double,char>::append<>).name();
-    EXPECT_EQ(ex, res);
-    res = typeid(fcpp::type_sequence<int,double,double>::append<char>).name();
-    EXPECT_EQ(ex, res);
-    res = typeid(fcpp::type_sequence<int,double>::append<double,char>).name();
-    EXPECT_EQ(ex, res);
-    res = typeid(fcpp::type_sequence<int>::append<double,double,char>).name();
-    EXPECT_EQ(ex, res);
-    res = typeid(fcpp::type_sequence<>::append<int,double,double,char>).name();
-    EXPECT_EQ(ex, res);
-    res = typeid(fcpp::type_sequence<double,char>::prepend<int,double>).name();
-    EXPECT_EQ(ex, res);
-    res = typeid(fcpp::type_sequence<short,int,double,double,char>::tail).name();
-    EXPECT_EQ(ex, res);
     ex  = typeid(short).name();
-    res = typeid(fcpp::type_sequence<short,int,double,double,char>::head).name();
+    res = typeid(fcpp::type_sequence<short,int,double,double,char>::front).name();
     EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<char,int,double,double,short>::back).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<int,double,double,char>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::push_back<>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<int,double,double>::push_back<char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<int,double>::push_back<double,char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<int>::push_back<double,double,char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<>::push_back<int,double,double,char>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<double,char>::push_front<int,double>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<short,int,double,double,char>::pop_front).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::type_sequence<int,double,double,char,short>::pop_back).name();
+    EXPECT_EQ(ex, res);
+}
+
+TEST(TraitsTest, ArrayOp) {
+    size_t i;
+    i = fcpp::type_sequence<int,double,double,char>::size;
+    EXPECT_EQ(4, i);
+    i = fcpp::type_sequence<>::size;
+    EXPECT_EQ(0, i);
+    std::string ex, res;
     ex  = typeid(fcpp::type_sequence<double,char>).name();
-    res = typeid(fcpp::type_subseq<2,1,int,double,double,char>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::slice<1,-1,2>).name();
     EXPECT_EQ(ex, res);
     ex  = typeid(fcpp::type_sequence<int,char>).name();
-    res = typeid(fcpp::type_subseq<3,0,int,double,double,char>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::slice<0,-1,3>).name();
     EXPECT_EQ(ex, res);
     ex  = typeid(fcpp::type_sequence<double>).name();
-    res = typeid(fcpp::type_subseq<5,2,int,double,double,char>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::slice<2,-1,5>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<double,double>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::slice<1,3,1>).name();
     EXPECT_EQ(ex, res);
     ex  = typeid(double).name();
-    res = typeid(fcpp::nth_type<2,int,int,double,char>).name();
+    res = typeid(fcpp::type_sequence<int,int,double,char>::get<2>).name();
     EXPECT_EQ(ex, res);
+}
+
+TEST(TraitsTest, SetOp) {
+    std::string ex, res;
     ex  = typeid(fcpp::type_sequence<int,char>).name();
     res = typeid(fcpp::type_sequence<int,double,double,char>::intersect<short,char,int>).name();
     EXPECT_EQ(ex, res);
     ex  = typeid(fcpp::type_sequence<double,double>).name();
     res = typeid(fcpp::type_sequence<int,double,double,char>::intersect<double>).name();
     EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<double,double,char,float,int>).name();
+    res = typeid(fcpp::type_sequence<double,double,char>::unite<double,float,int,float>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<double>).name();
+    res = typeid(fcpp::type_sequence<int,double,double,char>::repeated).name();
+    EXPECT_EQ(ex, res);
+    size_t i;
+    i = fcpp::type_sequence<int,double,double,char>::repeated::size;
+    EXPECT_EQ(1, i);
+    i = fcpp::type_sequence<int,double,char>::repeated::size;
+    EXPECT_EQ(0, i);
 }
 
-TEST(TraitsTest, Index) {
+TEST(TraitsTest, SearchOp) {
     int t;
-    t = fcpp::type_index<int,int,double,char>;
+    t = fcpp::type_sequence<int,double,char>::find<int>;
     EXPECT_EQ(0, t);
-    t = fcpp::type_index<double,int,char,double>;
+    t = fcpp::type_sequence<int,char,double>::find<double>;
     EXPECT_EQ(2, t);
-}
-
-TEST(TraitsTest, Contains) {
-    bool b;
-    b = fcpp::type_contains<double,int,char,double>;
-    EXPECT_TRUE(b);
-    b = fcpp::type_contains<int,double,char>;
-    EXPECT_FALSE(b);
-}
-
-TEST(TraitsTest, Repeated) {
-    bool b;
-    b = fcpp::type_repeated<int,double,char,int>;
-    EXPECT_TRUE(b);
-    b = fcpp::type_repeated<void*,int,double,char>;
-    EXPECT_FALSE(b);
-    b = fcpp::type_repeated<>;
-    EXPECT_FALSE(b);
+    t = fcpp::type_sequence<int,char,double>::count<double>;
+    EXPECT_EQ(1, t);
+    t = fcpp::type_sequence<double,char>::count<int>;
+    EXPECT_EQ(0, t);
+    t = fcpp::type_sequence<int,char,int>::count<int>;
+    EXPECT_EQ(2, t);
 }
 
 TEST(TraitsTest, BoolPack) {

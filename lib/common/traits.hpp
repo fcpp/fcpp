@@ -20,75 +20,52 @@ namespace fcpp {
 
 
 /**
- * @name type_index
- *
- * Constant equal to the index of the first parameter among the subsequent ones.
- * It fails to compile if the first type parameter is not among the subsequent ones.
- * Indexes are computed starting with 0.
- */
-//@{
-//! @brief General recursive pattern.
-template <typename A, typename B, typename... Ts>
-constexpr size_t type_index = type_index<A, Ts...> + 1;
-
-//! @brief Base case (the searched type is first).
-template <typename A, typename... Ts>
-constexpr size_t type_index<A, A, Ts...> = 0;
-//@}
-
-
-/**
- * @name type_contains
- *
- * Constant which is true if and only if the first type parameter is among the subsequent ones.
- */
-//@{
-//! @brief Base case (false if not found).
-template <typename A, typename... Ts>
-constexpr bool type_contains = false;
-
-//! @brief General recursive pattern.
-template <typename A, typename B, typename... Ts>
-constexpr bool type_contains<A, B, Ts...> = type_contains<A, Ts...>;
-
-//! @brief Base case (the searched type is first).
-template <typename A, typename... Ts>
-constexpr bool type_contains<A, A, Ts...> = true;
-//@}
-
-
-/**
- * @name type_repeated
- *
- * Constant which is true if and only if the type parameter list contains a repeated type.
- */
-//@{
-//! @brief Base case (for 1 or 0 types).
-template <typename... Ts>
-constexpr bool type_repeated = false;
-
-/**
- * @brief Recursive pattern: either the first type occurs among the following, or the
- * following has a repetition.
- */
-template <typename A, typename... Ts>
-constexpr bool type_repeated<A, Ts...> = type_contains<A, Ts...> or type_repeated<Ts...>;
-//@}
-
-
-/**
  * @name type_sequence
  *
  * Helper empty class encapsulating a sequence of types.
- * Allows easy prepending, appending, counting and extracting types.
+ * Mimics operations in standard stl containers.
  */
-//@{
+//{@
 //! @brief General form.
 template <typename... Ts>
 struct type_sequence;
 
+
+// Base case (0 if not found).
+template <typename A, typename... Ts>
+constexpr size_t type_count = 0;
+
+// General recursive pattern.
+template <typename A, typename B, typename... Ts>
+constexpr size_t type_count<A, B, Ts...> = type_count<A, Ts...> + (std::is_same<A,B>::value ? 1 : 0);
+
+// General recursive pattern.
+template <typename A, typename B, typename... Ts>
+constexpr size_t type_find = type_find<A, Ts...> + 1;
+
+// Base case (the searched type is first).
+template <typename A, typename... Ts>
+constexpr size_t type_find<A, A, Ts...> = 0;
+
+
 //! @cond INTERNAL
 namespace details {
+    // General form.
+    template<int start, int end, int stride, typename... Ts>
+    struct type_slice {
+        using type = type_sequence<>;
+    };
+    
+    // Recursive form.
+    template<int start, int end, int stride, typename T, typename... Ts>
+    struct type_slice<start, end, stride, T, Ts...> {
+        using type = std::conditional_t<end == 0, type_sequence<>, std::conditional_t<
+            start == 0,
+            typename type_slice<stride - 1, end - 1, stride, Ts...>::type::template push_front<T>,
+            typename type_slice<start  - 1, end - 1, stride, Ts...>::type
+        >>;
+    };
+
     // Base case.
     template <typename, typename>
     struct type_intersect {
@@ -99,100 +76,179 @@ namespace details {
     template <typename T, typename... Ts, typename... Ss>
     struct type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>> {
         using type = std::conditional_t<
-            !type_contains<T, Ss...>,
-            typename type_intersect<type_sequence<Ts...>, type_sequence<Ss...>>::type,
-            typename type_intersect<type_sequence<Ts...>, type_sequence<Ss...>>::type::template prepend<T>
+            type_count<T, Ss...> != 0,
+            typename type_intersect<type_sequence<Ts...>, type_sequence<Ss...>>::type::template push_front<T>,
+            typename type_intersect<type_sequence<Ts...>, type_sequence<Ss...>>::type
+        >;
+    };
+    
+    // General form.
+    template <typename, typename>
+    struct type_unite;
+
+    // Recursive form.
+    template <typename... Ts, typename S, typename... Ss>
+    struct type_unite<type_sequence<Ts...>, type_sequence<S, Ss...>> {
+        using type = std::conditional_t<
+            type_count<S, Ts...> != 0,
+            typename type_unite<type_sequence<Ts...>, type_sequence<Ss...>>::type,
+            typename type_unite<type_sequence<Ts..., S>, type_sequence<Ss...>>::type
+        >;
+    };
+
+    // Base case.
+    template <typename... Ts>
+    struct type_unite<type_sequence<Ts...>, type_sequence<>> {
+        using type = type_sequence<Ts...>;
+    };
+    
+    // General form.
+    template <typename...>
+    struct type_repeated {
+        using type = type_sequence<>;
+    };
+    
+    // Recursive form.
+    template <typename T, typename... Ts>
+    struct type_repeated<T, Ts...> {
+        using type = std::conditional_t<
+            type_count<T, Ts...> == 0,
+            typename type_repeated<Ts...>::type,
+            typename type_repeated<Ts...>::type::template push_front<T>
+        >;
+    };
+    
+    // General form.
+    template <typename...>
+    struct type_uniq {
+        using type = type_sequence<>;
+    };
+    
+    // Recursive form.
+    template <typename T, typename... Ts>
+    struct type_uniq<T, Ts...> {
+        using type = std::conditional_t<
+            type_count<T, Ts...> == 0,
+            typename type_uniq<Ts...>::type::template push_front<T>,
+            typename type_uniq<Ts...>::type
         >;
     };
 }
 //! @endcond
 
-//! @brief Non-empty form, allows for extracting index, head and tail.
+    
+/**
+ * @brief Extracts a subsequence from the type sequence.
+ * @param start  first element extracted
+ * @param end    no element extracted after end (defaults to -1 = end of the sequence)
+ * @param stride interval between element extracted (defaults to 1)
+ */
+template <int start, int end, int stride, typename... Ts>
+using type_slice = typename details::type_slice<start, end, stride, Ts...>::type;
+
+//! @brief Extracts the n-th type from the sequence.
+template <int n, typename... Ts>
+using type_get = typename type_slice<n, n+1, 1, Ts...>::front;
+
+//! @brief Extract the types that are repeated more than once.
+template <typename... Ts>
+using type_repeated = typename details::type_repeated<Ts...>::type;
+
+//! @brief Extract the subsequence in which each type appears once (opposite of repeated).
+template <typename... Ts>
+using type_uniq = typename details::type_uniq<Ts...>::type;
+
+
+//! @brief Non-empty form, allows for extracting elements and subsequences.
 template <typename T, typename... Ts>
 struct type_sequence<T, Ts...> {
-    template <typename... Ss>
-    using prepend = type_sequence<Ss..., T, Ts...>;
+    //! @brief Extracts the n-th type from the sequence.
+    template <int n>
+    using get = type_get<n, T, Ts...>;
+
+    /**
+     * @brief Extracts a subsequence from the type sequence.
+     * @param start  first element extracted
+     * @param end    no element extracted after end (defaults to -1 = end of the sequence)
+     * @param stride interval between element extracted (defaults to 1)
+     */
+    template <int start, int end = -1, int stride = 1>
+    using slice = type_slice<start, end, stride, T, Ts...>;
     
-    template <typename... Ss>
-    using append = type_sequence<T, Ts..., Ss...>;
+    //! @brief The first type of the sequence.
+    using front = T;
     
+    //! @brief The last type of the sequence.
+    using back = get<sizeof...(Ts)>;
+    
+    //! @brief Removes the first type of the sequence.
+    using pop_front = type_sequence<Ts...>;
+    
+    //! @brief Removes the last type of the sequence.
+    using pop_back = slice<0, sizeof...(Ts)>;
+    
+    //! @brief Adds types at the front of the sequence.
+    template <typename... Ss>
+    using push_front = type_sequence<Ss..., T, Ts...>;
+    
+    //! @brief Adds types at the back of the sequence.
+    template <typename... Ss>
+    using push_back = type_sequence<T, Ts..., Ss...>;
+    
+    //! @brief Set intersection with other sequence.
     template<typename... Ss>
     using intersect = typename details::type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
     
-    using head = T;
+    //! @brief Set union with other sequence.
+    template<typename... Ss>
+    using unite = typename details::type_unite<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
     
-    using tail = type_sequence<Ts...>;
+    //! @brief Extract the types that are repeated more than once.
+    using repeated = type_repeated<T, Ts...>;
+
+    //! @brief Extract the subsequence in which each type appears once (opposite of repeated).
+    using uniq = type_uniq<T, Ts...>;
     
+    //! @brief Constant equal to the index of `S` among the sequence. Fails to compile if not present, indices start from 0.
     template <typename S>
-    static constexpr size_t index() {
-        return type_index<S, T, Ts...>;
-    }
+    static constexpr size_t find = type_find<S, T, Ts...>;
+
+    //! @brief Constant which is true if and only if the type parameter is in the sequence.
+    template <typename S>
+    static constexpr size_t count = type_count<S, T, Ts...>;
     
-    static constexpr size_t size() {
-        return 1 + sizeof...(Ts);
-    }
+    //! @brief The length of the sequence.
+    static constexpr size_t size = 1 + sizeof...(Ts);
 };
 
-//! @brief Empty form, cannot extract index, head and tail.
+//! @brief Empty form, cannot extract elements and subsequences.
 template <>
 struct type_sequence<> {
-    template <typename... Ss>
-    using prepend = type_sequence<Ss...>;
+    template <int start, int end, int stride = 1>
+    using slice = type_sequence<>;
     
     template <typename... Ss>
-    using append = type_sequence<Ss...>;
+    using push_front = type_sequence<Ss...>;
+    
+    template <typename... Ss>
+    using push_back = type_sequence<Ss...>;
     
     template<typename... Ss>
     using intersect = type_sequence<>;
     
-    static constexpr size_t size() {
-        return 0;
-    }
+    template<typename... Ss>
+    using unite = type_sequence<Ss...>;
+    
+    using repeated = type_sequence<>;
+    
+    using uniq = type_sequence<>;
+
+    template <typename S>
+    static constexpr size_t count = 0;
+    
+    static constexpr size_t size = 0;
 };
 //@}
-
-//! @cond INTERNAL
-namespace details {
-    // General form.
-    template<int n, int m, typename... Ts>
-    struct type_subseq;
-
-    // Subsequence element not found.
-    template<int n, int m, typename T, typename... Ts>
-    struct type_subseq<n, m, T, Ts...> : type_subseq<n, m - 1, Ts...> {};
-
-    // Subsequence element found.
-    template<int n, typename T, typename... Ts>
-    struct type_subseq<n, 0, T, Ts...> {
-        typedef typename type_subseq<n, n - 1, Ts...>::type::template prepend<T> type;
-    };
-
-    // Base case (empty sequence)
-    template<int n, int m>
-    struct type_subseq<n, m> {
-        typedef type_sequence<> type;
-    };
-}
-//! @endcond
-
-/**
- * @name type_subseq
- *
- * Extracts a subsequence from a parameter pack.
- * @param n distance between elements extracted
- * @param m first element extracted
- */
-template<int n, int m, typename... Ts>
-using type_subseq = typename details::type_subseq<n, m, Ts...>::type;
-
-/**
- * @name nth_type
- *
- * Extracts the n-th type from a parameter pack.
- * Special case of `type_subseq`.
- */
-template <int n, typename... Ts>
-using nth_type = typename type_subseq<sizeof...(Ts), n, Ts...>::head;
 
 
 /**

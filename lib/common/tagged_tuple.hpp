@@ -38,18 +38,21 @@ namespace details {
 //@{
 //! @brief Write access.
 template <typename S, typename... Ss, typename... Ts>
-nth_type<type_index<S, Ss...>, Ts...>& get(details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
-    return std::get<type_index<S, Ss...>>(t);
+type_get<type_find<S, Ss...>, Ts...>&
+get(details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
+    return std::get<type_find<S, Ss...>>(t);
 }
 //! @brief Move access.
 template <typename S, typename... Ss, typename... Ts>
-nth_type<type_index<S, Ss...>, Ts...>&& get(details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>&& t) {
-    return std::get<type_index<S, Ss...>>(std::move(t));
+type_get<type_find<S, Ss...>, Ts...>&&
+get(details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>&& t) {
+    return std::get<type_find<S, Ss...>>(std::move(t));
 }
 //! @brief Const access.
 template <typename S, typename... Ss, typename... Ts>
-const nth_type<type_index<S, Ss...>, Ts...>& get(const details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
-    return std::get<type_index<S, Ss...>>(t);
+const type_get<type_find<S, Ss...>, Ts...>&
+get(const details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
+    return std::get<type_find<S, Ss...>>(t);
 }
 //@}
 
@@ -65,7 +68,7 @@ namespace details {
 //! @cond INTERNAL
     // Helper function ignoring its arguments.
     template <class... Ts>
-    void ignore(const Ts&... vs) {}
+    void ignore(const Ts&...) {}
     
     // Copy assignment of elements of type Us.
     template <class T, class S, class... Us>
@@ -85,7 +88,7 @@ namespace details {
     //! @brief Implementation of `tagged_tuple`.
     template<typename... Ss, typename... Ts>
     struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tuple<Ts...> {
-        static_assert(not type_repeated<Ss...>, "repeated tags in tuple");
+        static_assert(fcpp::type_repeated<Ss...>::size == 0, "repeated tags in tuple");
         
         //! @brief Type obtained by prepending a tagged element to the tuple.
         template <typename S, typename T>
@@ -131,7 +134,7 @@ namespace details {
 
 //! @brief The `tagged_tuple` class, allowing to express a `details::tagged_tuple` by interleaving tags and types.
 template <typename... Ts>
-using tagged_tuple = details::tagged_tuple<type_subseq<2, 0, Ts...>, type_subseq<2, 1, Ts...>>;
+using tagged_tuple = details::tagged_tuple<type_slice<0, -1, 2, Ts...>, type_slice<1, -1, 2, Ts...>>;
 
 
 //! @cond INTERNAL

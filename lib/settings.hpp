@@ -57,14 +57,24 @@
     //! @brief Settings defining whether exports for self and other devices should be separated (2, default for deployed systems) or together in a `shared_ptr` (1, default for simulated systems).
     #define FCPP_SETTING_EXPORTS 1
     #endif
+    #ifndef FCPP_SETTING_TIME
+    //! @brief Setting defining the type to be used to represent times.
+    #define FCPP_SETTING_TIME double
+    #endif
 #elif FCPP_SETTING_ENVIRONMENT == FCPP_DEPLOYMENT
     #ifndef FCPP_SETTING_EXPORTS
     //! @brief Settings defining whether exports for self and other devices should be separated (2, default for deployed systems) or together in a `shared_ptr` (1, default for simulated systems).
     #define FCPP_SETTING_EXPORTS 2
     #endif
+    #ifndef FCPP_SETTING_TIME
+    //! @brief Setting defining the type to be used to represent times.
+    #define FCPP_SETTING_TIME time_t
+    #endif
 #else
     static_assert(false, "invalid value for FCPP_SETTING_ENVIRONMENT");
 #endif
+
+using times_t = FCPP_SETTING_TIME;
 
 
 #ifndef FCPP_WARNING_TRACE

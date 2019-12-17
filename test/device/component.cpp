@@ -14,21 +14,21 @@ struct oth {};
 struct hto {};
 
 template <typename T>
-struct expose_get : public T {
+struct expose_storage : public T {
     using T::T;
-    using T::get;
+    using T::storage;
 };
 
 template <typename T>
 using comp1 = fcpp::storage_component<fcpp::tagged_tuple<T,int>>;
 
-using csmall = expose_get<comp1<tag>>;
+using csmall = expose_storage<comp1<tag>>;
 
 using comp3 = fcpp::multi_component<comp1<tag>, comp1<gat>, comp1<oth>>;
 
 using comp4 = fcpp::storage_component<fcpp::tagged_tuple<hto,char>, comp3>;
 
-using cbig = expose_get<comp4>;
+using cbig = expose_storage<comp4>;
 
 
 TEST(ComponentTest, StorageOperators) {
@@ -36,14 +36,14 @@ TEST(ComponentTest, StorageOperators) {
     csmall y(x);
     csmall z(fcpp::make_tagged_tuple<tag,hto,void>(3,'v',2.5));
     int i;
-    i = z.get<tag>();
+    i = z.storage<tag>();
     EXPECT_EQ(3, i);
-    x.get<tag>() = 5;
+    x.storage<tag>() = 5;
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(x, z);
-    i = z.get<tag>();
+    i = z.storage<tag>();
     EXPECT_EQ(5, i);
 }
 
@@ -52,7 +52,7 @@ TEST(ComponentTest, MultiOperators) {
     cbig y(x);
     cbig z(fcpp::make_tagged_tuple<tag,hto,void>(3,'v',2.5));
     char c;
-    c = z.get<hto>();
+    c = z.storage<hto>();
     EXPECT_EQ('v', c);
     z = y;
     y = x;

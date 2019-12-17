@@ -167,7 +167,7 @@ class storage_component : public extend_component<C, storage_component<T,C>> {
   protected:
     //! @brief Accesses the stored data.
     template <typename S>
-    typename T::template tag_type<S>& get() {
+    typename T::template tag_type<S>& storage() {
         return fcpp::get<S>(m_data);
     }
 };

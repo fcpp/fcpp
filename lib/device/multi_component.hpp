@@ -5,8 +5,8 @@
  * @brief Implementation of the `extend_component` template for component chaining, and of the `unscheduling_component` and `multi_component` classes for grouping components together.
  */
 
-#ifndef FCPP_DEVICE_COMPONENT_H_
-#define FCPP_DEVICE_COMPONENT_H_
+#ifndef FCPP_DEVICE_MULTI_COMPONENT_H_
+#define FCPP_DEVICE_MULTI_COMPONENT_H_
 
 #include <cassert>
 #include <algorithm>
@@ -268,4 +268,4 @@ struct multi_component : public unscheduling_component<Cs...> {
 
 }
 
-#endif // FCPP_DEVICE_COMPONENT_H_
+#endif // FCPP_DEVICE_MULTI_COMPONENT_H_

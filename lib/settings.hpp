@@ -8,6 +8,8 @@
 #ifndef FCPP_SETTINGS_H_
 #define FCPP_SETTINGS_H_
 
+#include <cstdint>
+
 
 //! @brief Identifier for general systems.
 #define FCPP_GENERAL    111
@@ -74,13 +76,37 @@
     static_assert(false, "invalid value for FCPP_SETTING_ENVIRONMENT");
 #endif
 
-using times_t = FCPP_SETTING_TIME;
-
 
 #ifndef FCPP_WARNING_TRACE
     //! @brief Settings defining whether hash colliding of code points is admissible.
     #define FCPP_WARNING_TRACE true
 #endif
+
+
+/**
+ * @brief Namespace containing all the objects in the FCPP library.
+ */
+namespace fcpp {
+    using times_t = FCPP_SETTING_TIME;
+
+#if   FCPP_SETTING_DEVICE == 8
+    typedef uint8_t device_t;
+#elif FCPP_SETTING_DEVICE == 16
+    typedef uint16_t device_t;
+#elif FCPP_SETTING_DEVICE == 24
+    typedef uint32_t device_t;
+#elif FCPP_SETTING_DEVICE == 32
+    typedef uint32_t device_t;
+#elif FCPP_SETTING_DEVICE == 48
+    typedef uint64_t device_t;
+#elif FCPP_SETTING_DEVICE == 64
+    typedef uint64_t device_t;
+#else
+    static_assert(false, "invalid value for FCPP_SETTING_DEVICE");
+    //! @brief Type for device identifiers (depends on @ref FCPP_SETTING_DEVICE).
+    typedef uint64_t device_t;
+#endif
+}
 
 
 #endif // FCPP_SETTINGS_H_

@@ -23,25 +23,6 @@
 namespace fcpp {
 
 
-#if   FCPP_SETTING_DEVICE == 8
-    typedef uint8_t device_t;
-#elif FCPP_SETTING_DEVICE == 16
-    typedef uint16_t device_t;
-#elif FCPP_SETTING_DEVICE == 24
-    typedef uint32_t device_t;
-#elif FCPP_SETTING_DEVICE == 32
-    typedef uint32_t device_t;
-#elif FCPP_SETTING_DEVICE == 48
-    typedef uint64_t device_t;
-#elif FCPP_SETTING_DEVICE == 64
-    typedef uint64_t device_t;
-#else
-    static_assert(false, "invalid value for FCPP_SETTING_DEVICE");
-    //! @brief Type for device identifiers (depends on @ref FCPP_SETTING_DEVICE).
-    typedef uint64_t device_t;
-#endif
-
-
 //! @cond INTERNAL
 template<typename T> class field;
 //! @endcond

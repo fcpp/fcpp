@@ -47,7 +47,7 @@ TEST(ComponentTest, Operators) {
 
 TEST(ComponentTest, Manager) {
     cbig::manager m;
-    times_t t, inf = std::numeric_limits<times_t>::max();
+    fcpp::times_t t, inf = std::numeric_limits<fcpp::times_t>::max();
     t = m.next();
     EXPECT_EQ(inf, t);
     t = m.update();

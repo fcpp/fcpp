@@ -1,4 +1,17 @@
 cc_library(
+    name = 'component',
+    hdrs = ['component.hpp'],
+    srcs = ['component.cpp'],
+    deps = [
+        "//lib/device:data_component",
+        "//lib/device:multi_component",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'data_component',
     hdrs = ['data_component.hpp'],
     srcs = ['data_component.cpp'],

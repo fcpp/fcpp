@@ -30,6 +30,9 @@ TEST_F(TagTupleTest, Operators) {
     EXPECT_NE(t, y);
     y = fcpp::make_tagged_tuple<tag,gat>(2, true);
     EXPECT_EQ(t, y);
+    fcpp::tagged_tuple<> e(y);
+    fcpp::tagged_tuple<> f = fcpp::make_tagged_tuple<>();
+    EXPECT_EQ(e, f);
 }
 
 TEST_F(TagTupleTest, Get) {
@@ -73,10 +76,21 @@ TEST_F(TagTupleTest, Assignment) {
     EXPECT_EQ(3, i);
 }
 
-TEST_F(TagTupleTest, CatPrepend) {
+TEST_F(TagTupleTest, Types) {
     std::string ex, res;
+    ex  = typeid(char).name();
+    res = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool>::tag_type<gat>).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<tag,gat,oth>).name();
+    res = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool>::tags).name();
+    EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<int,char,bool>).name();
+    res = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool>::types).name();
+    EXPECT_EQ(ex, res);
     ex  = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool>).name();
-    res = typeid(fcpp::tagged_tuple<gat,char,oth,bool>::prepend<tag,int>).name();
+    res = typeid(fcpp::tagged_tuple<gat,char,oth,bool>::push_front<tag,int>).name();
+    EXPECT_EQ(ex, res);
+    res = typeid(fcpp::tagged_tuple<tag,int,gat,char>::push_back<oth,bool>).name();
     EXPECT_EQ(ex, res);
     ex  = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool,hto,double>).name();
     res = typeid(fcpp::tagged_tuple_cat<

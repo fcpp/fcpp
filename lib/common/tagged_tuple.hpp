@@ -90,9 +90,23 @@ namespace details {
     struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tuple<Ts...> {
         static_assert(fcpp::type_repeated<Ss...>::size == 0, "repeated tags in tuple");
         
+        //! @brief The type sequence of tags.
+        using tags = type_sequence<Ss...>;
+        
+        //! @brief The type sequence of data types.
+        using types = type_sequence<Ts...>;
+        
+        //! @brief Gets the type corresponding to a tag.
+        template <typename S>
+        using tag_type = typename type_sequence<Ts...,void>::template get<type_sequence<Ss...,void>::template find<S>>;
+        
         //! @brief Type obtained by prepending a tagged element to the tuple.
         template <typename S, typename T>
-        using prepend = tagged_tuple<type_sequence<S, Ss...>, type_sequence<T, Ts...>>;
+        using push_front = tagged_tuple<type_sequence<S, Ss...>, type_sequence<T, Ts...>>;
+
+        //! @brief Type obtained by appending a tagged element to the tuple.
+        template <typename S, typename T>
+        using push_back = tagged_tuple<type_sequence<Ss..., S>, type_sequence<Ts..., T>>;
 
         //! @brief Constructors inherited from `tuple`.
         using std::tuple<Ts...>::tuple;
@@ -156,7 +170,7 @@ namespace details {
     // The first tuple is not empty.
     template <typename S, typename... Ss, typename T, typename... Ts, typename... Us>
     struct tagged_tuple_cat<details::tagged_tuple<type_sequence<S, Ss...>, type_sequence<T, Ts...>>, Us...> {
-        using type = typename tagged_tuple_cat<details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>, Us...>::type::template prepend<S,T>;
+        using type = typename tagged_tuple_cat<details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>, Us...>::type::template push_front<S,T>;
     };
 }
 //! @endcond

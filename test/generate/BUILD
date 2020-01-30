@@ -1,4 +1,16 @@
 cc_test(
+    name = "aggregator",
+    srcs = ["aggregator.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/generate:aggregator",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "distribution",
     srcs = ["distribution.cpp"],
     deps = [

@@ -1,4 +1,16 @@
 cc_test(
+    name = "algorithm",
+    srcs = ["algorithm.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:algorithm",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "flat_ptr",
     srcs = ["flat_ptr.cpp"],
     deps = [

@@ -1,4 +1,14 @@
 cc_library(
+    name = 'algorithm',
+    hdrs = ['algorithm.hpp'],
+    srcs = ['algorithm.cpp'],
+    deps = [ ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'flat_ptr',
     hdrs = ['flat_ptr.hpp'],
     srcs = ['flat_ptr.cpp'],

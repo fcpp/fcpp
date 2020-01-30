@@ -30,9 +30,16 @@ struct event_never {
     using type = times_t;
     
     //! @brief Default constructor.
-    event_never() = default;
+    template <typename G>
+    event_never(G&) {}
     
-    //! @brief Returns next event to schedule.
+    //! @brief Returns next event, without stepping over.
+    template <typename G>
+    times_t next(G&) {
+        return std::numeric_limits<times_t>::max(); // no event to schedule
+    }
+    
+    //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G&) {
         return std::numeric_limits<times_t>::max(); // no event to schedule
@@ -65,16 +72,21 @@ class event_multiple<T, n, true> {
     
   public:
     //! @brief Default constructor.
-    event_multiple() = default;
+    template <typename G>
+    event_multiple(G& g) : t(details::call_distr<T>(g)) {}
     
-    //! @brief Returns next event to schedule.
+    //! @brief Returns next event, without stepping over.
+    template <typename G>
+    times_t next(G&) {
+        return (i < n) ? t : std::numeric_limits<times_t>::max();
+    }
+    
+    //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G& g) {
-        if (i==0) {
-            T distr;
-            t = distr(g);
-        }
-        return (++i <= n) ? t : std::numeric_limits<times_t>::max();
+        times_t nt = next(g);
+        ++i;
+        return nt;
     }
 };
 //! @brief Case for possibly different events.
@@ -92,17 +104,25 @@ class event_multiple<T, n, false> {
     
   public:
     //! @brief Default constructor.
-    event_multiple() = default;
+    template <typename G>
+    event_multiple(G& g) {
+        T distr(g);
+        for (size_t j=0; j<n; ++j) pending[j] = distr(g);
+        std::sort(pending.begin(), pending.end());
+    }
     
-    //! @brief Returns next event to schedule.
+    //! @brief Returns next event, without stepping over.
+    template <typename G>
+    times_t next(G&) {
+        return (i < n) ? pending[i] : std::numeric_limits<times_t>::max();
+    }
+    
+    //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G& g) {
-        if (i==0) {
-            T distr;
-            for (size_t j=0; j<n; ++j) pending[j] = distr(g);
-            std::sort(pending.begin(), pending.end());
-        }
-        return (++i <= n) ? pending[i-1] : std::numeric_limits<times_t>::max();
+        times_t nt = next(g);
+        ++i;
+        return nt;
     }
 };
 //@}
@@ -126,16 +146,23 @@ class event_sequence {
     
   public:
     //! @brief Default constructor.
-    event_sequence() = default;
+    template <typename G>
+    event_sequence(G& g) : pending({details::call_distr<T>(g)...}) {
+        std::sort(pending.begin(), pending.end());
+    }
     
-    //! @brief Returns next event to schedule.
+    //! @brief Returns next event, without stepping over.
+    template <typename G>
+    times_t next(G&) {
+        return (i < sizeof...(T)) ? pending[i] : std::numeric_limits<times_t>::max();
+    }
+    
+    //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G& g) {
-        if (i == 0) {
-            pending = std::array<times_t, sizeof...(T)>({details::call_distr<T>(g)...});
-            std::sort(pending.begin(), pending.end());
-        }
-        return (++i <= sizeof...(T)) ? pending[i-1] : std::numeric_limits<times_t>::max();
+        times_t nt = next(g);
+        ++i;
+        return nt;
     }
 };
 
@@ -163,24 +190,30 @@ class event_periodic {
     // Last event happened and terminal time.
     times_t t, te;
     // Number of calls to next so far.
-    size_t i = 0, n;
+    size_t n, i = 0;
 
   public:
     //! @brief Default constructor.
-    event_periodic() = default;
+    template <typename G>
+    event_periodic(G& g) : dp(g) {
+        n  = details::call_distr<N>(g);
+        te = details::call_distr<E>(g);
+        t  = details::call_distr<S>(g);
+    }
     
-    //! @brief Returns next event to schedule.
+    //! @brief Returns next event, without stepping over.
+    template <typename G>
+    times_t next(G&) {
+        return (i < n and t < te) ? t : std::numeric_limits<times_t>::max();
+    }
+    
+    //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G& g) {
-        if (i == 0) {
-            N dn;
-            n = dn(g);
-            E de;
-            te = de(g);
-            S ds;
-            t = ds(g);
-        } else t += dp(g);
-        return (++i <= n and t < te) ? t : std::numeric_limits<times_t>::max();
+        times_t nt = next(g);
+        ++i;
+        t += dp(g);
+        return nt;
     }
 };
 

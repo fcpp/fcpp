@@ -14,7 +14,7 @@ const fcpp::times_t inf = std::numeric_limits<fcpp::times_t>::max();
 TEST(EventTest, Never) {
     std::mt19937 rnd(42);
     double d;
-    fcpp::event_never e;
+    fcpp::event_never e(rnd);
     d = e(rnd);
     EXPECT_EQ(inf, d);
     d = e(rnd);
@@ -24,8 +24,10 @@ TEST(EventTest, Never) {
 TEST(EventTest, MultipleSame) {
     std::mt19937 rnd(42);
     double d;
-    fcpp::event_multiple<fcpp::constant_distribution<fcpp::times_t, 52, 10>, 3> e;
+    fcpp::event_multiple<fcpp::constant_distribution<fcpp::times_t, 52, 10>, 3> e(rnd);
     d = e(rnd);
+    EXPECT_DOUBLE_EQ(5.2, d);
+    d = e.next(rnd);
     EXPECT_DOUBLE_EQ(5.2, d);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(5.2, d);
@@ -36,9 +38,11 @@ TEST(EventTest, MultipleSame) {
     d = e(rnd);
     EXPECT_EQ(inf, d);
     double f;
-    fcpp::event_multiple<fcpp::uniform_d<fcpp::times_t, 50, 10, 10>, 2> ee;
+    fcpp::event_multiple<fcpp::uniform_d<fcpp::times_t, 50, 10, 10>, 2> ee(rnd);
     d = ee(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
+    f = ee.next(rnd);
+    EXPECT_DOUBLE_EQ(d, f);
     f = ee(rnd);
     EXPECT_DOUBLE_EQ(d, f);
     f = ee(rnd);
@@ -48,7 +52,7 @@ TEST(EventTest, MultipleSame) {
 TEST(EventTest, MultipleDiff) {
     std::mt19937 rnd(42);
     double d;
-    fcpp::event_multiple<fcpp::constant_distribution<fcpp::times_t, 52, 10>, 3, false> e;
+    fcpp::event_multiple<fcpp::constant_distribution<fcpp::times_t, 52, 10>, 3, false> e(rnd);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(5.2, d);
     d = e(rnd);
@@ -60,7 +64,7 @@ TEST(EventTest, MultipleDiff) {
     d = e(rnd);
     EXPECT_EQ(inf, d);
     double f;
-    fcpp::event_multiple<fcpp::uniform_d<fcpp::times_t, 50, 10, 10>, 2, false> ee;
+    fcpp::event_multiple<fcpp::uniform_d<fcpp::times_t, 50, 10, 10>, 2, false> ee(rnd);
     d = ee(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     f = ee(rnd);
@@ -72,9 +76,11 @@ TEST(EventTest, MultipleDiff) {
 TEST(EventTest, Sequence) {
     std::mt19937 rnd(42);
     double d;
-    fcpp::event_sequence<fcpp::constant_distribution<fcpp::times_t, 33, 10>, fcpp::constant_distribution<fcpp::times_t, 52, 10>, fcpp::constant_distribution<fcpp::times_t, 15, 10>> e;
+    fcpp::event_sequence<fcpp::constant_distribution<fcpp::times_t, 33, 10>, fcpp::constant_distribution<fcpp::times_t, 52, 10>, fcpp::constant_distribution<fcpp::times_t, 15, 10>> e(rnd);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(1.5, d);
+    d = e.next(rnd);
+    EXPECT_DOUBLE_EQ(3.3, d);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(3.3, d);
     d = e(rnd);
@@ -88,18 +94,22 @@ TEST(EventTest, Sequence) {
 TEST(EventTest, Periodic) {
     std::mt19937 rnd(42);
     double d;
-    fcpp::event_periodic<fcpp::constant_distribution<fcpp::times_t, 15, 10>, fcpp::constant_distribution<fcpp::times_t, 2>, fcpp::constant_distribution<fcpp::times_t, 62, 10>, fcpp::constant_distribution<size_t, 5>> e;
+    fcpp::event_periodic<fcpp::constant_distribution<fcpp::times_t, 15, 10>, fcpp::constant_distribution<fcpp::times_t, 2>, fcpp::constant_distribution<fcpp::times_t, 62, 10>, fcpp::constant_distribution<size_t, 5>> e(rnd);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(1.5, d);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(3.5, d);
+    d = e.next(rnd);
+    EXPECT_DOUBLE_EQ(5.5, d);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(5.5, d);
     d = e(rnd);
     EXPECT_EQ(inf, d);
     d = e(rnd);
     EXPECT_EQ(inf, d);
-    fcpp::event_periodic<fcpp::constant_distribution<fcpp::times_t, 15, 10>, fcpp::constant_distribution<fcpp::times_t, 1>, fcpp::constant_distribution<fcpp::times_t, 62, 10>, fcpp::constant_distribution<size_t, 3>> ee;
+    fcpp::event_periodic<fcpp::constant_distribution<fcpp::times_t, 15, 10>, fcpp::constant_distribution<fcpp::times_t, 1>, fcpp::constant_distribution<fcpp::times_t, 62, 10>, fcpp::constant_distribution<size_t, 3>> ee(rnd);
+    d = ee.next(rnd);
+    EXPECT_DOUBLE_EQ(1.5, d);
     d = ee(rnd);
     EXPECT_DOUBLE_EQ(1.5, d);
     d = ee(rnd);
@@ -110,13 +120,15 @@ TEST(EventTest, Periodic) {
     EXPECT_EQ(inf, d);
     d = ee(rnd);
     EXPECT_EQ(inf, d);
-    fcpp::event_periodic<fcpp::constant_distribution<fcpp::times_t, 15, 10>> ei;
+    fcpp::event_periodic<fcpp::constant_distribution<fcpp::times_t, 15, 10>> ei(rnd);
     d = ei(rnd);
     EXPECT_DOUBLE_EQ(1.5, d);
     d = ei(rnd);
     EXPECT_DOUBLE_EQ(3.0, d);
     d = ei(rnd);
     EXPECT_DOUBLE_EQ(4.5, d);
+    d = ei.next(rnd);
+    EXPECT_DOUBLE_EQ(6.0, d);
     d = ei(rnd);
     EXPECT_DOUBLE_EQ(6.0, d);
 }

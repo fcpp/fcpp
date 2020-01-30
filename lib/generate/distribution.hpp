@@ -30,7 +30,8 @@ namespace fcpp {
 #define CONSTANT_DISTRIBUTION(name, T, val)     \
 struct name {                                   \
     using type = T;                             \
-    name() = default;                           \
+    template <typename G>                       \
+    name(G&) {}                                 \
     template <typename G>                       \
     type operator()(G&) {                       \
         return val;                             \
@@ -48,7 +49,8 @@ template <typename T, intmax_t num, intmax_t den = 1>
 struct constant_distribution {
     using type = T;
     
-    constant_distribution() = default;
+    template <typename G>
+    constant_distribution(G&) {}
     
     template <typename G>
     T operator()(G&) {
@@ -61,7 +63,7 @@ struct constant_distribution {
 namespace details {
     template <typename T, typename G>
     typename T::type call_distr(G& g) {
-        T dist;
+        T dist(g);
         return dist(g);
     }
 }
@@ -83,19 +85,15 @@ class uniform_distribution {
     
   private:
     std::uniform_real_distribution<type> d;
-    bool start = true;
+    
+    uniform_distribution(type m, type s) : d(m - 1.7320508075688772*s, m + 1.7320508075688772*s) {}
     
   public:
-    uniform_distribution() = default;
+    template <typename G>
+    uniform_distribution(G& g) : uniform_distribution(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
     
     template <typename G>
     type operator()(G& g) {
-        if (start) {
-            type m = details::call_distr<mean>(g);
-            type s = details::call_distr<dev>(g);
-            d = std::uniform_real_distribution<type>(m - 1.7320508075688772*s, m + 1.7320508075688772*s);
-            start = false;
-        }
         return d(g);
     }
 };
@@ -125,17 +123,13 @@ class normal_distribution {
 
   private:
     std::normal_distribution<type> d;
-    bool start = true;
     
   public:
-    normal_distribution() = default;
+    template <typename G>
+    normal_distribution(G& g) : d(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
     
     template <typename G>
     type operator()(G& g) {
-        if (start) {
-            d = std::normal_distribution<type>(details::call_distr<mean>(g), details::call_distr<dev>(g));
-            start = false;
-        }
         return d(g);
     }
 };
@@ -168,14 +162,11 @@ class exponential_distribution {
     bool start = true;
 
   public:
-    exponential_distribution() = default;
+    template <typename G>
+    exponential_distribution(G& g) : d(1/details::call_distr<mean>(g)) {}
     
     template <typename G>
     type operator()(G& g) {
-        if (start) {
-            d = std::exponential_distribution<type>(1/details::call_distr<mean>(g));
-            start = false;
-        }
         return d(g);
     }
 };
@@ -205,36 +196,34 @@ class weibull_distribution {
 
   private:
     std::weibull_distribution<type> d;
-    bool start = true;
 
   public:
-    weibull_distribution() = default;
+    template <typename G>
+    weibull_distribution(G& g) {
+        type m = details::call_distr<mean>(g);
+        type s = details::call_distr<dev>(g);
+        type t = log((s * s) / (m * m) + 1);
+        type kmin = 0, kmax = 1;
+        while (lgamma(1 + 2 * kmax) - 2 * lgamma(1 + kmax) < t) {
+            kmin = kmax;
+            kmax *= 2;
+        }
+        double k = (kmin + kmax) / 2;
+        while (kmin < k && k < kmax) {
+            if (lgamma(1 + 2 * k) - 2 * lgamma(1 + k) < t) {
+                kmin = k;
+            } else {
+                kmax = k;
+            }
+            k = (kmin + kmax) / 2;
+        }
+        type shape = 1 / k;
+        type scale = m / exp(lgamma(1 + k));
+        d = std::weibull_distribution<type>(shape, scale);
+    }
 
     template <typename G>
     type operator()(G& g) {
-        if (start) {
-            type m = details::call_distr<mean>(g);
-            type s = details::call_distr<dev>(g);
-            type t = log((s * s) / (m * m) + 1);
-            type kmin = 0, kmax = 1;
-            while (lgamma(1 + 2 * kmax) - 2 * lgamma(1 + kmax) < t) {
-                kmin = kmax;
-                kmax *= 2;
-            }
-            double k = (kmin + kmax) / 2;
-            while (kmin < k && k < kmax) {
-                if (lgamma(1 + 2 * k) - 2 * lgamma(1 + k) < t) {
-                    kmin = k;
-                } else {
-                    kmax = k;
-                }
-                k = (kmin + kmax) / 2;
-            }
-            type shape = 1 / k;
-            type scale = m / exp(lgamma(1 + k));
-            d = std::weibull_distribution<type>(shape, scale);
-            start = false;
-        }
         return d(g);
     }
 };
@@ -260,7 +249,8 @@ class make_positive : public T {
   public:
     using type = typename T::type;
     
-    make_positive() : T() {}
+    template <typename G>
+    make_positive(G& g) : T(g) {}
     
     template <typename G>
     type operator()(G& g) {

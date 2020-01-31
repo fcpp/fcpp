@@ -20,6 +20,7 @@
 
 #include "lib/common/algorithm.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/common/traits.hpp"
 
 
 /**
@@ -34,6 +35,9 @@ class count_aggregator {
     size_t count = 0;
     
   public:
+    //! @brief The type of values aggregated.
+    using type = T;
+    
     //! @brief Constructs the aggregator object and outputs its description.
     count_aggregator(std::ostream& os, std::string tag) {
         os << "count(" << tag << ") ";
@@ -67,6 +71,9 @@ class sum_aggregator {
     T sum = 0;
     
   public:
+    //! @brief The type of values aggregated.
+    using type = T;
+    
     //! @brief Constructs the aggregator object and outputs its description.
     sum_aggregator(std::ostream& os, std::string tag) {
         os << "sum(" << tag << ") ";
@@ -104,6 +111,9 @@ class mean_aggregator {
     size_t count = 0;
     
   public:
+    //! @brief The type of values aggregated.
+    using type = T;
+    
     //! @brief Constructs the aggregator object and outputs its description.
     mean_aggregator(std::ostream& os, std::string tag) {
         os << "mean(" << tag << ") ";
@@ -144,6 +154,9 @@ class moment_aggregator {
     size_t count = 0;
     
   public:
+    //! @brief The type of values aggregated.
+    using type = T;
+    
     //! @brief Constructs the aggregator object and outputs its description.
     moment_aggregator(std::ostream& os, std::string tag) {
         os << "dev(" << tag << ") ";
@@ -184,6 +197,9 @@ class dev_aggregator {
     size_t count = 0;
     
   public:
+    //! @brief The type of values aggregated.
+    using type = T;
+    
     //! @brief Constructs the aggregator object and outputs its description.
     dev_aggregator(std::ostream& os, std::string tag) {
         os << "mean(" << tag << ") " << "dev(" << tag << ") ";
@@ -230,6 +246,9 @@ class quantile_aggregator {
     std::multiset<T> values;
     
   public:
+    //! @brief The type of values aggregated.
+    using type = T;
+    
     //! @brief Constructs the aggregator object and outputs its description.
     quantile_aggregator(std::ostream& os, std::string tag) {
         for (int q : quantiles) {
@@ -286,25 +305,38 @@ template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 using min_aggregator = quantile_aggregator<T,only_finite,0>;
 
 
+//! @brief Aggregates values by maintaining their median.
+template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+using median_aggregator = quantile_aggregator<T,only_finite,50>;
+
+
 //! @brief Aggregates values by maintaining their maximum.
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 using max_aggregator = quantile_aggregator<T,only_finite,100>;
 
 
+//! @brief Aggregates values by maintaining their minimum, 25% quartile, median, 75% quartile and maximum.
+template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+using quart_aggregator = quantile_aggregator<T,only_finite,0,25,50,75,100>;
+
+
 //! @brief Chains multiple aggregators together into a single object.
-template <typename T, typename... Ts>
+//! Uses the value type of the first aggregator.
+template <typename... Ts>
 class multi_aggregator : public Ts... {
+    using type = typename type_sequence<Ts...>::front::type;
+    
   public:
     //! @brief Constructs the aggregator object and outputs its description.
     multi_aggregator(std::ostream& os, std::string tag) : Ts(os,tag)... {}
     
     //! @brief Erases a value from the aggregation set.
-    void erase(T value) {
+    void erase(type value) {
         details::ignore((Ts::erase(value),0)...);
     }
     
     //! @brief Inserts a new value to be aggregated.
-    void insert(T value) {
+    void insert(type value) {
         details::ignore((Ts::insert(value),0)...);
     }
     

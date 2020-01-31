@@ -5,6 +5,7 @@ cc_library(
     deps = [
         "//lib/common:algorithm",
         "//lib/common:tagged_tuple",
+        "//lib/common:traits",
     ],
     visibility = [
         '//visibility:public',

@@ -13,9 +13,9 @@ elif [ "$1" == "full" ]; then
     bazel build --config=asan --incompatible_remove_native_http_archive=false //test/...
     bazel test  --config=asan --incompatible_remove_native_http_archive=false //test/...
 elif [ "$1" != "" ]; then
-    target=`echo test/*/"$1"* | sed -E 's|/([^/]*)\.cpp|:\1|'`
-    if [ "$target" == "test/*/$1*" ]; then
-        target=`echo test/"$1"* "/..." | tr -d ' '`
+    target=`echo test/"$1"?* "/..." | tr -d ' '`
+    if [ "$target" == "test/$1?*/..." ]; then
+        target=`echo test/*/"$1"* | sed -E 's|/([^/]*)\.cpp|:\1|'`
     fi
     bazel test  --config=asan --incompatible_remove_native_http_archive=false //"$target"
 else

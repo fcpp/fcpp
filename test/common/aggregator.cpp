@@ -215,7 +215,7 @@ TEST(AggregatorTest, Quantile) {
 
 TEST(AggregatorTest, Multi) {
     std::stringstream ss;
-    fcpp::multi_aggregator<int, fcpp::count_aggregator<int>, fcpp::mean_aggregator<int>> v(ss, "tag");
+    fcpp::multi_aggregator<fcpp::count_aggregator<int>, fcpp::mean_aggregator<int>> v(ss, "tag");
     EXPECT_EQ("count(tag) mean(tag) ", ss.str());
     
     int c, m;

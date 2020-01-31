@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/generate/aggregator.hpp"
+#include "lib/common/aggregator.hpp"
 
 
 TEST(AggregatorTest, Count) {

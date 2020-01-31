@@ -1,12 +1,12 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
- * @file event.hpp
- * @brief Collection of generators of events. Contrary to random distributions, events generators are stateful, that is, the generation of the next event depend on the previous events generated (and are generated in increasing order).
+ * @file sequence.hpp
+ * @brief Collection of generators of increasing sequences. Contrary to random distributions, sequence generators are stateful, that is, the generation of the next element depend on the previous elements generated (and are generated in increasing order).
  */
 
-#ifndef FCPP_GENERATE_EVENT_H_
-#define FCPP_GENERATE_EVENT_H_
+#ifndef FCPP_COMMON_SEQUENCE_H_
+#define FCPP_COMMON_SEQUENCE_H_
 
 #include <algorithm>
 #include <array>
@@ -15,7 +15,7 @@
 
 #include "lib/settings.hpp"
 #include "lib/common/traits.hpp"
-#include "lib/generate/distribution.hpp"
+#include "lib/common/distribution.hpp"
 
 
 /**
@@ -220,4 +220,4 @@ class event_periodic {
 
 }
 
-#endif // FCPP_GENERATE_EVENT_H_
+#endif // FCPP_COMMON_SEQUENCE_H_

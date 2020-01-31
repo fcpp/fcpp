@@ -1,9 +1,33 @@
 cc_test(
+    name = "aggregator",
+    srcs = ["aggregator.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:aggregator",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "algorithm",
     srcs = ["algorithm.cpp"],
     deps = [
         "@gtest//:main",
         "//lib/common:algorithm",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
+    name = "distribution",
+    srcs = ["distribution.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:distribution",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -28,6 +52,19 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:multitype_map",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
+    name = "sequence",
+    srcs = ["sequence.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:distribution",
+        "//lib/common:sequence",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

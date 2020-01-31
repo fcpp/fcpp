@@ -5,8 +5,8 @@
  * @brief Collection of random distributions. Similar to distributions in `<random>`, but with distribution parameters as template arguments, which are also made uniform (mean and deviation) whenever possible.
  */
 
-#ifndef FCPP_GENERATE_DISTRIBUTION_H_
-#define FCPP_GENERATE_DISTRIBUTION_H_
+#ifndef FCPP_COMMON_DISTRIBUTION_H_
+#define FCPP_COMMON_DISTRIBUTION_H_
 
 #include <cmath>
 #include <random>
@@ -262,4 +262,4 @@ class make_positive : public T {
 
 }
 
-#endif // FCPP_GENERATE_DISTRIBUTION_H_
+#endif // FCPP_COMMON_DISTRIBUTION_H_

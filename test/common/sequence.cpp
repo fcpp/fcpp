@@ -5,8 +5,8 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/generate/distribution.hpp"
-#include "lib/generate/event.hpp"
+#include "lib/common/distribution.hpp"
+#include "lib/common/sequence.hpp"
 
 const fcpp::times_t inf = std::numeric_limits<fcpp::times_t>::max();
 

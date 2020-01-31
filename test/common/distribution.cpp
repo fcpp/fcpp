@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/generate/distribution.hpp"
+#include "lib/common/distribution.hpp"
 
 CONSTANT_DISTRIBUTION(d5, double, 5.0);
 CONSTANT_DISTRIBUTION(d1, double, 1.0);

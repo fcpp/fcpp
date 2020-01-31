@@ -5,8 +5,8 @@
  * @brief Data structures printing aggregations of data to standard output.
  */
 
-#ifndef FCPP_GENERATE_AGGREGATOR_H_
-#define FCPP_GENERATE_AGGREGATOR_H_
+#ifndef FCPP_COMMON_AGGREGATOR_H_
+#define FCPP_COMMON_AGGREGATOR_H_
 
 #include <cmath>
 
@@ -321,4 +321,4 @@ class multi_aggregator : public Ts... {
 
 }
 
-#endif // FCPP_GENERATE_AGGREGATOR_H_
+#endif // FCPP_COMMON_AGGREGATOR_H_

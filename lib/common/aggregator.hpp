@@ -13,7 +13,7 @@
 #include <array>
 #include <limits>
 #include <ostream>
-#include <set>
+#include <unordered_set>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -243,7 +243,7 @@ class dev_aggregator {
 template <typename T, bool only_finite, char... qs>
 class quantile_aggregator {
     const std::array<char, sizeof...(qs)> quantiles = {qs...};
-    std::multiset<T> values;
+    std::unordered_multiset<T> values;
     
   public:
     //! @brief The type of values aggregated.

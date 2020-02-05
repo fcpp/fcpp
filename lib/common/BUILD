@@ -44,6 +44,16 @@ cc_library(
 )
 
 cc_library(
+    name = 'lock',
+    hdrs = ['lock.hpp'],
+    srcs = ['lock.cpp'],
+    deps = [ ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'multitype_map',
     hdrs = ['multitype_map.hpp'],
     srcs = ['multitype_map.cpp'],

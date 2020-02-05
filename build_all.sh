@@ -4,6 +4,11 @@ if [ ! -d doc ]; then
     mkdir doc
 fi
 
+copts=""
+if [ "$1" == "mp" ]; then
+    copts='--copt="-fopenmp"'
+    shift 1
+fi
 if [ "$1" == "doc" ]; then
     doxygen Doxyfile
 elif [ "$1" == "full" ]; then

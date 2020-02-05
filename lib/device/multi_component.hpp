@@ -17,104 +17,13 @@
 #include "lib/settings.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
+#include "lib/device/base_component.hpp"
 
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-
-
-//! @cond INTERNAL
-namespace details {
-    /*
-     * Empty component (base case for component construction).
-     * The type parameter ensures unicity, avoiding the diamond problem.
-     * Should only be referred through `extend_component`.
-     *
-     * C Parent component deriving from base_component.
-     */
-    template <typename C>
-    struct base_component {
-        //! @brief No parent component in the chain.
-        using parent_t = void;
-        
-        //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
-        using message_t = fcpp::tagged_tuple<>;
-        
-        //! @brief A manager class to be shared among multiple devices.
-        struct manager {
-            //! @brief Default constructor.
-            manager() = default;
-            
-            //! @brief Returns next event to schedule.
-            times_t next() {
-                return std::numeric_limits<times_t>::max(); // no event to schedule
-            }
-            
-            //! @brief Updates the internal status of the manager and returns next event.
-            times_t update() {
-                return next();
-            }
-        };
-        
-        //! @name constructors
-        //@{
-        //! @brief Default constructor.
-        base_component() = default;
-        
-        //! @brief Constructor from a tagged tuple.
-        template <typename... Ts>
-        base_component(const fcpp::tagged_tuple<Ts...>&) {}
-        
-        //! @brief Copy constructor.
-        base_component(const base_component<C>&) = default;
-        
-        //! @brief Move constructor.
-        base_component(base_component<C>&&) = default;
-        //@}
-        
-        //! @name assignment operators
-        //@{
-        //! @brief Copy assignment.
-        base_component<C>& operator=(const base_component<C>&) = default;
-        
-        //! @brief Move assignment.
-        base_component<C>& operator=(base_component<C>&&) = default;
-        //@}
-        
-        //! @brief Equality operator.
-        bool operator==(const base_component<C>&) const {
-            return true;
-        }
-        
-        //! @brief Reads values for sensor on incoming messages (from a certain source).
-        template <typename... Ts>
-        void insert(const manager&, const tagged_tuple<Ts...>&) {}
-        
-        //! @brief Reads values from plain sensors.
-        void round_start(const manager&) {}
-        
-        //! @brief Performs actuation, returning data to attach to messages.
-        message_t round_end(manager&) const {
-            return {};
-        }
-    };
-}
-//! @endcond
-
-    
-/**
- * @brief Handles component chaining.
- *
- * Every component `D` should have another component `C` as last template
- * argument, and implement chaining by deriving from this.
- *
- * @param C Component to derive from.
- * @param D Component deriving from C.
- */
-template <typename C, typename D>
-using extend_component = std::conditional_t<std::is_same<C,void>::value, details::base_component<D>, C>;
 
 
 //! @cond INTERNAL
@@ -128,16 +37,16 @@ namespace details {
         return v and all(vs...);
     }
     
-    template <typename M>
-    times_t call_update(size_t, M&, type_sequence<>) {
+    template <typename M, typename G>
+    times_t call_update(size_t, M&, G&, type_sequence<>) {
         assert(false); // this should not happen
     }
     
     // calls update on the i-th supertype of M
-    template <typename M, typename N, typename... Ms>
-    times_t call_update(size_t i, M& m, type_sequence<N, Ms...>) {
-        if (i == 0) return static_cast<N&>(m).update();
-        return call_update(i-1, m, type_sequence<Ms...>());
+    template <typename M, typename G, typename N, typename... Ms>
+    times_t call_update(size_t i, M& m, G& g, type_sequence<N, Ms...>) {
+        if (i == 0) return static_cast<N&>(m).update(g);
+        return call_update(i-1, m, g, type_sequence<Ms...>());
     }
 }
 //! @endcond
@@ -166,16 +75,19 @@ struct unscheduling_component : public Cs... {
     //! @brief A manager class to be shared among multiple devices.
     struct manager : public Cs::manager... {
         //! @brief Default constructor.
-        manager() : Cs::manager()... {}
+        template <typename G>
+        manager(G& g) : Cs::manager(g)... {}
         
         //! @brief Returns next event to schedule.
-        times_t next() {
-            return static_cast<type_get<sizeof...(Cs)-1, typename Cs::manager&...>>(*this).next();
+        template <typename G>
+        times_t next(G& g) {
+            return static_cast<type_get<sizeof...(Cs)-1, typename Cs::manager&...>>(*this).next(g);
         }
         
         //! @brief Updates the internal status of the manager and returns next event.
-        times_t update() {
-            return static_cast<type_get<sizeof...(Cs)-1, typename Cs::manager&...>>(*this).update();
+        template <typename G>
+        times_t update(G& g) {
+            return static_cast<type_get<sizeof...(Cs)-1, typename Cs::manager&...>>(*this).update(g);
         }
     };
     
@@ -246,18 +158,21 @@ struct multi_component : public unscheduling_component<Cs...> {
         
       public:
         //! @brief Default constructor.
-        manager() : unscheduling_component<Cs...>::manager(), pending({Cs::manager::next()...}) {}
+        template <typename G>
+        manager(G& g) : unscheduling_component<Cs...>::manager(g), pending({Cs::manager::next(g)...}) {}
         
         //! @brief Returns next event to schedule.
-        times_t next() {
+        template <typename G>
+        times_t next(G& g) {
             return *std::min_element(pending.begin(), pending.end());
         }
         
         //! @brief Updates the internal status of the manager and returns next event.
-        times_t update() {
+        template <typename G>
+        times_t update(G& g) {
             size_t i = std::min_element(pending.begin(), pending.end()) - pending.begin();
-            pending[i] = details::call_update(i, *this, type_sequence<typename Cs::manager...>());
-            return next();
+            pending[i] = details::call_update(i, *this, g, type_sequence<typename Cs::manager...>());
+            return next(g);
         }
     };
     

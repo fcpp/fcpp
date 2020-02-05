@@ -8,6 +8,7 @@
 #ifndef FCPP_DEVICE_COMPONENT_H_
 #define FCPP_DEVICE_COMPONENT_H_
 
+#include "lib/device/base_component.hpp"
 #include "lib/device/data_component.hpp"
 #include "lib/device/multi_component.hpp"
 

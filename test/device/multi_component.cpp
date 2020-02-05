@@ -5,8 +5,8 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/device/multi_component.hpp"
 #include "lib/device/data_component.hpp"
+#include "lib/device/multi_component.hpp"
 
 
 struct tag {};
@@ -46,13 +46,14 @@ TEST(ComponentTest, Operators) {
 }
 
 TEST(ComponentTest, Manager) {
-    cbig::manager m;
+    int g;
+    cbig::manager m(g);
     fcpp::times_t t, inf = std::numeric_limits<fcpp::times_t>::max();
-    t = m.next();
+    t = m.next(g);
     EXPECT_EQ(inf, t);
-    t = m.update();
+    t = m.update(g);
     EXPECT_EQ(inf, t);
-    t = m.update();
+    t = m.update(g);
     EXPECT_EQ(inf, t);
     std::string ex, res;
     ex  = typeid(fcpp::tagged_tuple<>).name();
@@ -61,9 +62,10 @@ TEST(ComponentTest, Manager) {
 }
 
 TEST(ComponentTest, Functions) {
+    int g;
     cbig y;
-    cbig::manager n;
+    cbig::manager n(g);
     y.round_start(n);
-    cbig::message_t g = y.round_end(n);
-    y.insert(n, g);
+    cbig::message_t msg = y.round_end(n);
+    y.insert(n, msg);
 }

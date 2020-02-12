@@ -10,6 +10,9 @@
 
 #include <algorithm>
 #include <iterator>
+#include <thread>
+#include <type_traits>
+#include <vector>
 
 
 /**
@@ -156,6 +159,116 @@ template <typename E, typename I>
 inline void nth_elements(E efirst, E elast, I ifirst, I ilast) {
     nth_elements(efirst, elast, ifirst, ilast, details::std_compare<typename std::iterator_traits<E>::value_type>);
 }
+
+
+//! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
+//! @{
+struct sequential_execution_t {};
+template <size_t n>
+struct parallel_execution_t {};
+constexpr sequential_execution_t sequential_execution {};
+template <size_t n>
+constexpr parallel_execution_t<n> parallel_execution {};
+template <size_t n>
+using general_execution_t = std::conditional_t<n >= 2, parallel_execution_t<n>, sequential_execution_t>;
+template <size_t n>
+constexpr general_execution_t<n> general_execution {};
+//! @}
+
+
+/**
+ * @brief Bypassable parallel for (sequential version).
+ *
+ * @param v A vector of inputs.
+ * @param f A void function to be applied on them.
+ */
+template <typename T, typename F>
+void parallel_for(sequential_execution_t, std::vector<T>& v, F&& f) {
+    for (T& x : v) f(x);
+}
+
+
+#if defined(_OPENMP)
+/**
+* @brief Bypassable parallel for (parallel version).
+*
+* @param v A vector of inputs.
+* @param f A void function to be applied on them.
+*/
+template <size_t n, typename T, typename F>
+void parallel_for(parallel_execution_t<n>, std::vector<T>& v, F&& f) {
+    #pragma omp parallel for num_threads(n)
+    for (int i=0; i<v.size(); ++i)
+        f(v[i]);
+}
+#else
+/**
+* @brief Bypassable parallel for (parallel version).
+*
+* @param v A vector of inputs.
+* @param f A void function to be applied on them.
+*/
+template <size_t n, typename T, typename F>
+void parallel_for(parallel_execution_t<n>, std::vector<T>& v, F&& f) {
+    size_t slice = std::max(v.size() / n, (size_t)1);
+    size_t threshold = (n - std::max(int(v.size() - slice*n), 0))*slice;
+    std::vector<std::thread> pool;
+    pool.reserve(n);
+    auto launch = [&v,&f] (size_t a, size_t b) {
+        for (size_t i=a; i<b; ++i) f(v[i]);
+    };
+    for (size_t i=0; i!=v.size(); i+=slice) {
+        if (i >= threshold) ++slice;
+        pool.emplace_back(launch, i, i+slice);
+    }
+    for (std::thread& t : pool) t.join();
+}
+#endif
+
+
+/**
+ * @brief Bypassable parallel for (sequential version).
+ *
+ * @param v A vector of inputs.
+ * @param f A void function to be applied on them.
+ */
+template <typename F>
+void parallel_while(sequential_execution_t, F&& f) {
+    while (f());
+}
+
+
+#if defined(_OPENMP)
+/**
+* @brief Bypassable parallel for (parallel version).
+*
+* @param v A vector of inputs.
+* @param f A void function to be applied on them.
+*/
+template <size_t n, typename F>
+void parallel_while(parallel_execution_t<n>, F&& f) {
+    #pragma omp parallel num_threads(n)
+    while (f());
+}
+#else
+/**
+* @brief Bypassable parallel for (parallel version).
+*
+* @param v A vector of inputs.
+* @param f A void function to be applied on them.
+*/
+template <size_t n, typename F>
+void parallel_while(parallel_execution_t<n>, F&& f) {
+    std::vector<std::thread> pool;
+    pool.reserve(n);
+    auto launch = [&f] () {
+        while (f());
+    };
+    for (size_t i=0; i<n; ++i)
+        pool.emplace_back(launch);
+    for (std::thread& t : pool) t.join();
+}
+#endif
 
 
 }

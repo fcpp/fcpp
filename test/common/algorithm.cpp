@@ -1,12 +1,19 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <algorithm>
-#include <vector>
+#include <queue>
 #include <random>
+#include <vector>
 
 #include "gtest/gtest.h"
 
 #include "lib/common/algorithm.hpp"
+
+// slow computation
+int workhard(int n=15) {
+    if (n <= 1) return 1;
+    return (workhard(n-1) + workhard(n-2))/2;
+}
 
 
 TEST(AlgorithmTest, NthElements) {
@@ -26,4 +33,55 @@ TEST(AlgorithmTest, NthElements) {
         for (int i : iv)
             EXPECT_EQ(i, ev[i]);
     }
+}
+
+TEST(AlgorithmTest, ParallelFor) {
+    std::vector<int> v(10000);
+    int acc, tot = v.size();
+    for (size_t i=0; i<v.size(); ++i) v[i] = i;
+    auto worker = [&acc](int) {
+        int tmp = acc;
+        acc = tmp + workhard();
+    };
+    acc = 0;
+    fcpp::parallel_for(fcpp::sequential_execution, v, worker);
+    EXPECT_EQ(tot, acc);
+    acc = 0;
+    fcpp::parallel_for(fcpp::general_execution<1>, v, worker);
+    EXPECT_EQ(tot, acc);
+    acc = 0;
+    fcpp::parallel_for(fcpp::parallel_execution<4>, v, worker);
+    EXPECT_NE(tot, acc);
+    acc = 0;
+    fcpp::parallel_for(fcpp::general_execution<4>, v, worker);
+    EXPECT_NE(tot, acc);
+    fcpp::parallel_for(fcpp::parallel_execution<4>, v, [](int& x) { ++x; });
+    for (size_t i=0; i<v.size(); ++i)
+        EXPECT_EQ(int(i+1), v[i]);
+}
+
+TEST(AlgorithmTest, ParallelWhile) {
+    std::mt19937 rnd(42);
+    auto make_queue = [&rnd] (int N) {
+        std::priority_queue<int> q;
+        for (int i=0; i<N; ++i) q.push(i);
+        return q;
+    };
+    std::priority_queue<int> q;
+    int acc;
+    auto popper = [&q,&acc] () {
+        if (q.empty()) return false;
+        q.pop();
+        int tmp = acc;
+        acc = tmp + workhard();
+        return true;
+    };
+    q = make_queue(10000);
+    acc = 0;
+    fcpp::parallel_while(fcpp::sequential_execution, popper);
+    EXPECT_EQ(10000, acc);
+    q = make_queue(10000);
+    acc = 0;
+    fcpp::parallel_while(fcpp::parallel_execution<8>, popper);
+    EXPECT_NE(10000, acc);
 }

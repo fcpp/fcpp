@@ -47,11 +47,11 @@ cc_test(
 )
 
 cc_test(
-    name = "lock",
-    srcs = ["lock.cpp"],
+    name = "multitype_map",
+    srcs = ["multitype_map.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:lock",
+        "//lib/common:multitype_map",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -59,11 +59,12 @@ cc_test(
 )
 
 cc_test(
-    name = "multitype_map",
-    srcs = ["multitype_map.cpp"],
+    name = "mutex",
+    srcs = ["mutex.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:multitype_map",
+        "//lib/common:algorithm",
+        "//lib/common:mutex",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

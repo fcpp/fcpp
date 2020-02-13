@@ -182,9 +182,9 @@ constexpr general_execution_t<n> general_execution {};
  * @param v A vector of inputs.
  * @param f A void function to be applied on them.
  */
-template <typename T, typename F>
-void parallel_for(sequential_execution_t, std::vector<T>& v, F&& f) {
-    for (T& x : v) f(x);
+template <typename F>
+void parallel_for(sequential_execution_t, size_t len, F&& f) {
+    for (size_t i=0; i<len; ++i) f(i);
 }
 
 
@@ -195,11 +195,10 @@ void parallel_for(sequential_execution_t, std::vector<T>& v, F&& f) {
 * @param v A vector of inputs.
 * @param f A void function to be applied on them.
 */
-template <size_t n, typename T, typename F>
-void parallel_for(parallel_execution_t<n>, std::vector<T>& v, F&& f) {
+template <size_t n, typename F>
+void parallel_for(parallel_execution_t<n>, size_t len, F&& f) {
     #pragma omp parallel for num_threads(n)
-    for (int i=0; i<v.size(); ++i)
-        f(v[i]);
+    for (size_t i=0; i<len; ++i) f(i);
 }
 #else
 /**
@@ -208,16 +207,16 @@ void parallel_for(parallel_execution_t<n>, std::vector<T>& v, F&& f) {
 * @param v A vector of inputs.
 * @param f A void function to be applied on them.
 */
-template <size_t n, typename T, typename F>
-void parallel_for(parallel_execution_t<n>, std::vector<T>& v, F&& f) {
-    size_t slice = std::max(v.size() / n, (size_t)1);
-    size_t threshold = (n - std::max(int(v.size() - slice*n), 0))*slice;
+template <size_t n, typename F>
+void parallel_for(parallel_execution_t<n>, size_t len, F&& f) {
+    size_t slice = std::max(len / n, (size_t)1);
+    size_t threshold = (n - std::max(int(len - slice*n), 0))*slice;
     std::vector<std::thread> pool;
     pool.reserve(n);
-    auto launch = [&v,&f] (size_t a, size_t b) {
-        for (size_t i=a; i<b; ++i) f(v[i]);
+    auto launch = [&f] (size_t a, size_t b) {
+        for (size_t i=a; i<b; ++i) f(i);
     };
-    for (size_t i=0; i!=v.size(); i+=slice) {
+    for (size_t i=0; i!=len; i+=slice) {
         if (i >= threshold) ++slice;
         pool.emplace_back(launch, i, i+slice);
     }

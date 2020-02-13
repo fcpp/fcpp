@@ -21,8 +21,7 @@ int workhard(int n=15) {
 template <typename T, bool enabled>
 int work_lock(T&& ex, fcpp::mutex<enabled>&& m) {
     int acc = 0;
-    std::vector<int> v(TRIES);
-    fcpp::parallel_for(ex, v, [&acc,&m] (int) {
+    fcpp::parallel_for(ex, TRIES, [&acc,&m] (int) {
         fcpp::lock_guard<enabled> lock(m);
         int tmp = acc;
         acc = tmp + workhard();
@@ -34,8 +33,7 @@ int work_lock(T&& ex, fcpp::mutex<enabled>&& m) {
 template <typename T, bool enabled>
 int work_trylock(T&& ex, fcpp::mutex<enabled>&& m) {
     int acc = 0;
-    std::vector<int> v(TRIES);
-    fcpp::parallel_for(ex, v, [&acc,&m] (int) {
+    fcpp::parallel_for(ex, TRIES, [&acc,&m] (int) {
         while (not m.try_lock());
         fcpp::lock_guard<enabled> lock(m, fcpp::adopt_lock);
         int tmp = acc;

@@ -36,27 +36,28 @@ TEST(AlgorithmTest, NthElements) {
 }
 
 TEST(AlgorithmTest, ParallelFor) {
-    std::vector<int> v(10000);
-    int acc, tot = v.size();
+    const int N = 10000;
+    std::vector<int> v(N);
+    int acc;
     for (size_t i=0; i<v.size(); ++i) v[i] = i;
     auto worker = [&acc](int) {
         int tmp = acc;
         acc = tmp + workhard();
     };
     acc = 0;
-    fcpp::parallel_for(fcpp::sequential_execution, v, worker);
-    EXPECT_EQ(tot, acc);
+    fcpp::parallel_for(fcpp::sequential_execution, N, worker);
+    EXPECT_EQ(N, acc);
     acc = 0;
-    fcpp::parallel_for(fcpp::general_execution<1>, v, worker);
-    EXPECT_EQ(tot, acc);
+    fcpp::parallel_for(fcpp::general_execution<1>, N, worker);
+    EXPECT_EQ(N, acc);
     acc = 0;
-    fcpp::parallel_for(fcpp::parallel_execution<4>, v, worker);
-    EXPECT_NE(tot, acc);
+    fcpp::parallel_for(fcpp::parallel_execution<4>, N, worker);
+    EXPECT_NE(N, acc);
     acc = 0;
-    fcpp::parallel_for(fcpp::general_execution<4>, v, worker);
-    EXPECT_NE(tot, acc);
-    fcpp::parallel_for(fcpp::parallel_execution<4>, v, [](int& x) { ++x; });
-    for (size_t i=0; i<v.size(); ++i)
+    fcpp::parallel_for(fcpp::general_execution<4>, N, worker);
+    EXPECT_NE(N, acc);
+    fcpp::parallel_for(fcpp::parallel_execution<4>, N, [&v](size_t i) { ++v[i]; });
+    for (size_t i=0; i<N; ++i)
         EXPECT_EQ(int(i+1), v[i]);
 }
 

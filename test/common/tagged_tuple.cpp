@@ -81,6 +81,9 @@ TEST_F(TagTupleTest, Types) {
     ex  = typeid(char).name();
     res = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool>::tag_type<gat>).name();
     EXPECT_EQ(ex, res);
+    ex  = typeid(fcpp::type_sequence<bool,char>).name();
+    res = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool>::tag_types<oth,gat>).name();
+    EXPECT_EQ(ex, res);
     ex  = typeid(fcpp::type_sequence<tag,gat,oth>).name();
     res = typeid(fcpp::tagged_tuple<tag,int,gat,char,oth,bool>::tags).name();
     EXPECT_EQ(ex, res);

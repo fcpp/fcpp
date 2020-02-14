@@ -83,6 +83,22 @@ namespace details {
         ignore((get<Us>(t) = std::move(get<Us>(s)))...);
         return t;
     }
+
+    // Helper class selecting types from tagged tuple.
+    template <typename S, typename T, typename U>
+    struct tag_to_type;
+
+    // Base case (no types to select).
+    template <typename... Ss, typename... Ts>
+    struct tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<>> {
+        using type = type_sequence<>;
+    };
+
+    // Inductive case (some types to select).
+    template <typename... Ss, typename... Ts, typename U, typename... Us>
+    struct tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<U, Us...>> {
+        using type = typename tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<Us...>>::type::template push_front<typename type_sequence<Ts...,void>::template get<type_sequence<Ss...,void>::template find<U>>>;
+    };
 //! @endcond
 
     //! @brief Implementation of `tagged_tuple`.
@@ -96,9 +112,13 @@ namespace details {
         //! @brief The type sequence of data types.
         using types = type_sequence<Ts...>;
         
+        //! @brief Gets the types corresponding to multiple tags.
+        template <typename... Us>
+        using tag_types = typename tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<Us...>>::type;
+
         //! @brief Gets the type corresponding to a tag.
         template <typename S>
-        using tag_type = typename type_sequence<Ts...,void>::template get<type_sequence<Ss...,void>::template find<S>>;
+        using tag_type = typename tag_types<S>::front;
         
         //! @brief Type obtained by prepending a tagged element to the tuple.
         template <typename S, typename T>

@@ -33,7 +33,7 @@ namespace details {
  * @name get
  *
  * Function getting elements of a tagged tuple by tag.
- * @param S the tag to be extracted
+ * @param S The tag to be extracted.
  */
 //@{
 //! @brief Write access.
@@ -198,6 +198,31 @@ namespace details {
 //! @brief Concatenates multiple `tagged_tuple` types into a single `tagged_tuple` type.
 template <typename... Ts>
 using tagged_tuple_cat = typename details::tagged_tuple_cat<Ts...>::type;
+
+
+//! @cond INTERNAL
+namespace details {
+    template <typename... Ss, typename... Ts, typename T, typename... Us>
+    const T& get_or(const details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t, const T& def, type_sequence<Us...>) {
+        const T* r = &def;
+        ignore((r = &get<Us>(t))...);
+        return *r;
+    }
+}
+//! @endcond
+
+
+/**
+ * @name get_or
+ *
+ * Function getting elements of a tagged tuple by tag if present.
+ * @param S The tag to be extracted.
+ * @param def A default value if tag is missing.
+ */
+template <typename S, typename... Ss, typename... Ts, typename T>
+const T& get_or(const details::tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t, const T& def) {
+    return details::get_or(t, def, typename type_sequence<Ss...>::template intersect<S>());
+}
 
 
 }

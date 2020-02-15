@@ -47,6 +47,10 @@ TEST_F(TagTupleTest, Get) {
     EXPECT_EQ(true, b);
     i = std::get<0>(t);
     EXPECT_EQ(3, i);
+    b = fcpp::get_or<gat>(t, false);
+    EXPECT_EQ(true, b);
+    b = fcpp::get_or<oth>(t, false);
+    EXPECT_EQ(false, b);
 }
 
 TEST_F(TagTupleTest, Call) {

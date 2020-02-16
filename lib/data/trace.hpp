@@ -23,29 +23,29 @@
 namespace fcpp {
 
 
-#if   FCPP_SETTING_TRACE == 24
+#if   FCPP_TRACE == 24
     typedef uint32_t trace_t;
     constexpr int k_hash_len = 16;
     constexpr trace_t k_hash_factor = 17;
     constexpr trace_t k_hash_inverse = 61681;
-#elif FCPP_SETTING_TRACE == 32
+#elif FCPP_TRACE == 32
     typedef uint32_t trace_t;
     constexpr int k_hash_len = 20;
     constexpr trace_t k_hash_factor = 33;
     constexpr trace_t k_hash_inverse = 1016801;
-#elif FCPP_SETTING_TRACE == 48
+#elif FCPP_TRACE == 48
     typedef uint64_t trace_t;
     constexpr int k_hash_len = 34;
     constexpr trace_t k_hash_factor = 3251L;
     constexpr trace_t k_hash_inverse = 10500276859L;
-#elif FCPP_SETTING_TRACE == 64
+#elif FCPP_TRACE == 64
     typedef uint64_t trace_t;
     constexpr int k_hash_len = 48;
     constexpr trace_t k_hash_factor = 4871L;
     constexpr trace_t k_hash_inverse = 33111303973559L;
 #else
-    static_assert(false, "invalid value for FCPP_SETTING_TRACE");
-    //! @brief Type for trace hashes (depends on @ref FCPP_SETTING_TRACE).
+    static_assert(false, "invalid value for FCPP_TRACE");
+    //! @brief Type for trace hashes (depends on @ref FCPP_TRACE).
     typedef uint32_t trace_t;
     //! @brief Bit size of a trace hash.
     constexpr int k_hash_len = 0;
@@ -59,7 +59,7 @@ namespace fcpp {
 constexpr trace_t k_hash_mod = (trace_t(1)<<k_hash_len)-1;
 
 //! @brief Maximium value allowed for code counters.
-constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_SETTING_TRACE - k_hash_len);
+constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_TRACE - k_hash_len);
 
     
 /** @brief Keeps an updated representation of the current stack trace.
@@ -116,14 +116,14 @@ class trace {
     //! @brief Returns the hash together with the template argument into a @ref trace_t.
     template<trace_t x>
     trace_t hash() {
-        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_TRACE");
     	return m_stack_hash + (x << k_hash_len);
     }
 
     //! @brief Add a function call to the stack trace updating the hash.
     template<trace_t x>
     void push() {
-        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_TRACE");
         static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
     	m_stack_hash = (m_stack_hash * k_hash_factor + x) & k_hash_mod;
     	m_stack.push_back(x);
@@ -139,7 +139,7 @@ class trace {
     //! @brief Calls push with `x + k_hash_mod+1`.
     template<trace_t x>
     void push_cycle() {
-        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_SETTING_TRACE");
+        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_TRACE");
         static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
     	push<x>();
         m_stack.back() += k_hash_mod+1;

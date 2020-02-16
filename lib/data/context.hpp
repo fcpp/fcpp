@@ -38,7 +38,7 @@ template <typename M, typename... Ts>
 class context {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef flat_ptr<multitype_map<trace_t, Ts...>, FCPP_SETTING_EXPORTS == 2> export_type;
+    typedef flat_ptr<multitype_map<trace_t, Ts...>, FCPP_EXPORTS == 2> export_type;
 
     //! @brief The type of the metric on exports.
     typedef M metric_type;

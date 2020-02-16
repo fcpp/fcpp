@@ -11,69 +11,105 @@
 #include <cstdint>
 
 
-//! @brief Identifier for general systems.
-#define FCPP_GENERAL    111
-//! @brief Identifier for embedded systems.
-#define FCPP_EMBEDDED   222
-//! @brief Identifier for simulated systems.
-#define FCPP_SIMULATION 333
-//! @brief Identifier for deployed systems.
-#define FCPP_DEPLOYMENT 444
+//! @brief Identifier for low-end, resource constrained systems.
+#define FCPP_SYSTEM_EMBEDDED 11
+//! @brief Identifier for high-end, general purpose systems.
+#define FCPP_SYSTEM_GENERAL  22
 
-#ifndef FCPP_SETTING_SYSTEM
-//! @brief Setting defining the system: @ref FCPP_EMBEDDED or @ref FCPP_GENERAL (default).
-#define FCPP_SETTING_SYSTEM FCPP_GENERAL
-#endif
-
-#ifndef FCPP_SETTING_ENVIRONMENT
-//! @brief Setting defining the overall environment: @ref FCPP_DEPLOYMENT or @ref FCPP_SIMULATION (default).
-#define FCPP_SETTING_ENVIRONMENT FCPP_SIMULATION
+#ifndef FCPP_SYSTEM
+//! @brief Setting defining the system: @ref FCPP_SYSTEM_EMBEDDED or @ref FCPP_SYSTEM_GENERAL (default).
+#define FCPP_SYSTEM FCPP_SYSTEM_GENERAL
 #endif
 
 
-#if   FCPP_SETTING_SYSTEM == FCPP_GENERAL
-    #ifndef FCPP_SETTING_TRACE
+//! @brief Identifier for logical cloud systems, not simulating a physical world.
+#define FCPP_ENVIRONMENT_LOGICAL   111
+//! @brief Identifier for physically deployed systems.
+#define FCPP_ENVIRONMENT_PHYSICAL  222
+//! @brief Identifier for simulations of deployed systems.
+#define FCPP_ENVIRONMENT_SIMULATED 333
+
+
+#ifndef FCPP_ENVIRONMENT
+//! @brief Setting defining the overall environment: @ref FCPP_ENVIRONMENT_LOGICAL, @ref FCPP_ENVIRONMENT_PHYSICAL or @ref FCPP_ENVIRONMENT_SIMULATED (default).
+#define FCPP_ENVIRONMENT FCPP_ENVIRONMENT_SIMULATED
+#endif
+
+
+//! @brief Identifier for systems operating stand-alone, without user or network interactions.
+#define FCPP_CONFIGURATION_STANDALONE 1111
+//! @brief Identifier for systems depending on user or network interaction.
+#define FCPP_CONFIGURATION_DEPENDENT  2222
+
+#ifndef FCPP_CONFIGURATION
+//! @brief Setting defining the overall environment: @ref FCPP_CONFIGURATION_STANDALONE or @ref FCPP_CONFIGURATION_DEPENDENT (default).
+#define FCPP_CONFIGURATION FCPP_CONFIGURATION_STANDALONE
+#endif
+
+
+#if   FCPP_SYSTEM == FCPP_SYSTEM_GENERAL
+    #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 32 for embedded systems).
-    #define FCPP_SETTING_TRACE 64
+    #define FCPP_TRACE 64
     #endif
-    #ifndef FCPP_SETTING_DEVICE
+    #ifndef FCPP_DEVICE
     //! @brief Setting defining the size of device identifiers (32 for general systems, 16 for embedded systems).
-    #define FCPP_SETTING_DEVICE 32
+    #define FCPP_DEVICE 32
     #endif
-#elif FCPP_SETTING_SYSTEM == FCPP_EMBEDDED
-    #ifndef FCPP_SETTING_TRACE
+#elif FCPP_SYSTEM == FCPP_SYSTEM_EMBEDDED
+    #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 32 for embedded systems).
-    #define FCPP_SETTING_TRACE 32
+    #define FCPP_TRACE 32
     #endif
-    #ifndef FCPP_SETTING_DEVICE
+    #ifndef FCPP_DEVICE
     //! @brief Setting defining the size of device identifiers (32 for general systems, 16 for embedded systems).
-    #define FCPP_SETTING_DEVICE 16
+    #define FCPP_DEVICE 16
     #endif
 #else
-    static_assert(false, "invalid value for FCPP_SETTING_SYSTEM");
+    static_assert(false, "invalid value for FCPP_SYSTEM");
 #endif
 
 
-#if   FCPP_SETTING_ENVIRONMENT == FCPP_SIMULATION
-    #ifndef FCPP_SETTING_EXPORTS
-    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for deployed systems) or together in a `shared_ptr` (1, default for simulated systems).
-    #define FCPP_SETTING_EXPORTS 1
+#if   FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_LOGICAL
+    #ifndef FCPP_EXPORTS
+    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
+    #define FCPP_EXPORTS 1
     #endif
-    #ifndef FCPP_SETTING_TIME
-    //! @brief Setting defining the type to be used to represent times.
-    #define FCPP_SETTING_TIME double
+    #ifndef FCPP_TIME_TYPE
+    //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
+    #define FCPP_TIME_TYPE time_t
     #endif
-#elif FCPP_SETTING_ENVIRONMENT == FCPP_DEPLOYMENT
-    #ifndef FCPP_SETTING_EXPORTS
-    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for deployed systems) or together in a `shared_ptr` (1, default for simulated systems).
-    #define FCPP_SETTING_EXPORTS 2
+#elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL
+    #ifndef FCPP_EXPORTS
+    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
+    #define FCPP_EXPORTS 2
     #endif
-    #ifndef FCPP_SETTING_TIME
-    //! @brief Setting defining the type to be used to represent times.
-    #define FCPP_SETTING_TIME time_t
+    #ifndef FCPP_TIME_TYPE
+    //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
+    #define FCPP_TIME_TYPE time_t
+    #endif
+#elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_SIMULATED
+    #ifndef FCPP_EXPORTS
+    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
+    #define FCPP_EXPORTS 1
+    #endif
+    #ifndef FCPP_TIME_TYPE
+    //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
+    #define FCPP_TIME_TYPE double
     #endif
 #else
-    static_assert(false, "invalid value for FCPP_SETTING_ENVIRONMENT");
+    static_assert(false, "invalid value for FCPP_ENVIRONMENT");
+#endif
+
+
+#ifndef FCPP_REALTIME
+    #if FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL || FCPP_CONFIGURATION == FCPP_CONFIGURATION_DEPENDENT
+    //! @brief Factor multiplying real time passing (1 for physical or dependent systems, infinity for others).
+    #define FCPP_REALTIME 1.0
+    #else
+    //! @brief Factor multiplying real time passing (1 for physical or dependent systems, infinity for others).
+    #define FCPP_REALTIME std::numeric_limits<double>::infinity()
+    #endif
 #endif
 
 
@@ -87,23 +123,23 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-    using times_t = FCPP_SETTING_TIME;
+    using times_t = FCPP_TIME_TYPE;
 
-#if   FCPP_SETTING_DEVICE == 8
+#if   FCPP_DEVICE == 8
     typedef uint8_t device_t;
-#elif FCPP_SETTING_DEVICE == 16
+#elif FCPP_DEVICE == 16
     typedef uint16_t device_t;
-#elif FCPP_SETTING_DEVICE == 24
+#elif FCPP_DEVICE == 24
     typedef uint32_t device_t;
-#elif FCPP_SETTING_DEVICE == 32
+#elif FCPP_DEVICE == 32
     typedef uint32_t device_t;
-#elif FCPP_SETTING_DEVICE == 48
+#elif FCPP_DEVICE == 48
     typedef uint64_t device_t;
-#elif FCPP_SETTING_DEVICE == 64
+#elif FCPP_DEVICE == 64
     typedef uint64_t device_t;
 #else
-    static_assert(false, "invalid value for FCPP_SETTING_DEVICE");
-    //! @brief Type for device identifiers (depends on @ref FCPP_SETTING_DEVICE).
+    static_assert(false, "invalid value for FCPP_DEVICE");
+    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint64_t device_t;
 #endif
 }

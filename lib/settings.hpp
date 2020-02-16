@@ -9,6 +9,7 @@
 #define FCPP_SETTINGS_H_
 
 #include <cstdint>
+#include <limits>
 
 
 //! @brief Identifier for low-end, resource constrained systems.
@@ -79,6 +80,14 @@
     //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
     #define FCPP_TIME_TYPE time_t
     #endif
+    #ifndef FCPP_TIME_EPSILON
+    //! @brief Setting defining which time differences are to be considered negligible.
+    #define FCPP_TIME_EPSILON 0
+    #endif
+    #ifndef FCPP_PARALLEL
+    //! @brief Setting defining whether the computation should be performed with parallel threads.
+    #define FCPP_PARALLEL true
+    #endif
 #elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL
     #ifndef FCPP_EXPORTS
     //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
@@ -88,6 +97,14 @@
     //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
     #define FCPP_TIME_TYPE time_t
     #endif
+    #ifndef FCPP_TIME_EPSILON
+    //! @brief Setting defining which time differences are to be considered negligible.
+    #define FCPP_TIME_EPSILON 0
+    #endif
+    #ifndef FCPP_PARALLEL
+    //! @brief Setting defining whether the computation should be performed with parallel threads.
+    #define FCPP_PARALLEL false
+    #endif
 #elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_SIMULATED
     #ifndef FCPP_EXPORTS
     //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
@@ -96,6 +113,14 @@
     #ifndef FCPP_TIME_TYPE
     //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
     #define FCPP_TIME_TYPE double
+    #endif
+    #ifndef FCPP_TIME_EPSILON
+    //! @brief Setting defining which time differences are to be considered negligible.
+    #define FCPP_TIME_EPSILON 0.01
+    #endif
+    #ifndef FCPP_PARALLEL
+    //! @brief Setting defining whether the computation should be performed with parallel threads.
+    #define FCPP_PARALLEL false
     #endif
 #else
     static_assert(false, "invalid value for FCPP_ENVIRONMENT");
@@ -124,6 +149,8 @@
  */
 namespace fcpp {
     using times_t = FCPP_TIME_TYPE;
+    constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
+    constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
 
 #if   FCPP_DEVICE == 8
     typedef uint8_t device_t;

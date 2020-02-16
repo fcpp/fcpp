@@ -35,20 +35,20 @@ TEST_F(ContextTest, Operators) {
 TEST_F(ContextTest, InsertErase) {
     fcpp::context<double, fcpp::field<int>, char> x(data);
     x.insert(2, m, 0.3);
-    EXPECT_EQ(0, x.self());
-    EXPECT_EQ(3, x.size());
+    EXPECT_EQ(fcpp::device_t(0), x.self());
+    EXPECT_EQ(size_t(3), x.size());
     EXPECT_EQ(0.5, x.top());
     for (const auto& p : x.data())
         EXPECT_EQ(*(p.second), m);
     x.insert(2, 1.0);
-    EXPECT_EQ(3, x.size());
+    EXPECT_EQ(size_t(3), x.size());
     EXPECT_EQ(1.0, x.top());
     x.pop();
     EXPECT_EQ(data, x);
-    EXPECT_EQ(2, x.size());
+    EXPECT_EQ(size_t(2), x.size());
     EXPECT_EQ(0.5, x.top());
     x.insert(0, m, 2.0);
-    EXPECT_EQ(2, x.size());
+    EXPECT_EQ(size_t(2), x.size());
     EXPECT_EQ(2.0, x.top());
 }
 

@@ -26,18 +26,10 @@ struct exposer {
 using combo1 = fcpp::combine<exposer,fcpp::storage<tag,bool,gat,int>>;
 
 
-TEST(ComponentTest, Move) {
-    combo1::net  net1{fcpp::make_tagged_tuple<>()};
-    combo1::net  net2 = std::move(net1);
-    combo1::node dev1{net2, fcpp::make_tagged_tuple<>()};
-    combo1::node dev2 = std::move(dev1);
-    net2.run();
-    dev2.update();
-}
-
 TEST(ComponentTest, Storage) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<oth,gat>('b',3)};
+    combo1::node device{network, fcpp::make_tagged_tuple<tags::id,oth,gat>(7,'b',3)};
+    EXPECT_EQ(size_t(7), device.id);
     EXPECT_EQ(false, device.storage<tag>());
     EXPECT_EQ(3,     device.storage<gat>());
     EXPECT_EQ(false, fcpp::get<tag>(device.storage_tuple()));

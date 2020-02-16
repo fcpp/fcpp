@@ -12,6 +12,7 @@
 #include <limits>
 
 #include "lib/settings.hpp"
+#include "lib/common/mutex.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
 
@@ -19,6 +20,9 @@
 namespace tags {
     //! @brief Tag for setting a factor to be applied to real time (defaults to `FCPP_REALTIME`).
     struct realtime {};
+
+    //! @brief Tag for setting node identifiers.
+    struct id {};
 }
 
 
@@ -32,94 +36,98 @@ namespace fcpp {
 struct base {
     /**
      * @brief The actual component.
-     * Parametrisation with F enables <a href="https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a> for static emulation of virtual calls.
+     * Component functionalities are added to those of the parent by inheritance at multiple levels: the whole component class inherits tag for static checks of correct composition, while `node` and `net` sub-classes inherit actual behaviour.
+     * Further parametrisation with F enables <a href="https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a> for static emulation of virtual calls.
      *
      * @param F The final composition of all components.
      */
     template <typename F>
     struct component {
         //! @brief The local part of the component.
-        struct node {
-            // The public interface gathers what may be called from net objects and main programs.
-            
+        class node {
+          public: // visible by net objects and the main program
             //! @name constructors
             //@{
             /**
              * @brief Main constructor.
              *
              * @param n The corresponding net object.
-             * @param t A `tagged_tuple` gathering initialisation values.
+             * @param t A `tagged_tuple` gathering initialisation values (must contain a `tags::id` entry).
              */
             template <typename S, typename T>
-            node(typename F::net& n, const tagged_tuple<S,T>&) : net(n) {}
+            node(typename F::net& n, const tagged_tuple<S,T>& t) : id(get<tags::id>(t)), net(n) {}
 
             //! @brief Deleted copy constructor.
             node(const node&) = delete;
             
-            //! @brief Move constructor.
-            node(node&&) = default;
-            //@}
-            
-            //! @name assignment operators
-            //@{
             //! @brief Deleted copy assignment.
             node& operator=(const node&) = delete;
-            
-            //! @brief Move assignment.
-            node& operator=(node&&) = default;
             //@}
             
-            //! @brief Returns next event to schedule for the node component.
-            times_t next() {
-                return std::numeric_limits<times_t>::max(); // no event to schedule
+            /**
+             * @brief Returns next event to schedule for the node component.
+             * Should be updated after the update is done, so that during updates corresponds to the current time.
+             */
+            times_t next() const {
+                return TIME_MAX; // no event to schedule
             }
             
             //! @brief Updates the internal status of node component.
             void update() {}
             
-              // The protected interface gathers what may be called from node objects only.
-          protected:
+            //! @brief The unique identifier of the device.
+            const device_t id;
+            
+            //! @brief A mutex for regulating access to the node.
+            fcpp::mutex<FCPP_PARALLEL> mutex;
+
+          protected: // visible by node objects only
             //! @brief A reference to the corresponding net object.
             typename F::net& net;
             
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = tagged_tuple_t<>;
             
-            //! @brief Gives access to the current node as instance of `F::node`.
+            //! @brief Gives access to the node as instance of `F::node`. Should NEVER be overridden.
             typename F::node& as_final() {
                 return *static_cast<typename F::node*>(this);
             }
             
+            //! @brief Gives const access to the node as instance of `F::node`. Should NEVER be overridden.
+            const typename F::node& as_final() const {
+                return *static_cast<const typename F::node*>(this);
+            }
+            
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t, device_t, const tagged_tuple<S,T>&) {}
+            void receive(device_t, const tagged_tuple<S,T>&) {}
             
-            //! @brief Produces a message to send to a target, storing it in its argument and returning it.
+            //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
             template <typename S, typename T>
-            tagged_tuple<S,T>& send(times_t, device_t, tagged_tuple<S,T>& t) {
+            tagged_tuple<S,T>& send(device_t, tagged_tuple<S,T>& t) const {
                 return t;
             }
 
-            //! @brief Performs actions at round start.
+            //! @brief Performs computations at round start.
             void round_start() {}
             
-            //! @brief Performs the main round computation.
+            //! @brief Performs computations at round middle.
             void round_main() {}
 
-            //! @brief Performs actions at round end.
+            //! @brief Performs computations at round end.
             void round_end() {}
+            
+            //! @brief Performs a computation round. Should NEVER be overridden.
+            void round() {
+                as_final().round_start();
+                as_final().round_main();
+                as_final().round_end();
+            }
         };
         
         //! @brief The global part of the component.
         class net {
-            //! @brief The start time of the program.
-            std::chrono::high_resolution_clock::time_point m_realtime_start;
-            
-            //! @brief The factor at which real time progresses.
-            double m_realtime_factor;
-            
-              // The public interface gathers what may be called from node objects and main programs.
-          public:
+          public: // visible by node objects and the main program
             //! @name constructors
             //@{
             //! @brief Constructor from a tagged tuple.
@@ -132,47 +140,52 @@ struct base {
             //! @brief Deleted copy constructor.
             net(const net&) = delete;
             
-            //! @brief Move constructor.
-            net(net&&) = default;
-            //@}
-            
-            //! @name assignment operators
-            //@{
             //! @brief Deleted copy assignment.
             net& operator=(const net&) = delete;
-            
-            //! @brief Move assignment.
-            net& operator=(net&&) = default;
             //@}
 
-            //! @brief Returns next event to schedule for the network component.
-            times_t next() {
-                return std::numeric_limits<times_t>::max(); // no event to schedule
+            /**
+             * @brief Returns next event to schedule for the net component.
+             * Should be updated after the update is done, so that during updates corresponds to the current time.
+             */
+            times_t next() const {
+                return TIME_MAX; // no event to schedule
             }
             
-            //! @brief Updates the internal status of network component.
+            //! @brief Updates the internal status of net component.
             void update() {}
             
-            //! @brief Runs the events, keeping the pace with real time as much as possible.
+            //! @brief Runs the events at real time pace. Should NEVER be overridden.
             void run() {
-                while (as_final().next() < std::numeric_limits<times_t>::max())
+                while (as_final().next() < TIME_MAX)
                     if (as_final().next() <= real_time())
                         as_final().update();
             }
             
-              // The protected interface gathers what may be called from node objects only.
-          protected:
-            //! @brief Gives access to the net as instance of `F::net`.
+          protected: // visible by net objects only
+            //! @brief Gives access to the net as instance of `F::net`. Should NEVER be overridden.
             typename F::net& as_final() {
                 return *static_cast<typename F::net*>(this);
             }
             
-            //! @brief An estimate of the real time elapsed from start on this device.
-            times_t real_time() {
+            //! @brief Gives const access to the net as instance of `F::net`. Should NEVER be overridden.
+            const typename F::net& as_final() const {
+                return *static_cast<const typename F::net*>(this);
+            }
+            
+            //! @brief An estimate of real time elapsed from start. Should NEVER be overridden.
+            times_t real_time() const {
                 if (m_realtime_factor == std::numeric_limits<double>::infinity())
-                    return std::numeric_limits<times_t>::max();
+                    return TIME_MAX;
                 return (std::chrono::high_resolution_clock::now() - m_realtime_start).count() * m_realtime_factor;
             }
+            
+          private: // implementation details
+            //! @brief The start time of the program.
+            std::chrono::high_resolution_clock::time_point m_realtime_start;
+            
+            //! @brief A factor warping progression of real time.
+            double m_realtime_factor;
         };
     };
 };

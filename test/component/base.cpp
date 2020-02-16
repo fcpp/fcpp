@@ -105,18 +105,17 @@ int workhard(int n=15) {
 }
 
 
-TEST(ComponentTest, Move) {
+TEST(ComponentTest, ID) {
     combo1::net  net1{fcpp::make_tagged_tuple<>()};
-    combo1::net  net2 = std::move(net1);
-    combo1::node dev1{net2, fcpp::make_tagged_tuple<>()};
-    combo1::node dev2 = std::move(dev1);
-    net2.run();
-    dev2.update();
+    combo1::node dev1{net1, fcpp::make_tagged_tuple<tags::id>(42)};
+    net1.run();
+    dev1.update();
+    EXPECT_EQ(size_t(42), dev1.id);
 }
 
 TEST(ComponentTest, Override) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
-    combo2::node device{network, fcpp::make_tagged_tuple<>()};
+    combo2::node device{network, fcpp::make_tagged_tuple<tags::id>(42)};
     EXPECT_EQ(7,  network.something());
     EXPECT_EQ(2,  network.retest());
     EXPECT_EQ(4,  device.tester());
@@ -125,7 +124,7 @@ TEST(ComponentTest, Override) {
 
 TEST(ComponentTest, Virtualize) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<>()};
+    combo1::node device{network, fcpp::make_tagged_tuple<tags::id>(42)};
     EXPECT_EQ(7,  network.something());
     EXPECT_EQ(22, network.retest());
     EXPECT_EQ(23, device.tester());
@@ -140,11 +139,11 @@ TEST(ComponentTest, RealTime) {
     EXPECT_EQ(1000, acc);
     EXPECT_EQ(fcpp::times_t(0.0), net1.real_time());
     combo2::net net2{fcpp::make_tagged_tuple<tags::realtime>(std::numeric_limits<double>::infinity())};
-    EXPECT_EQ(std::numeric_limits<fcpp::times_t>::max(), net2.real_time());
+    EXPECT_EQ(fcpp::TIME_MAX,     net2.real_time());
     combo2::net net3{fcpp::make_tagged_tuple<tags::realtime>(1.0)};
     // just waste some time in a non-optimizable way
     for (int i=acc=0; i<1000; ++i) acc += workhard();
     EXPECT_EQ(1000, acc);
     EXPECT_LT(fcpp::times_t(0.0), net3.real_time());
-    EXPECT_GT(std::numeric_limits<fcpp::times_t>::max(), net3.real_time());
+    EXPECT_GT(fcpp::TIME_MAX,     net3.real_time());
 }

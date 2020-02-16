@@ -4,6 +4,7 @@ cc_library(
     srcs = ['base.cpp'],
     deps = [
         "//lib:settings",
+        "//lib/common:mutex",
         "//lib/common:tagged_tuple",
     ],
     visibility = [

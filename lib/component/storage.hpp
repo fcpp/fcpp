@@ -28,7 +28,7 @@ template <typename... Ss>
 struct storage {
     /**
      * @brief The actual component.
-     * Component functionalities are added to those of the parent P by inheritance at multiple levels: the whole component class inherits tag for static checks of correct composition, while `node` and `net` sub-classes inherit actual behaviour.
+     * Component functionalities are added to those of the parent by inheritance at multiple levels: the whole component class inherits tag for static checks of correct composition, while `node` and `net` sub-classes inherit actual behaviour.
      * Further parametrisation with F enables <a href="https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a> for static emulation of virtual calls.
      *
      * @param F The final composition of all components.
@@ -50,10 +50,7 @@ struct storage {
 
         //! @brief The local part of the component.
         class node : public P::node {
-            //! @brief The data storage.
-            tagged_tuple_t<Ss...> m_storage;
-
-          public:
+          public: // visible by net objects and the main program
             /**
              * @brief Main constructor.
              *
@@ -63,7 +60,7 @@ struct storage {
             template <typename S, typename T>
             node(typename F::net& n, const tagged_tuple<S,T>& t) : P::node(n,t), m_storage(t) {}
             
-          protected:
+          protected: // visible by node objects only
             /**
              * @brief Write access to stored data.
              *
@@ -74,10 +71,24 @@ struct storage {
                 return fcpp::get<T>(m_storage);
             }
             
+            /**
+             * @brief Const access to stored data.
+             *
+             * @param T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            const typename tagged_tuple_t<Ss...>::template tag_type<T>& storage() const {
+                return fcpp::get<T>(m_storage);
+            }
+            
             //! @brief Const access to stored data as tagged tuple.
-            const tagged_tuple_t<Ss...>& storage_tuple() {
+            const tagged_tuple_t<Ss...>& storage_tuple() const {
                 return m_storage;
             }
+            
+          private: // implementation details
+            //! @brief The data storage.
+            tagged_tuple_t<Ss...> m_storage;
         };
         
         //! @brief The global part of the component.

@@ -10,3 +10,15 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'storage',
+    hdrs = ['storage.hpp'],
+    srcs = ['storage.cpp'],
+    deps = [
+        "//lib/common:tagged_tuple",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)

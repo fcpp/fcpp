@@ -8,6 +8,7 @@
 
 struct meantag {};
 struct devtag {};
+struct devtag2 {};
 
 CONSTANT_DISTRIBUTION(d5, double, 5.0);
 CONSTANT_DISTRIBUTION(d1, double, 1.0);
@@ -200,4 +201,20 @@ TEST(DistributionTest, Positive) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(48300.0, d, 800.0);
+}
+
+TEST(DistributionTest, Combined) {
+    std::mt19937 rnd(42);
+    fcpp::weibull_distribution<fcpp::uniform_distribution<d5, d5, void, devtag>, fcpp::uniform_distribution<d1, d5, void, devtag2>> distr(rnd, fcpp::make_tagged_tuple<devtag,devtag2>(0.0,0.0));
+    double d;
+    d = distr(rnd);
+    EXPECT_NEAR(5.0, d, 5.0);
+    d = distr(rnd);
+    EXPECT_NEAR(5.0, d, 5.0);
+    d = distr(rnd);
+    EXPECT_NEAR(5.0, d, 5.0);
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += distr(rnd);
+    EXPECT_NEAR(50000.0, d, 300.0);
 }

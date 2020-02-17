@@ -72,8 +72,9 @@ cc_library(
     srcs = ['sequence.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:traits",
         "//lib/common:distribution",
+        "//lib/common:tagged_tuple",
+        "//lib/common:traits",
     ],
     visibility = [
         '//visibility:public',

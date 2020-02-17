@@ -27,6 +27,7 @@ cc_library(
     hdrs = ['distribution.hpp'],
     srcs = ['distribution.cpp'],
     deps = [
+        "//lib/common:tagged_tuple",
     ],
     visibility = [
         '//visibility:public',

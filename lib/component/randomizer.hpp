@@ -96,10 +96,6 @@ struct randomizer {
         
         //! @brief Asserts that P has no `randomizer_tag` to avoid component duplication.
         static_assert(not has_tag<P>::value, "cannot combine two randomizer components");
-        
-        //! @cond INTERNAL
-        class net; // forward declaration for friendship
-        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

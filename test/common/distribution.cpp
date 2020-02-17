@@ -6,6 +6,9 @@
 
 #include "lib/common/distribution.hpp"
 
+struct meantag {};
+struct devtag {};
+
 CONSTANT_DISTRIBUTION(d5, double, 5.0);
 CONSTANT_DISTRIBUTION(d1, double, 1.0);
 
@@ -56,6 +59,17 @@ TEST(DistributionTest, Uniform) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
+    fcpp::uniform_distribution<d1, d5, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<meantag,devtag>(5.0,1.0));
+    d = dtup(rnd);
+    EXPECT_NEAR(5.0, d, 1.74);
+    d = dtup(rnd);
+    EXPECT_NEAR(5.0, d, 1.74);
+    d = dtup(rnd);
+    EXPECT_NEAR(5.0, d, 1.74);
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += dtup(rnd);
+    EXPECT_NEAR(50000.0, d, 300.0);
 }
 
 TEST(DistributionTest, Normal) {
@@ -82,6 +96,17 @@ TEST(DistributionTest, Normal) {
     d = 0;
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
+    EXPECT_NEAR(50000.0, d, 300.0);
+    fcpp::normal_d<double, 5, 3, 1, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<devtag>(1.0));
+    d = dtup(rnd);
+    EXPECT_NEAR(5.0, d, 3.0);
+    d = dtup(rnd);
+    EXPECT_NEAR(5.0, d, 3.0);
+    d = dtup(rnd);
+    EXPECT_NEAR(5.0, d, 3.0);
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += dtup(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
 }
 
@@ -110,6 +135,17 @@ TEST(DistributionTest, Exponential) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
+    fcpp::exponential_distribution<d1, d1, meantag> dtup(rnd, fcpp::make_tagged_tuple<meantag>(5.0));
+    d = dtup(rnd);
+    EXPECT_NEAR(10.0, d, 10.0);
+    d = dtup(rnd);
+    EXPECT_NEAR(10.0, d, 10.0);
+    d = dtup(rnd);
+    EXPECT_NEAR(10.0, d, 10.0);
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += dtup(rnd);
+    EXPECT_NEAR(50000.0, d, 1500.0);
 }
 
 TEST(DistributionTest, Weibull) {
@@ -136,6 +172,17 @@ TEST(DistributionTest, Weibull) {
     d = 0;
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
+    EXPECT_NEAR(50000.0, d, 300.0);
+    fcpp::weibull_d<double, 3, 1, 1, meantag> dtag(rnd, fcpp::make_tagged_tuple<meantag,double>(5.0,'a'));
+    d = dtag(rnd);
+    EXPECT_NEAR(5.0, d, 5.0);
+    d = dtag(rnd);
+    EXPECT_NEAR(5.0, d, 5.0);
+    d = dtag(rnd);
+    EXPECT_NEAR(5.0, d, 5.0);
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += dtag(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
 }
 

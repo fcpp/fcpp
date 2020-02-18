@@ -23,8 +23,9 @@ namespace fcpp {
 
 /**
  * @brief Component scheduling round executions.
- * Multiple schedulers may coexist in a composition of components.
- * If a `timer` component is present, it cannot be a parent of a scheduler to avoid unpredictable behaviour.
+ * Multiple instances may coexist in a composition of components.
+ * Requires a `randomizer` parent component.
+ * The `timer` component cannot be a parent of a `scheduler`, otherwise round planning may not work.
  *
  * @param G A sequence generator type.
  */
@@ -46,8 +47,8 @@ struct scheduler {
         template <typename T>
         struct has_rtag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
         
-        //! @brief Asserts that P has a `randomizer_tag`, needed to instantiate sequence generators.
-        static_assert(has_rtag<P>::value, "missing randomizer parent for scheduler");
+        //! @brief Asserts that P has a `randomizer_tag`.
+        static_assert(has_rtag<P>::value, "missing randomizer parent for scheduler component");
         
         //! @brief Checks if T has a `timer_tag`.
         template <typename T, typename = int>
@@ -55,8 +56,8 @@ struct scheduler {
         template <typename T>
         struct has_ttag<T, std::conditional_t<true,int,typename T::timer_tag>> : std::true_type {};
         
-        //! @brief Asserts that P has no `timer_tag` to avoid uncontrolled scheduling.
-        static_assert(not has_ttag<P>::value, "timer cannot be parent of scheduler");
+        //! @brief Asserts that P has no `timer_tag`.
+        static_assert(not has_ttag<P>::value, "timer cannot be parent of scheduler component");
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -72,7 +73,7 @@ struct scheduler {
             
             /**
              * @brief Returns next event to schedule for the node component.
-             * Should be updated after the update is done, so that during updates corresponds to the current time.
+             * Should be updated before `update()` is called, so that also during updates corresponds to the next time.
              */
             times_t next() const {
                 return std::min(m_schedule.next(), P::node::next());
@@ -81,8 +82,9 @@ struct scheduler {
             //! @brief Updates the internal status of node component.
             void update() {
                 if (m_schedule.next() < P::node::next()) {
-                    P::node::round();
+                    times_t t = P::node::as_final().next();
                     m_schedule.step(P::node::generator());
+                    P::node::round(t);
                 } else P::node::update();
             }
             

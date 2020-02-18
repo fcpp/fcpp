@@ -95,8 +95,8 @@ struct randomizer {
         template <typename T>
         struct has_tag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
         
-        //! @brief Asserts that P has no `randomizer_tag` to avoid component duplication.
-        static_assert(not has_tag<P>::value, "cannot combine two randomizer components");
+        //! @brief Asserts that P has no `randomizer_tag`.
+        static_assert(not has_tag<P>::value, "cannot combine multiple randomizer components");
 
         //! @brief The local part of the component.
         class node : public P::node {

@@ -45,8 +45,8 @@ struct storage {
         template <typename T>
         struct has_tag<T, std::conditional_t<true,int,typename T::storage_tag>> : std::true_type {};
         
-        //! @brief Asserts that P has no `storage_tag` to avoid component duplication.
-        static_assert(not has_tag<P>::value, "cannot combine two storage components");
+        //! @brief Asserts that P has no `storage_tag`.
+        static_assert(not has_tag<P>::value, "cannot combine multiple storage components");
 
         //! @brief The local part of the component.
         class node : public P::node {

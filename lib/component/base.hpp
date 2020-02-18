@@ -66,7 +66,7 @@ struct base {
             
             /**
              * @brief Returns next event to schedule for the node component.
-             * Should be updated after the update is done, so that during updates corresponds to the current time.
+             * Should be updated before `update()` is called, so that also during updates corresponds to the next time.
              */
             times_t next() const {
                 return TIME_MAX; // no event to schedule
@@ -100,28 +100,28 @@ struct base {
             
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(device_t, const tagged_tuple<S,T>&) {}
+            void receive(times_t, device_t, const tagged_tuple<S,T>&) {}
             
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
             template <typename S, typename T>
-            tagged_tuple<S,T>& send(device_t, tagged_tuple<S,T>& t) const {
+            tagged_tuple<S,T>& send(times_t, device_t, tagged_tuple<S,T>& t) const {
                 return t;
             }
 
-            //! @brief Performs computations at round start.
-            void round_start() {}
+            //! @brief Performs computations at round start with current time `t`.
+            void round_start(times_t) {}
             
-            //! @brief Performs computations at round middle.
-            void round_main() {}
+            //! @brief Performs computations at round middle with current time `t`.
+            void round_main(times_t) {}
 
-            //! @brief Performs computations at round end.
-            void round_end() {}
+            //! @brief Performs computations at round end with current time `t`.
+            void round_end(times_t) {}
             
-            //! @brief Performs a computation round. Should NEVER be overridden.
-            void round() {
-                as_final().round_start();
-                as_final().round_main();
-                as_final().round_end();
+            //! @brief Performs a computation round with current time `t`. Should NEVER be overridden.
+            void round(times_t t) {
+                as_final().round_start(t);
+                as_final().round_main(t);
+                as_final().round_end(t);
             }
         };
         
@@ -146,7 +146,7 @@ struct base {
 
             /**
              * @brief Returns next event to schedule for the net component.
-             * Should be updated after the update is done, so that during updates corresponds to the current time.
+             * Should be updated before `update()` is called, so that also during updates corresponds to the next time.
              */
             times_t next() const {
                 return TIME_MAX; // no event to schedule

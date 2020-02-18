@@ -66,7 +66,7 @@ struct base {
             
             /**
              * @brief Returns next event to schedule for the node component.
-             * Should be updated before `update()` is called, so that also during updates corresponds to the next time.
+             * Should correspond to the next time also during updates.
              */
             times_t next() const {
                 return TIME_MAX; // no event to schedule
@@ -146,7 +146,7 @@ struct base {
 
             /**
              * @brief Returns next event to schedule for the net component.
-             * Should be updated before `update()` is called, so that also during updates corresponds to the next time.
+             * Should correspond to the next time also during updates.
              */
             times_t next() const {
                 return TIME_MAX; // no event to schedule

@@ -73,7 +73,7 @@ struct scheduler {
             
             /**
              * @brief Returns next event to schedule for the node component.
-             * Should be updated before `update()` is called, so that also during updates corresponds to the next time.
+             * Should correspond to the next time also during updates.
              */
             times_t next() const {
                 return std::min(m_schedule.next(), P::node::next());

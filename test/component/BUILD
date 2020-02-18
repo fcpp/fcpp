@@ -50,3 +50,16 @@ cc_test(
     args = ['--gtest_color=yes'],
     timeout = 'short',
 )
+
+cc_test(
+    name = "timer",
+    srcs = ["timer.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/component:base",
+        "//lib/component:timer",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)

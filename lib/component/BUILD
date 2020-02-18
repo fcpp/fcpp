@@ -49,3 +49,17 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'timer',
+    hdrs = ['timer.hpp'],
+    srcs = ['timer.cpp'],
+    deps = [
+        "//lib:settings",
+        "//lib/data:field",
+        "//lib/common:tagged_tuple",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)

@@ -12,6 +12,7 @@
 #include <random>
 #include <type_traits>
 
+#include "lib/common/distribution.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
 
@@ -160,6 +161,13 @@ struct randomizer {
                 return dist(m_generator);
             }
             
+            //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D`.
+            template <template<typename> class D>
+            double error(double v, double r, double a = 0) {
+                D<double> dist = make_distribution<D>(v, r*v+a);
+                return dist(m_generator);
+            }
+
             //! @brief Generates an `int` value between 0 and `b`.
             inline int next_int(int b = std::numeric_limits<int>::max()) {
                 return next_int(0,b);

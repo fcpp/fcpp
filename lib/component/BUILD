@@ -17,6 +17,7 @@ cc_library(
     hdrs = ['randomizer.hpp'],
     srcs = ['randomizer.cpp'],
     deps = [
+        "//lib/common:distribution",
         "//lib/common:tagged_tuple",
     ],
     visibility = [

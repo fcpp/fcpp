@@ -13,6 +13,27 @@ struct devtag2 {};
 CONSTANT_DISTRIBUTION(d5, double, 5.0);
 CONSTANT_DISTRIBUTION(d1, double, 1.0);
 
+template<typename D, typename G>
+double tester(D distr, G& gen) {
+    double d = 0;
+    for (int i=0; i<10000; ++i)
+        d += distr(gen);
+    return d;
+}
+
+
+TEST(DistributionTest, Maker) {
+    std::mt19937 rnd(42);
+    double d;
+    d = tester(fcpp::make_distribution<std::uniform_real_distribution>(5.0, 1.0), rnd);
+    EXPECT_NEAR(50000.0, d, 300.0);
+    d = tester(fcpp::make_distribution<std::normal_distribution>(5.0, 1.0), rnd);
+    EXPECT_NEAR(50000.0, d, 300.0);
+    d = tester(fcpp::make_distribution<std::exponential_distribution>(5.0, 5.0), rnd);
+    EXPECT_NEAR(50000.0, d, 1500.0);
+    d = tester(fcpp::make_distribution<std::weibull_distribution>(5.0, 1.0), rnd);
+    EXPECT_NEAR(50000.0, d, 300.0);
+}
 
 TEST(DistributionTest, Constant) {
     std::mt19937 rnd(42);

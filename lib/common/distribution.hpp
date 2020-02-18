@@ -8,17 +8,76 @@
 #ifndef FCPP_COMMON_DISTRIBUTION_H_
 #define FCPP_COMMON_DISTRIBUTION_H_
 
+#include <cassert>
 #include <cmath>
 #include <random>
 #include <type_traits>
 
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/common/traits.hpp"
 
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+
+
+//! @cond INTERNATL
+namespace details {
+    template <typename T>
+    std::uniform_real_distribution<T> make_distribution(type_sequence<std::uniform_real_distribution<T>>, T mean, T dev) {
+        return std::uniform_real_distribution<T>(mean - 1.7320508075688772*dev, mean + 1.7320508075688772*dev);
+    }
+
+    template <typename T>
+    std::normal_distribution<T> make_distribution(type_sequence<std::normal_distribution<T>>, T mean, T dev) {
+        return std::normal_distribution<T>(mean, dev);
+    }
+
+    template <typename T>
+    std::exponential_distribution<T> make_distribution(type_sequence<std::exponential_distribution<T>>, T mean, T dev) {
+        assert(mean == dev);
+        return std::exponential_distribution<T>(1/mean);
+    }
+
+    template <typename T>
+    std::weibull_distribution<T> make_distribution(type_sequence<std::weibull_distribution<T>>, T mean, T dev) {
+        T t = log((dev * dev) / (mean * mean) + 1);
+        T kmin = 0, kmax = 1;
+        while (lgamma(1 + 2 * kmax) - 2 * lgamma(1 + kmax) < t) {
+            kmin = kmax;
+            kmax *= 2;
+        }
+        double k = (kmin + kmax) / 2;
+        while (kmin < k && k < kmax) {
+            if (lgamma(1 + 2 * k) - 2 * lgamma(1 + k) < t) {
+                kmin = k;
+            } else {
+                kmax = k;
+            }
+            k = (kmin + kmax) / 2;
+        }
+        T shape = 1 / k;
+        T scale = mean / exp(lgamma(1 + k));
+        return std::weibull_distribution<T>(shape, scale);
+    }
+}
+//! @endcond
+
+
+/**
+ * Function uniformily creating instances of real distributions in `<random>` based on mean and deviation.
+ *
+ * @param D    A distribution template in `<random>`.
+ * @param mean The required mean of the distribution.
+ * @param dev  The standard deviation of the distribution.
+ */
+template <template<typename> class D, typename T>
+//! @{
+D<T> make_distribution(T mean, T dev) {
+    return details::make_distribution(type_sequence<D<T>>(), mean, dev);
+}
 
 
 /**
@@ -99,10 +158,10 @@ class uniform_distribution {
     using type = typename mean::type;
     
     template <typename G>
-    uniform_distribution(G& g) : uniform_distribution(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
+    uniform_distribution(G& g) : m_d(make_distribution<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    uniform_distribution(G& g, const tagged_tuple<S,T>& t) : uniform_distribution(get_or<mean_tag>(t,details::call_distr<mean>(g, t)), get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
+    uniform_distribution(G& g, const tagged_tuple<S,T>& t) : m_d(make_distribution<std::uniform_real_distribution>(get_or<mean_tag>(t,details::call_distr<mean>(g, t)), get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
     type operator()(G& g) {
@@ -111,8 +170,6 @@ class uniform_distribution {
 
   private:
     std::uniform_real_distribution<type> m_d;
-    
-    uniform_distribution(type m, type s) : m_d(m - 1.7320508075688772*s, m + 1.7320508075688772*s) {}
 };
 /**
  * @param T        The type returned by the distribution.
@@ -198,7 +255,6 @@ class exponential_distribution {
 
   private:
     std::exponential_distribution<type> m_d;
-    bool start = true;
 };
 /**
  * @param T        The type returned by the distribution.
@@ -227,12 +283,12 @@ class weibull_distribution {
 
   public:
     using type = typename mean::type;
-
+    
     template <typename G>
-    weibull_distribution(G& g) : weibull_distribution(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
+    weibull_distribution(G& g) : m_d(make_distribution<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    weibull_distribution(G& g, const tagged_tuple<S,T>& t) : weibull_distribution(get_or<mean_tag>(t,details::call_distr<mean>(g,t)), get_or<dev_tag>(t,details::call_distr<dev>(g,t))) {}
+    weibull_distribution(G& g, const tagged_tuple<S,T>& t) : m_d(make_distribution<std::weibull_distribution>(get_or<mean_tag>(t,details::call_distr<mean>(g, t)), get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
     type operator()(G& g) {
@@ -240,26 +296,6 @@ class weibull_distribution {
     }
 
   private:
-    weibull_distribution(type m, type s) {
-        type t = log((s * s) / (m * m) + 1);
-        type kmin = 0, kmax = 1;
-        while (lgamma(1 + 2 * kmax) - 2 * lgamma(1 + kmax) < t) {
-            kmin = kmax;
-            kmax *= 2;
-        }
-        double k = (kmin + kmax) / 2;
-        while (kmin < k && k < kmax) {
-            if (lgamma(1 + 2 * k) - 2 * lgamma(1 + k) < t) {
-                kmin = k;
-            } else {
-                kmax = k;
-            }
-            k = (kmin + kmax) / 2;
-        }
-        type shape = 1 / k;
-        type scale = m / exp(lgamma(1 + k));
-        m_d = std::weibull_distribution<type>(shape, scale);
-    }
     std::weibull_distribution<type> m_d;
 };
 /**

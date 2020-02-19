@@ -76,7 +76,7 @@ using combo1 = fcpp::combine<exposer<true>,fcpp::timer>;
 using combo2 = fcpp::combine<exposer<false>,fcpp::timer,scheduler>;
 
 
-TEST(ComponentTest, NodePlanning) {
+TEST(TimerTest, NodePlanning) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
     combo1::node device{network, fcpp::make_tagged_tuple<tags::id,tags::start_time>(1,2.0)};
     EXPECT_EQ(2.0, device.next_time());
@@ -103,7 +103,7 @@ TEST(ComponentTest, NodePlanning) {
     EXPECT_EQ(fcpp::TIME_MAX, device.next_time());
 }
 
-TEST(ComponentTest, NodeScheduling) {
+TEST(TimerTest, NodeScheduling) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
     combo2::node device{network, fcpp::make_tagged_tuple<tags::id>(1)};
     EXPECT_EQ(0.0, device.next_time());
@@ -155,7 +155,7 @@ TEST(ComponentTest, NodeScheduling) {
     EXPECT_EQ(fcpp::TIME_MAX, device.next_time());
 }
 
-TEST(ComponentTest, NetScheduling) {
+TEST(TimerTest, NetScheduling) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
     EXPECT_EQ(0.0, network.next());
     network.update();

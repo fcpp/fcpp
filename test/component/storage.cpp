@@ -26,7 +26,7 @@ struct exposer {
 using combo1 = fcpp::combine<exposer,fcpp::storage<tag,bool,gat,int>>;
 
 
-TEST(ComponentTest, Storage) {
+TEST(StorageTest, Storage) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
     combo1::node device{network, fcpp::make_tagged_tuple<tags::id,oth,gat>(7,'b',3)};
     EXPECT_EQ(size_t(7), device.id);

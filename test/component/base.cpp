@@ -105,7 +105,7 @@ int workhard(int n=15) {
 }
 
 
-TEST(ComponentTest, ID) {
+TEST(BaseTest, ID) {
     combo1::net  net1{fcpp::make_tagged_tuple<>()};
     combo1::node dev1{net1, fcpp::make_tagged_tuple<tags::id>(42)};
     net1.run();
@@ -113,7 +113,7 @@ TEST(ComponentTest, ID) {
     EXPECT_EQ(size_t(42), dev1.id);
 }
 
-TEST(ComponentTest, Override) {
+TEST(BaseTest, Override) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
     combo2::node device{network, fcpp::make_tagged_tuple<tags::id>(42)};
     EXPECT_EQ(7,  network.something());
@@ -122,7 +122,7 @@ TEST(ComponentTest, Override) {
     EXPECT_EQ(-6, device.virtualize());
 }
 
-TEST(ComponentTest, Virtualize) {
+TEST(BaseTest, Virtualize) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
     combo1::node device{network, fcpp::make_tagged_tuple<tags::id>(42)};
     EXPECT_EQ(7,  network.something());
@@ -131,7 +131,7 @@ TEST(ComponentTest, Virtualize) {
     EXPECT_EQ(91, device.virtualize());
 }
 
-TEST(ComponentTest, RealTime) {
+TEST(BaseTest, RealTime) {
     int acc;
     combo2::net net1{fcpp::make_tagged_tuple<int>('a')};
     // just waste some time in a non-optimizable way

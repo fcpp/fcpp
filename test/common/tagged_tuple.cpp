@@ -118,9 +118,22 @@ TEST_F(TagTupleTest, Types) {
 TEST_F(TagTupleTest, Print) {
     std::stringstream s;
     s << t;
+    EXPECT_EQ("tag:2, gat:true", s.str());
+    s.str("");
+    s << fcpp::assignment_tuple << t;
     EXPECT_EQ("tag = 2, gat = true", s.str());
+    s.str("");
+    s << fcpp::underscore_tuple << t;
+    EXPECT_EQ("tag-2_gat-true", s.str());
+    s.str("");
+    s << fcpp::dictionary_tuple << t;
+    EXPECT_EQ("tag:2, gat:true", s.str());
     fcpp::tagged_tuple_t<oth,bool,tags::stuffer,char,void,double> tt{false,'z',4.5};
     s.str("");
-    s << tt;
+    s << fcpp::assignment_tuple << tt;
     EXPECT_EQ("oth = false, stuffer = z, void = 4.5", s.str());
+    fcpp::tagged_tuple_t<tags::main,std::string,tags::stuffer,std::string> ttt{"tester","foo"};
+    s.str("");
+    s << fcpp::underscore_tuple << ttt;
+    EXPECT_EQ("tester_stuffer-foo", s.str());
 }

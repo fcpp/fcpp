@@ -24,7 +24,7 @@ using combo1 = fcpp::combine<exposer,fcpp::randomizer<>>;
 using combo2 = fcpp::combine<exposer,fcpp::randomizer<fcpp::crand>>;
 
 
-TEST(ComponentTest, Twister) {
+TEST(RandomizerTest, Twister) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
     combo1::node device{network, fcpp::make_tagged_tuple<tags::id>(42)};
     for (int i=0; i<1000; ++i) {
@@ -42,7 +42,7 @@ TEST(ComponentTest, Twister) {
     }
 }
 
-TEST(ComponentTest, Crand) {
+TEST(RandomizerTest, Crand) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
     combo2::node device{network, fcpp::make_tagged_tuple<tags::id,tags::seed>(42,2)};
     for (int i=0; i<1000; ++i) {

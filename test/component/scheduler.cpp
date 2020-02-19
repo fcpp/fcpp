@@ -19,7 +19,7 @@ using combo1 = fcpp::combine<fcpp::scheduler<seq_mul>,fcpp::randomizer<>>;
 using combo2 = fcpp::combine<fcpp::scheduler<seq_per>,fcpp::scheduler<seq_mul>,fcpp::randomizer<>>;
 
 
-TEST(ComponentTest, Single) {
+TEST(SchedulerTest, Single) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
     combo1::node device{network, fcpp::make_tagged_tuple<tags::id,seq_mul>(7,'b')};
     double d;
@@ -40,7 +40,7 @@ TEST(ComponentTest, Single) {
     EXPECT_EQ(inf, d);
 }
 
-TEST(ComponentTest, Multiple) {
+TEST(SchedulerTest, Multiple) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
     combo2::node device{network, fcpp::make_tagged_tuple<tags::id,devtag>(7,0.0)};
     double d;

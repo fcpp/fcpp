@@ -17,6 +17,13 @@
 #include "lib/common/traits.hpp"
 
 
+//! @brief Namespace of tags to be used for `tagged_tuple` objects.
+namespace tags {
+    //! @brief Tag for setting the main name for an object.
+    struct main {};
+}
+
+
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
@@ -178,32 +185,69 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
 
 //! @cond INTERNAL
 namespace details {
+    std::string tag_val_sep = ":";
+    std::string val_tag_sep = ", ";
+
     std::string strip_tags(std::string s) {
         if (strncmp(s.c_str(), "tags::", 6) == 0) return s.substr(6);
         return s;
+    }
+    void tt_val_print(std::ostream& o, bool x, type_sequence<bool>) {
+        o << (x ? "true" : "false");
+    }
+    template <typename T, typename = std::enable_if_t<not std::is_same<T,bool>::value>>
+    void tt_val_print(std::ostream& o, const T& x, type_sequence<T>) {
+        o << x;
     }
     template<typename S, typename T>
     void tt_print(std::ostream&, const tagged_tuple<S, T>&, type_sequence<>, type_sequence<>) {
     }
     template<typename S, typename T, typename S1, typename T1>
     void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1>, type_sequence<T1>) {
-        o << strip_tags(type_name<S1>()) << " = ";
-        if (std::is_same<T1,bool>::value) o << (get<S1>(t) ? "true" : "false");
-        else o << get<S1>(t);
+        if (not std::is_same<S1,tags::main>::value)
+            o << strip_tags(type_name<S1>()) << tag_val_sep;
+        tt_val_print(o, get<S1>(t), type_sequence<T1>());
     }
     template<typename S, typename T, typename S1, typename... Ss, typename T1, typename... Ts>
     void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1,Ss...>, type_sequence<T1,Ts...>) {
         tt_print(o, t, type_sequence<S1>(), type_sequence<T1>());
-        o << ", ";
+        o << val_tag_sep;
         tt_print(o, t, type_sequence<Ss...>(), type_sequence<Ts...>());
     }
 }
 //! @endcond
 
-//! @brief Prints a tagged tuple in assignment-list format.
+//! @brief Prints a tagged tuple (stripping namespace `tags` prefix, and tag `main` fully).
 template<typename S, typename T>
 std::ostream& operator<<(std::ostream& o, const tagged_tuple<S, T>& t) {
     details::tt_print(o, t, S(), T());
+    return o;
+}
+
+//! @brief Stream manipulator for representing tagged tuples in dictionary format (default).
+struct dictionary_tuple_t {};
+dictionary_tuple_t dictionary_tuple{};
+std::ostream& operator<<(std::ostream& o, const dictionary_tuple_t&) {
+    details::tag_val_sep = ":";
+    details::val_tag_sep = ", ";
+    return o;
+}
+
+//! @brief Stream manipulator for representing tagged tuples in assignment-list format.
+struct assignment_tuple_t {};
+assignment_tuple_t assignment_tuple{};
+std::ostream& operator<<(std::ostream& o, const assignment_tuple_t&) {
+    details::tag_val_sep = " = ";
+    details::val_tag_sep = ", ";
+    return o;
+}
+
+//! @brief Stream manipulator for representing tagged tuples in compact underscore format.
+struct underscore_tuple_t {};
+underscore_tuple_t underscore_tuple{};
+std::ostream& operator<<(std::ostream& o, const underscore_tuple_t&) {
+    details::tag_val_sep = "-";
+    details::val_tag_sep = "_";
     return o;
 }
 

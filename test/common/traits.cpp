@@ -10,6 +10,16 @@
 #include "lib/common/traits.hpp"
 
 
+TEST(TraitsTest, TypeName) {
+    std::string ex, res;
+    ex = "double";
+    res = fcpp::type_name<double>();
+    EXPECT_EQ(ex, res);
+    ex = "std::array<int, 10ul>";
+    res = fcpp::type_name<std::array<int,10>>();
+    EXPECT_EQ(ex, res);
+}
+
 TEST(TraitsTest, QueueOp) {
     std::string ex, res;
     ex  = typeid(short).name();
@@ -37,7 +47,7 @@ TEST(TraitsTest, QueueOp) {
 }
 
 TEST(TraitsTest, ArrayOp) {
-    size_t i;
+    int i;
     i = fcpp::type_sequence<int,double,double,char>::size;
     EXPECT_EQ(4, i);
     i = fcpp::type_sequence<>::size;
@@ -74,7 +84,7 @@ TEST(TraitsTest, SetOp) {
     ex  = typeid(fcpp::type_sequence<double>).name();
     res = typeid(fcpp::type_sequence<int,double,double,char>::repeated).name();
     EXPECT_EQ(ex, res);
-    size_t i;
+    int i;
     i = fcpp::type_sequence<int,double,double,char>::repeated::size;
     EXPECT_EQ(1, i);
     i = fcpp::type_sequence<int,double,char>::repeated::size;

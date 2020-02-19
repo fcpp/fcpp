@@ -1,5 +1,7 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
+#include <sstream>
+
 #include "gtest/gtest.h"
 
 #include "lib/common/tagged_tuple.hpp"
@@ -9,6 +11,11 @@ struct tag {};
 struct gat {};
 struct oth {};
 struct hto {};
+
+
+namespace tags {
+    struct stuffer {};
+}
 
 
 class TagTupleTest : public ::testing::Test {
@@ -106,4 +113,14 @@ TEST_F(TagTupleTest, Types) {
         fcpp::tagged_tuple_t<hto,double>
     >).name();
     EXPECT_EQ(ex, res);
+}
+
+TEST_F(TagTupleTest, Print) {
+    std::stringstream s;
+    s << t;
+    EXPECT_EQ("tag = 2, gat = true", s.str());
+    fcpp::tagged_tuple_t<oth,bool,tags::stuffer,char,void,double> tt{false,'z',4.5};
+    s.str("");
+    s << tt;
+    EXPECT_EQ("oth = false, stuffer = z, void = 4.5", s.str());
 }

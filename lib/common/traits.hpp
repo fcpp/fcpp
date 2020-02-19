@@ -8,7 +8,20 @@
 #ifndef FCPP_COMMON_TRAITS_H_
 #define FCPP_COMMON_TRAITS_H_
 
+#ifdef __has_include
+    #if __has_include(<cxxabi.h>)
+    #include <cxxabi.h>
+    #else
+    #define NABI
+    #endif
+#else
+    #ifndef NABI
+    #include <cxxabi.h>
+    #endif
+#endif
+
 #include <array>
+#include <memory>
 #include <tuple>
 #include <type_traits>
 
@@ -17,6 +30,24 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+
+
+#ifdef NABI
+//! @brief Returns the string representation of a type `T`.
+template <typename T>
+std::string type_name() {
+    return typeid(T).name();
+}
+#else
+//! @brief Returns the string representation of a type `T`.
+template <typename T>
+std::string type_name() {
+    int status = 42;
+    const char* name = typeid(T).name();
+    std::unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
+    return (status==0) ? res.get() : name;
+}
+#endif
 
 
 /**

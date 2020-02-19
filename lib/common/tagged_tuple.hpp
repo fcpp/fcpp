@@ -8,6 +8,9 @@
 #ifndef FCPP_COMMON_TAGGED_TUPLE_H_
 #define FCPP_COMMON_TAGGED_TUPLE_H_
 
+#include <cstring>
+#include <ostream>
+#include <string>
 #include <tuple>
 #include <type_traits>
 
@@ -171,6 +174,38 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
         return make_tagged_tuple<Ss...>(get<Ss>(*this)(v)...);
     }
 };
+
+
+//! @cond INTERNAL
+namespace details {
+    std::string strip_tags(std::string s) {
+        if (strncmp(s.c_str(), "tags::", 6) == 0) return s.substr(6);
+        return s;
+    }
+    template<typename S, typename T>
+    void tt_print(std::ostream&, const tagged_tuple<S, T>&, type_sequence<>, type_sequence<>) {
+    }
+    template<typename S, typename T, typename S1, typename T1>
+    void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1>, type_sequence<T1>) {
+        o << strip_tags(type_name<S1>()) << " = ";
+        if (std::is_same<T1,bool>::value) o << (get<S1>(t) ? "true" : "false");
+        else o << get<S1>(t);
+    }
+    template<typename S, typename T, typename S1, typename... Ss, typename T1, typename... Ts>
+    void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1,Ss...>, type_sequence<T1,Ts...>) {
+        tt_print(o, t, type_sequence<S1>(), type_sequence<T1>());
+        o << ", ";
+        tt_print(o, t, type_sequence<Ss...>(), type_sequence<Ts...>());
+    }
+}
+//! @endcond
+
+//! @brief Prints a tagged tuple in assignment-list format.
+template<typename S, typename T>
+std::ostream& operator<<(std::ostream& o, const tagged_tuple<S, T>& t) {
+    details::tt_print(o, t, S(), T());
+    return o;
+}
 
 
 //! @brief The `tagged_tuple_t` alias, allowing to express a `tagged_tuple` by interleaving tags and types.

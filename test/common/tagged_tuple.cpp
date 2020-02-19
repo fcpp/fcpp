@@ -15,6 +15,7 @@ struct hto {};
 
 namespace tags {
     struct stuffer {};
+    struct main {};
 }
 
 
@@ -128,12 +129,13 @@ TEST_F(TagTupleTest, Print) {
     s.str("");
     s << fcpp::dictionary_tuple << t;
     EXPECT_EQ("tag:2, gat:true", s.str());
-    fcpp::tagged_tuple_t<oth,bool,tags::stuffer,char,void,double> tt{false,'z',4.5};
+    fcpp::tagged_tuple_t<oth,bool,tags::stuffer,char,void,double> t1{false,'z',4.5};
     s.str("");
-    s << fcpp::assignment_tuple << tt;
+    s << fcpp::assignment_tuple << t1;
     EXPECT_EQ("oth = false, stuffer = z, void = 4.5", s.str());
-    fcpp::tagged_tuple_t<tags::main,std::string,tags::stuffer,std::string> ttt{"tester","foo"};
+    fcpp::tagged_tuple_t<tags::main,std::string,tags::stuffer,const char*> t2{"tester","foo"};
     s.str("");
-    s << fcpp::underscore_tuple << ttt;
-    EXPECT_EQ("tester_stuffer-foo", s.str());
+    s << fcpp::assignment_tuple << t2;
+    EXPECT_EQ("main = tester, stuffer = foo", s.str());
+    //fcpp::details::skip_tags.push_back(0);
 }

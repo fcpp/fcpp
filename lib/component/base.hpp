@@ -22,6 +22,10 @@
 namespace fcpp {
 
 
+//! @brief Namespace for all FCPP components.
+namespace component {
+
+
 //! @brief Namespace of tags to be used for `tagged_tuple` objects.
 namespace tags {
     //! @brief Tag associating to the unique identifier of an object.
@@ -30,10 +34,6 @@ namespace tags {
     //! @brief Tag associating to a factor to be applied to real time.
     struct realtime {};
 }
-
-
-//! @brief Namespace for all FCPP components.
-namespace component {
 
 
 /**

@@ -28,7 +28,7 @@ using combo2 = component::combine<exposer,component::randomizer<fcpp::crand>>;
 
 TEST(RandomizerTest, Twister) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<tags::uid>(42)};
+    combo1::node device{network, fcpp::make_tagged_tuple<component::tags::uid>(42)};
     for (int i=0; i<1000; ++i) {
         EXPECT_LE(0, device.next_int());
         EXPECT_LE(0, device.next_int(9));
@@ -46,7 +46,7 @@ TEST(RandomizerTest, Twister) {
 
 TEST(RandomizerTest, Crand) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
-    combo2::node device{network, fcpp::make_tagged_tuple<tags::uid,tags::seed>(42,2)};
+    combo2::node device{network, fcpp::make_tagged_tuple<component::tags::uid,component::tags::seed>(42,2)};
     for (int i=0; i<1000; ++i) {
         EXPECT_LE(0, device.next_int());
         EXPECT_LE(0, device.next_int(9));

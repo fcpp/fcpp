@@ -79,7 +79,7 @@ using combo2 = component::combine<exposer<false>,component::timer,scheduler>;
 
 TEST(TimerTest, NodePlanning) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<tags::uid,tags::start>(1,2.0)};
+    combo1::node device{network, fcpp::make_tagged_tuple<component::tags::uid,component::tags::start>(1,2.0)};
     EXPECT_EQ(2.0, device.next_time());
     device.update();
     EXPECT_EQ(2.0, device.current_time());
@@ -106,7 +106,7 @@ TEST(TimerTest, NodePlanning) {
 
 TEST(TimerTest, NodeScheduling) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
-    combo2::node device{network, fcpp::make_tagged_tuple<tags::uid>(1)};
+    combo2::node device{network, fcpp::make_tagged_tuple<component::tags::uid>(1)};
     EXPECT_EQ(0.0, device.next_time());
     device.update();
     EXPECT_EQ(0.0, device.current_time());

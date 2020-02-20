@@ -188,9 +188,10 @@ namespace details {
     //! @brief Accesses the separator between a value and the following tag.
     const std::string& get_val_tag_sep();
 
-    //! @brief Removes the `tags` namespace from a type representation.
-    std::string strip_tags(std::string s) {
-        if (strncmp(s.c_str(), "tags::", 6) == 0) return s.substr(6);
+    //! @brief Removes the namespaces from a type representation.
+    std::string strip_namespaces(std::string s) {
+        size_t pos = s.rfind("::");
+        if (pos != std::string::npos) return s.substr(pos+2);
         return s;
     }
 
@@ -212,7 +213,7 @@ namespace details {
     template<typename S, typename T, typename S1, typename T1>
     void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1>, type_sequence<T1>) {
         if (get_skip_tags().count(typeid(S1).name()) == 0) {
-            o << strip_tags(type_name<S1>()) << get_tag_val_sep();
+            o << strip_namespaces(type_name<S1>()) << get_tag_val_sep();
             tt_val_print(o, get<S1>(t), type_sequence<T1>());
         }
     }

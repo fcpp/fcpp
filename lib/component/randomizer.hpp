@@ -22,15 +22,15 @@
 namespace fcpp {
 
 
+//! @brief Namespace for all FCPP components.
+namespace component {
+
+
 //! @brief Namespace of tags to be used for `tagged_tuple` objects.
 namespace tags {
     //! @brief Tag associating to a random number generator seed (defaults to 0).
     struct seed {};
 }
-
-
-//! @brief Namespace for all FCPP components.
-namespace component {
 
 
 /**

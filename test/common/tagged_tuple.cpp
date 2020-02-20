@@ -16,6 +16,9 @@ struct hto {};
 namespace tags {
     struct stuffer {};
     struct main {};
+    namespace nest {
+        struct other {};
+    }
 }
 
 
@@ -140,11 +143,11 @@ TEST_F(TagTupleTest, Print) {
     s.str("");
     s << fcpp::underscore_tuple << fcpp::skip_tags<tags::main> << t2;
     EXPECT_EQ("stuffer-foo", s.str());
-    fcpp::tagged_tuple_t<tags::main,int,double,bool,tags::stuffer,char> t3{42,false,'w'};
+    fcpp::tagged_tuple_t<tags::main,int,double,bool,tags::nest::other,char> t3{42,false,'w'};
     s.str("");
     s << fcpp::assignment_tuple << t3;
-    EXPECT_EQ("main = 42, double = false, stuffer = w", s.str());
+    EXPECT_EQ("main = 42, double = false, other = w", s.str());
     s.str("");
-    s << fcpp::assignment_tuple << fcpp::skip_tags<double,tags::main,tags::stuffer> << t3;
+    s << fcpp::assignment_tuple << fcpp::skip_tags<double,tags::main,tags::nest::other> << t3;
     EXPECT_EQ("", s.str());
 }

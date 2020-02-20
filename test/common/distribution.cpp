@@ -6,6 +6,8 @@
 
 #include "lib/common/distribution.hpp"
 
+using namespace fcpp;
+
 struct meantag {};
 struct devtag {};
 struct devtag2 {};
@@ -25,26 +27,26 @@ double tester(D distr, G& gen) {
 TEST(DistributionTest, Maker) {
     std::mt19937 rnd(42);
     double d;
-    d = tester(fcpp::make_distribution<std::uniform_real_distribution>(5.0, 1.0), rnd);
+    d = tester(random::make_distribution<std::uniform_real_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(fcpp::make_distribution<std::normal_distribution>(5.0, 1.0), rnd);
+    d = tester(random::make_distribution<std::normal_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(fcpp::make_distribution<std::exponential_distribution>(5.0, 5.0), rnd);
+    d = tester(random::make_distribution<std::exponential_distribution>(5.0, 5.0), rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    d = tester(fcpp::make_distribution<std::weibull_distribution>(5.0, 1.0), rnd);
+    d = tester(random::make_distribution<std::weibull_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
 }
 
 TEST(DistributionTest, CRand) {
-    fcpp::crand rnd(42);
+    random::crand rnd(42);
     double d;
-    d = tester(fcpp::make_distribution<std::uniform_real_distribution>(5.0, 1.0), rnd);
+    d = tester(random::make_distribution<std::uniform_real_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(fcpp::make_distribution<std::normal_distribution>(5.0, 1.0), rnd);
+    d = tester(random::make_distribution<std::normal_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(fcpp::make_distribution<std::exponential_distribution>(5.0, 5.0), rnd);
+    d = tester(random::make_distribution<std::exponential_distribution>(5.0, 5.0), rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    d = tester(fcpp::make_distribution<std::weibull_distribution>(5.0, 1.0), rnd);
+    d = tester(random::make_distribution<std::weibull_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
 }
 
@@ -56,13 +58,13 @@ TEST(DistributionTest, Constant) {
     EXPECT_DOUBLE_EQ(5.0, d);
     d = distr(rnd);
     EXPECT_DOUBLE_EQ(5.0, d);
-    fcpp::constant_distribution<int, 4> dint(rnd);
+    random::constant_distribution<int, 4> dint(rnd);
     int i;
     i = dint(rnd);
     EXPECT_EQ(4, i);
     i = dint(rnd);
     EXPECT_EQ(4, i);
-    fcpp::constant_distribution<double, 52, 10> ddouble(rnd);
+    random::constant_distribution<double, 52, 10> ddouble(rnd);
     d = ddouble(rnd);
     EXPECT_DOUBLE_EQ(5.2, d);
     d = ddouble(rnd);
@@ -71,7 +73,7 @@ TEST(DistributionTest, Constant) {
 
 TEST(DistributionTest, Uniform) {
     std::mt19937 rnd(42);
-    fcpp::uniform_distribution<d5, d1> distr(rnd);
+    random::uniform_distribution<d5, d1> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
@@ -83,7 +85,7 @@ TEST(DistributionTest, Uniform) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    fcpp::uniform_d<double, 5, 1> dratio(rnd);
+    random::uniform_d<double, 5, 1> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     d = dratio(rnd);
@@ -94,7 +96,7 @@ TEST(DistributionTest, Uniform) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    fcpp::uniform_distribution<d1, d5, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<meantag,devtag>(5.0,1.0));
+    random::uniform_distribution<d1, d5, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<meantag,devtag>(5.0,1.0));
     d = dtup(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     d = dtup(rnd);
@@ -109,7 +111,7 @@ TEST(DistributionTest, Uniform) {
 
 TEST(DistributionTest, Normal) {
     std::mt19937 rnd(42);
-    fcpp::normal_distribution<d5, d1> distr(rnd);
+    random::normal_distribution<d5, d1> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 3.0);
@@ -121,7 +123,7 @@ TEST(DistributionTest, Normal) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    fcpp::normal_d<double, 5, 1> dratio(rnd);
+    random::normal_d<double, 5, 1> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(5.0, d, 3.0);
     d = dratio(rnd);
@@ -132,7 +134,7 @@ TEST(DistributionTest, Normal) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    fcpp::normal_d<double, 5, 3, 1, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<devtag>(1.0));
+    random::normal_d<double, 5, 3, 1, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<devtag>(1.0));
     d = dtup(rnd);
     EXPECT_NEAR(5.0, d, 3.0);
     d = dtup(rnd);
@@ -147,7 +149,7 @@ TEST(DistributionTest, Normal) {
 
 TEST(DistributionTest, Exponential) {
     std::mt19937 rnd(42);
-    fcpp::exponential_distribution<d5, d5> distr(rnd);
+    random::exponential_distribution<d5, d5> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(10.0, d, 10.0);
@@ -159,7 +161,7 @@ TEST(DistributionTest, Exponential) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    fcpp::exponential_d<double, 5, 5> dratio(rnd);
+    random::exponential_d<double, 5, 5> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(10.0, d, 10.0);
     d = dratio(rnd);
@@ -170,7 +172,7 @@ TEST(DistributionTest, Exponential) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    fcpp::exponential_distribution<d1, d1, meantag> dtup(rnd, fcpp::make_tagged_tuple<meantag>(5.0));
+    random::exponential_distribution<d1, d1, meantag> dtup(rnd, fcpp::make_tagged_tuple<meantag>(5.0));
     d = dtup(rnd);
     EXPECT_NEAR(10.0, d, 10.0);
     d = dtup(rnd);
@@ -185,7 +187,7 @@ TEST(DistributionTest, Exponential) {
 
 TEST(DistributionTest, Weibull) {
     std::mt19937 rnd(42);
-    fcpp::weibull_distribution<d5, d1> distr(rnd);
+    random::weibull_distribution<d5, d1> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
@@ -197,7 +199,7 @@ TEST(DistributionTest, Weibull) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    fcpp::weibull_d<double, 5, 1> dratio(rnd);
+    random::weibull_d<double, 5, 1> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
     d = dratio(rnd);
@@ -208,7 +210,7 @@ TEST(DistributionTest, Weibull) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    fcpp::weibull_d<double, 3, 1, 1, meantag> dtag(rnd, fcpp::make_tagged_tuple<meantag,double>(5.0,'a'));
+    random::weibull_d<double, 3, 1, 1, meantag> dtag(rnd, fcpp::make_tagged_tuple<meantag,double>(5.0,'a'));
     d = dtag(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
     d = dtag(rnd);
@@ -223,7 +225,7 @@ TEST(DistributionTest, Weibull) {
 
 TEST(DistributionTest, Positive) {
     std::mt19937 rnd(42);
-    fcpp::make_positive<fcpp::uniform_distribution<d1, d5>> distr(rnd);
+    random::make_positive<random::uniform_distribution<d1, d5>> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
@@ -239,7 +241,7 @@ TEST(DistributionTest, Positive) {
 
 TEST(DistributionTest, Combined) {
     std::mt19937 rnd(42);
-    fcpp::weibull_distribution<fcpp::uniform_distribution<d5, d5, void, devtag>, fcpp::uniform_distribution<d1, d5, void, devtag2>> distr(rnd, fcpp::make_tagged_tuple<devtag,devtag2>(0.0,0.0));
+    random::weibull_distribution<random::uniform_distribution<d5, d5, void, devtag>, random::uniform_distribution<d1, d5, void, devtag2>> distr(rnd, fcpp::make_tagged_tuple<devtag,devtag2>(0.0,0.0));
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 5.0);

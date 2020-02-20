@@ -23,7 +23,7 @@ struct exposer {
 
 using combo1 = component::combine<exposer,component::randomizer<>>;
 
-using combo2 = component::combine<exposer,component::randomizer<fcpp::crand>>;
+using combo2 = component::combine<exposer,component::randomizer<random::crand>>;
 
 
 TEST(RandomizerTest, Twister) {

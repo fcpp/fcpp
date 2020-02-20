@@ -132,7 +132,7 @@ struct randomizer {
             //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D`.
             template <template<typename> class D>
             double error(double v, double r, double a = 0) {
-                D<double> dist = make_distribution<D>(v, r*v+a);
+                D<double> dist = random::make_distribution<D>(v, r*v+a);
                 return dist(m_generator);
             }
 

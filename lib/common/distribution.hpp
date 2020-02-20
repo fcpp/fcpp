@@ -23,6 +23,12 @@
 namespace fcpp {
 
 
+/**
+ * @brief Namespace containing classes for random data generation.
+ */
+namespace random {
+
+
 //! @brief Lightweight interface for C random generators to C++ distributions.
 struct crand {
     using result_type = int;
@@ -368,6 +374,9 @@ class make_positive : public D {
         return (t >= 0) ? t : operator()(g);
     }
 };
+
+
+}
 
 
 }

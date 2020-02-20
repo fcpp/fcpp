@@ -29,6 +29,12 @@
 namespace fcpp {
 
 
+/**
+ * @brief Namespace containing data aggregators.
+ */
+namespace aggregator {
+
+
 //! @brief Aggregates values by counting how many are evaluated as being `true`.
 template <typename T>
 class count_aggregator {
@@ -350,6 +356,10 @@ class multi_aggregator : public Ts... {
         details::ignore((Ts::output(os),0)...);
     }
 };
+
+
+}
+
 
 }
 

@@ -25,6 +25,12 @@
 namespace fcpp {
 
 
+/**
+ * @brief Namespace containing classes for random data generation.
+ */
+namespace random {
+
+
 //! @brief Empty generator for a sequence of no events.
 struct sequence_never {
     //! @brief The type of results generated.
@@ -281,6 +287,9 @@ class sequence_periodic {
     //! @brief Number of calls to next so far.
     size_t n, i = 0;
 };
+
+
+}
 
 
 }

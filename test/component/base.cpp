@@ -8,6 +8,8 @@
 
 #include "lib/component/base.hpp"
 
+using namespace fcpp;
+
 
 // Empty component.
 template <bool b=true, int i=0>
@@ -94,9 +96,9 @@ struct exposer {
     };
 };
 
-using combo1 = fcpp::combine<empty<true,2>, overwriter, empty<>, caller, theanswer, empty<false>>;
+using combo1 = component::combine<empty<true,2>, overwriter, empty<>, caller, theanswer, empty<false>>;
 
-using combo2 = fcpp::combine<exposer, theanswer, caller, overwriter>;
+using combo2 = component::combine<exposer, theanswer, caller, overwriter>;
 
 // slow computation
 int workhard(int n=15) {

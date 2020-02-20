@@ -5,7 +5,8 @@
 #include "lib/component/base.hpp"
 #include "lib/component/timer.hpp"
 
-using fcpp::times_t;
+using namespace fcpp;
+
 
 // Very simple scheduler performing updates every times_t(10).
 struct scheduler {
@@ -72,8 +73,8 @@ struct exposer {
     };
 };
 
-using combo1 = fcpp::combine<exposer<true>,fcpp::timer>;
-using combo2 = fcpp::combine<exposer<false>,fcpp::timer,scheduler>;
+using combo1 = component::combine<exposer<true>,component::timer>;
+using combo2 = component::combine<exposer<false>,component::timer,scheduler>;
 
 
 TEST(TimerTest, NodePlanning) {

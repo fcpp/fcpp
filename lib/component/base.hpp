@@ -16,6 +16,12 @@
 #include "lib/common/tagged_tuple.hpp"
 
 
+/**
+ * @brief Namespace containing all the objects in the FCPP library.
+ */
+namespace fcpp {
+
+
 //! @brief Namespace of tags to be used for `tagged_tuple` objects.
 namespace tags {
     //! @brief Tag associating to the unique identifier of an object.
@@ -26,20 +32,20 @@ namespace tags {
 }
 
 
-/**
- * @brief Namespace containing all the objects in the FCPP library.
- */
-namespace fcpp {
+//! @brief Namespace for all FCPP components.
+namespace component {
 
 
 /**
  * @brief Empty component (base case for component construction).
+ *
  * Initialises `node` with tag `id` associating to a `device_t` node identifier (required).
  * Initialises `net` with tag `realtime` associating to a `double` factor to be applied to real time (defaults to `FCPP_REALTIME`).
  */
 struct base {
     /**
      * @brief The actual component.
+     *
      * Component functionalities are added to those of the parent by inheritance at multiple levels: the whole component class inherits tag for static checks of correct composition, while `node` and `net` sub-classes inherit actual behaviour.
      * Further parametrisation with F enables <a href="https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a> for static emulation of virtual calls.
      *
@@ -70,6 +76,7 @@ struct base {
             
             /**
              * @brief Returns next event to schedule for the node component.
+             *
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
@@ -150,6 +157,7 @@ struct base {
 
             /**
              * @brief Returns next event to schedule for the net component.
+             *
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
@@ -197,15 +205,15 @@ struct base {
 
 //! @cond INTERNAL
 namespace details {
-    // Combines components `Ts` given the final component type `F`.
+    //! @brief Combines components `Ts` given the final component type `F`.
     template <typename F, typename... Ts>
     struct combine;
 
-    // Inductive case when some components are given.
+    //! @brief Inductive case when some components are given.
     template <typename F, typename T, typename... Ts>
     struct combine<F, T, Ts...> : public T::template component<F, combine<F, Ts...>> {};
 
-    // Base case when no components are given.
+    //! @brief Base case when no components are given.
     template <typename F>
     struct combine<F> : public base::template component<F> {};
 }
@@ -219,6 +227,9 @@ namespace details {
  */
 template <typename... Ts>
 class combine : public details::combine<combine<Ts...>, Ts...> {};
+
+
+}
 
 
 }

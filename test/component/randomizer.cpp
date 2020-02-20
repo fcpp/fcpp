@@ -5,6 +5,8 @@
 #include "lib/component/base.hpp"
 #include "lib/component/randomizer.hpp"
 
+using namespace fcpp;
+
 
 // Component exposing the storage interface.
 struct exposer {
@@ -19,9 +21,9 @@ struct exposer {
     };
 };
 
-using combo1 = fcpp::combine<exposer,fcpp::randomizer<>>;
+using combo1 = component::combine<exposer,component::randomizer<>>;
 
-using combo2 = fcpp::combine<exposer,fcpp::randomizer<fcpp::crand>>;
+using combo2 = component::combine<exposer,component::randomizer<fcpp::crand>>;
 
 
 TEST(RandomizerTest, Twister) {

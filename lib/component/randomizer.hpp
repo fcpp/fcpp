@@ -16,6 +16,12 @@
 #include "lib/common/tagged_tuple.hpp"
 
 
+/**
+ * @brief Namespace containing all the objects in the FCPP library.
+ */
+namespace fcpp {
+
+
 //! @brief Namespace of tags to be used for `tagged_tuple` objects.
 namespace tags {
     //! @brief Tag associating to a random number generator seed (defaults to 0).
@@ -23,52 +29,13 @@ namespace tags {
 }
 
 
-/**
- * @brief Namespace containing all the objects in the FCPP library.
- */
-namespace fcpp {
-
-
-//! @brief Lightweight interface for C random generators to C++ distributions.
-struct crand {
-    using result_type = int;
-    
-    explicit crand(result_type val = 0) {
-        srand(val);
-    }
-    
-    static constexpr result_type min() {
-        return 0;
-    }
-    
-    static constexpr result_type max() {
-        return RAND_MAX;
-    }
-    
-    void seed(result_type val = 0) {
-        srand(val);
-    }
-    
-    result_type operator()() {
-        return rand();
-    }
-    
-    void discard (unsigned long long z) {
-        for (unsigned long long i=0; i<z; ++i) rand();
-    }
-
-    bool operator==(const crand&) {
-        return true;
-    }
-
-    bool operator!=(const crand&) {
-        return false;
-    }
-};
+//! @brief Namespace for all FCPP components.
+namespace component {
 
 
 /**
  * @brief Component handling a random number generator.
+ *
  * Initialises `net` with tag `seed` associating to a random number generator seed (defaults to zero).
  * Must be unique in a composition of components.
  *
@@ -78,6 +45,7 @@ template <typename G = std::mt19937_64>
 struct randomizer {
     /**
      * @brief The actual component.
+     * 
      * Component functionalities are added to those of the parent by inheritance at multiple levels: the whole component class inherits tag for static checks of correct composition, while `node` and `net` sub-classes inherit actual behaviour.
      * Further parametrisation with F enables <a href="https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a> for static emulation of virtual calls.
      *
@@ -185,6 +153,9 @@ struct randomizer {
         };
     };
 };
+
+
+}
 
 
 }

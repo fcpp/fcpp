@@ -23,6 +23,44 @@
 namespace fcpp {
 
 
+//! @brief Lightweight interface for C random generators to C++ distributions.
+struct crand {
+    using result_type = int;
+    
+    explicit crand(result_type val = 0) {
+        srand(val);
+    }
+    
+    static constexpr result_type min() {
+        return 0;
+    }
+    
+    static constexpr result_type max() {
+        return RAND_MAX;
+    }
+    
+    void seed(result_type val = 0) {
+        srand(val);
+    }
+    
+    result_type operator()() {
+        return rand();
+    }
+    
+    void discard (unsigned long long z) {
+        for (unsigned long long i=0; i<z; ++i) rand();
+    }
+
+    bool operator==(const crand&) {
+        return true;
+    }
+
+    bool operator!=(const crand&) {
+        return false;
+    }
+};
+
+
 //! @cond INTERNATL
 namespace details {
     template <typename T>

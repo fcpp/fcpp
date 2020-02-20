@@ -5,6 +5,8 @@
 #include "lib/component/base.hpp"
 #include "lib/component/storage.hpp"
 
+using namespace fcpp;
+
 
 struct tag {};
 struct gat {};
@@ -23,7 +25,7 @@ struct exposer {
     };
 };
 
-using combo1 = fcpp::combine<exposer,fcpp::storage<tag,bool,gat,int>>;
+using combo1 = component::combine<exposer,component::storage<tag,bool,gat,int>>;
 
 
 TEST(StorageTest, Storage) {

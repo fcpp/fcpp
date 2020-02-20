@@ -7,7 +7,8 @@
 #include "lib/component/randomizer.hpp"
 #include "lib/component/scheduler.hpp"
 
-const fcpp::times_t inf = fcpp::TIME_MAX;
+using namespace fcpp;
+
 
 struct meantag {};
 struct devtag {};
@@ -15,8 +16,8 @@ struct devtag {};
 using seq_mul = fcpp::sequence_multiple<fcpp::constant_distribution<fcpp::times_t, 52, 10>, 3>;
 using seq_per = fcpp::sequence_periodic<fcpp::constant_distribution<fcpp::times_t, 15, 10>, fcpp::uniform_d<fcpp::times_t, 2, 10, 1, meantag, devtag>, fcpp::constant_distribution<fcpp::times_t, 62, 10>, fcpp::constant_distribution<size_t, 5>>;
 
-using combo1 = fcpp::combine<fcpp::scheduler<seq_mul>,fcpp::randomizer<>>;
-using combo2 = fcpp::combine<fcpp::scheduler<seq_per>,fcpp::scheduler<seq_mul>,fcpp::randomizer<>>;
+using combo1 = component::combine<component::scheduler<seq_mul>,component::randomizer<>>;
+using combo2 = component::combine<component::scheduler<seq_per>,component::scheduler<seq_mul>,component::randomizer<>>;
 
 
 TEST(SchedulerTest, Single) {
@@ -34,10 +35,10 @@ TEST(SchedulerTest, Single) {
     EXPECT_DOUBLE_EQ(5.2, d);
     d = device.next();
     device.update();
-    EXPECT_EQ(inf, d);
+    EXPECT_EQ(fcpp::TIME_MAX, d);
     d = device.next();
     device.update();
-    EXPECT_EQ(inf, d);
+    EXPECT_EQ(fcpp::TIME_MAX, d);
 }
 
 TEST(SchedulerTest, Multiple) {
@@ -66,8 +67,8 @@ TEST(SchedulerTest, Multiple) {
     EXPECT_DOUBLE_EQ(5.5, d);
     d = device.next();
     device.update();
-    EXPECT_EQ(inf, d);
+    EXPECT_EQ(fcpp::TIME_MAX, d);
     d = device.next();
     device.update();
-    EXPECT_EQ(inf, d);
+    EXPECT_EQ(fcpp::TIME_MAX, d);
 }

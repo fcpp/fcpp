@@ -21,8 +21,13 @@
 namespace fcpp {
 
 
+//! @brief Namespace for all FCPP components.
+namespace component {
+
+
 /**
  * @brief Component scheduling round executions.
+ *
  * Multiple instances may coexist in a composition of components.
  * Requires a `randomizer` parent component.
  * The `timer` component cannot be a parent of a `scheduler`, otherwise round planning may not work.
@@ -33,6 +38,7 @@ template <typename G>
 struct scheduler {
     /**
      * @brief The actual component.
+     *
      * Component functionalities are added to those of the parent by inheritance at multiple levels: the whole component class inherits tag for static checks of correct composition, while `node` and `net` sub-classes inherit actual behaviour.
      * Further parametrisation with F enables <a href="https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a> for static emulation of virtual calls.
      *
@@ -73,6 +79,7 @@ struct scheduler {
             
             /**
              * @brief Returns next event to schedule for the node component.
+             * 
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
@@ -97,6 +104,9 @@ struct scheduler {
         using net = typename P::net;
     };
 };
+
+
+}
 
 
 }

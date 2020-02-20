@@ -42,7 +42,7 @@ struct sequence_never {
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_never(G&, const tagged_tuple<S,T>&) {}
+    sequence_never(G&, const common::tagged_tuple<S,T>&) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -87,7 +87,7 @@ class sequence_multiple<D, n, true> {
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_multiple(G& g, const tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
+    sequence_multiple(G& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -131,7 +131,7 @@ class sequence_multiple<D, n, false> {
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_multiple(G& g, const tagged_tuple<S,T>& tup) : sequence_multiple(g, D{g,tup}) {}
+    sequence_multiple(G& g, const common::tagged_tuple<S,T>& tup) : sequence_multiple(g, D{g,tup}) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -175,7 +175,7 @@ class sequence_multiple<D, n, false> {
  */
 template <typename... Ds>
 class sequence_list {
-    static_assert(all_true<std::is_same<typename Ds::type, times_t>::value...>, "the distributions Ds must generate a times_t value");
+    static_assert(common::all_true<std::is_same<typename Ds::type, times_t>::value...>, "the distributions Ds must generate a times_t value");
     
   public:
     //! @brief The type of results generated.
@@ -189,7 +189,7 @@ class sequence_list {
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_list(G& g, const tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
+    sequence_list(G& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
         std::sort(pending.begin(), pending.end());
     }
     
@@ -250,7 +250,7 @@ class sequence_periodic {
     
     //! @brief Default constructor.
     template <typename G, typename U, typename T>
-    sequence_periodic(G& g, const tagged_tuple<U,T>& tup) : dp(g,tup) {
+    sequence_periodic(G& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
         n  = details::call_distr<N>(g,tup);
         te = details::call_distr<E>(g,tup);
         t  = details::call_distr<S>(g,tup);

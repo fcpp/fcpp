@@ -21,8 +21,8 @@ using combo2 = component::combine<component::scheduler<seq_per>,component::sched
 
 
 TEST(SchedulerTest, Single) {
-    combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<component::tags::uid,seq_mul>(7,'b')};
+    combo1::net  network{common::make_tagged_tuple<>()};
+    combo1::node device{network, common::make_tagged_tuple<component::tags::uid,seq_mul>(7,'b')};
     double d;
     d = device.next();
     device.update();
@@ -42,8 +42,8 @@ TEST(SchedulerTest, Single) {
 }
 
 TEST(SchedulerTest, Multiple) {
-    combo2::net  network{fcpp::make_tagged_tuple<>()};
-    combo2::node device{network, fcpp::make_tagged_tuple<component::tags::uid,devtag>(7,0.0)};
+    combo2::net  network{common::make_tagged_tuple<>()};
+    combo2::node device{network, common::make_tagged_tuple<component::tags::uid,devtag>(7,0.0)};
     double d;
     d = device.next();
     device.update();

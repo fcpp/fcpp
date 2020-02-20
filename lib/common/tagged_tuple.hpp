@@ -22,7 +22,40 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-    
+
+
+/**
+ * @brief Namespace containing objects of common use.
+ */
+namespace common {
+
+
+//! @brief Namespace of tags for common use.
+namespace tags {
+    //! @brief Tag for representing tagged tuples in dictionary format (default).
+    struct dictionary_tuple {};
+
+    //! @brief Tag for representing tagged tuples in assignment-list format.
+    struct assignment_tuple {};
+
+    //! @brief Tag for representing tagged tuples in compact underscore format.
+    struct underscore_tuple {};
+
+    //! @brief Tag for skipping tags in printing tuples.
+    template <typename... Ts>
+    struct skip_tags {};
+}
+
+//! @brief Tag for representing tagged tuples in dictionary format (default).
+constexpr tags::dictionary_tuple dictionary_tuple{};
+//! @brief Tag for representing tagged tuples in assignment-list format.
+constexpr tags::assignment_tuple assignment_tuple{};
+//! @brief Tag for representing tagged tuples in compact underscore format.
+constexpr tags::underscore_tuple underscore_tuple{};
+//! @brief Tag for skipping tags in printing tuples.
+template <typename... Ts>
+constexpr tags::skip_tags<Ts...> skip_tags{};
+
 
 /**
  * @brief General form of the `tagged_tuple` class.
@@ -60,6 +93,33 @@ get(const tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
     return std::get<type_find<S, Ss...>>(t);
 }
 //@}
+
+
+//! @cond INTERNAL
+namespace details {
+    template <typename Ss, typename Ts, typename T>
+    auto get_or(const tagged_tuple<Ss, Ts>&, T&& def, type_sequence<>) {
+        return std::forward<T>(def);
+    }
+    template <typename Ss, typename Ts, typename T, typename S>
+    const auto& get_or(const tagged_tuple<Ss, Ts>& t, T&&, type_sequence<S>) {
+        return get<S>(t);
+    }
+}
+//! @endcond
+
+
+/**
+ * @name get_or
+ *
+ * Function getting elements of a tagged tuple by tag if present.
+ * @param S The tag to be extracted.
+ * @param def A default value if tag is missing.
+ */
+template <typename S, typename Ss, typename Ts, typename T>
+auto get_or(const tagged_tuple<Ss, Ts>& t, T&& def) {
+    return details::get_or(t, std::forward<T>(def), typename Ss::template intersect<S>());
+}
 
 
 //! @brief Utility function for creating tagged tuples.
@@ -104,6 +164,62 @@ namespace details {
     struct tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<U, Us...>> {
         using type = typename tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<Us...>>::type::template push_front<typename type_sequence<Ts...,void>::template get<type_sequence<Ss...,void>::template find<U>>>;
     };
+
+    //! @brief Separator between tuple tags and values.
+    template <typename T>
+    constexpr const char* tag_val_sep;
+    template<>
+    constexpr const char* tag_val_sep<tags::dictionary_tuple> = ":";
+    template<>
+    constexpr const char* tag_val_sep<tags::assignment_tuple> = " = ";
+    template<>
+    constexpr const char* tag_val_sep<tags::underscore_tuple> = "-";
+
+    //! @brief Separator between tuple values and the following tags.
+    template <typename T>
+    constexpr const char* val_tag_sep;
+    template<>
+    constexpr const char* val_tag_sep<tags::dictionary_tuple> = ", ";
+    template<>
+    constexpr const char* val_tag_sep<tags::assignment_tuple> = ", ";
+    template<>
+    constexpr const char* val_tag_sep<tags::underscore_tuple> = "_";
+
+    //! @brief Removes the namespaces from a type representation.
+    std::string strip_namespaces(std::string s) {
+        size_t pos = s.rfind("::");
+        if (pos != std::string::npos) return s.substr(pos+2);
+        return s;
+    }
+
+    //! @brief Prints a boolean value as a `"true"` or `"false"` string.
+    void tt_val_print(std::ostream& o, bool x) {
+        o << (x ? "true" : "false");
+    }
+    //! @brief Prints a non-boolean value using default printing.
+    template <typename T, typename = std::enable_if_t<not std::is_same<T,bool>::value>>
+    void tt_val_print(std::ostream& o, const T& x) {
+        o << x;
+    }
+
+    //! @brief Prints no tags from a tagged tuple.
+    template<typename S, typename T, typename F>
+    void tt_print(const tagged_tuple<S, T>&, std::ostream&, F, type_sequence<>) {}
+
+    //! @brief Prints one tag from a tagged tuple.
+    template<typename S, typename T, typename F, typename S1>
+    void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F, type_sequence<S1>) {
+        o << strip_namespaces(type_name<S1>()) << tag_val_sep<F>;
+        tt_val_print(o, get<S1>(t));
+    }
+
+    //! @brief Prints multiple tags from a tagged tuple.
+    template<typename S, typename T, typename F, typename S1, typename... Ss>
+    void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F f, type_sequence<S1,Ss...>) {
+        tt_print(t, o, f, type_sequence<S1>());
+        o << val_tag_sep<F>;
+        tt_print(t, o, f, type_sequence<Ss...>());
+    }
 }
 //! @endcond
 
@@ -116,7 +232,7 @@ namespace details {
 */
 template<typename... Ss, typename... Ts>
 struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tuple<Ts...> {
-    static_assert(fcpp::type_repeated<Ss...>::size == 0, "repeated tags in tuple");
+    static_assert(type_repeated<Ss...>::size == 0, "repeated tags in tuple");
     
     //! @brief The type sequence of tags.
     using tags = type_sequence<Ss...>;
@@ -174,102 +290,24 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
     tagged_tuple<type_sequence<Ss...>, type_sequence<std::result_of_t<Ts(T)>...>> operator()(T v) {
         return make_tagged_tuple<Ss...>(get<Ss>(*this)(v)...);
     }
+    
+    //! @brief Prints the content of the tagged tuple in a given format, skipping a given set of tags.
+    template <typename F, typename... OSs>
+    void print(std::ostream& o, F f, common::tags::skip_tags<OSs...>) const {
+        details::tt_print(*this, o, f, typename tags::template subtract<OSs...>());
+    }
+    
+    //! @brief Prints the content of the tagged tuple in a given format.
+    template <typename F>
+    void print(std::ostream& o, F f) const {
+        print(o, f, common::tags::skip_tags<>());
+    }
+    
+    //! @brief Prints the content of the tagged tuple in dictionary format.
+    void print(std::ostream& o) const {
+        print(o, dictionary_tuple);
+    }
 };
-
-
-//! @cond INTERNAL
-namespace details {
-    //! @brief Accesses the set of type names to be skipped.
-    std::unordered_set<std::string>& get_skip_tags();
-
-    //! @brief Accesses the separator between tags and corresponding values.
-    const std::string& get_tag_val_sep();
-
-    //! @brief Accesses the separator between a value and the following tag.
-    const std::string& get_val_tag_sep();
-
-    //! @brief Removes the namespaces from a type representation.
-    std::string strip_namespaces(std::string s) {
-        size_t pos = s.rfind("::");
-        if (pos != std::string::npos) return s.substr(pos+2);
-        return s;
-    }
-
-    //! @brief Prints a boolean value as a `"true"` or `"false"` string.
-    void tt_val_print(std::ostream& o, bool x, type_sequence<bool>) {
-        o << (x ? "true" : "false");
-    }
-    //! @brief Prints a non-boolean value using default printing.
-    template <typename T, typename = std::enable_if_t<not std::is_same<T,bool>::value>>
-    void tt_val_print(std::ostream& o, const T& x, type_sequence<T>) {
-        o << x;
-    }
-
-    //! @brief Prints no tags from a tagged tuple.
-    template<typename S, typename T>
-    void tt_print(std::ostream&, const tagged_tuple<S, T>&, type_sequence<>, type_sequence<>) {
-    }
-    //! @brief Prints one tag from a tagged tuple.
-    template<typename S, typename T, typename S1, typename T1>
-    void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1>, type_sequence<T1>) {
-        if (get_skip_tags().count(typeid(S1).name()) == 0) {
-            o << strip_namespaces(type_name<S1>()) << get_tag_val_sep();
-            tt_val_print(o, get<S1>(t), type_sequence<T1>());
-        }
-    }
-    //! @brief Prints multiple tags from a tagged tuple.
-    template<typename S, typename T, typename S1, typename... Ss, typename T1, typename... Ts>
-    void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1,Ss...>, type_sequence<T1,Ts...>) {
-        if (get_skip_tags().count(typeid(S1).name()) == 0) {
-            tt_print(o, t, type_sequence<S1>(), type_sequence<T1>());
-            o << get_val_tag_sep();
-        }
-        tt_print(o, t, type_sequence<Ss...>(), type_sequence<Ts...>());
-    }
-}
-//! @endcond
-
-//! @brief Prints a tagged tuple (stripping namespace `tags` prefix, and tag `main` fully).
-template<typename S, typename T>
-std::ostream& operator<<(std::ostream& o, const tagged_tuple<S, T>& t) {
-    details::tt_print(o, t, S(), T());
-    details::get_skip_tags().clear();
-    return o;
-}
-
-//! @brief Stream manipulator for representing tagged tuples in dictionary format (default).
-//! @{
-struct dictionary_tuple_t {};
-constexpr dictionary_tuple_t dictionary_tuple{};
-std::ostream& operator<<(std::ostream& o, const dictionary_tuple_t&);
-//! @}
-
-//! @brief Stream manipulator for representing tagged tuples in assignment-list format.
-//! @{
-struct assignment_tuple_t {};
-constexpr assignment_tuple_t assignment_tuple{};
-std::ostream& operator<<(std::ostream& o, const assignment_tuple_t&);
-//! @}
-
-//! @brief Stream manipulator for representing tagged tuples in compact underscore format.
-//! @{
-struct underscore_tuple_t {};
-constexpr underscore_tuple_t underscore_tuple{};
-std::ostream& operator<<(std::ostream& o, const underscore_tuple_t&);
-//! @}
-
-//! @brief Stream manipulator for tag skipping (scope limited to following tuple).
-//! @{
-template <typename... Ss>
-struct skip_tags_t {};
-template <typename... Ss>
-constexpr skip_tags_t<Ss...> skip_tags{};
-template <typename... Ss>
-std::ostream& operator<<(std::ostream& o, const skip_tags_t<Ss...>&) {
-    details::ignore((details::get_skip_tags().insert(typeid(Ss).name()),0)...);
-    return o;
-}
-//! @}
 
 
 //! @brief The `tagged_tuple_t` alias, allowing to express a `tagged_tuple` by interleaving tags and types.
@@ -306,30 +344,6 @@ template <typename... Ts>
 using tagged_tuple_cat = typename details::tagged_tuple_cat<Ts...>::type;
 
 
-//! @cond INTERNAL
-namespace details {
-    template <typename Ss, typename Ts, typename T>
-    auto get_or(const tagged_tuple<Ss, Ts>&, T&& def, type_sequence<>) {
-        return std::forward<T>(def);
-    }
-    template <typename Ss, typename Ts, typename T, typename S>
-    const auto& get_or(const tagged_tuple<Ss, Ts>& t, T&&, type_sequence<S>) {
-        return get<S>(t);
-    }
-}
-//! @endcond
-
-
-/**
- * @name get_or
- *
- * Function getting elements of a tagged tuple by tag if present.
- * @param S The tag to be extracted.
- * @param def A default value if tag is missing.
- */
-template <typename S, typename Ss, typename Ts, typename T>
-auto get_or(const tagged_tuple<Ss, Ts>& t, T&& def) {
-    return details::get_or(t, std::forward<T>(def), typename Ss::template intersect<S>());
 }
 
 

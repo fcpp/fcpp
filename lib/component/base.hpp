@@ -26,7 +26,7 @@ namespace fcpp {
 namespace component {
 
 
-//! @brief Namespace of tags to be used for `tagged_tuple` objects.
+//! @brief Namespace of tags to be used for initialising components.
 namespace tags {
     //! @brief Tag associating to the unique identifier of an object.
     struct uid {};
@@ -65,7 +65,7 @@ struct base {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const tagged_tuple<S,T>& t) : uid(get<tags::uid>(t)), net(n) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : uid(common::get<tags::uid>(t)), net(n) {}
 
             //! @brief Deleted copy constructor.
             node(const node&) = delete;
@@ -90,14 +90,14 @@ struct base {
             const device_t uid;
             
             //! @brief A mutex for regulating access to the node.
-            fcpp::mutex<FCPP_PARALLEL> mutex;
+            common::mutex<FCPP_PARALLEL> mutex;
 
           protected: // visible by node objects only
             //! @brief A reference to the corresponding net object.
             typename F::net& net;
             
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
-            using message_t = tagged_tuple_t<>;
+            using message_t = common::tagged_tuple_t<>;
             
             //! @brief Gives access to the node as instance of `F::node`. Should NEVER be overridden.
             typename F::node& as_final() {
@@ -111,11 +111,11 @@ struct base {
             
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t, device_t, const tagged_tuple<S,T>&) {}
+            void receive(times_t, device_t, const common::tagged_tuple<S,T>&) {}
             
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
             template <typename S, typename T>
-            tagged_tuple<S,T>& send(times_t, device_t, tagged_tuple<S,T>& t) const {
+            common::tagged_tuple<S,T>& send(times_t, device_t, common::tagged_tuple<S,T>& t) const {
                 return t;
             }
 
@@ -143,9 +143,9 @@ struct base {
             //@{
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const tagged_tuple<S,T>& t) {
+            net(const common::tagged_tuple<S,T>& t) {
                 m_realtime_start = std::chrono::high_resolution_clock::now();
-                m_realtime_factor = get_or<tags::realtime>(t, FCPP_REALTIME);
+                m_realtime_factor = common::get_or<tags::realtime>(t, FCPP_REALTIME);
             }
             
             //! @brief Deleted copy constructor.

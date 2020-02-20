@@ -17,6 +17,12 @@
 namespace fcpp {
 
 
+/**
+ * @brief Namespace containing objects of common use.
+ */
+namespace common {
+
+
 //! @cond INTERNAL
 template <typename T, bool is_flat>
 class flat_ptr;
@@ -183,6 +189,9 @@ class flat_ptr<T, true> {
         return &m_data;
     }
 };
+
+
+}
 
 
 }

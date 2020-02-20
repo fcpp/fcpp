@@ -23,6 +23,12 @@ namespace fcpp {
 
 
 /**
+ * @brief Namespace containing objects of common use.
+ */
+namespace common {
+
+
+/**
  * @brief Class for handling heterogeneous indexed data.
  *
  * @param T Key type.
@@ -128,6 +134,9 @@ class multitype_map {
         return m_keys.count(key);
     }
 };
+
+
+}
 
 
 }

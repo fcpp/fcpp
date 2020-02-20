@@ -26,7 +26,7 @@ namespace fcpp {
 namespace component {
 
 
-//! @brief Namespace of tags to be used for `tagged_tuple` objects.
+//! @brief Namespace of tags to be used for initialising components.
 namespace tags {
     //! @brief Tag associating to a starting time of execution.
     struct start {};
@@ -85,9 +85,9 @@ struct timer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const tagged_tuple<S,T>& t) : P::node(n,t), m_neigh(TIME_MIN) {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_neigh(TIME_MIN) {
                 m_prev = m_cur = TIME_MIN;
-                m_next = get_or<tags::start>(t, TIME_MAX);
+                m_next = common::get_or<tags::start>(t, TIME_MAX);
                 m_offs = (m_next == TIME_MAX ? 0 : m_next);
                 m_fact = 1.0;
             }
@@ -119,7 +119,7 @@ struct timer {
           protected: // visible by node objects only
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t t, device_t d, const tagged_tuple<S,T>& m) {
+            void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
                 fcpp::details::self(m_neigh, d) = t;
             }
@@ -188,7 +188,7 @@ struct timer {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const tagged_tuple<S,T>& t) : P::net(t) {
+            net(const common::tagged_tuple<S,T>& t) : P::net(t) {
                 m_offs = 0;
                 m_fact = 1.0;
             }

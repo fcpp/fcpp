@@ -78,19 +78,19 @@ using combo2 = component::combine<exposer<false>,component::timer,scheduler>;
 
 
 TEST(TimerTest, NodePlanning) {
-    combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<component::tags::uid,component::tags::start>(1,2.0)};
+    combo1::net  network{common::make_tagged_tuple<>()};
+    combo1::node device{network, common::make_tagged_tuple<component::tags::uid,component::tags::start>(1,2.0)};
     EXPECT_EQ(2.0, device.next_time());
     device.update();
     EXPECT_EQ(2.0, device.current_time());
     EXPECT_EQ(7.0, device.next_time());
-    device.receive(3.0, 2, fcpp::make_tagged_tuple<>());
-    device.receive(4.0, 3, fcpp::make_tagged_tuple<>());
+    device.receive(3.0, 2, common::make_tagged_tuple<>());
+    device.receive(4.0, 3, common::make_tagged_tuple<>());
     device.update();
     EXPECT_EQ(2.0, device.previous_time());
     EXPECT_EQ(7.0, device.current_time());
     EXPECT_EQ(12.0, device.next_time());
-    fcpp::field<bool> f = device.message_time() == fcpp::details::make_field(fcpp::TIME_MIN, {{1,2},{2,3},{3,4}});
+    fcpp::field<bool> f = device.message_time() == fcpp::details::make_field(TIME_MIN, {{1,2},{2,3},{3,4}});
     EXPECT_TRUE(f);
     device.next_time(8.0);
     EXPECT_EQ(8.0, device.next_time());
@@ -101,12 +101,12 @@ TEST(TimerTest, NodePlanning) {
     device.terminate();
     EXPECT_EQ(7.0, device.previous_time());
     EXPECT_EQ(8.0, device.current_time());
-    EXPECT_EQ(fcpp::TIME_MAX, device.next_time());
+    EXPECT_EQ(TIME_MAX, device.next_time());
 }
 
 TEST(TimerTest, NodeScheduling) {
-    combo2::net  network{fcpp::make_tagged_tuple<>()};
-    combo2::node device{network, fcpp::make_tagged_tuple<component::tags::uid>(1)};
+    combo2::net  network{common::make_tagged_tuple<>()};
+    combo2::node device{network, common::make_tagged_tuple<component::tags::uid>(1)};
     EXPECT_EQ(0.0, device.next_time());
     device.update();
     EXPECT_EQ(0.0, device.current_time());
@@ -122,10 +122,10 @@ TEST(TimerTest, NodeScheduling) {
     EXPECT_EQ(0.0, device.previous_time());
     EXPECT_EQ(3.0, device.current_time());
     EXPECT_EQ(8.0, device.next_time());
-    device.receive(5.0, 2, fcpp::make_tagged_tuple<>());
-    device.receive(7.0, 3, fcpp::make_tagged_tuple<>());
+    device.receive(5.0, 2, common::make_tagged_tuple<>());
+    device.receive(7.0, 3, common::make_tagged_tuple<>());
     device.update();
-    fcpp::field<bool> f = device.message_time() == fcpp::details::make_field(fcpp::TIME_MIN, {{1,3},{2,5},{3,7}});
+    fcpp::field<bool> f = device.message_time() == fcpp::details::make_field(TIME_MIN, {{1,3},{2,5},{3,7}});
     EXPECT_TRUE(f);
     EXPECT_EQ(3.0, device.previous_time());
     EXPECT_EQ(8.0, device.current_time());
@@ -153,11 +153,11 @@ TEST(TimerTest, NodeScheduling) {
     device.terminate();
     EXPECT_EQ(10.0, device.previous_time());
     EXPECT_EQ(12.0, device.current_time());
-    EXPECT_EQ(fcpp::TIME_MAX, device.next_time());
+    EXPECT_EQ(TIME_MAX, device.next_time());
 }
 
 TEST(TimerTest, NetScheduling) {
-    combo2::net  network{fcpp::make_tagged_tuple<>()};
+    combo2::net  network{common::make_tagged_tuple<>()};
     EXPECT_EQ(0.0, network.next());
     network.update();
     EXPECT_EQ(20.0, network.next());
@@ -168,5 +168,5 @@ TEST(TimerTest, NetScheduling) {
     network.update();
     EXPECT_EQ(30.0, network.next());
     network.terminate();
-    EXPECT_EQ(fcpp::TIME_MAX, network.next());
+    EXPECT_EQ(TIME_MAX, network.next());
 }

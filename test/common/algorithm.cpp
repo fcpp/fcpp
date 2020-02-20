@@ -9,6 +9,9 @@
 
 #include "lib/common/algorithm.hpp"
 
+using namespace fcpp;
+
+
 // slow computation
 int workhard(int n=15) {
     if (n <= 1) return 1;
@@ -29,7 +32,7 @@ TEST(AlgorithmTest, NthElements) {
         std::sort(iv.begin(), iv.end());
         for (int i=0; i<n; ++i) iv[i] += i;
         
-        fcpp::nth_elements(ev.begin(), ev.end(), iv.begin(), iv.end());
+        common::nth_elements(ev.begin(), ev.end(), iv.begin(), iv.end());
         for (int i : iv)
             EXPECT_EQ(i, ev[i]);
     }
@@ -45,18 +48,18 @@ TEST(AlgorithmTest, ParallelFor) {
         acc = tmp + workhard();
     };
     acc = 0;
-    fcpp::parallel_for(fcpp::sequential_execution, N, worker);
+    common::parallel_for(common::sequential_execution, N, worker);
     EXPECT_EQ(N, acc);
     acc = 0;
-    fcpp::parallel_for(fcpp::general_execution<1>, N, worker);
+    common::parallel_for(common::general_execution<1>, N, worker);
     EXPECT_EQ(N, acc);
     acc = 0;
-    fcpp::parallel_for(fcpp::parallel_execution<4>, N, worker);
+    common::parallel_for(common::parallel_execution<4>, N, worker);
     EXPECT_NE(N, acc);
     acc = 0;
-    fcpp::parallel_for(fcpp::general_execution<4>, N, worker);
+    common::parallel_for(common::general_execution<4>, N, worker);
     EXPECT_NE(N, acc);
-    fcpp::parallel_for(fcpp::parallel_execution<4>, N, [&v](size_t i) { ++v[i]; });
+    common::parallel_for(common::parallel_execution<4>, N, [&v](size_t i) { ++v[i]; });
     for (size_t i=0; i<N; ++i)
         EXPECT_EQ(int(i+1), v[i]);
 }
@@ -79,10 +82,10 @@ TEST(AlgorithmTest, ParallelWhile) {
     };
     q = make_queue(10000);
     acc = 0;
-    fcpp::parallel_while(fcpp::sequential_execution, popper);
+    common::parallel_while(common::sequential_execution, popper);
     EXPECT_EQ(10000, acc);
     q = make_queue(10000);
     acc = 0;
-    fcpp::parallel_while(fcpp::parallel_execution<8>, popper);
+    common::parallel_while(common::parallel_execution<8>, popper);
     EXPECT_NE(10000, acc);
 }

@@ -108,16 +108,16 @@ int workhard(int n=15) {
 
 
 TEST(BaseTest, UID) {
-    combo1::net  net1{fcpp::make_tagged_tuple<>()};
-    combo1::node dev1{net1, fcpp::make_tagged_tuple<component::tags::uid>(42)};
+    combo1::net  net1{common::make_tagged_tuple<>()};
+    combo1::node dev1{net1, common::make_tagged_tuple<component::tags::uid>(42)};
     net1.run();
     dev1.update();
     EXPECT_EQ(size_t(42), dev1.uid);
 }
 
 TEST(BaseTest, Override) {
-    combo2::net  network{fcpp::make_tagged_tuple<>()};
-    combo2::node device{network, fcpp::make_tagged_tuple<component::tags::uid>(42)};
+    combo2::net  network{common::make_tagged_tuple<>()};
+    combo2::node device{network, common::make_tagged_tuple<component::tags::uid>(42)};
     EXPECT_EQ(7,  network.something());
     EXPECT_EQ(2,  network.retest());
     EXPECT_EQ(4,  device.tester());
@@ -125,8 +125,8 @@ TEST(BaseTest, Override) {
 }
 
 TEST(BaseTest, Virtualize) {
-    combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<component::tags::uid>(42)};
+    combo1::net  network{common::make_tagged_tuple<>()};
+    combo1::node device{network, common::make_tagged_tuple<component::tags::uid>(42)};
     EXPECT_EQ(7,  network.something());
     EXPECT_EQ(22, network.retest());
     EXPECT_EQ(23, device.tester());
@@ -135,17 +135,17 @@ TEST(BaseTest, Virtualize) {
 
 TEST(BaseTest, RealTime) {
     int acc;
-    combo2::net net1{fcpp::make_tagged_tuple<int>('a')};
+    combo2::net net1{common::make_tagged_tuple<int>('a')};
     // just waste some time in a non-optimizable way
     for (int i=acc=0; i<1000; ++i) acc += workhard();
     EXPECT_EQ(1000, acc);
-    EXPECT_EQ(fcpp::times_t(0.0), net1.real_time());
-    combo2::net net2{fcpp::make_tagged_tuple<component::tags::realtime>(std::numeric_limits<double>::infinity())};
-    EXPECT_EQ(fcpp::TIME_MAX,     net2.real_time());
-    combo2::net net3{fcpp::make_tagged_tuple<component::tags::realtime>(1.0)};
+    EXPECT_EQ(times_t(0.0), net1.real_time());
+    combo2::net net2{common::make_tagged_tuple<component::tags::realtime>(std::numeric_limits<double>::infinity())};
+    EXPECT_EQ(TIME_MAX,     net2.real_time());
+    combo2::net net3{common::make_tagged_tuple<component::tags::realtime>(1.0)};
     // just waste some time in a non-optimizable way
     for (int i=acc=0; i<1000; ++i) acc += workhard();
     EXPECT_EQ(1000, acc);
-    EXPECT_LT(fcpp::times_t(0.0), net3.real_time());
-    EXPECT_GT(fcpp::TIME_MAX,     net3.real_time());
+    EXPECT_LT(times_t(0.0), net3.real_time());
+    EXPECT_GT(TIME_MAX,     net3.real_time());
 }

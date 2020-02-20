@@ -15,6 +15,12 @@
 namespace fcpp {
 
 
+/**
+ * @brief Namespace containing objects of common use.
+ */
+namespace common {
+
+
 //! @cond INTERNAL
 template <typename T, bool is_twin>
 class twin;
@@ -139,6 +145,9 @@ class twin<T, false> {
         return m_data2;
     }
 };
+
+
+}
 
 
 }

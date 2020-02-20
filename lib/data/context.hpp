@@ -38,7 +38,7 @@ template <typename M, typename... Ts>
 class context {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef flat_ptr<multitype_map<trace_t, Ts...>, FCPP_EXPORTS == 2> export_type;
+    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, FCPP_EXPORTS == 2> export_type;
 
     //! @brief The type of the metric on exports.
     typedef M metric_type;
@@ -142,8 +142,8 @@ class context {
 
     //! @brief Returns neighbours' values for a certain trace (default from `def`, and also self if not present).
     template <typename A>
-    add_template<field, A> nbr(trace_t trace, const A& def) const {
-        std::unordered_map<device_t, del_template<field, A>> m;
+    common::add_template<field, A> nbr(trace_t trace, const A& def) const {
+        std::unordered_map<device_t, common::del_template<field, A>> m;
         for (const auto& x : m_data)
             if (x.second->template count<A>(trace))
                 m[x.first] = details::self(x.second->template at<A>(trace), m_self);

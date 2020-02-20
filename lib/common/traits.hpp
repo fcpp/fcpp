@@ -32,6 +32,12 @@
 namespace fcpp {
 
 
+/**
+ * @brief Namespace containing objects of common use.
+ */
+namespace common {
+
+
 #ifdef NABI
 //! @brief Returns the string representation of a type `T`.
 template <typename T>
@@ -134,6 +140,26 @@ namespace details {
     };
     
     // General form.
+    template <typename, typename>
+    struct type_subtract;
+
+    // Recursive form.
+    template <typename T, typename... Ts, typename... Ss>
+    struct type_subtract<type_sequence<T, Ts...>, type_sequence<Ss...>> {
+        using type = std::conditional_t<
+            type_count<T, Ss...> != 0,
+            typename type_subtract<type_sequence<Ts...>, type_sequence<Ss...>>::type,
+            typename type_subtract<type_sequence<Ts...>, type_sequence<Ss...>>::type::template push_front<T>
+        >;
+    };
+
+    // Base case.
+    template <typename... Ss>
+    struct type_subtract<type_sequence<>, type_sequence<Ss...>> {
+        using type = type_sequence<>;
+    };
+    
+    // General form.
     template <typename...>
     struct type_repeated {
         using type = type_sequence<>;
@@ -233,6 +259,10 @@ struct type_sequence<T, Ts...> {
     //! @brief Set union with other sequence.
     template<typename... Ss>
     using unite = typename details::type_unite<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
+    
+    //! @brief Set difference with other sequence.
+    template<typename... Ss>
+    using subtract = typename details::type_subtract<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
     
     //! @brief Extract the types that are repeated more than once.
     using repeated = type_repeated<T, Ts...>;
@@ -436,7 +466,7 @@ namespace details {
     // Nesting a single template.
     template <class A, template<class> class T>
     struct nest_template<A, T> {
-        typedef std::conditional_t<fcpp::nested_template<T, A>, A, T<A>> type;
+        typedef std::conditional_t<nested_template<T, A>, A, T<A>> type;
     };
     
     // Nesting more templates.
@@ -454,6 +484,10 @@ namespace details {
  */
 template <class A, template<class> class... Ts>
 using nest_template = typename details::nest_template<A, Ts...>::type;
+
+
+}
+
 
 }
 

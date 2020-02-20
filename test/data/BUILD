@@ -3,6 +3,7 @@ cc_test(
     srcs = ["context.cpp"],
     deps = [
         "@gtest//:main",
+        "//lib/common:multitype_map",
         "//lib/data:context",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

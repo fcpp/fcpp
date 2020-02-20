@@ -29,16 +29,16 @@ using combo1 = component::combine<exposer,component::storage<tag,bool,gat,int>>;
 
 
 TEST(StorageTest, Storage) {
-    combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<component::tags::uid,oth,gat>(7,'b',3)};
+    combo1::net  network{common::make_tagged_tuple<>()};
+    combo1::node device{network, common::make_tagged_tuple<component::tags::uid,oth,gat>(7,'b',3)};
     EXPECT_EQ(false, device.storage<tag>());
     EXPECT_EQ(3,     device.storage<gat>());
-    EXPECT_EQ(false, fcpp::get<tag>(device.storage_tuple()));
-    EXPECT_EQ(3,     fcpp::get<gat>(device.storage_tuple()));
+    EXPECT_EQ(false, common::get<tag>(device.storage_tuple()));
+    EXPECT_EQ(3,     common::get<gat>(device.storage_tuple()));
     device.storage<tag>() = true;
     device.storage<gat>() = 42;
     EXPECT_EQ(true,  device.storage<tag>());
     EXPECT_EQ(42,    device.storage<gat>());
-    EXPECT_EQ(true,  fcpp::get<tag>(device.storage_tuple()));
-    EXPECT_EQ(42,    fcpp::get<gat>(device.storage_tuple()));
+    EXPECT_EQ(true,  common::get<tag>(device.storage_tuple()));
+    EXPECT_EQ(42,    common::get<gat>(device.storage_tuple()));
 }

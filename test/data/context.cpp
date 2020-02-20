@@ -5,7 +5,10 @@
 
 #include "gtest/gtest.h"
 
+#include "lib/common/multitype_map.hpp"
 #include "lib/data/context.hpp"
+
+using namespace fcpp;
 
 
 class ContextTest : public ::testing::Test {
@@ -19,7 +22,7 @@ class ContextTest : public ::testing::Test {
         data.insert(1, m, 0.5);
     }
     
-    fcpp::multitype_map<fcpp::trace_t, fcpp::field<int>, char> m;
+    common::multitype_map<fcpp::trace_t, fcpp::field<int>, char> m;
     fcpp::context<double, fcpp::field<int>, char> data{0};
 };
 

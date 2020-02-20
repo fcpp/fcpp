@@ -4,19 +4,21 @@
 
 #include "lib/common/twin.hpp"
 
+using namespace fcpp;
+
 
 class TwinTest : public ::testing::Test {
   protected:
     virtual void SetUp() {
     }
     
-    fcpp::twin<int, true> mirrored;
-    fcpp::twin<int, false> separate;
+    common::twin<int, true> mirrored;
+    common::twin<int, false> separate;
 };
 
 
 TEST_F(TwinTest, TrueOperators) {
-    fcpp::twin<int, true> x(mirrored), y, z;
+    common::twin<int, true> x(mirrored), y, z;
     z = y;
     y = x;
     z = std::move(y);
@@ -24,7 +26,7 @@ TEST_F(TwinTest, TrueOperators) {
 }
 
 TEST_F(TwinTest, FalseOperators) {
-    fcpp::twin<int, false> x(separate), y, z;
+    common::twin<int, false> x(separate), y, z;
     z = y;
     y = x;
     z = std::move(y);

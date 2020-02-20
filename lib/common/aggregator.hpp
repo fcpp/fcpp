@@ -287,7 +287,7 @@ class quantile_aggregator {
             iv.push_back(r/100);
             if (r % 100 > 0) iv.push_back(r/100 + 1);
         }
-        nth_elements(ev.begin(), ev.end(), iv.begin(), iv.end());
+        common::nth_elements(ev.begin(), ev.end(), iv.begin(), iv.end());
         for (size_t i=0; i<quantiles.size(); ++i) {
             int q = quantiles[i];
             int r = q*(ev.size()-1);
@@ -330,7 +330,7 @@ using quart_aggregator = quantile_aggregator<T,only_finite,0,25,50,75,100>;
 //! Uses the value type of the first aggregator.
 template <typename... Ts>
 class multi_aggregator : public Ts... {
-    using type = typename type_sequence<Ts...>::front::type;
+    using type = typename common::type_sequence<Ts...>::front::type;
     
   public:
     //! @brief Constructs the aggregator object and outputs its description.
@@ -338,12 +338,12 @@ class multi_aggregator : public Ts... {
     
     //! @brief Erases a value from the aggregation set.
     void erase(type value) {
-        details::ignore((Ts::erase(value),0)...);
+        common::details::ignore((Ts::erase(value),0)...);
     }
     
     //! @brief Inserts a new value to be aggregated.
     void insert(type value) {
-        details::ignore((Ts::insert(value),0)...);
+        common::details::ignore((Ts::insert(value),0)...);
     }
     
     //! @brief The results of aggregation.
@@ -353,7 +353,7 @@ class multi_aggregator : public Ts... {
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        details::ignore((Ts::output(os),0)...);
+        common::details::ignore((Ts::output(os),0)...);
     }
 };
 

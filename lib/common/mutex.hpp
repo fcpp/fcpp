@@ -22,6 +22,12 @@ namespace fcpp {
 
 
 /**
+ * @brief Namespace containing objects of common use.
+ */
+namespace common {
+
+
+/**
  * @brief Provides an object interface for an OpenMP lock.
  *
  * @param enabled Whether the lock will actually perform anything.
@@ -97,14 +103,6 @@ struct mutex<true> : public std::mutex {
 #endif
 
 
-using std::adopt_lock_t;
-using std::adopt_lock;
-using std::try_to_lock_t;
-using std::try_to_lock;
-using std::defer_lock_t;
-using std::defer_lock;
-
-
 //! @brief Bypassable version of `std::lock_guard` (keeps a mutex locked during its lifetime).
 template <bool enabled>
 class lock_guard;
@@ -117,7 +115,7 @@ struct lock_guard<false> {
     explicit lock_guard(mutex<false>&) {}
     
     //! @brief Adopting constructor.
-    lock_guard(mutex<false>&, adopt_lock_t) {}
+    lock_guard(mutex<false>&, std::adopt_lock_t) {}
     
     //! @brief Disabled copying.
     lock_guard(const lock_guard&) = delete;
@@ -141,19 +139,19 @@ template <>
 class unique_lock<false> {
     unique_lock() noexcept {}
     
-    explicit unique_lock(fcpp::mutex<false>&) {}
+    explicit unique_lock(common::mutex<false>&) {}
     
-    unique_lock(fcpp::mutex<false>&, try_to_lock_t) {}
+    unique_lock(common::mutex<false>&, std::try_to_lock_t) {}
     
-    unique_lock(fcpp::mutex<false>&, defer_lock_t) noexcept {}
+    unique_lock(common::mutex<false>&, std::defer_lock_t) noexcept {}
 
-    unique_lock(fcpp::mutex<false>&, adopt_lock_t) {}
+    unique_lock(common::mutex<false>&, std::adopt_lock_t) {}
     
     template <class R, class P>
-    unique_lock(fcpp::mutex<false>&, const std::chrono::duration<R,P>&) {}
+    unique_lock(common::mutex<false>&, const std::chrono::duration<R,P>&) {}
     
     template <class C, class D>
-    unique_lock(fcpp::mutex<false>&, const std::chrono::time_point<C,D>&) {}
+    unique_lock(common::mutex<false>&, const std::chrono::time_point<C,D>&) {}
     
     unique_lock(const unique_lock&) = delete;
     
@@ -167,8 +165,8 @@ class unique_lock<false> {
     
     inline void swap (unique_lock&) noexcept {}
     
-    inline fcpp::mutex<false>* release() noexcept {
-        return new fcpp::mutex<false>();
+    inline common::mutex<false>* release() noexcept {
+        return new common::mutex<false>();
     }
     
     inline void lock() {}
@@ -197,8 +195,8 @@ class unique_lock<false> {
         return true;
     }
     
-    inline fcpp::mutex<false>* mutex() const noexcept {
-        return new fcpp::mutex<false>();
+    inline common::mutex<false>* mutex() const noexcept {
+        return new common::mutex<false>();
     }
 };
 
@@ -207,9 +205,12 @@ void swap(unique_lock<false>&, unique_lock<false>&) noexcept {}
 
 //! @brief Imported version of `std::unique_lock`.
 template <>
-struct unique_lock<true> : std::unique_lock<fcpp::mutex<true>> {
-    using std::unique_lock<fcpp::mutex<true>>::unique_lock;
+struct unique_lock<true> : std::unique_lock<mutex<true>> {
+    using std::unique_lock<common::mutex<true>>::unique_lock;
 };
+
+
+}
 
 
 }

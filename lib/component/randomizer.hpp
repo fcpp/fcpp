@@ -26,7 +26,7 @@ namespace fcpp {
 namespace component {
 
 
-//! @brief Namespace of tags to be used for `tagged_tuple` objects.
+//! @brief Namespace of tags to be used for initialising components.
 namespace tags {
     //! @brief Tag associating to a random number generator seed (defaults to 0).
     struct seed {};
@@ -110,7 +110,7 @@ struct randomizer {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const tagged_tuple<S,T>& t) : P::net(t), m_generator(get_or<tags::seed>(t, 0)) {}
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
             
             //! @brief Gives access to the random number generator.
             G& generator() {

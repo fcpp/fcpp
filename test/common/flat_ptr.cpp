@@ -6,15 +6,17 @@
 
 #include "lib/common/flat_ptr.hpp"
 
+using namespace fcpp;
+
 
 TEST(FlatPtrTest, Size) {
-    EXPECT_EQ(sizeof(char),                  sizeof(fcpp::flat_ptr<char, true>));
-    EXPECT_EQ(sizeof(std::shared_ptr<char>), sizeof(fcpp::flat_ptr<char, false>));
+    EXPECT_EQ(sizeof(char),                  sizeof(common::flat_ptr<char, true>));
+    EXPECT_EQ(sizeof(std::shared_ptr<char>), sizeof(common::flat_ptr<char, false>));
 }
 
 TEST(FlatPtrTest, TrueOperators) {
-    fcpp::flat_ptr<char, true> data('a');
-    fcpp::flat_ptr<char, true> x(data), y, z;
+    common::flat_ptr<char, true> data('a');
+    common::flat_ptr<char, true> x(data), y, z;
     z = y;
     y = x;
     z = std::move(y);
@@ -22,8 +24,8 @@ TEST(FlatPtrTest, TrueOperators) {
 }
 
 TEST(FlatPtrTest, FalseOperators) {
-    fcpp::flat_ptr<char, false> data('a');
-    fcpp::flat_ptr<char, false> x(data), y, z;
+    common::flat_ptr<char, false> data('a');
+    common::flat_ptr<char, false> x(data), y, z;
     z = y;
     y = x;
     z = std::move(y);
@@ -31,8 +33,8 @@ TEST(FlatPtrTest, FalseOperators) {
 }
 
 TEST(FlatPtrTest, Dereferencing) {
-    fcpp::flat_ptr<std::vector<int>, false> fdata;
-    fcpp::flat_ptr<std::vector<int>, true> tdata;
+    common::flat_ptr<std::vector<int>, false> fdata;
+    common::flat_ptr<std::vector<int>, true> tdata;
     EXPECT_EQ(0, (int)fdata->size());
     EXPECT_EQ(0, (int)tdata->size());
     EXPECT_EQ(0, (int)(*fdata).size());
@@ -40,12 +42,12 @@ TEST(FlatPtrTest, Dereferencing) {
 }
 
 TEST(FlatPtrTest, Assignment) {
-    fcpp::flat_ptr<char, false> fdata('a');
-    fcpp::flat_ptr<char, true> tdata('a');
+    common::flat_ptr<char, false> fdata('a');
+    common::flat_ptr<char, true> tdata('a');
     EXPECT_EQ('a', *fdata);
     EXPECT_EQ('a', *tdata);
-    fcpp::flat_ptr<char, false> f1 = fdata;
-    fcpp::flat_ptr<char, true> t1 = tdata;
+    common::flat_ptr<char, false> f1 = fdata;
+    common::flat_ptr<char, true> t1 = tdata;
     EXPECT_EQ(*f1, *fdata);
     EXPECT_EQ(*t1, *tdata);
     EXPECT_EQ(f1, fdata);

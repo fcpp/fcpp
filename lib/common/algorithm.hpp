@@ -21,6 +21,12 @@
 namespace fcpp {
 
 
+/**
+ * @brief Namespace containing objects of common use.
+ */
+namespace common {
+
+
 //! @cond INTERNAL
 namespace details {
     //! @brief Compares two elements with the standard comparator.
@@ -161,18 +167,25 @@ inline void nth_elements(E efirst, E elast, I ifirst, I ilast) {
 }
 
 
+//! @brief Namespace of tags for common use.
+namespace tags {
+    //! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
+    //! @{
+    struct sequential_execution {};
+    template <size_t n>
+    struct parallel_execution {};
+    template <size_t n>
+    using general_execution = std::conditional_t<n >= 2, parallel_execution<n>, sequential_execution>;
+    //! @}
+}
+
 //! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
 //! @{
-struct sequential_execution_t {};
+constexpr tags::sequential_execution sequential_execution {};
 template <size_t n>
-struct parallel_execution_t {};
-constexpr sequential_execution_t sequential_execution {};
+constexpr tags::parallel_execution<n> parallel_execution {};
 template <size_t n>
-constexpr parallel_execution_t<n> parallel_execution {};
-template <size_t n>
-using general_execution_t = std::conditional_t<n >= 2, parallel_execution_t<n>, sequential_execution_t>;
-template <size_t n>
-constexpr general_execution_t<n> general_execution {};
+constexpr tags::general_execution<n> general_execution {};
 //! @}
 
 
@@ -183,7 +196,7 @@ constexpr general_execution_t<n> general_execution {};
  * @param f A void function to be applied on them.
  */
 template <typename F>
-void parallel_for(sequential_execution_t, size_t len, F&& f) {
+void parallel_for(tags::sequential_execution, size_t len, F&& f) {
     for (size_t i=0; i<len; ++i) f(i);
 }
 
@@ -196,7 +209,7 @@ void parallel_for(sequential_execution_t, size_t len, F&& f) {
 * @param f A void function to be applied on them.
 */
 template <size_t n, typename F>
-void parallel_for(parallel_execution_t<n>, size_t len, F&& f) {
+void parallel_for(tags::parallel_execution<n>, size_t len, F&& f) {
     #pragma omp parallel for num_threads(n)
     for (size_t i=0; i<len; ++i) f(i);
 }
@@ -208,7 +221,7 @@ void parallel_for(parallel_execution_t<n>, size_t len, F&& f) {
 * @param f A void function to be applied on them.
 */
 template <size_t n, typename F>
-void parallel_for(parallel_execution_t<n>, size_t len, F&& f) {
+void parallel_for(tags::parallel_execution<n>, size_t len, F&& f) {
     size_t slice = std::max(len / n, (size_t)1);
     size_t threshold = (n - std::max(int(len - slice*n), 0))*slice;
     std::vector<std::thread> pool;
@@ -232,7 +245,7 @@ void parallel_for(parallel_execution_t<n>, size_t len, F&& f) {
  * @param f A void function to be applied on them.
  */
 template <typename F>
-void parallel_while(sequential_execution_t, F&& f) {
+void parallel_while(tags::sequential_execution, F&& f) {
     while (f());
 }
 
@@ -245,7 +258,7 @@ void parallel_while(sequential_execution_t, F&& f) {
 * @param f A void function to be applied on them.
 */
 template <size_t n, typename F>
-void parallel_while(parallel_execution_t<n>, F&& f) {
+void parallel_while(tags::parallel_execution<n>, F&& f) {
     #pragma omp parallel num_threads(n)
     while (f());
 }
@@ -257,7 +270,7 @@ void parallel_while(parallel_execution_t<n>, F&& f) {
 * @param f A void function to be applied on them.
 */
 template <size_t n, typename F>
-void parallel_while(parallel_execution_t<n>, F&& f) {
+void parallel_while(tags::parallel_execution<n>, F&& f) {
     std::vector<std::thread> pool;
     pool.reserve(n);
     auto launch = [&f] () {
@@ -268,6 +281,9 @@ void parallel_while(parallel_execution_t<n>, F&& f) {
     for (std::thread& t : pool) t.join();
 }
 #endif
+
+
+}
 
 
 }

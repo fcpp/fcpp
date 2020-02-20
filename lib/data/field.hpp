@@ -36,26 +36,24 @@ template<typename T> class field;
 //@{
 //! @brief Corresponds to T only if A is a field type.
 template <typename A, typename T>
-using if_field = std::enable_if_t<has_template<field, A>, T>;
+using if_field = std::enable_if_t<common::has_template<field, A>, T>;
 //! @brief Corresponds to T only if A is a field type which is not a reference.
 template <typename A, typename T>
-using if_plain_field = std::enable_if_t<has_template<field, A> and not std::is_reference<A>::value, T>;
+using if_plain_field = std::enable_if_t<common::has_template<field, A> and not std::is_reference<A>::value, T>;
 //! @brief Corresponds to T only if A is a local type.
 template <typename A, typename T>
-using if_local = std::enable_if_t<not has_template<field, A>, T>;
+using if_local = std::enable_if_t<not common::has_template<field, A>, T>;
 //! @brief Corresponds to T only if A is a local type which is not a reference.
 template <typename A, typename T>
-using if_plain_local = std::enable_if_t<not has_template<field, A> and not std::is_reference<A>::value, T>;
+using if_plain_local = std::enable_if_t<not common::has_template<field, A> and not std::is_reference<A>::value, T>;
 //! @brief Computes the result of applying F to local versions of A.
 template <typename F, typename... A>
-using local_result = std::result_of_t<F(del_template<field, A>...)>;
+using local_result = std::result_of_t<F(common::del_template<field, A>...)>;
 //@}
 
-/**
- * @brief Namespace containing implementation details, which should <b>never</b> be used in FCPP programs.
- */
-namespace details {
+
 //! @cond INTERNAL
+namespace details {
     template <class T>
     struct field_base {};
     
@@ -116,7 +114,7 @@ namespace details {
  */
 template <typename T>
 class field : public details::field_base<T> {
-    static_assert(not has_template<field, T>, "cannot instantiate a field of fields");
+    static_assert(not common::has_template<field, T>, "cannot instantiate a field of fields");
     
     //! @cond INTERNAL
     template <typename A>
@@ -504,7 +502,7 @@ field<decltype(op std::declval<A>())>
 field<decltype(std::declval<A>() op std::declval<B>())>
 
 #define _BOP_IFTA(A,op,B)                                                   \
-std::enable_if_t<not has_template<field,A> and not std::is_convertible<A,std::ostream>::value, _BOP_TYPE(A,op,B)>
+std::enable_if_t<not common::has_template<field,A> and not std::is_convertible<A,std::ostream>::value, _BOP_TYPE(A,op,B)>
 
 #define _BOP_IFTB(A,op,B)                                                   \
 if_local<B, _BOP_TYPE(A,op,B)>

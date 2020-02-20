@@ -65,7 +65,7 @@ struct storage {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const tagged_tuple<S,T>& t) : P::node(n,t), m_storage(t) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_storage(t) {}
             
           protected: // visible by node objects only
             /**
@@ -74,8 +74,8 @@ struct storage {
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            typename tagged_tuple_t<Ss...>::template tag_type<T>& storage() {
-                return fcpp::get<T>(m_storage);
+            typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage() {
+                return common::get<T>(m_storage);
             }
             
             /**
@@ -84,18 +84,18 @@ struct storage {
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            const typename tagged_tuple_t<Ss...>::template tag_type<T>& storage() const {
-                return fcpp::get<T>(m_storage);
+            const typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage() const {
+                return common::get<T>(m_storage);
             }
             
             //! @brief Const access to stored data as tagged tuple.
-            const tagged_tuple_t<Ss...>& storage_tuple() const {
+            const common::tagged_tuple_t<Ss...>& storage_tuple() const {
                 return m_storage;
             }
             
           private: // implementation details
             //! @brief The data storage.
-            tagged_tuple_t<Ss...> m_storage;
+            common::tagged_tuple_t<Ss...> m_storage;
         };
         
         //! @brief The global part of the component.

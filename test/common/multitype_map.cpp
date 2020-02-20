@@ -6,6 +6,8 @@
 
 #include "lib/common/multitype_map.hpp"
 
+using namespace fcpp;
+
 
 class MultitypeMapTest : public ::testing::Test {
   protected:
@@ -20,12 +22,12 @@ class MultitypeMapTest : public ::testing::Test {
         data.insert(3);
     }
     
-    fcpp::multitype_map<short, int, double, char> data;
+    common::multitype_map<short, int, double, char> data;
 };
 
 
 TEST_F(MultitypeMapTest, Operators) {
-    fcpp::multitype_map<short, int, double, char> x(data), y, z;
+    common::multitype_map<short, int, double, char> x(data), y, z;
     z = y;
     y = x;
     z = std::move(y);

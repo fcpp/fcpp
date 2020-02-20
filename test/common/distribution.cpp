@@ -96,7 +96,7 @@ TEST(DistributionTest, Uniform) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::uniform_distribution<d1, d5, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<meantag,devtag>(5.0,1.0));
+    random::uniform_distribution<d1, d5, meantag, devtag> dtup(rnd, common::make_tagged_tuple<meantag,devtag>(5.0,1.0));
     d = dtup(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     d = dtup(rnd);
@@ -134,7 +134,7 @@ TEST(DistributionTest, Normal) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::normal_d<double, 5, 3, 1, meantag, devtag> dtup(rnd, fcpp::make_tagged_tuple<devtag>(1.0));
+    random::normal_d<double, 5, 3, 1, meantag, devtag> dtup(rnd, common::make_tagged_tuple<devtag>(1.0));
     d = dtup(rnd);
     EXPECT_NEAR(5.0, d, 3.0);
     d = dtup(rnd);
@@ -172,7 +172,7 @@ TEST(DistributionTest, Exponential) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    random::exponential_distribution<d1, d1, meantag> dtup(rnd, fcpp::make_tagged_tuple<meantag>(5.0));
+    random::exponential_distribution<d1, d1, meantag> dtup(rnd, common::make_tagged_tuple<meantag>(5.0));
     d = dtup(rnd);
     EXPECT_NEAR(10.0, d, 10.0);
     d = dtup(rnd);
@@ -210,7 +210,7 @@ TEST(DistributionTest, Weibull) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::weibull_d<double, 3, 1, 1, meantag> dtag(rnd, fcpp::make_tagged_tuple<meantag,double>(5.0,'a'));
+    random::weibull_d<double, 3, 1, 1, meantag> dtag(rnd, common::make_tagged_tuple<meantag,double>(5.0,'a'));
     d = dtag(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
     d = dtag(rnd);
@@ -241,7 +241,7 @@ TEST(DistributionTest, Positive) {
 
 TEST(DistributionTest, Combined) {
     std::mt19937 rnd(42);
-    random::weibull_distribution<random::uniform_distribution<d5, d5, void, devtag>, random::uniform_distribution<d1, d5, void, devtag2>> distr(rnd, fcpp::make_tagged_tuple<devtag,devtag2>(0.0,0.0));
+    random::weibull_distribution<random::uniform_distribution<d5, d5, void, devtag>, random::uniform_distribution<d1, d5, void, devtag2>> distr(rnd, common::make_tagged_tuple<devtag,devtag2>(0.0,0.0));
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 5.0);

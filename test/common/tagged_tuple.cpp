@@ -6,6 +6,8 @@
 
 #include "lib/common/tagged_tuple.hpp"
 
+using namespace fcpp;
+
 
 struct tag {};
 struct gat {};
@@ -27,127 +29,127 @@ class TagTupleTest : public ::testing::Test {
     virtual void SetUp() {
     }
     
-    fcpp::tagged_tuple_t<tag, int, gat, bool> t{2, true};
+    common::tagged_tuple_t<tag, int, gat, bool> t{2, true};
 };
 
 
 TEST_F(TagTupleTest, Operators) {
-    fcpp::tagged_tuple_t<tag, int, gat, bool> x(t), y, z;
+    common::tagged_tuple_t<tag, int, gat, bool> x(t), y, z;
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(t, z);
-    y = fcpp::tagged_tuple_t<tag, int, gat, bool>{1, false};
+    y = common::tagged_tuple_t<tag, int, gat, bool>{1, false};
     EXPECT_NE(t, y);
-    y = fcpp::make_tagged_tuple<tag,gat>(2, true);
+    y = common::make_tagged_tuple<tag,gat>(2, true);
     EXPECT_EQ(t, y);
-    fcpp::tagged_tuple_t<> e(y);
-    fcpp::tagged_tuple_t<> f = fcpp::make_tagged_tuple<>();
+    common::tagged_tuple_t<> e(y);
+    common::tagged_tuple_t<> f = common::make_tagged_tuple<>();
     EXPECT_EQ(e, f);
 }
 
 TEST_F(TagTupleTest, Get) {
     int i;
-    i = fcpp::get<tag>(t);
+    i = common::get<tag>(t);
     EXPECT_EQ(2, i);
-    fcpp::get<tag>(t) = 3;
-    i = fcpp::get<tag>(t);
+    common::get<tag>(t) = 3;
+    i = common::get<tag>(t);
     EXPECT_EQ(3, i);
     bool b;
-    b = fcpp::get<gat>(t);
+    b = common::get<gat>(t);
     EXPECT_EQ(true, b);
     i = std::get<0>(t);
     EXPECT_EQ(3, i);
-    b = fcpp::get_or<gat>(t, false);
+    b = common::get_or<gat>(t, false);
     EXPECT_EQ(true, b);
-    b = fcpp::get_or<oth>(t, false);
+    b = common::get_or<oth>(t, false);
     EXPECT_EQ(false, b);
 }
 
 TEST_F(TagTupleTest, Call) {
-    auto x = fcpp::make_tagged_tuple<tag,gat>([](int x){ return x+1; }, [](int x){ return 2*x; });
+    auto x = common::make_tagged_tuple<tag,gat>([](int x){ return x+1; }, [](int x){ return 2*x; });
     auto y = x(3);
-    auto z = fcpp::make_tagged_tuple<tag,gat>(4, 6);
+    auto z = common::make_tagged_tuple<tag,gat>(4, 6);
     EXPECT_EQ(y, z);
 }
 
 TEST_F(TagTupleTest, Assignment) {
     int i;
-    i = fcpp::get<tag>(t);
+    i = common::get<tag>(t);
     EXPECT_EQ(2, i);
-    t = fcpp::make_tagged_tuple<oth,tag>("stuff",5);
-    i = fcpp::get<tag>(t);
+    t = common::make_tagged_tuple<oth,tag>("stuff",5);
+    i = common::get<tag>(t);
     EXPECT_EQ(5, i);
     bool b;
-    b = fcpp::get<gat>(t);
+    b = common::get<gat>(t);
     EXPECT_EQ(true, b);
-    t = fcpp::make_tagged_tuple<gat,tag>(false,3);
-    i = fcpp::get<tag>(t);
+    t = common::make_tagged_tuple<gat,tag>(false,3);
+    i = common::get<tag>(t);
     EXPECT_EQ(3, i);
-    b = fcpp::get<gat>(t);
+    b = common::get<gat>(t);
     EXPECT_EQ(false, b);
-    fcpp::tagged_tuple_t<oth, double, tag, int> x(t);
-    i = fcpp::get<tag>(x);
+    common::tagged_tuple_t<oth, double, tag, int> x(t);
+    i = common::get<tag>(x);
     EXPECT_EQ(3, i);
 }
 
 TEST_F(TagTupleTest, Types) {
     std::string ex, res;
     ex  = typeid(char).name();
-    res = typeid(fcpp::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_type<gat>).name();
+    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_type<gat>).name();
     EXPECT_EQ(ex, res);
-    ex  = typeid(fcpp::type_sequence<bool,char>).name();
-    res = typeid(fcpp::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_types<oth,gat>).name();
+    ex  = typeid(common::type_sequence<bool,char>).name();
+    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_types<oth,gat>).name();
     EXPECT_EQ(ex, res);
-    ex  = typeid(fcpp::type_sequence<tag,gat,oth>).name();
-    res = typeid(fcpp::tagged_tuple_t<tag,int,gat,char,oth,bool>::tags).name();
+    ex  = typeid(common::type_sequence<tag,gat,oth>).name();
+    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tags).name();
     EXPECT_EQ(ex, res);
-    ex  = typeid(fcpp::type_sequence<int,char,bool>).name();
-    res = typeid(fcpp::tagged_tuple_t<tag,int,gat,char,oth,bool>::types).name();
+    ex  = typeid(common::type_sequence<int,char,bool>).name();
+    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::types).name();
     EXPECT_EQ(ex, res);
-    ex  = typeid(fcpp::tagged_tuple_t<tag,int,gat,char,oth,bool>).name();
-    res = typeid(fcpp::tagged_tuple_t<gat,char,oth,bool>::push_front<tag,int>).name();
+    ex  = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>).name();
+    res = typeid(common::tagged_tuple_t<gat,char,oth,bool>::push_front<tag,int>).name();
     EXPECT_EQ(ex, res);
-    res = typeid(fcpp::tagged_tuple_t<tag,int,gat,char>::push_back<oth,bool>).name();
+    res = typeid(common::tagged_tuple_t<tag,int,gat,char>::push_back<oth,bool>).name();
     EXPECT_EQ(ex, res);
-    ex  = typeid(fcpp::tagged_tuple_t<tag,int,gat,char,oth,bool,hto,double>).name();
-    res = typeid(fcpp::tagged_tuple_cat<
-        fcpp::tagged_tuple_t<tag,int>,
-        fcpp::tagged_tuple_t<gat,char,oth,bool>,
-        fcpp::tagged_tuple_t<hto,double>
+    ex  = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool,hto,double>).name();
+    res = typeid(common::tagged_tuple_cat<
+        common::tagged_tuple_t<tag,int>,
+        common::tagged_tuple_t<gat,char,oth,bool>,
+        common::tagged_tuple_t<hto,double>
     >).name();
     EXPECT_EQ(ex, res);
 }
 
 TEST_F(TagTupleTest, Print) {
     std::stringstream s;
-    s << t;
+    t.print(s);
     EXPECT_EQ("tag:2, gat:true", s.str());
     s.str("");
-    s << fcpp::assignment_tuple << t;
+    t.print(s, common::assignment_tuple);
     EXPECT_EQ("tag = 2, gat = true", s.str());
     s.str("");
-    s << fcpp::underscore_tuple << t;
+    t.print(s, common::underscore_tuple);
     EXPECT_EQ("tag-2_gat-true", s.str());
     s.str("");
-    s << fcpp::dictionary_tuple << t;
+    t.print(s, common::dictionary_tuple);
     EXPECT_EQ("tag:2, gat:true", s.str());
-    fcpp::tagged_tuple_t<oth,bool,tags::stuffer,char,void,double> t1{false,'z',4.5};
+    common::tagged_tuple_t<oth,bool,tags::stuffer,char,void,double> t1{false,'z',4.5};
     s.str("");
-    s << fcpp::assignment_tuple << t1;
+    t1.print(s, common::assignment_tuple);
     EXPECT_EQ("oth = false, stuffer = z, void = 4.5", s.str());
-    fcpp::tagged_tuple_t<tags::main,std::string,tags::stuffer,const char*> t2{"tester","foo"};
+    common::tagged_tuple_t<tags::main,std::string,tags::stuffer,const char*> t2{"tester","foo"};
     s.str("");
-    s << fcpp::assignment_tuple << t2;
+    t2.print(s, common::assignment_tuple);
     EXPECT_EQ("main = tester, stuffer = foo", s.str());
     s.str("");
-    s << fcpp::underscore_tuple << fcpp::skip_tags<tags::main> << t2;
+    t2.print(s, common::underscore_tuple, common::skip_tags<tags::main>);
     EXPECT_EQ("stuffer-foo", s.str());
-    fcpp::tagged_tuple_t<tags::main,int,double,bool,tags::nest::other,char> t3{42,false,'w'};
+    common::tagged_tuple_t<tags::main,int,double,bool,tags::nest::other,char> t3{42,false,'w'};
     s.str("");
-    s << fcpp::assignment_tuple << t3;
+    t3.print(s, common::assignment_tuple);
     EXPECT_EQ("main = 42, double = false, other = w", s.str());
     s.str("");
-    s << fcpp::assignment_tuple << fcpp::skip_tags<double,tags::main,tags::nest::other> << t3;
+    t3.print(s, common::assignment_tuple, common::skip_tags<double,tags::main,tags::nest::other>);
     EXPECT_EQ("", s.str());
 }

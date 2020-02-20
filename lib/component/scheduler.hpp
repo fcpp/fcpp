@@ -75,7 +75,7 @@ struct scheduler {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(P::node::generator(),t) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(P::node::generator(),t) {}
             
             /**
              * @brief Returns next event to schedule for the node component.

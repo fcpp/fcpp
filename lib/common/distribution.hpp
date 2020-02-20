@@ -70,23 +70,23 @@ struct crand {
 //! @cond INTERNATL
 namespace details {
     template <typename T>
-    std::uniform_real_distribution<T> make_distribution(type_sequence<std::uniform_real_distribution<T>>, T mean, T dev) {
+    std::uniform_real_distribution<T> make_distribution(common::type_sequence<std::uniform_real_distribution<T>>, T mean, T dev) {
         return std::uniform_real_distribution<T>(mean - 1.7320508075688772*dev, mean + 1.7320508075688772*dev);
     }
 
     template <typename T>
-    std::normal_distribution<T> make_distribution(type_sequence<std::normal_distribution<T>>, T mean, T dev) {
+    std::normal_distribution<T> make_distribution(common::type_sequence<std::normal_distribution<T>>, T mean, T dev) {
         return std::normal_distribution<T>(mean, dev);
     }
 
     template <typename T>
-    std::exponential_distribution<T> make_distribution(type_sequence<std::exponential_distribution<T>>, T mean, T dev) {
+    std::exponential_distribution<T> make_distribution(common::type_sequence<std::exponential_distribution<T>>, T mean, T dev) {
         assert(mean == dev);
         return std::exponential_distribution<T>(1/mean);
     }
 
     template <typename T>
-    std::weibull_distribution<T> make_distribution(type_sequence<std::weibull_distribution<T>>, T mean, T dev) {
+    std::weibull_distribution<T> make_distribution(common::type_sequence<std::weibull_distribution<T>>, T mean, T dev) {
         T t = log((dev * dev) / (mean * mean) + 1);
         T kmin = 0, kmax = 1;
         while (lgamma(1 + 2 * kmax) - 2 * lgamma(1 + kmax) < t) {
@@ -120,7 +120,7 @@ namespace details {
 template <template<typename> class D, typename T>
 //! @{
 D<T> make_distribution(T mean, T dev) {
-    return details::make_distribution(type_sequence<D<T>>(), mean, dev);
+    return details::make_distribution(common::type_sequence<D<T>>(), mean, dev);
 }
 
 
@@ -138,7 +138,7 @@ struct name {                                       \
     template <typename G>                           \
     name(G&) {}                                     \
     template <typename G, typename S, typename T>   \
-    name(G&, const fcpp::tagged_tuple<S,T>&) {}     \
+    name(G&, const common::tagged_tuple<S,T>&) {}     \
     template <typename G>                           \
     type operator()(G&) {                           \
         return val;                                 \
@@ -160,7 +160,7 @@ struct constant_distribution {
     constant_distribution(G&) {}
     
     template <typename G, typename S, typename T>
-    constant_distribution(G&, const tagged_tuple<S,T>&) {}
+    constant_distribution(G&, const common::tagged_tuple<S,T>&) {}
     
     template <typename G>
     type operator()(G&) {
@@ -178,7 +178,7 @@ namespace details {
     }
 
     template <typename R, typename G, typename S, typename T>
-    typename R::type call_distr(G& g, const tagged_tuple<S,T>& t) {
+    typename R::type call_distr(G& g, const common::tagged_tuple<S,T>& t) {
         R dist{g, t};
         return dist(g);
     }
@@ -205,7 +205,7 @@ class uniform_distribution {
     uniform_distribution(G& g) : m_d(make_distribution<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    uniform_distribution(G& g, const tagged_tuple<S,T>& t) : m_d(make_distribution<std::uniform_real_distribution>(get_or<mean_tag>(t,details::call_distr<mean>(g, t)), get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    uniform_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::uniform_real_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
     type operator()(G& g) {
@@ -248,7 +248,7 @@ class normal_distribution {
     normal_distribution(G& g) : m_d(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
     
     template <typename G, typename S, typename T>
-    normal_distribution(G& g, const tagged_tuple<S,T>& t) : m_d(get_or<mean_tag>(t,details::call_distr<mean>(g, t)), get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
+    normal_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
     
     template <typename G>
     type operator()(G& g) {
@@ -290,7 +290,7 @@ class exponential_distribution {
     exponential_distribution(G& g) : m_d(1/details::call_distr<mean>(g)) {}
     
     template <typename G, typename S, typename T>
-    exponential_distribution(G& g, const tagged_tuple<S,T>& t) : m_d(1/get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
+    exponential_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(1/common::get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
     
     template <typename G>
     type operator()(G& g) {
@@ -332,7 +332,7 @@ class weibull_distribution {
     weibull_distribution(G& g) : m_d(make_distribution<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    weibull_distribution(G& g, const tagged_tuple<S,T>& t) : m_d(make_distribution<std::weibull_distribution>(get_or<mean_tag>(t,details::call_distr<mean>(g, t)), get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    weibull_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::weibull_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
     type operator()(G& g) {

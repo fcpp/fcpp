@@ -13,7 +13,7 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
-#include <vector>
+#include <unordered_set>
 
 #include "lib/common/traits.hpp"
 
@@ -181,7 +181,7 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
 namespace details {
     std::string tag_val_sep = ":";
     std::string val_tag_sep = ", ";
-    std::vector<int> skip_tags;
+    std::unordered_set<std::string> skip_tags;
 
     std::string strip_tags(std::string s) {
         if (strncmp(s.c_str(), "tags::", 6) == 0) return s.substr(6);
@@ -199,13 +199,17 @@ namespace details {
     }
     template<typename S, typename T, typename S1, typename T1>
     void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1>, type_sequence<T1>) {
-        o << strip_tags(type_name<S1>()) << tag_val_sep;
-        tt_val_print(o, get<S1>(t), type_sequence<T1>());
+        if (skip_tags.count(typeid(S1).name()) == 0) {
+            o << strip_tags(type_name<S1>()) << tag_val_sep;
+            tt_val_print(o, get<S1>(t), type_sequence<T1>());
+        }
     }
     template<typename S, typename T, typename S1, typename... Ss, typename T1, typename... Ts>
     void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1,Ss...>, type_sequence<T1,Ts...>) {
-        tt_print(o, t, type_sequence<S1>(), type_sequence<T1>());
-        o << val_tag_sep;
+        if (skip_tags.count(typeid(S1).name()) == 0) {
+            tt_print(o, t, type_sequence<S1>(), type_sequence<T1>());
+            o << val_tag_sep;
+        }
         tt_print(o, t, type_sequence<Ss...>(), type_sequence<Ts...>());
     }
 }
@@ -215,6 +219,7 @@ namespace details {
 template<typename S, typename T>
 std::ostream& operator<<(std::ostream& o, const tagged_tuple<S, T>& t) {
     details::tt_print(o, t, S(), T());
+    details::skip_tags.clear();
     return o;
 }
 
@@ -252,6 +257,7 @@ template <typename S>
 constexpr skip_tag_t<S> skip_tag{};
 template <typename S>
 std::ostream& operator<<(std::ostream& o, const skip_tag_t<S>&) {
+    details::skip_tags.insert(typeid(S).name());
     return o;
 }
 

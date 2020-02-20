@@ -83,8 +83,7 @@ cc_library(
 
 cc_library(
     name = 'tagged_tuple',
-    hdrs = ['tagged_tuple.hpp'],
-    srcs = ['tagged_tuple.cpp'],
+    srcs = ['tagged_tuple.hpp'],
     deps = [
         "//lib/common:traits",
     ],

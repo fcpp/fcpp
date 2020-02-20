@@ -105,17 +105,17 @@ int workhard(int n=15) {
 }
 
 
-TEST(BaseTest, ID) {
+TEST(BaseTest, UID) {
     combo1::net  net1{fcpp::make_tagged_tuple<>()};
-    combo1::node dev1{net1, fcpp::make_tagged_tuple<tags::id>(42)};
+    combo1::node dev1{net1, fcpp::make_tagged_tuple<tags::uid>(42)};
     net1.run();
     dev1.update();
-    EXPECT_EQ(size_t(42), dev1.id);
+    EXPECT_EQ(size_t(42), dev1.uid);
 }
 
 TEST(BaseTest, Override) {
     combo2::net  network{fcpp::make_tagged_tuple<>()};
-    combo2::node device{network, fcpp::make_tagged_tuple<tags::id>(42)};
+    combo2::node device{network, fcpp::make_tagged_tuple<tags::uid>(42)};
     EXPECT_EQ(7,  network.something());
     EXPECT_EQ(2,  network.retest());
     EXPECT_EQ(4,  device.tester());
@@ -124,7 +124,7 @@ TEST(BaseTest, Override) {
 
 TEST(BaseTest, Virtualize) {
     combo1::net  network{fcpp::make_tagged_tuple<>()};
-    combo1::node device{network, fcpp::make_tagged_tuple<tags::id>(42)};
+    combo1::node device{network, fcpp::make_tagged_tuple<tags::uid>(42)};
     EXPECT_EQ(7,  network.something());
     EXPECT_EQ(22, network.retest());
     EXPECT_EQ(23, device.tester());

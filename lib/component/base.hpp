@@ -18,11 +18,11 @@
 
 //! @brief Namespace of tags to be used for `tagged_tuple` objects.
 namespace tags {
-    //! @brief Tag for setting a factor to be applied to real time (defaults to `FCPP_REALTIME`).
-    struct realtime {};
+    //! @brief Tag associating to the unique identifier of an object.
+    struct uid {};
 
-    //! @brief Tag for setting node identifiers.
-    struct id {};
+    //! @brief Tag associating to a factor to be applied to real time.
+    struct realtime {};
 }
 
 
@@ -32,7 +32,11 @@ namespace tags {
 namespace fcpp {
 
 
-//! @brief Empty component (base case for component construction).
+/**
+ * @brief Empty component (base case for component construction).
+ * Initialises `node` with tag `id` associating to a `device_t` node identifier (required).
+ * Initialises `net` with tag `realtime` associating to a `double` factor to be applied to real time (defaults to `FCPP_REALTIME`).
+ */
 struct base {
     /**
      * @brief The actual component.
@@ -52,10 +56,10 @@ struct base {
              * @brief Main constructor.
              *
              * @param n The corresponding net object.
-             * @param t A `tagged_tuple` gathering initialisation values (must contain a `tags::id` entry).
+             * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const tagged_tuple<S,T>& t) : id(get<tags::id>(t)), net(n) {}
+            node(typename F::net& n, const tagged_tuple<S,T>& t) : uid(get<tags::uid>(t)), net(n) {}
 
             //! @brief Deleted copy constructor.
             node(const node&) = delete;
@@ -76,7 +80,7 @@ struct base {
             void update() {}
             
             //! @brief The unique identifier of the device.
-            const device_t id;
+            const device_t uid;
             
             //! @brief A mutex for regulating access to the node.
             fcpp::mutex<FCPP_PARALLEL> mutex;

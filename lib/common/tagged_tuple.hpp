@@ -179,36 +179,49 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
 
 //! @cond INTERNAL
 namespace details {
-    std::string tag_val_sep = ":";
-    std::string val_tag_sep = ", ";
-    std::unordered_set<std::string> skip_tags;
+    //! @brief Accesses the set of type names to be skipped.
+    std::unordered_set<std::string>& get_skip_tags();
 
+    //! @brief Accesses the separator between tags and corresponding values.
+    const std::string& get_tag_val_sep();
+
+    //! @brief Accesses the separator between a value and the following tag.
+    const std::string& get_val_tag_sep();
+
+    //! @brief Removes the `tags` namespace from a type representation.
     std::string strip_tags(std::string s) {
         if (strncmp(s.c_str(), "tags::", 6) == 0) return s.substr(6);
         return s;
     }
+
+    //! @brief Prints a boolean value as a `"true"` or `"false"` string.
     void tt_val_print(std::ostream& o, bool x, type_sequence<bool>) {
         o << (x ? "true" : "false");
     }
+    //! @brief Prints a non-boolean value using default printing.
     template <typename T, typename = std::enable_if_t<not std::is_same<T,bool>::value>>
     void tt_val_print(std::ostream& o, const T& x, type_sequence<T>) {
         o << x;
     }
+
+    //! @brief Prints no tags from a tagged tuple.
     template<typename S, typename T>
     void tt_print(std::ostream&, const tagged_tuple<S, T>&, type_sequence<>, type_sequence<>) {
     }
+    //! @brief Prints one tag from a tagged tuple.
     template<typename S, typename T, typename S1, typename T1>
     void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1>, type_sequence<T1>) {
-        if (skip_tags.count(typeid(S1).name()) == 0) {
-            o << strip_tags(type_name<S1>()) << tag_val_sep;
+        if (get_skip_tags().count(typeid(S1).name()) == 0) {
+            o << strip_tags(type_name<S1>()) << get_tag_val_sep();
             tt_val_print(o, get<S1>(t), type_sequence<T1>());
         }
     }
+    //! @brief Prints multiple tags from a tagged tuple.
     template<typename S, typename T, typename S1, typename... Ss, typename T1, typename... Ts>
     void tt_print(std::ostream& o, const tagged_tuple<S, T>& t, type_sequence<S1,Ss...>, type_sequence<T1,Ts...>) {
-        if (skip_tags.count(typeid(S1).name()) == 0) {
+        if (get_skip_tags().count(typeid(S1).name()) == 0) {
             tt_print(o, t, type_sequence<S1>(), type_sequence<T1>());
-            o << val_tag_sep;
+            o << get_val_tag_sep();
         }
         tt_print(o, t, type_sequence<Ss...>(), type_sequence<Ts...>());
     }
@@ -219,47 +232,43 @@ namespace details {
 template<typename S, typename T>
 std::ostream& operator<<(std::ostream& o, const tagged_tuple<S, T>& t) {
     details::tt_print(o, t, S(), T());
-    details::skip_tags.clear();
+    details::get_skip_tags().clear();
     return o;
 }
 
 //! @brief Stream manipulator for representing tagged tuples in dictionary format (default).
+//! @{
 struct dictionary_tuple_t {};
 constexpr dictionary_tuple_t dictionary_tuple{};
-std::ostream& operator<<(std::ostream& o, const dictionary_tuple_t&) {
-    details::tag_val_sep = ":";
-    details::val_tag_sep = ", ";
-    return o;
-}
+std::ostream& operator<<(std::ostream& o, const dictionary_tuple_t&);
+//! @}
 
 //! @brief Stream manipulator for representing tagged tuples in assignment-list format.
+//! @{
 struct assignment_tuple_t {};
 constexpr assignment_tuple_t assignment_tuple{};
-std::ostream& operator<<(std::ostream& o, const assignment_tuple_t&) {
-    details::tag_val_sep = " = ";
-    details::val_tag_sep = ", ";
-    return o;
-}
+std::ostream& operator<<(std::ostream& o, const assignment_tuple_t&);
+//! @}
 
 //! @brief Stream manipulator for representing tagged tuples in compact underscore format.
+//! @{
 struct underscore_tuple_t {};
 constexpr underscore_tuple_t underscore_tuple{};
-std::ostream& operator<<(std::ostream& o, const underscore_tuple_t&) {
-    details::tag_val_sep = "-";
-    details::val_tag_sep = "_";
-    return o;
-}
+std::ostream& operator<<(std::ostream& o, const underscore_tuple_t&);
+//! @}
 
 //! @brief Stream manipulator for tag skipping (scope limited to following tuple).
-template <typename S>
-struct skip_tag_t {};
-template <typename S>
-constexpr skip_tag_t<S> skip_tag{};
-template <typename S>
-std::ostream& operator<<(std::ostream& o, const skip_tag_t<S>&) {
-    details::skip_tags.insert(typeid(S).name());
+//! @{
+template <typename... Ss>
+struct skip_tags_t {};
+template <typename... Ss>
+constexpr skip_tags_t<Ss...> skip_tags{};
+template <typename... Ss>
+std::ostream& operator<<(std::ostream& o, const skip_tags_t<Ss...>&) {
+    details::ignore((details::get_skip_tags().insert(typeid(Ss).name()),0)...);
     return o;
 }
+//! @}
 
 
 //! @brief The `tagged_tuple_t` alias, allowing to express a `tagged_tuple` by interleaving tags and types.
@@ -298,11 +307,13 @@ using tagged_tuple_cat = typename details::tagged_tuple_cat<Ts...>::type;
 
 //! @cond INTERNAL
 namespace details {
-    template <typename... Ss, typename... Ts, typename T, typename... Us>
-    const T& get_or(const tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t, const T& def, type_sequence<Us...>) {
-        const T* r = &def;
-        ignore((r = &get<Us>(t))...);
-        return *r;
+    template <typename Ss, typename Ts, typename T>
+    auto get_or(const tagged_tuple<Ss, Ts>&, T&& def, type_sequence<>) {
+        return std::forward<T>(def);
+    }
+    template <typename Ss, typename Ts, typename T, typename S>
+    const auto& get_or(const tagged_tuple<Ss, Ts>& t, T&&, type_sequence<S>) {
+        return get<S>(t);
     }
 }
 //! @endcond
@@ -315,9 +326,9 @@ namespace details {
  * @param S The tag to be extracted.
  * @param def A default value if tag is missing.
  */
-template <typename S, typename... Ss, typename... Ts, typename T>
-const T& get_or(const tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t, const T& def) {
-    return details::get_or(t, def, typename type_sequence<Ss...>::template intersect<S>());
+template <typename S, typename Ss, typename Ts, typename T>
+auto get_or(const tagged_tuple<Ss, Ts>& t, T&& def) {
+    return details::get_or(t, std::forward<T>(def), typename Ss::template intersect<S>());
 }
 
 

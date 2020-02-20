@@ -18,7 +18,7 @@
 
 //! @brief Namespace of tags to be used for `tagged_tuple` objects.
 namespace tags {
-    //! @brief Tag for setting the random number generator seed (defaults to 0).
+    //! @brief Tag associating to a random number generator seed (defaults to 0).
     struct seed {};
 }
 
@@ -69,7 +69,7 @@ struct crand {
 
 /**
  * @brief Component handling a random number generator.
- * Initialises the generator with the value corresponding to `tags::seed` in the tagged tuple given.
+ * Initialises `net` with tag `seed` associating to a random number generator seed (defaults to zero).
  * Must be unique in a composition of components.
  *
  * @param G The generator type (defaults to `std::mt19937_64`, use `fcpp::crand` if no generator needed).

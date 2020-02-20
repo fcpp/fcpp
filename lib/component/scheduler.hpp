@@ -66,7 +66,7 @@ struct scheduler {
              * @brief Main constructor.
              *
              * @param n The corresponding net object.
-             * @param t A `tagged_tuple` gathering initialisation values (must contain a `tags::id` entry).
+             * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
             node(typename F::net& n, const tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(P::node::generator(),t) {}

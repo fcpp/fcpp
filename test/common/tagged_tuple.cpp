@@ -138,13 +138,13 @@ TEST_F(TagTupleTest, Print) {
     s << fcpp::assignment_tuple << t2;
     EXPECT_EQ("main = tester, stuffer = foo", s.str());
     s.str("");
-    s << fcpp::underscore_tuple << fcpp::skip_tag<tags::main> << t2;
+    s << fcpp::underscore_tuple << fcpp::skip_tags<tags::main> << t2;
     EXPECT_EQ("stuffer-foo", s.str());
     fcpp::tagged_tuple_t<tags::main,int,double,bool,tags::stuffer,char> t3{42,false,'w'};
     s.str("");
     s << fcpp::assignment_tuple << t3;
     EXPECT_EQ("main = 42, double = false, stuffer = w", s.str());
     s.str("");
-    s << fcpp::assignment_tuple << fcpp::skip_tag<tags::main> << fcpp::skip_tag<double> <<  fcpp::skip_tag<tags::stuffer> << t3;
+    s << fcpp::assignment_tuple << fcpp::skip_tags<double,tags::main,tags::stuffer> << t3;
     EXPECT_EQ("", s.str());
 }

@@ -11,7 +11,8 @@ using namespace fcpp;
 
 TEST(AggregatorTest, Count) {
     std::stringstream ss;
-    aggregator::count_aggregator<bool> v(ss, "tag");
+    aggregator::count<bool> v;
+    v.header(ss, "tag");
     EXPECT_EQ("count(tag) ", ss.str());
 
     EXPECT_EQ(0ULL, v.result());
@@ -29,7 +30,8 @@ TEST(AggregatorTest, Count) {
 
 TEST(AggregatorTest, Sum) {
     std::stringstream ss;
-    aggregator::sum_aggregator<int> v(ss, "tag");
+    aggregator::sum<int> v;
+    v.header(ss, "tag");
     EXPECT_EQ("sum(tag) ", ss.str());
 
     EXPECT_EQ(0, v.result());
@@ -44,19 +46,20 @@ TEST(AggregatorTest, Sum) {
     v.erase(2);
     EXPECT_EQ(3, v.result());
     
-    aggregator::sum_aggregator<double> vd(ss, "tag");
+    aggregator::sum<double> vd;
     vd.insert(1.0/0.0);
     vd.insert(0.0/0.0);
     vd.insert(-1.0/0.0);
     EXPECT_EQ(0.0, vd.result());
-    aggregator::sum_aggregator<double,false> vi(ss, "tag");
+    aggregator::sum<double,false> vi;
     vi.insert(1.0/0.0);
     EXPECT_EQ(1.0/0.0, vi.result());
 }
 
 TEST(AggregatorTest, Mean) {
     std::stringstream ss;
-    aggregator::mean_aggregator<int> v(ss, "tag");
+    aggregator::mean<int> v;
+    v.header(ss, "tag");
     EXPECT_EQ("mean(tag) ", ss.str());
 
     v.insert(3);
@@ -70,21 +73,22 @@ TEST(AggregatorTest, Mean) {
     v.erase(3);
     EXPECT_EQ(6, v.result());
     
-    aggregator::mean_aggregator<double> vd(ss, "tag");
+    aggregator::mean<double> vd;
     vd.insert(1.0/0.0);
     vd.insert(1.0/1.0);
     vd.insert(0.0/0.0);
     vd.insert(-1.0/0.0);
     EXPECT_EQ(1.0, vd.result());
-    aggregator::mean_aggregator<double,false> vi(ss, "tag");
+    aggregator::mean<double,false> vi;
     vi.insert(1.0/0.0);
     EXPECT_EQ(1.0/0.0, vi.result());
 }
 
 TEST(AggregatorTest, Moment) {
     std::stringstream ss;
-    aggregator::moment_aggregator<int,2> v(ss, "tag");
-    EXPECT_EQ("dev(tag) ", ss.str());
+    aggregator::moment<int,2> v;
+    v.header(ss, "tag");
+    EXPECT_EQ("moment2(tag) ", ss.str());
 
     v.insert(3);
     EXPECT_EQ(3, v.result());
@@ -97,20 +101,49 @@ TEST(AggregatorTest, Moment) {
     v.erase(3);
     EXPECT_EQ(6, v.result());
     
-    aggregator::moment_aggregator<double,2> vd(ss, "tag");
+    aggregator::moment<double,2> vd;
     vd.insert(1.0/0.0);
     vd.insert(1.0/1.0);
     vd.insert(0.0/0.0);
     vd.insert(-1.0/0.0);
     EXPECT_EQ(1.0, vd.result());
-    aggregator::moment_aggregator<double,2,false> vi(ss, "tag");
+    aggregator::moment<double,2,false> vi;
     vi.insert(1.0/0.0);
     EXPECT_EQ(1.0/0.0, vi.result());
 }
 
 TEST(AggregatorTest, Dev) {
     std::stringstream ss;
-    aggregator::dev_aggregator<int> v(ss, "tag");
+    aggregator::deviation<int> v;
+    v.header(ss, "tag");
+    EXPECT_EQ("dev(tag) ", ss.str());
+
+    v.insert(3);
+    EXPECT_EQ(0, v.result());
+    v.insert(3);
+    EXPECT_EQ(0, v.result());
+    v.insert(6);
+    EXPECT_EQ(1, v.result());
+    v.erase(3);
+    EXPECT_EQ(1, v.result());
+    v.erase(3);
+    EXPECT_EQ(0, v.result());
+    
+    aggregator::deviation<double> vd;
+    vd.insert(1.0/0.0);
+    vd.insert(1.0/1.0);
+    vd.insert(0.0/0.0);
+    vd.insert(-1.0/0.0);
+    EXPECT_EQ(0.0, vd.result());
+    aggregator::deviation<double,false> vi;
+    vi.insert(1.0/0.0);
+    EXPECT_TRUE(std::isnan(vi.result()));
+}
+
+TEST(AggregatorTest, Stats) {
+    std::stringstream ss;
+    aggregator::stats<int> v;
+    v.header(ss, "tag");
     EXPECT_EQ("mean(tag) dev(tag) ", ss.str());
 
     v.insert(3);
@@ -124,13 +157,13 @@ TEST(AggregatorTest, Dev) {
     v.erase(3);
     EXPECT_EQ(std::make_tuple(6,0), v.result());
     
-    aggregator::dev_aggregator<double> vd(ss, "tag");
+    aggregator::stats<double> vd;
     vd.insert(1.0/0.0);
     vd.insert(1.0/1.0);
     vd.insert(0.0/0.0);
     vd.insert(-1.0/0.0);
     EXPECT_EQ(std::make_tuple(1.0, 0.0), vd.result());
-    aggregator::dev_aggregator<double,false> vi(ss, "tag");
+    aggregator::stats<double,false> vi;
     vi.insert(1.0/0.0);
     double m = std::get<0>(vi.result());
     double d = std::get<1>(vi.result());
@@ -140,7 +173,56 @@ TEST(AggregatorTest, Dev) {
 
 TEST(AggregatorTest, Min) {
     std::stringstream ss;
-    aggregator::min_aggregator<int> v(ss, "tag");
+    aggregator::min<int> v;
+    v.header(ss, "tag");
+    EXPECT_EQ("min(tag) ", ss.str());
+
+    v.insert(3);
+    EXPECT_EQ(3, v.result());
+    v.insert(6);
+    EXPECT_EQ(3, v.result());
+    v.insert(2);
+    EXPECT_EQ(2, v.result());
+    
+    aggregator::min<double> vd;
+    vd.insert(1.0/0.0);
+    vd.insert(1.0/1.0);
+    vd.insert(0.0/0.0);
+    vd.insert(-1.0/0.0);
+    EXPECT_EQ(1.0, vd.result());
+    aggregator::min<double,false> vi;
+    vi.insert(1.0/0.0);
+    EXPECT_EQ(1.0/0.0, vi.result());
+}
+
+TEST(AggregatorTest, Max) {
+    std::stringstream ss;
+    aggregator::max<int> v;
+    v.header(ss, "tag");
+    EXPECT_EQ("max(tag) ", ss.str());
+
+    v.insert(3);
+    EXPECT_EQ(3, v.result());
+    v.insert(6);
+    EXPECT_EQ(6, v.result());
+    v.insert(2);
+    EXPECT_EQ(6, v.result());
+    
+    aggregator::max<double> vd;
+    vd.insert(1.0/0.0);
+    vd.insert(1.0/1.0);
+    vd.insert(0.0/0.0);
+    vd.insert(-1.0/0.0);
+    EXPECT_EQ(1.0, vd.result());
+    aggregator::max<double,false> vi;
+    vi.insert(1.0/0.0);
+    EXPECT_EQ(1.0/0.0, vi.result());
+}
+
+TEST(AggregatorTest, Minimum) {
+    std::stringstream ss;
+    aggregator::minimum<int> v;
+    v.header(ss, "tag");
     EXPECT_EQ("min(tag) ", ss.str());
 
     v.insert(3);
@@ -154,20 +236,21 @@ TEST(AggregatorTest, Min) {
     v.erase(2);
     EXPECT_EQ(6, v.result()[0]);
     
-    aggregator::min_aggregator<double> vd(ss, "tag");
+    aggregator::minimum<double> vd;
     vd.insert(1.0/0.0);
     vd.insert(1.0/1.0);
     vd.insert(0.0/0.0);
     vd.insert(-1.0/0.0);
     EXPECT_EQ(1.0, vd.result()[0]);
-    aggregator::min_aggregator<double,false> vi(ss, "tag");
+    aggregator::minimum<double,false> vi;
     vi.insert(1.0/0.0);
     EXPECT_EQ(1.0/0.0, vi.result()[0]);
 }
 
-TEST(AggregatorTest, Max) {
+TEST(AggregatorTest, Maximum) {
     std::stringstream ss;
-    aggregator::max_aggregator<int> v(ss, "tag");
+    aggregator::maximum<int> v;
+    v.header(ss, "tag");
     EXPECT_EQ("max(tag) ", ss.str());
 
     v.insert(3);
@@ -181,20 +264,21 @@ TEST(AggregatorTest, Max) {
     v.erase(6);
     EXPECT_EQ(2, v.result()[0]);
     
-    aggregator::max_aggregator<double> vd(ss, "tag");
+    aggregator::maximum<double> vd;
     vd.insert(1.0/0.0);
     vd.insert(1.0/1.0);
     vd.insert(0.0/0.0);
     vd.insert(-1.0/0.0);
     EXPECT_EQ(1.0, vd.result()[0]);
-    aggregator::max_aggregator<double,false> vi(ss, "tag");
+    aggregator::maximum<double,false> vi;
     vi.insert(1.0/0.0);
     EXPECT_EQ(1.0/0.0, vi.result()[0]);
 }
 
 TEST(AggregatorTest, Quantile) {
     std::stringstream ss;
-    aggregator::quantile_aggregator<double, false, 33, 66, 100> v(ss, "tag");
+    aggregator::quantile<double, false, false, 33, 66, 100> v;
+    v.header(ss, "tag");
     EXPECT_EQ("q33(tag) q66(tag) max(tag) ", ss.str());
 
     v.insert(3);
@@ -217,7 +301,8 @@ TEST(AggregatorTest, Quantile) {
 
 TEST(AggregatorTest, Multi) {
     std::stringstream ss;
-    aggregator::multi_aggregator<aggregator::count_aggregator<int>, aggregator::mean_aggregator<int>> v(ss, "tag");
+    aggregator::combine<aggregator::count<int>, aggregator::mean<int>> v;
+    v.header(ss, "tag");
     EXPECT_EQ("count(tag) mean(tag) ", ss.str());
     
     int c, m;

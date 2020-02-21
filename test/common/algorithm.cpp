@@ -1,6 +1,7 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <algorithm>
+#include <mutex>
 #include <queue>
 #include <random>
 #include <vector>
@@ -43,7 +44,7 @@ TEST(AlgorithmTest, ParallelFor) {
     std::vector<int> v(N);
     int acc;
     for (size_t i=0; i<v.size(); ++i) v[i] = i;
-    auto worker = [&acc](int) {
+    auto worker = [&acc](size_t,size_t) {
         int tmp = acc;
         acc = tmp + workhard();
     };
@@ -59,7 +60,23 @@ TEST(AlgorithmTest, ParallelFor) {
     acc = 0;
     common::parallel_for(common::general_execution<4>, N, worker);
     EXPECT_NE(N, acc);
-    common::parallel_for(common::parallel_execution<4>, N, [&v](size_t i) { ++v[i]; });
+    acc = 0;
+    std::mutex m;
+    common::parallel_for(common::general_execution<4>, N, [&acc,&m](size_t,size_t) {
+        std::lock_guard<std::mutex> l(m);
+        int tmp = acc;
+        acc = tmp + workhard();
+    });
+    EXPECT_EQ(N, acc);
+    acc = 0;
+    int multiacc[4] = {0,0,0,0};
+    common::parallel_for(common::general_execution<4>, N, [&multiacc](size_t,size_t t) {
+        int tmp = multiacc[t];
+        multiacc[t] = tmp + workhard();
+    });
+    for (int i=0; i<4; ++i) acc += multiacc[i];
+    EXPECT_EQ(N, acc);
+    common::parallel_for(common::parallel_execution<4>, N, [&v](size_t i, size_t) { ++v[i]; });
     for (size_t i=0; i<N; ++i)
         EXPECT_EQ(int(i+1), v[i]);
 }
@@ -72,20 +89,40 @@ TEST(AlgorithmTest, ParallelWhile) {
         return q;
     };
     std::priority_queue<int> q;
-    int acc;
-    auto popper = [&q,&acc] () {
+    std::mutex m;
+    int acc, N = 10000;
+    q = make_queue(N);
+    acc = 0;
+    common::parallel_while(common::sequential_execution, [&q,&acc] (size_t) {
         if (q.empty()) return false;
         q.pop();
         int tmp = acc;
         acc = tmp + workhard();
         return true;
-    };
-    q = make_queue(10000);
+    });
+    EXPECT_EQ(N, acc);
+    q = make_queue(N);
     acc = 0;
-    common::parallel_while(common::sequential_execution, popper);
-    EXPECT_EQ(10000, acc);
-    q = make_queue(10000);
+    common::parallel_while(common::parallel_execution<8>, [&q,&m,&acc] (size_t) {
+        {
+            std::lock_guard<std::mutex> l(m);
+            if (q.empty()) return false;
+            q.pop();
+        }
+        int tmp = acc;
+        acc = tmp + workhard();
+        return true;
+    });
+    EXPECT_NE(N, acc);
+    q = make_queue(N);
     acc = 0;
-    common::parallel_while(common::parallel_execution<8>, popper);
-    EXPECT_NE(10000, acc);
+    common::parallel_while(common::parallel_execution<8>, [&q,&m,&acc] (size_t) {
+        std::lock_guard<std::mutex> l(m);
+        if (q.empty()) return false;
+        q.pop();
+        int tmp = acc;
+        acc = tmp + workhard();
+        return true;
+    });
+    EXPECT_EQ(N, acc);
 }

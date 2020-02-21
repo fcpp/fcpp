@@ -24,7 +24,7 @@ int workhard(int n=15) {
 template <typename T, bool enabled>
 int work_lock(T&& ex, common::mutex<enabled>&& m) {
     int acc = 0;
-    common::parallel_for(ex, TRIES, [&acc,&m] (int) {
+    common::parallel_for(ex, TRIES, [&acc,&m] (int,int) {
         common::lock_guard<enabled> lock(m);
         int tmp = acc;
         acc = tmp + workhard();
@@ -36,7 +36,7 @@ int work_lock(T&& ex, common::mutex<enabled>&& m) {
 template <typename T, bool enabled>
 int work_trylock(T&& ex, common::mutex<enabled>&& m) {
     int acc = 0;
-    common::parallel_for(ex, TRIES, [&acc,&m] (int) {
+    common::parallel_for(ex, TRIES, [&acc,&m] (int,int) {
         while (not m.try_lock());
         common::lock_guard<enabled> lock(m, std::adopt_lock);
         int tmp = acc;

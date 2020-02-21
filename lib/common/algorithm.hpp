@@ -9,6 +9,7 @@
 #define FCPP_COMMON_ALGORITHM_H_
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <thread>
 #include <type_traits>
@@ -25,6 +26,28 @@ namespace fcpp {
  * @brief Namespace containing objects of common use.
  */
 namespace common {
+
+
+//! @brief Namespace of tags for common use.
+namespace tags {
+    //! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
+    //! @{
+    struct sequential_execution {};
+    template <size_t n>
+    struct parallel_execution {};
+    template <size_t n>
+    using general_execution = std::conditional_t<n >= 2, parallel_execution<n>, sequential_execution>;
+    //! @}
+}
+
+//! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
+//! @{
+constexpr tags::sequential_execution sequential_execution {};
+template <size_t n>
+constexpr tags::parallel_execution<n> parallel_execution {};
+template <size_t n>
+constexpr tags::general_execution<n> general_execution {};
+//! @}
 
 
 //! @cond INTERNAL
@@ -167,71 +190,58 @@ inline void nth_elements(E efirst, E elast, I ifirst, I ilast) {
 }
 
 
-//! @brief Namespace of tags for common use.
-namespace tags {
-    //! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
-    //! @{
-    struct sequential_execution {};
-    template <size_t n>
-    struct parallel_execution {};
-    template <size_t n>
-    using general_execution = std::conditional_t<n >= 2, parallel_execution<n>, sequential_execution>;
-    //! @}
-}
-
-//! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
-//! @{
-constexpr tags::sequential_execution sequential_execution {};
-template <size_t n>
-constexpr tags::parallel_execution<n> parallel_execution {};
-template <size_t n>
-constexpr tags::general_execution<n> general_execution {};
-//! @}
-
-
 /**
  * @brief Bypassable parallel for (sequential version).
  *
- * @param v A vector of inputs.
- * @param f A void function to be applied on them.
+ * Executes a function (with index and thread number as arguments) for indices up to `len`.
+ * The thread number is guaranteed to be 0 in this version.
+ *
+ * @param len The maximum index fed to the function.
+ * @param f   The function to be executed.
  */
-template <typename F>
-void parallel_for(tags::sequential_execution, size_t len, F&& f) {
-    for (size_t i=0; i<len; ++i) f(i);
+void parallel_for(tags::sequential_execution, size_t len, std::function<void(size_t,size_t)> f) {
+    for (size_t i=0; i<len; ++i) f(i,0);
 }
 
 
 #if defined(_OPENMP)
 /**
-* @brief Bypassable parallel for (parallel version).
-*
-* @param v A vector of inputs.
-* @param f A void function to be applied on them.
-*/
-template <size_t n, typename F>
-void parallel_for(tags::parallel_execution<n>, size_t len, F&& f) {
+ * @brief Bypassable parallel for (parallel OpenMP version).
+ *
+ * Executes a function (with index and thread number as arguments) for indices up to `len`.
+ * The thread numbers range from zero to `omp_get_num_threads()-1`.
+ *
+ * @param n   The number of threads to be spawned.
+ * @param len The maximum index fed to the function.
+ * @param f   The function to be executed.
+ */
+template <size_t n>
+void parallel_for(tags::parallel_execution<n>, size_t len, std::function<void(size_t,size_t)> f) {
     #pragma omp parallel for num_threads(n)
-    for (size_t i=0; i<len; ++i) f(i);
+    for (size_t i=0; i<len; ++i) f(i,omp_get_thread_num());
 }
 #else
 /**
-* @brief Bypassable parallel for (parallel version).
-*
-* @param v A vector of inputs.
-* @param f A void function to be applied on them.
-*/
-template <size_t n, typename F>
-void parallel_for(tags::parallel_execution<n>, size_t len, F&& f) {
+ * @brief Bypassable parallel for (standard parallel version).
+ *
+ * Executes a function (with index and thread number as arguments) for indices up to `len`.
+ * The thread numbers range from zero to `n-1`.
+ *
+ * @param n   The number of threads to be spawned.
+ * @param len The maximum index fed to the function.
+ * @param f   The function to be executed.
+ */
+template <size_t n>
+void parallel_for(tags::parallel_execution<n>, size_t len, std::function<void(size_t,size_t)> f) {
     size_t slice = std::max(len / n, (size_t)1);
     size_t threshold = (n - std::max(int(len - slice*n), 0))*slice;
     std::vector<std::thread> pool;
     pool.reserve(n);
-    auto launch = [&f] (size_t a, size_t b) {
-        for (size_t i=a; i<b; ++i) f(i);
-    };
-    for (size_t i=0; i!=len; i+=slice) {
+    for (size_t i=0, t=0; i!=len; i+=slice, ++t) {
         if (i >= threshold) ++slice;
-        pool.emplace_back(launch, i, i+slice);
+        pool.emplace_back([&f,i,slice,t] () {
+            for (size_t x=i; x<i+slice; ++x) f(x,t);
+        });
     }
     for (std::thread& t : pool) t.join();
 }
@@ -239,45 +249,51 @@ void parallel_for(tags::parallel_execution<n>, size_t len, F&& f) {
 
 
 /**
- * @brief Bypassable parallel for (sequential version).
+ * @brief Bypassable parallel while (sequential version).
  *
- * @param v A vector of inputs.
- * @param f A void function to be applied on them.
+ * Executes a function (with the thread number as argument) until it returns `false`.
+ * The thread number is guaranteed to be 0 in this version.
+ *
+ * @param f The function to be executed.
  */
-template <typename F>
-void parallel_while(tags::sequential_execution, F&& f) {
-    while (f());
+void parallel_while(tags::sequential_execution, std::function<bool(size_t)> f) {
+    while (f(0));
 }
 
 
 #if defined(_OPENMP)
 /**
-* @brief Bypassable parallel for (parallel version).
-*
-* @param v A vector of inputs.
-* @param f A void function to be applied on them.
-*/
-template <size_t n, typename F>
-void parallel_while(tags::parallel_execution<n>, F&& f) {
+ * @brief Bypassable parallel while (parallel OpenMP version).
+ *
+ * Executes a function (with the thread number as argument) until it returns `false`.
+ * The thread numbers range from zero to `omp_get_num_threads()-1`.
+ *
+ * @param n The number of threads to be spawned.
+ * @param f The function to be executed.
+ */
+template <size_t n>
+void parallel_while(tags::parallel_execution<n>, std::function<bool(size_t)> f) {
     #pragma omp parallel num_threads(n)
-    while (f());
+    while (f(omp_get_thread_num()));
 }
 #else
 /**
-* @brief Bypassable parallel for (parallel version).
-*
-* @param v A vector of inputs.
-* @param f A void function to be applied on them.
-*/
-template <size_t n, typename F>
-void parallel_while(tags::parallel_execution<n>, F&& f) {
+ * @brief Bypassable parallel for (standard parallel version).
+ *
+ * Executes a function (with the thread number as argument) until it returns `false`.
+ * The thread numbers range from zero to `n-1`.
+ *
+ * @param n The number of threads to be spawned.
+ * @param f The function to be executed.
+ */
+template <size_t n>
+void parallel_while(tags::parallel_execution<n>, std::function<bool(size_t)> f) {
     std::vector<std::thread> pool;
     pool.reserve(n);
-    auto launch = [&f] () {
-        while (f());
-    };
     for (size_t i=0; i<n; ++i)
-        pool.emplace_back(launch);
+        pool.emplace_back([&f,i] () {
+            while (f(i));
+        });
     for (std::thread& t : pool) t.join();
 }
 #endif

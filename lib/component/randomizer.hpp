@@ -36,10 +36,10 @@ namespace tags {
 /**
  * @brief Component handling a random number generator.
  *
- * Initialises `net` with tag `seed` associating to a random number generator seed (defaults to zero).
+ * Initialises `node` and `net` with tag `seed` associating to a random number generator seed (defaults to zero for the net, `uid` for nodes).
  * Must be unique in a composition of components.
  *
- * @param G The generator type (defaults to `std::mt19937_64`, use `fcpp::crand` if no generator needed).
+ * @param G The generator type (defaults to `std::mt19937_64`).
  */
 template <typename G = std::mt19937_64>
 struct randomizer {
@@ -69,7 +69,14 @@ struct randomizer {
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
-            using P::node::node;
+            /**
+             * @brief Main constructor.
+             *
+             * @param n The corresponding net object.
+             * @param t A `tagged_tuple` gathering initialisation values.
+             */
+            template <typename S, typename T>
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_generator(common::get_or<tags::seed>(t, P::node::uid)) {}
 
           protected: // visible by node objects only
             /**
@@ -78,31 +85,42 @@ struct randomizer {
              * @param T The tag corresponding to the data to be accessed.
              */
             //! @brief Gives access to the random number generator.
-            inline G& generator() const {
-                return P::node::net.generator();
-            }
-            
-            //! @brief Generates a `double` value between zero and `b`.
-            inline double next_double(double b = 1.0) const {
-                return next_double(0.0,b);
-            }
-
-            //! @brief Generates a `double` value between `a` and `b`.
-            double next_double(double a, double b) const {
-                std::uniform_real_distribution<double> dist(a,b);
-                return dist(generator());
+            inline G& generator() {
+                return m_generator;
             }
             
             //! @brief Generates an `int` value between 0 and `b`.
-            inline int next_int(int b = std::numeric_limits<int>::max()) const {
+            inline int next_int(int b = std::numeric_limits<int>::max()) {
                 return next_int(0,b);
             }
 
             //! @brief Generates an `int` value between `a` and `b`.
-            int next_int(int a, int b) const {
+            int next_int(int a, int b) {
                 std::uniform_int_distribution<int> dist(a,b);
                 return dist(generator());
             }
+            
+            //! @brief Generates a `double` value between zero and `b`.
+            inline double next_double(double b = 1.0) {
+                return next_double(0.0,b);
+            }
+
+            //! @brief Generates a `double` value between `a` and `b`.
+            double next_double(double a, double b) {
+                std::uniform_real_distribution<double> dist(a,b);
+                return dist(generator());
+            }
+            
+            //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
+            template <template<typename> class D>
+            double random_error(double v, double r, double a = 0) {
+                D<double> dist = random::make_distribution<D>(v, r*v+a);
+                return dist(m_generator);
+            }
+            
+          private: // implementation details
+            //! @brief The random number generator.
+            G m_generator;
         };
         
         //! @brief The global part of the component.
@@ -112,12 +130,23 @@ struct randomizer {
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
             
+          protected: // visible by net objects only
             //! @brief Gives access to the random number generator.
-            G& generator() {
+            inline G& generator() {
                 return m_generator;
             }
+
+            //! @brief Generates an `int` value between 0 and `b`.
+            inline int next_int(int b = std::numeric_limits<int>::max()) {
+                return next_int(0,b);
+            }
+
+            //! @brief Generates an `int` value between `a` and `b`.
+            int next_int(int a, int b) {
+                std::uniform_int_distribution<int> dist(a,b);
+                return dist(m_generator);
+            }
             
-          protected: // visible by net objects only
             //! @brief Generates a `double` value between zero and `b`.
             inline double next_double(double b = 1.0) {
                 return next_double(0.0,b);
@@ -129,21 +158,10 @@ struct randomizer {
                 return dist(m_generator);
             }
             
-            //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D`.
+            //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
             template <template<typename> class D>
-            double error(double v, double r, double a = 0) {
+            double random_error(double v, double r, double a = 0) {
                 D<double> dist = random::make_distribution<D>(v, r*v+a);
-                return dist(m_generator);
-            }
-
-            //! @brief Generates an `int` value between 0 and `b`.
-            inline int next_int(int b = std::numeric_limits<int>::max()) {
-                return next_int(0,b);
-            }
-
-            //! @brief Generates an `int` value between `a` and `b`.
-            int next_int(int a, int b) {
-                std::uniform_int_distribution<int> dist(a,b);
                 return dist(m_generator);
             }
             

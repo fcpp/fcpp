@@ -14,10 +14,16 @@ struct exposer {
     struct component : public P {
         struct node : public P::node {
             using P::node::node;
-            using P::node::next_double;
             using P::node::next_int;
+            using P::node::next_double;
+            using P::node::random_error;
         };
-        using net  = typename P::net;
+        struct net : public P::net {
+            using P::net::net;
+            using P::net::next_int;
+            using P::net::next_double;
+            using P::net::random_error;
+        };
     };
 };
 
@@ -60,4 +66,38 @@ TEST(RandomizerTest, Crand) {
         EXPECT_LE(3.0, device.next_double(3.0, 8.0));
         EXPECT_GE(8.0, device.next_double(3.0, 8.0));
     }
+}
+
+TEST(RandomizerTest, Net) {
+    combo1::net  network{common::make_tagged_tuple<component::tags::seed>(20)};
+    for (int i=0; i<1000; ++i) {
+        EXPECT_LE(0, network.next_int());
+        EXPECT_LE(0, network.next_int(9));
+        EXPECT_GE(9, network.next_int(9));
+        EXPECT_LE(3, network.next_int(3, 8));
+        EXPECT_GE(8, network.next_int(3, 8));
+        EXPECT_LE(0.0, network.next_double());
+        EXPECT_GE(1.0, network.next_double());
+        EXPECT_LE(0.0, network.next_double(9.0));
+        EXPECT_GE(9.0, network.next_double(9.0));
+        EXPECT_LE(3.0, network.next_double(3.0, 8.0));
+        EXPECT_GE(8.0, network.next_double(3.0, 8.0));
+    }
+}
+
+TEST(RandomizerTest, Error) {
+    combo1::net  network{common::make_tagged_tuple<component::tags::seed>(20)};
+    double d;
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += network.random_error<std::uniform_real_distribution>(5.0, 0.1, 0.5);
+    EXPECT_NEAR(50000.0, d, 300.0);
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += network.random_error<std::normal_distribution>(5.0, 0.1, 0.5);
+    EXPECT_NEAR(50000.0, d, 300.0);
+    d = 0;
+    for (int i=0; i<10000; ++i)
+        d += network.random_error<std::weibull_distribution>(5.0, 0.1, 0.5);
+    EXPECT_NEAR(50000.0, d, 300.0);
 }

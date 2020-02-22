@@ -319,7 +319,7 @@ struct type_sequence<> {
  */
 //@{
 //! @brief Helper class holding arbitrary boolean template parameters.
-template <bool...> struct bool_pack;
+template <bool...> struct bool_pack {};
 
 //! @brief Checks if every argument is `true`.
 template <bool... v>

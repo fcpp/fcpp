@@ -12,7 +12,9 @@
 #include <type_traits>
 
 #include "lib/settings.hpp"
+#include "lib/common/distribution.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/common/traits.hpp"
 
 
 /**
@@ -29,8 +31,8 @@ namespace component {
  * @brief Component scheduling round executions.
  *
  * Multiple instances may coexist in a composition of components.
- * Requires a `randomizer` parent component.
  * The `timer` component cannot be a parent of a `scheduler`, otherwise round planning may not work.
+ * If a `randomizer` parent component is not found, `crand` is used as random generator.
  *
  * @param G A sequence generator type.
  */
@@ -53,9 +55,6 @@ struct scheduler {
         template <typename T>
         struct has_rtag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
         
-        //! @brief Asserts that P has a `randomizer_tag`.
-        static_assert(has_rtag<P>::value, "missing randomizer parent for scheduler component");
-        
         //! @brief Checks if T has a `timer_tag`.
         template <typename T, typename = int>
         struct has_ttag : std::false_type {};
@@ -75,7 +74,7 @@ struct scheduler {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(P::node::generator(),t) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t) {}
             
             /**
              * @brief Returns next event to schedule for the node component.
@@ -90,12 +89,24 @@ struct scheduler {
             void update() {
                 if (m_schedule.next() < P::node::next()) {
                     times_t t = P::node::as_final().next();
-                    m_schedule.step(P::node::generator());
+                    m_schedule.step(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
                     P::node::round(t);
                 } else P::node::update();
             }
             
           private: // implementation details
+            //! @brief Returns the `randomizer` generator if available.
+            template <typename N>
+            inline auto& get_generator(common::bool_pack<true>, N& n) {
+                return n.generator();
+            }
+
+            //! @brief Returns a `crand` generator otherwise.
+            template <typename N>
+            inline random::crand get_generator(common::bool_pack<false>, N& n) {
+                return random::crand();
+            }
+            
             //! @brief The sequence generator.
             G m_schedule;
         };

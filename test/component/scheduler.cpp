@@ -18,6 +18,7 @@ using seq_per = random::sequence_periodic<random::constant_distribution<times_t,
 
 using combo1 = component::combine<component::scheduler<seq_mul>,component::randomizer<>>;
 using combo2 = component::combine<component::scheduler<seq_per>,component::scheduler<seq_mul>,component::randomizer<>>;
+using combo3 = component::combine<component::scheduler<seq_mul>>;
 
 
 TEST(SchedulerTest, Single) {
@@ -65,6 +66,27 @@ TEST(SchedulerTest, Multiple) {
     d = device.next();
     device.update();
     EXPECT_DOUBLE_EQ(5.5, d);
+    d = device.next();
+    device.update();
+    EXPECT_EQ(TIME_MAX, d);
+    d = device.next();
+    device.update();
+    EXPECT_EQ(TIME_MAX, d);
+}
+
+TEST(SchedulerTest, NoRandomizer) {
+    combo1::net  network{common::make_tagged_tuple<>()};
+    combo1::node device{network, common::make_tagged_tuple<component::tags::uid,seq_mul>(7,'b')};
+    double d;
+    d = device.next();
+    device.update();
+    EXPECT_DOUBLE_EQ(5.2, d);
+    d = device.next();
+    device.update();
+    EXPECT_DOUBLE_EQ(5.2, d);
+    d = device.next();
+    device.update();
+    EXPECT_DOUBLE_EQ(5.2, d);
     d = device.next();
     device.update();
     EXPECT_EQ(TIME_MAX, d);

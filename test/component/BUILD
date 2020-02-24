@@ -11,6 +11,23 @@ cc_test(
 )
 
 cc_test(
+    name = "exporter",
+    srcs = ["exporter.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:aggregator",
+        "//lib/common:distribution",
+        "//lib/common:sequence",
+        "//lib/component:base",
+        "//lib/component:exporter",
+        "//lib/component:storage",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "randomizer",
     srcs = ["randomizer.cpp"],
     deps = [
@@ -28,6 +45,7 @@ cc_test(
     srcs = ["scheduler.cpp"],
     deps = [
         "@gtest//:main",
+        "//lib/common:distribution",
         "//lib/common:sequence",
         "//lib/component:base",
         "//lib/component:randomizer",

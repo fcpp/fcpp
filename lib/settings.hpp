@@ -127,6 +127,15 @@
 #endif
 
 
+#ifndef FCPP_THREADS
+    #if FCPP_PARALLEL == true
+    #define FCPP_THREADS std::thread::hardware_concurrency()
+    #else
+    #define FCPP_THREADS 1
+    #endif
+#endif
+
+
 #ifndef FCPP_REALTIME
     #if FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL || FCPP_CONFIGURATION == FCPP_CONFIGURATION_DEPENDENT
     //! @brief Factor multiplying real time passing (1 for physical or dependent systems, infinity for others).

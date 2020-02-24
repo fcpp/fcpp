@@ -13,6 +13,22 @@ cc_library(
 )
 
 cc_library(
+    name = 'exporter',
+    hdrs = ['exporter.hpp'],
+    srcs = ['exporter.cpp'],
+    deps = [
+        "//lib:settings",
+        "//lib/common:distribution",
+        "//lib/common:mutex",
+        "//lib/common:tagged_tuple",
+        "//lib/common:traits",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'randomizer',
     hdrs = ['randomizer.hpp'],
     srcs = ['randomizer.cpp'],
@@ -31,7 +47,9 @@ cc_library(
     srcs = ['scheduler.cpp'],
     deps = [
         "//lib:settings",
+        "//lib/common:distribution",
         "//lib/common:tagged_tuple",
+        "//lib/common:traits",
     ],
     visibility = [
         '//visibility:public',

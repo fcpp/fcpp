@@ -38,11 +38,11 @@ struct sequence_never {
     
     //! @brief Default constructor.
     template <typename G>
-    sequence_never(G&) {}
+    sequence_never(G&&) {}
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_never(G&, const common::tagged_tuple<S,T>&) {}
+    sequence_never(G&&, const common::tagged_tuple<S,T>&) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -51,11 +51,11 @@ struct sequence_never {
     
     //! @brief Steps over to next event, without returning.
     template <typename G>
-    void step(G&) {}
+    void step(G&&) {}
 
     //! @brief Returns next event, stepping over.
     template <typename G>
-    times_t operator()(G&) {
+    times_t operator()(G&&) {
         return TIME_MAX; // no event to schedule
     }
 };
@@ -83,11 +83,11 @@ class sequence_multiple<D, n, true> {
     
     //! @brief Default constructor.
     template <typename G>
-    sequence_multiple(G& g) : t(details::call_distr<D>(g)) {}
+    sequence_multiple(G&& g) : t(details::call_distr<D>(g)) {}
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_multiple(G& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
+    sequence_multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -96,13 +96,13 @@ class sequence_multiple<D, n, true> {
     
     //! @brief Steps over to next event, without returning.
     template <typename G>
-    void step(G&) {
+    void step(G&&) {
         ++i;
     }
 
     //! @brief Returns next event, stepping over.
     template <typename G>
-    times_t operator()(G&) {
+    times_t operator()(G&&) {
         times_t nt = next();
         ++i;
         return nt;
@@ -127,11 +127,11 @@ class sequence_multiple<D, n, false> {
     
     //! @brief Default constructor.
     template <typename G>
-    sequence_multiple(G& g) : sequence_multiple(g, D{g}) {}
+    sequence_multiple(G&& g) : sequence_multiple(g, D{g}) {}
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_multiple(G& g, const common::tagged_tuple<S,T>& tup) : sequence_multiple(g, D{g,tup}) {}
+    sequence_multiple(G&& g, const common::tagged_tuple<S,T>& tup) : sequence_multiple(g, D{g,tup}) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -140,13 +140,13 @@ class sequence_multiple<D, n, false> {
     
     //! @brief Steps over to next event, without returning.
     template <typename G>
-    void step(G&) {
+    void step(G&&) {
         ++i;
     }
     
     //! @brief Returns next event, stepping over.
     template <typename G>
-    times_t operator()(G&) {
+    times_t operator()(G&&) {
         times_t nt = next();
         ++i;
         return nt;
@@ -161,7 +161,7 @@ class sequence_multiple<D, n, false> {
     
     //! @brief Auxiliary constructor.
     template <typename G>
-    sequence_multiple(G& g, D&& distr) {
+    sequence_multiple(G&& g, D&& distr) {
         for (size_t j=0; j<n; ++j) pending[j] = distr(g);
         std::sort(pending.begin(), pending.end());
     }
@@ -183,13 +183,13 @@ class sequence_list {
     
     //! @brief Default constructor.
     template <typename G>
-    sequence_list(G& g) : pending({details::call_distr<Ds>(g)...}) {
+    sequence_list(G&& g) : pending({details::call_distr<Ds>(g)...}) {
         std::sort(pending.begin(), pending.end());
     }
     
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_list(G& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
+    sequence_list(G&& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
         std::sort(pending.begin(), pending.end());
     }
     
@@ -200,13 +200,13 @@ class sequence_list {
     
     //! @brief Steps over to next event, without returning.
     template <typename G>
-    void step(G&) {
+    void step(G&&) {
         ++i;
     }
 
     //! @brief Returns next event, stepping over.
     template <typename G>
-    times_t operator()(G&) {
+    times_t operator()(G&&) {
         times_t nt = next();
         ++i;
         return nt;
@@ -242,7 +242,7 @@ class sequence_periodic {
     
     //! @brief Default constructor.
     template <typename G>
-    sequence_periodic(G& g) : dp(g) {
+    sequence_periodic(G&& g) : dp(g) {
         n  = details::call_distr<N>(g);
         te = details::call_distr<E>(g);
         t  = details::call_distr<S>(g);
@@ -250,7 +250,7 @@ class sequence_periodic {
     
     //! @brief Default constructor.
     template <typename G, typename U, typename T>
-    sequence_periodic(G& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
+    sequence_periodic(G&& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
         n  = details::call_distr<N>(g,tup);
         te = details::call_distr<E>(g,tup);
         t  = details::call_distr<S>(g,tup);
@@ -263,14 +263,14 @@ class sequence_periodic {
     
     //! @brief Steps over to next event, without returning.
     template <typename G>
-    void step(G& g) {
+    void step(G&& g) {
         ++i;
         t += dp(g);
     }
 
     //! @brief Returns next event, stepping over.
     template <typename G>
-    times_t operator()(G& g) {
+    times_t operator()(G&& g) {
         times_t nt = next();
         ++i;
         t += dp(g);

@@ -118,7 +118,6 @@ namespace details {
  * @param dev  The standard deviation of the distribution.
  */
 template <template<typename> class D, typename T>
-//! @{
 D<T> make_distribution(T mean, T dev) {
     return details::make_distribution(common::type_sequence<D<T>>(), mean, dev);
 }
@@ -136,11 +135,11 @@ D<T> make_distribution(T mean, T dev) {
 struct name {                                       \
     using type = R;                                 \
     template <typename G>                           \
-    name(G&) {}                                     \
+    name(G&&) {}                                     \
     template <typename G, typename S, typename T>   \
-    name(G&, const common::tagged_tuple<S,T>&) {}     \
+    name(G&&, const common::tagged_tuple<S,T>&) {}     \
     template <typename G>                           \
-    type operator()(G&) {                           \
+    type operator()(G&&) {                           \
         return val;                                 \
     }                                               \
 }
@@ -157,13 +156,13 @@ struct constant_distribution {
     using type = R;
     
     template <typename G>
-    constant_distribution(G&) {}
+    constant_distribution(G&&) {}
     
     template <typename G, typename S, typename T>
-    constant_distribution(G&, const common::tagged_tuple<S,T>&) {}
+    constant_distribution(G&&, const common::tagged_tuple<S,T>&) {}
     
     template <typename G>
-    type operator()(G&) {
+    type operator()(G&&) {
         return (type)num / (type)den;
     }
 };
@@ -172,13 +171,13 @@ struct constant_distribution {
 //! @cond INTERNAL
 namespace details {
     template <typename R, typename G>
-    typename R::type call_distr(G& g) {
+    typename R::type call_distr(G&& g) {
         R dist{g};
         return dist(g);
     }
 
     template <typename R, typename G, typename S, typename T>
-    typename R::type call_distr(G& g, const common::tagged_tuple<S,T>& t) {
+    typename R::type call_distr(G&& g, const common::tagged_tuple<S,T>& t) {
         R dist{g, t};
         return dist(g);
     }
@@ -202,13 +201,13 @@ class uniform_distribution {
     using type = typename mean::type;
     
     template <typename G>
-    uniform_distribution(G& g) : m_d(make_distribution<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
+    uniform_distribution(G&& g) : m_d(make_distribution<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    uniform_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::uniform_real_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    uniform_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::uniform_real_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
-    type operator()(G& g) {
+    type operator()(G&& g) {
         return m_d(g);
     }
 
@@ -245,13 +244,13 @@ class normal_distribution {
     
   public:
     template <typename G>
-    normal_distribution(G& g) : m_d(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
+    normal_distribution(G&& g) : m_d(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
     
     template <typename G, typename S, typename T>
-    normal_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
+    normal_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
     
     template <typename G>
-    type operator()(G& g) {
+    type operator()(G&& g) {
         return m_d(g);
     }
 
@@ -287,13 +286,13 @@ class exponential_distribution {
     using type = typename mean::type;
 
     template <typename G>
-    exponential_distribution(G& g) : m_d(1/details::call_distr<mean>(g)) {}
+    exponential_distribution(G&& g) : m_d(1/details::call_distr<mean>(g)) {}
     
     template <typename G, typename S, typename T>
-    exponential_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(1/common::get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
+    exponential_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(1/common::get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
     
     template <typename G>
-    type operator()(G& g) {
+    type operator()(G&& g) {
         return m_d(g);
     }
 
@@ -329,13 +328,13 @@ class weibull_distribution {
     using type = typename mean::type;
     
     template <typename G>
-    weibull_distribution(G& g) : m_d(make_distribution<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
+    weibull_distribution(G&& g) : m_d(make_distribution<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    weibull_distribution(G& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::weibull_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    weibull_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::weibull_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
-    type operator()(G& g) {
+    type operator()(G&& g) {
         return m_d(g);
     }
 
@@ -369,7 +368,7 @@ class make_positive : public D {
     using D::D;
     
     template <typename G>
-    type operator()(G& g) {
+    type operator()(G&& g) {
         type t = D::operator()(g);
         return (t >= 0) ? t : operator()(g);
     }

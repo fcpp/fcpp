@@ -103,7 +103,7 @@ struct scheduler {
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(common::bool_pack<false>, N& n) {
+            inline random::crand get_generator(common::bool_pack<false>, N&) {
                 return random::crand();
             }
             

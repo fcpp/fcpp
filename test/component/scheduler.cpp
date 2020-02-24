@@ -2,6 +2,7 @@
 
 #include "gtest/gtest.h"
 
+#include "lib/common/distribution.hpp"
 #include "lib/common/sequence.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/randomizer.hpp"

@@ -40,81 +40,85 @@ namespace tags {
 }
 
 
-/**
- * Priority queue of pairs `(times_t, device_t)` designed for popping bunches of elements at a time.
- *
- * @param synchronised Whether lots of collisions (same time) are to be expected or not.
- */
-template <bool synchronised>
-class times_queue;
+//! @cond INTERNAL
+namespace details {
+    /**
+     * @brief Priority queue of pairs `(times_t, device_t)` designed for popping bunches of elements at a time.
+     *
+     * @param synchronised Whether lots of collisions (same time) are to be expected or not.
+     */
+    template <bool synchronised>
+    class times_queue;
 
-//! @brief Specialisation for lots of collisions, as map of vectors.
-template <>
-class times_queue<true> {
-  public:
-    //! @brief Default constructor.
-    times_queue() {
-        m_queue.emplace(TIME_MAX, std::vector<device_t>());
-    }
-    
-    //! @brief The smallest time in the queue.
-    inline times_t next() const {
-        return m_queue.begin()->first;
-    }
-    
-    //! @brief Adds a new pair to the queue.
-    inline void push(times_t t, device_t uid) {
-        m_queue[t].push_back(uid);
-    }
-
-    //! @brief Pops elements with the smaller time if up to `t`.
-    inline std::vector<device_t> pop(times_t t) {
-        if (next() > t) return {};
-        std::vector<device_t> v = std::move(m_queue.begin()->second);
-        m_queue.erase(m_queue.begin());
-        return v;
-    }
-    
-  private:
-    //! @brief The actual priority queue.
-    std::map<times_t, std::vector<device_t>> m_queue;
-};
-
-//! @brief Specialisation for few collisions, as priority queue.
-template <>
-class times_queue<false> {
-  public:
-    //! @brief Default constructor.
-    times_queue() {
-        m_queue.emplace(TIME_MAX, device_t());
-    }
-    
-    //! @brief The smallest time in the queue.
-    inline times_t next() const {
-        return m_queue.top().first;
-    }
-    
-    //! @brief Adds a new pair to the queue.
-    inline void push(times_t t, device_t uid) {
-        m_queue.emplace(t, uid);
-    }
-
-    //! @brief Pops elements with times up to `t`.
-    std::vector<device_t> pop(times_t t) {
-        std::vector<device_t> v;
-        while (next() <= t) {
-            v.push_back(m_queue.top().second);
-            m_queue.pop();
+    //! @brief Specialisation for lots of collisions, as map of vectors.
+    template <>
+    class times_queue<true> {
+      public:
+        //! @brief Default constructor.
+        times_queue() {
+            m_queue.emplace(TIME_MAX, std::vector<device_t>());
         }
-        return v;
-    }
-    
-  private:
-    //! @brief The type of queue elements.
-    using type = std::pair<times_t, device_t>;
-    //! @brief The actual priority queue.
-    std::priority_queue<type, std::vector<type>, std::greater<type>> m_queue;
-};
+        
+        //! @brief The smallest time in the queue.
+        inline times_t next() const {
+            return m_queue.begin()->first;
+        }
+        
+        //! @brief Adds a new pair to the queue.
+        inline void push(times_t t, device_t uid) {
+            m_queue[t].push_back(uid);
+        }
+
+        //! @brief Pops elements with the smaller time if up to `t`.
+        inline std::vector<device_t> pop(times_t t) {
+            if (next() > t) return {};
+            std::vector<device_t> v = std::move(m_queue.begin()->second);
+            m_queue.erase(m_queue.begin());
+            return v;
+        }
+        
+      private:
+        //! @brief The actual priority queue.
+        std::map<times_t, std::vector<device_t>> m_queue;
+    };
+
+    //! @brief Specialisation for few collisions, as priority queue.
+    template <>
+    class times_queue<false> {
+      public:
+        //! @brief Default constructor.
+        times_queue() {
+            m_queue.emplace(TIME_MAX, device_t());
+        }
+        
+        //! @brief The smallest time in the queue.
+        inline times_t next() const {
+            return m_queue.top().first;
+        }
+        
+        //! @brief Adds a new pair to the queue.
+        inline void push(times_t t, device_t uid) {
+            m_queue.emplace(t, uid);
+        }
+
+        //! @brief Pops elements with times up to `t`.
+        std::vector<device_t> pop(times_t t) {
+            std::vector<device_t> v;
+            while (next() <= t) {
+                v.push_back(m_queue.top().second);
+                m_queue.pop();
+            }
+            return v;
+        }
+        
+      private:
+        //! @brief The type of queue elements.
+        using type = std::pair<times_t, device_t>;
+        //! @brief The actual priority queue.
+        std::priority_queue<type, std::vector<type>, std::greater<type>> m_queue;
+    };
+}
+//! @endcond
 
 
 /**
@@ -252,7 +256,7 @@ struct identifier {
             map_type m_nodes;
             
             //! @brief The queue of identifiers by next event.
-            times_queue<synchronised> m_queue;
+            details::times_queue<synchronised> m_queue;
             
             //! @brief The next free identifier.
             device_t m_next_uid;

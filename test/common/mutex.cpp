@@ -48,28 +48,28 @@ int work_trylock(T&& ex, common::mutex<enabled>&& m) {
 
 TEST(MutexTest, Sequential) {
     int res;
-    res = work_lock(common::sequential_execution, common::mutex<false>());
+    res = work_lock(common::tags::sequential_execution(), common::mutex<false>());
     EXPECT_EQ(TRIES, res);
-    res = work_lock(common::sequential_execution, common::mutex<true>());
+    res = work_lock(common::tags::sequential_execution(), common::mutex<true>());
     EXPECT_EQ(TRIES, res);
-    res = work_trylock(common::sequential_execution, common::mutex<false>());
+    res = work_trylock(common::tags::sequential_execution(), common::mutex<false>());
     EXPECT_EQ(TRIES, res);
-    res = work_trylock(common::sequential_execution, common::mutex<true>());
+    res = work_trylock(common::tags::sequential_execution(), common::mutex<true>());
     EXPECT_EQ(TRIES, res);
 }
 
 TEST(MutexTest, Parallel) {
     int res;
-    res = work_lock(common::parallel_execution<4>, common::mutex<false>());
+    res = work_lock(common::tags::parallel_execution(4), common::mutex<false>());
     EXPECT_NE(TRIES, res);
-    res = work_lock(common::parallel_execution<4>, common::mutex<true>());
+    res = work_lock(common::tags::parallel_execution(4), common::mutex<true>());
     EXPECT_EQ(TRIES, res);
 }
 
 TEST(MutexTest, Trying) {
     int res;
-    res = work_trylock(common::parallel_execution<4>, common::mutex<false>());
+    res = work_trylock(common::tags::parallel_execution(4), common::mutex<false>());
     EXPECT_NE(TRIES, res);
-    res = work_trylock(common::parallel_execution<4>, common::mutex<true>());
+    res = work_trylock(common::tags::parallel_execution(4), common::mutex<true>());
     EXPECT_EQ(TRIES, res);
 }

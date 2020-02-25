@@ -49,20 +49,20 @@ TEST(AlgorithmTest, ParallelFor) {
         acc = tmp + workhard();
     };
     acc = 0;
-    common::parallel_for(common::sequential_execution, N, worker);
+    common::parallel_for(common::tags::sequential_execution(), N, worker);
     EXPECT_EQ(N, acc);
     acc = 0;
-    common::parallel_for(common::general_execution<1>, N, worker);
+    common::parallel_for(common::tags::general_execution<false>(), N, worker);
     EXPECT_EQ(N, acc);
     acc = 0;
-    common::parallel_for(common::parallel_execution<4>, N, worker);
+    common::parallel_for(common::tags::parallel_execution(4), N, worker);
     EXPECT_NE(N, acc);
     acc = 0;
-    common::parallel_for(common::general_execution<4>, N, worker);
+    common::parallel_for(common::tags::general_execution<true>(4), N, worker);
     EXPECT_NE(N, acc);
     acc = 0;
     std::mutex m;
-    common::parallel_for(common::general_execution<4>, N, [&acc,&m](size_t,size_t) {
+    common::parallel_for(common::tags::general_execution<true>(4), N, [&acc,&m](size_t,size_t) {
         std::lock_guard<std::mutex> l(m);
         int tmp = acc;
         acc = tmp + workhard();
@@ -70,13 +70,13 @@ TEST(AlgorithmTest, ParallelFor) {
     EXPECT_EQ(N, acc);
     acc = 0;
     int multiacc[4] = {0,0,0,0};
-    common::parallel_for(common::general_execution<4>, N, [&multiacc](size_t,size_t t) {
+    common::parallel_for(common::tags::general_execution<true>(4), N, [&multiacc](size_t,size_t t) {
         int tmp = multiacc[t];
         multiacc[t] = tmp + workhard();
     });
     for (int i=0; i<4; ++i) acc += multiacc[i];
     EXPECT_EQ(N, acc);
-    common::parallel_for(common::parallel_execution<4>, N, [&v](size_t i, size_t) { ++v[i]; });
+    common::parallel_for(common::tags::parallel_execution(4), N, [&v](size_t i, size_t) { ++v[i]; });
     for (size_t i=0; i<N; ++i)
         EXPECT_EQ(int(i+1), v[i]);
 }
@@ -93,7 +93,7 @@ TEST(AlgorithmTest, ParallelWhile) {
     int acc, N = 10000;
     q = make_queue(N);
     acc = 0;
-    common::parallel_while(common::sequential_execution, [&q,&acc] (size_t) {
+    common::parallel_while(common::tags::sequential_execution(), [&q,&acc] (size_t) {
         if (q.empty()) return false;
         q.pop();
         int tmp = acc;
@@ -103,7 +103,7 @@ TEST(AlgorithmTest, ParallelWhile) {
     EXPECT_EQ(N, acc);
     q = make_queue(N);
     acc = 0;
-    common::parallel_while(common::parallel_execution<8>, [&q,&m,&acc] (size_t) {
+    common::parallel_while(common::tags::parallel_execution(8), [&q,&m,&acc] (size_t) {
         {
             std::lock_guard<std::mutex> l(m);
             if (q.empty()) return false;
@@ -116,7 +116,7 @@ TEST(AlgorithmTest, ParallelWhile) {
     EXPECT_NE(N, acc);
     q = make_queue(N);
     acc = 0;
-    common::parallel_while(common::parallel_execution<8>, [&q,&m,&acc] (size_t) {
+    common::parallel_while(common::tags::parallel_execution(8), [&q,&m,&acc] (size_t) {
         std::lock_guard<std::mutex> l(m);
         if (q.empty()) return false;
         q.pop();

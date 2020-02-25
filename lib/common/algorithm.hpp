@@ -30,24 +30,23 @@ namespace common {
 
 //! @brief Namespace of tags for common use.
 namespace tags {
-    //! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
-    //! @{
-    struct sequential_execution {};
-    template <size_t n>
-    struct parallel_execution {};
-    template <size_t n>
-    using general_execution = std::conditional_t<n >= 2, parallel_execution<n>, sequential_execution>;
-    //! @}
-}
+    //! @brief Tag for sequential execution policy.
+    struct sequential_execution {
+        sequential_execution() = default;
+        sequential_execution(size_t) {}
+    };
 
-//! @brief Tags for parallel (with a given number of threads) and sequential execution policies.
-//! @{
-constexpr tags::sequential_execution sequential_execution {};
-template <size_t n>
-constexpr tags::parallel_execution<n> parallel_execution {};
-template <size_t n>
-constexpr tags::general_execution<n> general_execution {};
-//! @}
+    //! @brief Tag for parallel execution policy (with a given number of threads).
+    struct parallel_execution {
+        parallel_execution() = default;
+        parallel_execution(size_t n) : num(n) {}
+        size_t num;
+    };
+
+    //! @brief Tag for general execution policies depending on the template parameter.
+    template <bool parallel>
+    using general_execution = std::conditional_t<parallel, parallel_execution, sequential_execution>;
+}
 
 
 //! @cond INTERNAL
@@ -197,9 +196,10 @@ inline void nth_elements(E efirst, E elast, I ifirst, I ilast) {
  * The thread number is guaranteed to be 0 in this version.
  *
  * @param len The maximum index fed to the function.
- * @param f   The function to be executed.
+ * @param f   The function `void(size_t,size_t)` to be executed.
  */
-void parallel_for(tags::sequential_execution, size_t len, std::function<void(size_t,size_t)> f) {
+template <typename F>
+void parallel_for(tags::sequential_execution, size_t len, F&& f) {
     for (size_t i=0; i<len; ++i) f(i,0);
 }
 
@@ -211,13 +211,13 @@ void parallel_for(tags::sequential_execution, size_t len, std::function<void(siz
  * Executes a function (with index and thread number as arguments) for indices up to `len`.
  * The thread numbers range from zero to `omp_get_num_threads()-1`.
  *
- * @param n   The number of threads to be spawned.
+ * @param e   The policy determining the number of threads to be spawned.
  * @param len The maximum index fed to the function.
- * @param f   The function to be executed.
+ * @param f   The function `void(size_t,size_t)` to be executed.
  */
-template <size_t n>
-void parallel_for(tags::parallel_execution<n>, size_t len, std::function<void(size_t,size_t)> f) {
-    #pragma omp parallel for num_threads(n)
+template <typename F>
+void parallel_for(tags::parallel_execution e, size_t len, F&& f) {
+    #pragma omp parallel for num_threads(e.num)
     for (size_t i=0; i<len; ++i) f(i,omp_get_thread_num());
 }
 #else
@@ -227,16 +227,20 @@ void parallel_for(tags::parallel_execution<n>, size_t len, std::function<void(si
  * Executes a function (with index and thread number as arguments) for indices up to `len`.
  * The thread numbers range from zero to `n-1`.
  *
- * @param n   The number of threads to be spawned.
+ * @param e   The policy determining the number of threads to be spawned.
  * @param len The maximum index fed to the function.
- * @param f   The function to be executed.
+ * @param f   The function `void(size_t,size_t)` to be executed.
  */
-template <size_t n>
-void parallel_for(tags::parallel_execution<n>, size_t len, std::function<void(size_t,size_t)> f) {
-    size_t slice = std::max(len / n, (size_t)1);
-    size_t threshold = (n - std::max(int(len - slice*n), 0))*slice;
+template <typename F>
+void parallel_for(tags::parallel_execution e, size_t len, F&& f) {
+    if (e.num == 1) {
+        parallel_for(tags::sequential_execution(), len, f);
+        return;
+    }
+    size_t slice = std::max(len / e.num, (size_t)1);
+    size_t threshold = (e.num - std::max(int(len - slice*e.num), 0))*slice;
     std::vector<std::thread> pool;
-    pool.reserve(n);
+    pool.reserve(e.num);
     for (size_t i=0, t=0; i!=len; i+=slice, ++t) {
         if (i >= threshold) ++slice;
         pool.emplace_back([&f,i,slice,t] () {
@@ -254,9 +258,10 @@ void parallel_for(tags::parallel_execution<n>, size_t len, std::function<void(si
  * Executes a function (with the thread number as argument) until it returns `false`.
  * The thread number is guaranteed to be 0 in this version.
  *
- * @param f The function to be executed.
+ * @param f The function `bool(size_t)` to be executed.
  */
-void parallel_while(tags::sequential_execution, std::function<bool(size_t)> f) {
+template <typename F>
+void parallel_while(tags::sequential_execution, F&& f) {
     while (f(0));
 }
 
@@ -268,12 +273,12 @@ void parallel_while(tags::sequential_execution, std::function<bool(size_t)> f) {
  * Executes a function (with the thread number as argument) until it returns `false`.
  * The thread numbers range from zero to `omp_get_num_threads()-1`.
  *
- * @param n The number of threads to be spawned.
- * @param f The function to be executed.
+ * @param e The policy determining the number of threads to be spawned.
+ * @param f The function `bool(size_t)` to be executed.
  */
-template <size_t n>
-void parallel_while(tags::parallel_execution<n>, std::function<bool(size_t)> f) {
-    #pragma omp parallel num_threads(n)
+template <typename F>
+void parallel_while(tags::parallel_execution e, F&& f) {
+    #pragma omp parallel num_threads(e.num)
     while (f(omp_get_thread_num()));
 }
 #else
@@ -283,14 +288,18 @@ void parallel_while(tags::parallel_execution<n>, std::function<bool(size_t)> f) 
  * Executes a function (with the thread number as argument) until it returns `false`.
  * The thread numbers range from zero to `n-1`.
  *
- * @param n The number of threads to be spawned.
- * @param f The function to be executed.
+ * @param e The policy determining the number of threads to be spawned.
+ * @param f The function `bool(size_t)` to be executed.
  */
-template <size_t n>
-void parallel_while(tags::parallel_execution<n>, std::function<bool(size_t)> f) {
+template <typename F>
+void parallel_while(tags::parallel_execution e, F&& f) {
+    if (e.num == 1) {
+        parallel_while(tags::sequential_execution(), f);
+        return;
+    }
     std::vector<std::thread> pool;
-    pool.reserve(n);
-    for (size_t i=0; i<n; ++i)
+    pool.reserve(e.num);
+    for (size_t i=0; i<e.num; ++i)
         pool.emplace_back([&f,i] () {
             while (f(i));
         });

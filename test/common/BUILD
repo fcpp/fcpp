@@ -72,6 +72,18 @@ cc_test(
 )
 
 cc_test(
+    name = "random_access_map",
+    srcs = ["random_access_map.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:random_access_map",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "sequence",
     srcs = ["sequence.cpp"],
     deps = [

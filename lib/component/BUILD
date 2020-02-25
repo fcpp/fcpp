@@ -39,6 +39,7 @@ cc_library(
         "//lib/common:mutex",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
+        "//lib/component:identifier",
     ],
     visibility = [
         '//visibility:public',

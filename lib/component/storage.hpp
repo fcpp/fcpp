@@ -67,6 +67,11 @@ struct storage {
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_storage(t) {}
             
+            //! @brief Const access to stored data as tagged tuple.
+            const common::tagged_tuple_t<Ss...>& storage_tuple() const {
+                return m_storage;
+            }
+            
           protected: // visible by node objects only
             /**
              * @brief Write access to stored data.
@@ -86,11 +91,6 @@ struct storage {
             template <typename T>
             const typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage() const {
                 return common::get<T>(m_storage);
-            }
-            
-            //! @brief Const access to stored data as tagged tuple.
-            const common::tagged_tuple_t<Ss...>& storage_tuple() const {
-                return m_storage;
             }
             
           private: // implementation details

@@ -20,12 +20,14 @@
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <vector>
 
 #include "lib/settings.hpp"
 #include "lib/common/distribution.hpp"
 #include "lib/common/mutex.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
+#include "lib/component/identifier.hpp"
 
 
 /**
@@ -97,7 +99,7 @@ namespace details {
  * Must be unique in a composition of components.
  * Requires a `storage` parent component.
  * If a `randomizer` parent component is not found, `crand` is used as random generator.
- * If `push` is false, it also requires an `identifier` parent component.
+ * If `push` is false, it also requires an `identifier` parent component and can be initialised with `threads`.
  * If `push` is true, all aggregators need to support erasing.
  *
  * @param push  If true, updates are pushed immediately to aggregators, otherwise are pulled when needed.
@@ -190,7 +192,7 @@ struct exporter {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, nullptr), t)), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t) {
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, nullptr), t)), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
                 std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
@@ -228,7 +230,7 @@ struct exporter {
                 if (m_schedule.next() < P::net::next()) {
                     *m_stream << m_schedule.next() << " ";
                     m_schedule.step(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
-                    data_pusher(common::bool_pack<push>(), *this);
+                    data_puller(common::bool_pack<not push>(), *this);
                     print_output(t_tags());
                     *m_stream << std::endl;
                     if (not push) m_aggregators = common::tagged_tuple_t<Ss...>();
@@ -240,7 +242,7 @@ struct exporter {
             void aggregator_erase(const common::tagged_tuple<S,T>& t) {
                 assert(push); // disabled for pull-based exporters
                 common::lock_guard<push and FCPP_PARALLEL> lock(m_aggregators_mutex);
-                aggregator_erase_impl(t, t_tags());
+                aggregator_erase_impl(m_aggregators, t, t_tags());
             }
             
             //! @brief Inserts data into the aggregators.
@@ -248,7 +250,7 @@ struct exporter {
             void aggregator_insert(const common::tagged_tuple<S,T>& t) {
                 assert(push); // disabled for pull-based exporters
                 common::lock_guard<push and FCPP_PARALLEL> lock(m_aggregators_mutex);
-                aggregator_insert_impl(t, t_tags());
+                aggregator_insert_impl(m_aggregators, t, t_tags());
             }
             
           private: // implementation details
@@ -273,14 +275,20 @@ struct exporter {
             
             //! @brief Erases data from the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_erase_impl(const common::tagged_tuple<S,T>& t, common::type_sequence<Us...>) {
-                common::details::ignore((common::get<Us>(m_aggregators).erase(common::get<Us>(t)),0)...);
+            void aggregator_erase_impl(S& a, const T& t, common::type_sequence<Us...>) {
+                common::details::ignore((common::get<Us>(a).erase(common::get<Us>(t)),0)...);
             }
             
             //! @brief Inserts data into the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_insert_impl(const common::tagged_tuple<S,T>& t, common::type_sequence<Us...>) {
-                common::details::ignore((common::get<Us>(m_aggregators).insert(common::get<Us>(t)),0)...);
+            void aggregator_insert_impl(S& a,  const T& t, common::type_sequence<Us...>) {
+                common::details::ignore((common::get<Us>(a).insert(common::get<Us>(t)),0)...);
+            }
+            
+            //! @brief Inserts an aggregator data into the aggregators.
+            template <typename S, typename T, typename... Us>
+            void aggregator_add_impl(S& a,  const T& t, common::type_sequence<Us...>) {
+                common::details::ignore((common::get<Us>(a) += common::get<Us>(t))...);
             }
             
             //! @brief Returns the `randomizer` generator if available.
@@ -295,23 +303,28 @@ struct exporter {
                 return random::crand();
             }
             
-            //! @brief Does nothing otherwise.
-            template <typename N>
-            inline void data_pusher(common::bool_pack<true>, N&) {}
-
             //! @brief Collects data actively from nodes if `identifier` is available.
             template <typename N>
-            inline void data_pusher(common::bool_pack<false>, N& n) {
-                common::tagged_tuple_t<Ss...> thread_aggregators[FCPP_THREADS];
-                auto a = n.nodes().begin();
-                auto b = n.nodes().end();
-//                common::parallel_for(common::tags::general_execution<FCPP_THREADS>, b-a, [&this] (size_t i, size_t t) {
-//                    aggregator_insert_impl(thread_aggregators[t], a[i].storage_tuple(), S());
-//                });
-                for (size_t i=1; i<FCPP_THREADS; ++i) thread_aggregators[0] += thread_aggregators[i];
-                m_aggregators = std::move(thread_aggregators[0]);
+            inline void data_puller(common::bool_pack<true>, N& n) {
+                if (m_threads == 1) {
+                    for (auto it = n.node_begin(); it != n.node_end(); ++it)
+                        aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), t_tags());
+                    return;
+                }
+                std::vector<common::tagged_tuple_t<Ss...>> thread_aggregators(m_threads);
+                auto a = n.node_begin();
+                auto b = n.node_end();
+                common::parallel_for(common::tags::general_execution<FCPP_PARALLEL>(m_threads), b-a, [&thread_aggregators,&a,this] (size_t i, size_t t) {
+                    aggregator_insert_impl(thread_aggregators[t], a[i].second.storage_tuple(), t_tags());
+                });
+                for (size_t i=0; i<m_threads; ++i)
+                    aggregator_add_impl(m_aggregators, thread_aggregators[i], t_tags());
             }
             
+            //! @brief Does nothing otherwise.
+            template <typename N>
+            inline void data_puller(common::bool_pack<false>, N&) {}
+
             //! @brief The stream where data is exported.
             std::shared_ptr<std::ostream> m_stream;
             
@@ -323,6 +336,9 @@ struct exporter {
             
             //! @brief A mutex for accessing aggregation.
             common::mutex<push and FCPP_PARALLEL> m_aggregators_mutex;
+            
+            //! @brief The number of threads to be used.
+            const size_t m_threads;
         };
     };
 };

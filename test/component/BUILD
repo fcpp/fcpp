@@ -20,6 +20,7 @@ cc_test(
         "//lib/common:sequence",
         "//lib/component:base",
         "//lib/component:exporter",
+        "//lib/component:identifier",
         "//lib/component:storage",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

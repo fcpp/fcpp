@@ -136,7 +136,7 @@ class unique_lock;
 
 //! @brief Bypassed version of `std::unique_lock`.
 template <>
-class unique_lock<false> {
+struct unique_lock<false> {
     unique_lock() noexcept {}
     
     explicit unique_lock(common::mutex<false>&) {}

@@ -13,6 +13,23 @@ cc_library(
 )
 
 cc_library(
+    name = 'identifier',
+    hdrs = ['identifier.hpp'],
+    srcs = ['identifier.cpp'],
+    deps = [
+        "//lib:settings",
+        "//lib/common:algorithm",
+        "//lib/common:mutex",
+        "//lib/common:random_access_map",
+        "//lib/common:tagged_tuple",
+        "//lib/component:base",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'exporter',
     hdrs = ['exporter.hpp'],
     srcs = ['exporter.cpp'],

@@ -28,6 +28,23 @@ cc_test(
 )
 
 cc_test(
+    name = "identifier",
+    srcs = ["identifier.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:distribution",
+        "//lib/common:sequence",
+        "//lib/common:tagged_tuple",
+        "//lib/component:base",
+        "//lib/component:identifier",
+        "//lib/component:scheduler",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "randomizer",
     srcs = ["randomizer.cpp"],
     deps = [

@@ -4,6 +4,8 @@ cc_library(
     srcs = ['component.cpp'],
     deps = [
         "//lib/component:base",
+        "//lib/component:exporter",
+        "//lib/component:identifier",
         "//lib/component:randomizer",
         "//lib/component:scheduler",
         "//lib/component:storage",

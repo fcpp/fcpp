@@ -23,6 +23,18 @@ cc_test(
 )
 
 cc_test(
+    name = "array",
+    srcs = ["array.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:array",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "distribution",
     srcs = ["distribution.cpp"],
     deps = [

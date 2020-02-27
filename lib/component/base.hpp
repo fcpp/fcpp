@@ -167,9 +167,9 @@ struct base {
             //! @brief Updates the internal status of net component.
             void update() {}
             
-            //! @brief Runs the events at real time pace. Should NEVER be overridden.
-            void run() {
-                while (as_final().next() < TIME_MAX)
+            //! @brief Runs the events at real time pace until a given end. Should NEVER be overridden.
+            void run(times_t end = TIME_MAX) {
+                while (as_final().next() < end)
                     if (as_final().next() <= real_time())
                         as_final().update();
             }

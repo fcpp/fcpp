@@ -23,6 +23,16 @@ cc_library(
 )
 
 cc_library(
+    name = 'array',
+    hdrs = ['array.hpp'],
+    srcs = ['array.cpp'],
+    deps = [ ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'distribution',
     hdrs = ['distribution.hpp'],
     srcs = ['distribution.cpp'],

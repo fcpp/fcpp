@@ -1,12 +1,12 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
- * @file physics_position.hpp
- * @brief Implementation of the `physics_position` component handling physical evolution of a position through time.
+ * @file physical_position.hpp
+ * @brief Implementation of the `physical_position` component handling physical evolution of a position through time.
  */
 
-#ifndef FCPP_SIMULATION_PHYSICS_POSITION_H_
-#define FCPP_SIMULATION_PHYSICS_POSITION_H_
+#ifndef FCPP_SIMULATION_PHYSICAL_POSITION_H_
+#define FCPP_SIMULATION_PHYSICAL_POSITION_H_
 
 #include <cmath>
 
@@ -54,7 +54,7 @@ namespace tags {
  * @param n Dimensionality of the space (defaults to 2).
  */
 template <size_t n = 2>
-struct physics_position {
+struct physical_position {
     /**
      * @brief The actual component.
      *
@@ -311,4 +311,4 @@ struct physics_position {
 
 }
 
-#endif // FCPP_SIMULATION_PHYSICS_POSITION_H_
+#endif // FCPP_SIMULATION_PHYSICAL_POSITION_H_

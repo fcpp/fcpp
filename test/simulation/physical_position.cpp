@@ -10,7 +10,7 @@
 #include "lib/component/base.hpp"
 #include "lib/component/scheduler.hpp"
 #include "lib/data/field.hpp"
-#include "lib/simulation/physics_position.hpp"
+#include "lib/simulation/physical_position.hpp"
 
 using namespace fcpp;
 
@@ -39,14 +39,14 @@ using seq_per = random::sequence_periodic<random::constant_distribution<times_t,
 using combo1 = component::combine<
     exposer,
     component::scheduler<seq_per>,
-    component::physics_position<2>
+    component::physical_position<2>
 >;
 
 std::array<double, 2> vec(double x, double y) {
     return {x,y};
 }
 
-TEST(PhysicsPositionTest, NoFriction) {
+TEST(PhysicalPositionTest, NoFriction) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
     combo1::node device{network, common::make_tagged_tuple<component::tags::uid, component::tags::x, component::tags::a>(0, vec(1.0,2.0), vec(-1.0,0.0))};
     EXPECT_EQ(2.0, device.next());
@@ -93,11 +93,11 @@ TEST(PhysicsPositionTest, NoFriction) {
     EXPECT_EQ(v, device.velocity(4.0));
 }
 
-TEST(PhysicsPositionTest, YesFriction) {
+TEST(PhysicalPositionTest, YesFriction) {
     // TODO: test this
 }
 
-TEST(PhysicsPositionTest, NbrVec) {
+TEST(PhysicalPositionTest, NbrVec) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
     combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, vec(0.0,0.0))};
     combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, vec(1.0,0.0))};

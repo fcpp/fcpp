@@ -15,9 +15,9 @@ cc_library(
 )
 
 cc_library(
-    name = 'physics_position',
-    hdrs = ['physics_position.hpp'],
-    srcs = ['physics_position.cpp'],
+    name = 'physical_position',
+    hdrs = ['physical_position.hpp'],
+    srcs = ['physical_position.cpp'],
     deps = [
         "//lib:settings",
         "//lib/common:array",

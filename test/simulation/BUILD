@@ -1,6 +1,6 @@
 cc_test(
-    name = "physics_position",
-    srcs = ["physics_position.cpp"],
+    name = "physical_position",
+    srcs = ["physical_position.cpp"],
     deps = [
         "@gtest//:main",
         "//lib/common:distribution",
@@ -9,7 +9,7 @@ cc_test(
         "//lib/component:base",
         "//lib/component:scheduler",
         "//lib/data:field",
-        "//lib/simulation:physics_position",
+        "//lib/simulation:physical_position",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

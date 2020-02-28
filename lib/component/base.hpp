@@ -85,6 +85,15 @@ struct base {
             
             //! @brief Updates the internal status of node component.
             void update() {}
+
+            //! @brief Performs computations at round start with current time `t`.
+            void round_start(times_t) {}
+            
+            //! @brief Performs computations at round middle with current time `t`.
+            void round_main(times_t) {}
+
+            //! @brief Performs computations at round end with current time `t`.
+            void round_end(times_t) {}
             
             //! @brief The unique identifier of the device.
             const device_t uid;
@@ -118,15 +127,6 @@ struct base {
             common::tagged_tuple<S,T>& send(times_t, device_t, common::tagged_tuple<S,T>& t) const {
                 return t;
             }
-
-            //! @brief Performs computations at round start with current time `t`.
-            void round_start(times_t) {}
-            
-            //! @brief Performs computations at round middle with current time `t`.
-            void round_main(times_t) {}
-
-            //! @brief Performs computations at round end with current time `t`.
-            void round_end(times_t) {}
             
             //! @brief Performs a computation round with current time `t`. Should NEVER be overridden.
             void round(times_t t) {

@@ -5,8 +5,8 @@
  * @brief Implementation of the `spawner` component handling automated generation of nodes.
  */
 
-#ifndef FCPP_COMPONENT_SPAWNER_H_
-#define FCPP_COMPONENT_SPAWNER_H_
+#ifndef FCPP_SIMULATION_SPAWNER_H_
+#define FCPP_SIMULATION_SPAWNER_H_
 
 #include <type_traits>
 #include <utility>
@@ -142,4 +142,4 @@ struct spawner {
 
 }
 
-#endif // FCPP_COMPONENT_SPAWNER_H_
+#endif // FCPP_SIMULATION_SPAWNER_H_

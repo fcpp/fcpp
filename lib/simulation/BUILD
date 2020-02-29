@@ -15,6 +15,22 @@ cc_library(
 )
 
 cc_library(
+    name = 'physical_connector',
+    hdrs = ['physical_connector.hpp'],
+    srcs = ['physical_connector.cpp'],
+    deps = [
+        "//lib:settings",
+        "//lib/common:array",
+        "//lib/common:distribution",
+        "//lib/common:mutex",
+        "//lib/common:tagged_tuple",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'physical_position',
     hdrs = ['physical_position.hpp'],
     srcs = ['physical_position.cpp'],

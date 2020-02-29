@@ -78,9 +78,9 @@ TEST(PhysicalPositionTest, NoFriction) {
     v = vec(2.0, -1.0);
     EXPECT_EQ(v, device.velocity(4.0));
     double t;
-    t = device.reach_time(0, 7.0, device.next());
+    t = device.reach_time(0, 7.0, 2.0);
     EXPECT_EQ(5.0, t);
-    t = device.reach_time(1, 2.5, device.next());
+    t = device.reach_time(1, 2.5, 2.0);
     EXPECT_EQ(3.0, t);
     device.update();
     v = vec(3.0, 2.5);

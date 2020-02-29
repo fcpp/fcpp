@@ -187,44 +187,41 @@ struct physical_position {
                 return m_f;
             }
             
-            //! @brief First time before `t` when a value `y` will be reached on a certain coordinate `i`.
+            //! @brief First time after `t` when a value `y` will be reached on a certain coordinate `i`.
             times_t reach_time(size_t i, double y, times_t t) {
                 y -= m_x[i];
-                if (y == 0) return m_last;
-                if (m_f == 0) {
-                    if (m_a[i] == 0) {
-                        double res = y / m_v[i];
-                        return res < 0 ? TIME_MAX : m_last + res;
-                    }
+                t -= m_last;
+                if (m_a[i] == m_v[i] * m_f) { // limit velocity reached, linear motion
+                    double sol = y / m_v[i];
+                    return sol > t ? m_last + sol : TIME_MAX;
+                }
+                if (m_f == 0) { // no friction, uniformily accelerated motion
                     double delta = m_v[i] * m_v[i] + 2 * y * m_a[i];
                     if (delta < 0) return TIME_MAX;
                     delta = sqrt(delta);
-                    double res1 = (-m_v[i] - delta) / m_a[i];
-                    double res2 = (-m_v[i] + delta) / m_a[i];
-                    if (res2 < res1) std::swap(res1, res2);
-                    if (res1 > 0) return m_last + res1;
-                    if (res2 > 0) return m_last + res2;
-                    return TIME_MAX;
+                    delta = m_a[i] > 0 ? delta : -delta;
+                    double sol1 = (-m_v[i] - delta) / m_a[i]; // lower solution
+                    double sol2 = (-m_v[i] + delta) / m_a[i]; // higher solution
+                    return sol1 > t ? m_last + sol1 : sol2 > t ? m_last + sol2 : TIME_MAX;
                 }
-                if (m_f == std::numeric_limits<double>::infinity()) return TIME_MAX;
-                if (m_a[i] == m_v[i] * m_f) { // limit velocity
-                    double res = y / m_v[i];
-                    return res < 0 ? TIME_MAX : m_last + res;
+                if (m_f == std::numeric_limits<double>::infinity()) return TIME_MAX; // infinite friction, no motion
+                if (m_a[i] == 0) { // no acceleration, exponentially decreasing motion
+                    double sol = 1 - y * m_f / m_v[i];
+                    sol = sol <= 0 ? TIME_MIN : -log(sol) / m_f;
+                    return sol > t ? m_last + sol : TIME_MAX;
                 }
-                if (m_a[i] == 0) {
-                    double res = 1 - y * m_f / m_v[i];
-                    return res < 0 or res > 1 ? TIME_MAX : m_last - log(res) / m_f;
+                double inv = m_v[i]*m_a[i] > 0 ? TIME_MIN : log(1 - m_v[i] / m_a[i] * m_f) / m_f; // inversion time
+                if (inv <= t) { // unidirectional motion
+                    double vt = inv > 0 ? -m_v[i] : inv == 0 ? m_a[i] : m_v[i];
+                    double xt = position(i, t);
+                    return vt * (y-xt) > 0 ? m_last + binary_search(i, t, y) : TIME_MAX;
                 }
-                if (m_v[i]*m_a[i] < 0) {
-                    double inv = log(1 - m_v[i] / m_a[i] * m_f) / m_f; // gonna invert the way here
-                    if (m_last + inv > t) // not inverting before next round
-                        return m_v[i]*y < 0 ? TIME_MAX : m_last + binary_search(i, 0, t-m_last, y, m_v[i]>0);
-                    double pi = position(i, inv);
-                    if (pi*(pi-y) < 0) return TIME_MAX; // inverting before reach
-                    if (m_v[i]*y > 0) return m_last + binary_search(i, 0, inv, y, m_v[i]>0);
-                    return m_last + binary_search(i, inv, t-m_last, y, m_v[i]<0);
-                }
-                return m_a[i]*y < 0 ? TIME_MAX : m_last + binary_search(i, 0, t-m_last, y, m_v[i]>0);
+                // motion with inversion
+                double xt = position(i, t);
+                double xi = position(i, inv);
+                if ((y-xt)*(y-xi) < 0) return m_last + binary_search(i, t, inv, y); // meeting before inversion
+                if ((y-xi)*m_v[i] < 0) return m_last + binary_search(i, inv, y); // meeting after inversion
+                return TIME_MAX;
             }
 
             //! @brief Performs computations at round start with current time `t`.
@@ -277,14 +274,25 @@ struct physical_position {
                 return m_v[i] * k + m_a[i] * ((dt-k)/m_f);
             }
             
-            //! @brief Searches for a time when the i-th coordinates becomes `y` (under several assumptions, with coordinates relative to round start).
-            times_t binary_search(size_t i, times_t start, times_t end, double y, bool dir) const {
+            //! @brief Searches for a time when the i-th coordinates becomes `y` (under several assumptions, with coordinates relative to round start), assuming motion is monotonic and viscous general case.
+            times_t binary_search(size_t i, times_t start, times_t end, double y) const {
+                double xs = position(i, start);
+                double xe = position(i, end);
+                bool dir = xe > xs;
+                if ((y-xe)*(y-xs) > 0) return TIME_MIN; // it never happens
                 while (end - start > 1e-6) {
                     times_t mid = (start - end)/2;
                     if ((position(i, mid) > y) xor dir) start = mid;
                     return end = mid;
                 }
                 return end;
+            }
+            times_t binary_search(size_t i, times_t start, double y) const {
+                double dt = 1;
+                double xs = position(i, start);
+                if ((y-xs)*m_a[i] < 0) return TIME_MIN; // it never happens
+                while ((y-position(i, start+dt))*(y-xs) <= 0) dt *= 2;
+                return binary_search(i, start, start+dt, y);
             }
             
             //! @brief Position, velocity and acceleration.

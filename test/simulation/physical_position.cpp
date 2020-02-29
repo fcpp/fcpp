@@ -1,9 +1,12 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
+#include <cmath>
+
 #include <array>
 
 #include "gtest/gtest.h"
 
+#include "lib/common/array.hpp"
 #include "lib/common/distribution.hpp"
 #include "lib/common/sequence.hpp"
 #include "lib/common/tagged_tuple.hpp"
@@ -26,9 +29,7 @@ struct exposer {
         struct node : public P::node {
             using P::node::node;
             using P::node::nbr_vec;
-            using P::node::receive;
-            using P::node::send;
-            using P::node::message_t;
+            using P::node::nbr_dist;
         };
         using net  = typename P::net;
     };
@@ -112,15 +113,21 @@ TEST(PhysicalPositionTest, NbrVec) {
     EXPECT_EQ(3.0, d1.next());
     EXPECT_EQ(3.0, d2.next());
     EXPECT_EQ(3.0, d3.next());
+    d1.receive(2.00, 1, d1.send(2.00, 1, m));
     d1.receive(2.25, 2, d2.send(2.25, 1, m));
     d1.receive(2.50, 3, d3.send(2.50, 1, m));
     double d;
-    d = norm(details::self(d1.nbr_vec(), 0) - vec(0.0, 0.0));
-    EXPECT_GT(1e-6, d);
     d = norm(details::self(d1.nbr_vec(), 1) - vec(0.0, 0.0));
     EXPECT_GT(1e-6, d);
     d = norm(details::self(d1.nbr_vec(), 2) - vec(1.0, 0.0));
     EXPECT_GT(1e-6, d);
     d = norm(details::self(d1.nbr_vec(), 3) - vec(0.0, 1.0));
     EXPECT_GT(1e-6, d);
+    std::array<double, 2> res = details::self(d1.nbr_vec(), 0);
+    EXPECT_TRUE(std::isnan(res[0]));
+    EXPECT_TRUE(std::isnan(res[1]));
+    EXPECT_EQ(1.0/0.0, details::self(d1.nbr_dist(), 0));
+    EXPECT_EQ(0.0, details::self(d1.nbr_dist(), 1));
+    EXPECT_EQ(1.0, details::self(d1.nbr_dist(), 2));
+    EXPECT_EQ(1.0, details::self(d1.nbr_dist(), 3));
 }

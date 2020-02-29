@@ -45,6 +45,19 @@ namespace tags {
 }
 
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief Returns a vector of NaNs.
+    template <size_t n>
+    std::array<double, n> nan_vec() {
+        std::array<double, n> v;
+        for (size_t i=0; i<n; ++i) v[i] = std::numeric_limits<double>::quiet_NaN();
+        return v;
+    }
+}
+//! @endcond
+
+
 /**
  * @brief Component handling physical evolution of a position through time.
  *
@@ -84,6 +97,9 @@ struct physical_position {
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
+            //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
+            using message_t = typename P::node::message_t::template push_back<position_tag, std::array<double,n>>;
+            
             //@{
             /**
              * @brief Main constructor.
@@ -92,7 +108,7 @@ struct physical_position {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& nt, const common::tagged_tuple<S,T>& t) : P::node(nt,t), m_x(common::get<tags::x>(t)), m_v(common::get_or<tags::v>(t, std::array<double, n>{})), m_a(common::get_or<tags::a>(t, std::array<double, n>{})), m_f(common::get_or<tags::f>(t, 0.0)) {
+            node(typename F::net& nt, const common::tagged_tuple<S,T>& t) : P::node(nt,t), m_x(common::get<tags::x>(t)), m_v(common::get_or<tags::v>(t, std::array<double, n>{})), m_a(common::get_or<tags::a>(t, std::array<double, n>{})), m_f(common::get_or<tags::f>(t, 0.0)), m_nbr_vec{details::nan_vec<n>()}, m_nbr_dist{std::numeric_limits<double>::infinity()} {
                 m_last = TIME_MIN;
             }
 
@@ -241,22 +257,14 @@ struct physical_position {
                 }
                 m_last = t;
             }
-            
-          protected: // visible by node objects only
-            //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
-            using message_t = typename P::node::message_t::template push_back<position_tag, std::array<double,n>>;
-
-            //! @brief Perceived positions of neighbours as difference vectors.
-            const fcpp::field<std::array<double, n>>& nbr_vec() const {
-                return m_neigh_vec;
-            }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
                 std::array<double, n> v = common::get<position_tag>(m) - position(t);
-                fcpp::details::self(m_neigh_vec, d) = v;
+                fcpp::details::self(m_nbr_vec, d) = v;
+                fcpp::details::self(m_nbr_dist, d) = norm(v);
             }
             
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
@@ -265,6 +273,17 @@ struct physical_position {
                 P::node::send(t, d, m);
                 common::get<position_tag>(m) = position(t);
                 return m;
+            }
+            
+          protected: // visible by node objects only
+            //! @brief Perceived positions of neighbours as difference vectors.
+            const fcpp::field<std::array<double, n>>& nbr_vec() const {
+                return m_nbr_vec;
+            }
+            
+            //! @brief Perceived distances from neighbours.
+            const fcpp::field<double>& nbr_dist() const {
+                return m_nbr_dist;
             }
             
           private: // implementation details
@@ -302,7 +321,10 @@ struct physical_position {
             double m_f;
             
             //! @brief Perceived positions of neighbours as difference vectors.
-            fcpp::field<std::array<double, n>> m_neigh_vec;
+            fcpp::field<std::array<double, n>> m_nbr_vec;
+            
+            //! @brief Perceived distances from neighbours.
+            fcpp::field<double> m_nbr_dist;
             
             //! @brief Time of the last round happened.
             times_t m_last;

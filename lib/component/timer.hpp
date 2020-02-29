@@ -116,7 +116,6 @@ struct timer {
                 }
             }
             
-          protected: // visible by node objects only
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
@@ -124,6 +123,7 @@ struct timer {
                 fcpp::details::self(m_neigh, d) = t;
             }
             
+          protected: // visible by node objects only
             //! @brief Returns the time of the second most recent round (previous during rounds).
             times_t previous_time() {
                 return m_prev;

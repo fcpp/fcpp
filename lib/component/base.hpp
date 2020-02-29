@@ -56,6 +56,9 @@ struct base {
         //! @brief The local part of the component.
         class node {
           public: // visible by net objects and the main program
+            //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
+            using message_t = common::tagged_tuple_t<>;
+            
             //! @name constructors
             //@{
             /**
@@ -95,6 +98,16 @@ struct base {
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t) {}
             
+            //! @brief Receives an incoming message (possibly reading values from sensors).
+            template <typename S, typename T>
+            void receive(times_t, device_t, const common::tagged_tuple<S,T>&) {}
+            
+            //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
+            template <typename S, typename T>
+            common::tagged_tuple<S,T>& send(times_t, device_t, common::tagged_tuple<S,T>& t) const {
+                return t;
+            }
+            
             //! @brief The unique identifier of the device.
             const device_t uid;
             
@@ -105,9 +118,6 @@ struct base {
             //! @brief A reference to the corresponding net object.
             typename F::net& net;
             
-            //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
-            using message_t = common::tagged_tuple_t<>;
-            
             //! @brief Gives access to the node as instance of `F::node`. Should NEVER be overridden.
             typename F::node& as_final() {
                 return *static_cast<typename F::node*>(this);
@@ -116,16 +126,6 @@ struct base {
             //! @brief Gives const access to the node as instance of `F::node`. Should NEVER be overridden.
             const typename F::node& as_final() const {
                 return *static_cast<const typename F::node*>(this);
-            }
-            
-            //! @brief Receives an incoming message (possibly reading values from sensors).
-            template <typename S, typename T>
-            void receive(times_t, device_t, const common::tagged_tuple<S,T>&) {}
-            
-            //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
-            template <typename S, typename T>
-            common::tagged_tuple<S,T>& send(times_t, device_t, common::tagged_tuple<S,T>& t) const {
-                return t;
             }
             
             //! @brief Performs a computation round with current time `t`. Should NEVER be overridden.

@@ -11,6 +11,18 @@ cc_test(
 )
 
 cc_test(
+    name = "calculus",
+    srcs = ["calculus.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/component:calculus",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "exporter",
     srcs = ["exporter.cpp"],
     deps = [

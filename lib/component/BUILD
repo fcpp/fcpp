@@ -13,6 +13,23 @@ cc_library(
 )
 
 cc_library(
+    name = 'calculus',
+    hdrs = ['calculus.hpp'],
+    srcs = ['calculus.cpp'],
+    deps = [
+        "//lib/common:multitype_map",
+        "//lib/common:traits",
+        "//lib/common:twin",
+        "//lib/data:context",
+        "//lib/data:field",
+        "//lib/data:trace",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'identifier',
     hdrs = ['identifier.hpp'],
     srcs = ['identifier.cpp'],

@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/device/device.hpp"
+#include "lib/component/calculus.hpp"
 
 using namespace fcpp;
 

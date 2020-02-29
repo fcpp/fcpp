@@ -56,7 +56,7 @@ namespace fcpp {
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  * - the following type member is also suggested:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *   typedef multitype_map<trace_t, Ts...> export_type;
+ *   typedef common::multitype_map<trace_t, Ts...> export_type;
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  * - provide a static `metric` method, computing the distance between two exports,
  *   with the following signature:
@@ -83,7 +83,7 @@ class device {
     typedef typename context<metric_type, Ts...>::export_type context_type;
     
     //! @brief The type of the exports of the current device (`first` is for the local device, `second` for other devices).
-    typedef twin<multitype_map<trace_t, Ts...>, FCPP_SETTING_EXPORTS == 1> export_type;
+    typedef common::twin<common::multitype_map<trace_t, Ts...>, FCPP_EXPORTS == 1> export_type;
 
   protected:
     /** @brief Stateless class for handling trace update on function call.
@@ -209,7 +209,7 @@ class device {
     //@{
     //! @brief Selects the local value of a field.
     template <typename A>
-    del_template<field, A> self(A&& x) const {
+    common::del_template<field, A> self(A&& x) const {
         return details::self(std::forward<A>(x), m_context.self());
     }
     
@@ -308,7 +308,7 @@ class device {
      * Equivalent to `nbr(f, f)`.
      */
     template <trace_t x, typename A>
-    add_template<field, A> nbr(const A& f) {
+    common::add_template<field, A> nbr(const A& f) {
         trace_t t = thread_trace.hash<x>();
         m_export.second().insert(t, f);
         return m_context.nbr(t, f);
@@ -324,7 +324,7 @@ class device {
      * ~~~~~~~~~~~~~~~~~~~~~~~~~
      */
     template <trace_t x, typename A>
-    add_template<field, A> nbr(const A& f0, const A& f) {
+    common::add_template<field, A> nbr(const A& f0, const A& f) {
         trace_t t = thread_trace.hash<x>();
         m_export.second().insert(t, f);
         return m_context.nbr(t, f0);
@@ -342,7 +342,7 @@ class device {
      * ~~~~~~~~~~~~~~~~~~~~~~~~~
      */
     template <trace_t x, typename A>
-    A nbr(const A& f0, std::function<A(add_template<field, A>)> op) {
+    A nbr(const A& f0, std::function<A(common::add_template<field, A>)> op) {
         trace_t t = thread_trace.hash<x>();
         A f = op(m_context.nbr(t, f0));
         m_export.second().insert(t, f);
@@ -356,7 +356,7 @@ class device {
      * The second element of the returned pair is written in the exports.
      */
     template <trace_t x, typename A, typename B>
-    B nbr(const A& f0, std::function<std::pair<B,A>(add_template<field, A>)> op) {
+    B nbr(const A& f0, std::function<std::pair<B,A>(common::add_template<field, A>)> op) {
         trace_t t = thread_trace.hash<x>();
         std::pair<B,A> f = op(m_context.nbr(t, f0));
         m_export.second().insert(t, std::move(f.second));
@@ -379,7 +379,7 @@ class device {
      * ~~~~~~~~~~~~~~~~~~~~~~~~~
      */
     template <trace_t x, typename A>
-    A oldnbr(const A& f0, std::function<A(const A&, add_template<field, A>)> op) {
+    A oldnbr(const A& f0, std::function<A(const A&, common::add_template<field, A>)> op) {
         trace_t t = thread_trace.hash<x>();
         A f = op(m_context.old(t, f0), m_context.nbr(t, f0));
         m_export.second().insert(t, f);
@@ -393,7 +393,7 @@ class device {
      * The second element of the returned pair is written in the exports.
      */
     template <trace_t x, typename A, typename B>
-    B oldnbr(const A& f0, std::function<std::pair<B,A>(const A&, add_template<field, A>)> op) {
+    B oldnbr(const A& f0, std::function<std::pair<B,A>(const A&, common::add_template<field, A>)> op) {
         trace_t t = thread_trace.hash<x>();
         std::pair<B,A> f = op(m_context.old(t, f0), m_context.nbr(t, f0));
         m_export.second().insert(t, std::move(f.second));

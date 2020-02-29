@@ -7,12 +7,15 @@
 
 #include "lib/device/device.hpp"
 
+using namespace fcpp;
+
+
 constexpr fcpp::trace_t time_id = 42;
 
 template <class... Ts>
 struct time_metric {
     typedef double result_type;
-    typedef fcpp::multitype_map<fcpp::trace_t, Ts...> export_type;
+    typedef common::multitype_map<fcpp::trace_t, Ts...> export_type;
     static result_type metric(const export_type& self, const export_type& other) {
         return self.template at<double>(time_id) - other.template at<double>(time_id);
     }

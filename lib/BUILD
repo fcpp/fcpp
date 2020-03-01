@@ -17,11 +17,24 @@ cc_library(
 )
 
 cc_library(
+    name = 'coordination',
+    hdrs = ['coordination.hpp'],
+    srcs = ['coordination.cpp'],
+    deps = [
+        "//lib/coordination:spreading",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'fcpp',
     hdrs = ['fcpp.hpp'],
     srcs = ['fcpp.cpp'],
     deps = [
         "//lib:component",
+        "//lib:coordination",
         "//lib:settings",
         "//lib:simulation",
     ],

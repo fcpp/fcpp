@@ -132,7 +132,7 @@ TEST(ExporterTest, Push) {
     getline(s, line);
     EXPECT_EQ("3.5 3 ", line);
     getline(s, line);
-    EXPECT_EQ("5.5 -nan ", line);
+    EXPECT_EQ("5.5 nan ", line);
     getline(s, line);
     EXPECT_EQ("##########################################################", line);
     getline(s, line);
@@ -206,7 +206,7 @@ TEST(ExporterTest, Pull) {
     getline(s, line);
     EXPECT_EQ("3.5 3 3 ", line);
     getline(s, line);
-    EXPECT_EQ("5.5 -nan 0 ", line);
+    EXPECT_EQ("5.5 nan 0 ", line);
     getline(s, line);
     EXPECT_EQ("##########################################################", line);
     getline(s, line);

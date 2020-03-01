@@ -17,6 +17,20 @@ cc_library(
 )
 
 cc_library(
+    name = 'fcpp',
+    hdrs = ['fcpp.hpp'],
+    srcs = ['fcpp.cpp'],
+    deps = [
+        "//lib:component",
+        "//lib:settings",
+        "//lib:simulation",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'settings',
     hdrs = ['settings.hpp'],
     srcs = ['settings.cpp'],

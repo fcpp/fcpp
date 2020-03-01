@@ -12,7 +12,7 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "bento/ubuntu-18.04"
+  config.vm.box = "bento/ubuntu-19.10"
 
   config.vm.synced_folder ".", "/home/vagrant/fcpp"
 
@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
     curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
     add-apt-repository ppa:ubuntu-toolchain-r/test -y
     apt-get update
-    apt-get install -y bazel build-essential gcc-7 g++-7 doxygen texlive-font-utils openjdk-8-jdk
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    apt-get install -y bazel build-essential gcc-9 g++-9 doxygen texlive-font-utils openjdk-8-jdk
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
   SHELL
 end

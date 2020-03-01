@@ -173,7 +173,7 @@ class mean {
     
     //! @brief The results of aggregation.
     T result() const {
-        return m_sum/m_count;
+        return m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : m_sum/m_count;
     }
     
     //! @brief Outputs the aggregator description.
@@ -227,7 +227,7 @@ class moment {
     
     //! @brief The results of aggregation.
     T result() const {
-        return pow(m_sum/m_count, 1.0/n);
+        return m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : pow(m_sum/m_count, 1.0/n);
     }
     
     //! @brief Outputs the aggregator description.
@@ -284,6 +284,7 @@ class deviation {
     
     //! @brief The results of aggregation.
     T result() const {
+        if (m_count == 0) return std::numeric_limits<T>::quiet_NaN();
         T d2 = (m_sqsum*m_count-m_sum*m_sum)/m_count/m_count;
         T d1 = sqrt(d2);
         if (std::isfinite(d1) and (d1+1)*(d1+1) <= d2) ++d1;
@@ -345,6 +346,7 @@ class stats {
     
     //! @brief The results of aggregation.
     std::tuple<T,T> result() const {
+        if (m_count == 0) return {std::numeric_limits<T>::quiet_NaN(), std::numeric_limits<T>::quiet_NaN()};
         T d2 = (m_sqsum*m_count-m_sum*m_sum)/m_count/m_count;
         T d1 = sqrt(d2);
         if (std::isfinite(d1) and (d1+1)*(d1+1) <= d2) ++d1;

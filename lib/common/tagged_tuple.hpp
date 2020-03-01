@@ -167,7 +167,7 @@ namespace details {
 
     //! @brief Separator between tuple tags and values.
     template <typename T>
-    constexpr const char* tag_val_sep;
+    constexpr const char* tag_val_sep = "";
     template<>
     constexpr const char* tag_val_sep<tags::dictionary_tuple> = ":";
     template<>
@@ -177,7 +177,7 @@ namespace details {
 
     //! @brief Separator between tuple values and the following tags.
     template <typename T>
-    constexpr const char* val_tag_sep;
+    constexpr const char* val_tag_sep = "";
     template<>
     constexpr const char* val_tag_sep<tags::dictionary_tuple> = ", ";
     template<>

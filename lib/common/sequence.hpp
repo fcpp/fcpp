@@ -229,7 +229,7 @@ class sequence_list {
  * @param E Distribution for the last event.
  * @param N Distribution for the number of events to be generated.
  */
-template <typename S, typename P = S, typename E = sequence_never, typename N = constant_distribution<size_t, std::numeric_limits<size_t>::max()>>
+template <typename S, typename P = S, typename E = sequence_never, typename N = constant_distribution<size_t, std::numeric_limits<intmax_t>::max()>>
 class sequence_periodic {
     static_assert(std::is_same<typename S::type, times_t>::value, "the distribution S must generate a times_t value");
     static_assert(std::is_same<typename P::type, times_t>::value, "the distribution P must generate a times_t value");

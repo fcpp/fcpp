@@ -69,8 +69,8 @@ function builder() {
     cmd=$1
     shift 1
     for t in "$@"; do
-        echo -e "\033[4mbazel $cmd $copts --config=asan --incompatible_remove_native_http_archive=false //$t\033[0m"
-        bazel $cmd $copts --config=asan --incompatible_remove_native_http_archive=false //$t
+        echo -e "\033[4mbazel $cmd $copts --config=asan //$t\033[0m"
+        bazel $cmd $copts --config=asan //$t
     done
 }
 
@@ -82,8 +82,8 @@ function runner() {
         exit 1
     fi
     shift 1
-    echo -e "\033[4mbazel run $copts --config=asan --incompatible_remove_native_http_archive=false -- //$t "$@"\033[0m"
-    bazel run $copts --config=asan --incompatible_remove_native_http_archive=false -- //$t "$@"
+    echo -e "\033[4mbazel run $copts --config=asan -- //$t "$@"\033[0m"
+    bazel run $copts --config=asan -- //$t "$@"
 }
 
 while [ "$1" != "" ]; do

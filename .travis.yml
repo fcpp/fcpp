@@ -11,7 +11,7 @@ addons:
     sources:
     - sourceline: 'deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8'
       key_url: 'https://bazel.build/bazel-release.pub.gpg'
-    - ubuntu-toolchain-r-test
+    - sourceline: "ppa:ubuntu-toolchain-r/test"
     packages:
     - bazel
     - build-essential

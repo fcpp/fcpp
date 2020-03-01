@@ -21,6 +21,7 @@ if [ "$1" == "" ]; then
     usage
 fi
 
+asan="--config=asan"
 copts=""
 targets=""
 
@@ -34,7 +35,11 @@ function mkdoc() {
 function parseopt() {
     i=0
     while [ "${1:0:1}" == "-" ]; do
-        copts="$copts $1"
+        if [ "${1:0:2}" == "-O" ]; then
+            asan="--config=opt"
+        else
+            copts="$copts $1"
+        fi
         i=$[i+1]
         shift 1
     done
@@ -70,8 +75,8 @@ function builder() {
     cmd=$1
     shift 1
     for t in "$@"; do
-        echo -e "\033[4mbazel $cmd $copts --config=asan //$t\033[0m"
-        bazel $cmd $copts --config=asan //$t
+        echo -e "\033[4mbazel $cmd $copts $asan //$t\033[0m"
+        bazel $cmd $copts $asan //$t
     done
 }
 
@@ -83,8 +88,8 @@ function runner() {
         exit 1
     fi
     shift 1
-    echo -e "\033[4mbazel run $copts --config=asan -- //$t "$@"\033[0m"
-    bazel run $copts --config=asan -- //$t "$@"
+    echo -e "\033[4mbazel run $copts $asan -- //$t "$@"\033[0m"
+    bazel run $copts $asan -- //$t "$@"
 }
 
 while [ "$1" != "" ]; do
@@ -100,10 +105,10 @@ while [ "$1" != "" ]; do
                 usage
             fi
             builder build lib/...
-#            builder build sample/...
+            builder build project/...
         else
             while [ "$1" != "" ]; do
-#                finder "sample" "$1"
+                finder "project" "$1"
                 finder "lib"    "$1"
                 finder "test"   "$1"
                 if [ "$targets" == "" ]; then
@@ -140,7 +145,7 @@ while [ "$1" != "" ]; do
         shift 1
         parseopt "$@"
         shift $?
-        finder "sample" "$1"
+        finder "project" "$1"
         shift 1
         runner "$targets" "$@"
         exit 0
@@ -153,7 +158,7 @@ while [ "$1" != "" ]; do
         fi
         mkdoc
         builder build lib/...
-#        builder build sample/...
+        builder build project/...
         builder build test/...
         builder test  test/...
     elif [ "$1" == "clean" ]; then

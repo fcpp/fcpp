@@ -24,5 +24,8 @@ install:
 - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
 - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
 
+before_script:
+- cd src
+
 script:
 - ./make.sh all

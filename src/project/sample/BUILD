@@ -1,6 +1,6 @@
 cc_test(
-    name = "slowdistancetest",
-    srcs = ["slowdistancetest.cpp"],
+    name = "tester",
+    srcs = ["tester.cpp"],
     deps = [
         "@gtest//:main",
         "//lib/common:array",

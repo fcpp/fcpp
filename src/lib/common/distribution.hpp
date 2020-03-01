@@ -12,6 +12,7 @@
 #include <cmath>
 #include <random>
 #include <type_traits>
+#include <utility>
 
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
@@ -224,6 +225,45 @@ class uniform_distribution {
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
 using uniform_d = uniform_distribution<constant_distribution<T, mean, scale>, constant_distribution<T, dev, scale>, mean_tag, dev_tag>;
+/**
+ * Uniform distribution set up through extremes instead of mean and deviation.
+ *
+ * @param min     The minimum of the distribution (as distribution).
+ * @param max     The maximum of the distribution (as distribution).
+ * @param min_tag The tag corresponding to the minimum in initialisation values.
+ * @param max_tag The tag corresponding to the maximum in initialisation values.
+ */
+template <typename min, typename max, typename min_tag = void, typename max_tag = void>
+class interval_distribution {
+    static_assert(std::is_same<typename min::type, typename max::type>::value, "min and max of different type");
+    
+  public:
+    using type = typename min::type;
+    
+    template <typename G>
+    interval_distribution(G&& g) : m_d{details::call_distr<min>(g), details::call_distr<max>(g)} {}
+    
+    template <typename G, typename S, typename T>
+    interval_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d{common::get_or<min_tag>(t,details::call_distr<min>(g, t)), common::get_or<max_tag>(t,details::call_distr<max>(g, t))} {}
+    
+    template <typename G>
+    type operator()(G&& g) {
+        return m_d(g);
+    }
+
+  private:
+    std::uniform_real_distribution<type> m_d;
+};
+/**
+ * @param T       The type returned by the distribution.
+ * @param min     The (integral) minimum of the distribution.
+ * @param max     The (integral) maximum of the distribution.
+ * @param scale   An (optional) scale factor by which `min` and `max` are divided.
+ * @param min_tag The tag corresponding to the minimum in initialisation values.
+ * @param max_tag The tag corresponding to the maximum in initialisation values.
+ */
+template <typename T, intmax_t min, intmax_t max, intmax_t scale = 1, typename min_tag = void, typename max_tag = void>
+using interval_d = interval_distribution<constant_distribution<T, min, scale>, constant_distribution<T, max, scale>, min_tag, max_tag>;
 //@}
 
 
@@ -361,8 +401,7 @@ using weibull_d = weibull_distribution<constant_distribution<T, mean, scale>, co
  * @param D A real distribution.
  */
 template <typename D>
-class make_positive : public D {
-  public:
+struct make_positive : public D {
     using type = typename D::type;
     
     using D::D;
@@ -372,6 +411,40 @@ class make_positive : public D {
         type t = D::operator()(g);
         return (t >= 0) ? t : operator()(g);
     }
+};
+
+
+/**
+ * @brief Combines multiple distributions into a single distribution generating arrays.
+ *
+ * The reference type is `D::type`, and all `Ds::type` must be convertible to it.
+ *
+ * @param D  The first distribution.
+ * @param Ds More distributions.
+ */
+template <typename D, typename... Ds>
+class array_distribution {
+  public:
+    using type = std::array<typename D::type, sizeof...(Ds)+1>;
+    
+    template <typename G>
+    array_distribution(G&& g) : m_distributions{D{g}, Ds{g}...} {}
+    
+    template <typename G, typename S, typename T>
+    array_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_distributions{D{g,t}, Ds{g,t}...} {}
+    
+    template <typename G>
+    type operator()(G&& g) {
+        return call_impl(g, std::make_index_sequence<sizeof...(Ds)+1>{});
+    }
+    
+  private:
+    template <typename G, size_t... i>
+    type call_impl(G&& g, std::index_sequence<i...>) {
+        return {std::get<i>(m_distributions)(g)...};
+    }
+    
+    std::tuple<D, Ds...> m_distributions;
 };
 
 

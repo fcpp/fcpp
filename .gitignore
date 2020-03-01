@@ -3,6 +3,5 @@
 .#*
 bazel-*
 doc/
-experiments/
 .vagrant/
 .DS_Store

@@ -95,31 +95,46 @@ while [ "$1" != "" ]; do
         shift 1
         parseopt "$@"
         shift $?
-        while [ "$1" != "" ]; do
-#            finder "sample" "$1"
-            finder "lib"    "$1"
-            finder "test"   "$1"
-            if [ "$targets" == "" ]; then
-                echo -e "\033[1mtarget \"$1\" not found\033[0m"
+        if [ "$1" == "all" ]; then
+            if [ "$2" != "" ]; then
+                usage
             fi
-            builder build $targets
-            targets=""
-            shift 1
-        done
+            builder build lib/...
+#            builder build sample/...
+        else
+            while [ "$1" != "" ]; do
+#                finder "sample" "$1"
+                finder "lib"    "$1"
+                finder "test"   "$1"
+                if [ "$targets" == "" ]; then
+                    echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                fi
+                builder build $targets
+                targets=""
+                shift 1
+            done
+        fi
         exit 0
     elif [ "$1" == "test" ]; then
         shift 1
         parseopt "$@"
         shift $?
-        while [ "$1" != "" ]; do
-            finder "test" "$1"
-            builder test  $targets
-            if [ "$targets" == "" ]; then
-                echo -e "\033[1mtarget \"$1\" not found\033[0m"
+        if [ "$1" == "all" ]; then
+            if [ "$2" != "" ]; then
+                usage
             fi
-            targets=""
-            shift 1
-        done
+            builder test test/...
+        else
+            while [ "$1" != "" ]; do
+                finder "test" "$1"
+                builder test  $targets
+                if [ "$targets" == "" ]; then
+                    echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                fi
+                targets=""
+                shift 1
+            done
+        fi
         exit 0
     elif [ "$1" == "run" ]; then
         shift 1

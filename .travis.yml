@@ -1,6 +1,6 @@
 language: c++
 
-dist: trusty
+dist: bionic
 sudo: required
 
 jdk:
@@ -13,16 +13,16 @@ addons:
       key_url: 'https://bazel.build/bazel-release.pub.gpg'
     - ubuntu-toolchain-r-test
     packages:
-    - build-essential
     - bazel
-    - g++-7
-    - gcc-7
+    - build-essential
+    - gcc-9
+    - g++-9
     - doxygen
     - texlive-font-utils
 
 install:
-- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
-- sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
+- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 90
+- sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90
 
 script:
-- ./build_all.sh
+- ./make.sh all

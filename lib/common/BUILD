@@ -60,6 +60,7 @@ cc_library(
     srcs = ['multitype_map.cpp'],
     deps = [
         "//lib/common:traits",
+        "//lib/common:tagged_tuple",
     ],
     visibility = [
         '//visibility:public',
@@ -71,6 +72,20 @@ cc_library(
     hdrs = ['mutex.hpp'],
     srcs = ['mutex.cpp'],
     deps = [ ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'ostream',
+    hdrs = ['ostream.hpp'],
+    srcs = ['ostream.cpp'],
+    deps = [
+        "//lib/common:multitype_map",
+        "//lib/common:random_access_map",
+        "//lib/common:tagged_tuple",
+    ],
     visibility = [
         '//visibility:public',
     ],

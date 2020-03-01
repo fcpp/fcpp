@@ -41,6 +41,9 @@ namespace tags {
     //! @brief Tag for representing tagged tuples in compact underscore format.
     struct underscore_tuple {};
 
+    //! @brief Tag for representing tagged tuples in arrowhead format.
+    struct arrowhead_tuple {};
+
     //! @brief Tag for skipping tags in printing tuples.
     template <typename... Ts>
     struct skip_tags {};
@@ -52,6 +55,8 @@ constexpr tags::dictionary_tuple dictionary_tuple{};
 constexpr tags::assignment_tuple assignment_tuple{};
 //! @brief Tag for representing tagged tuples in compact underscore format.
 constexpr tags::underscore_tuple underscore_tuple{};
+//! @brief Tag for representing tagged tuples in arrowhead format.
+constexpr tags::arrowhead_tuple arrowhead_tuple{};
 //! @brief Tag for skipping tags in printing tuples.
 template <typename... Ts>
 constexpr tags::skip_tags<Ts...> skip_tags{};
@@ -174,6 +179,8 @@ namespace details {
     constexpr const char* tag_val_sep<tags::assignment_tuple> = " = ";
     template<>
     constexpr const char* tag_val_sep<tags::underscore_tuple> = "-";
+    template<>
+    constexpr const char* tag_val_sep<tags::arrowhead_tuple> = " => ";
 
     //! @brief Separator between tuple values and the following tags.
     template <typename T>
@@ -184,6 +191,8 @@ namespace details {
     constexpr const char* val_tag_sep<tags::assignment_tuple> = ", ";
     template<>
     constexpr const char* val_tag_sep<tags::underscore_tuple> = "_";
+    template<>
+    constexpr const char* val_tag_sep<tags::arrowhead_tuple> = "; ";
 
     //! @brief Removes the namespaces from a type representation.
     std::string strip_namespaces(std::string s) {

@@ -3,6 +3,7 @@
 function usage() {
     echo -e "\033[4mcommands and parameters:\033[0m"
     echo -e "    \033[1mclean\033[0m:                           cleans all built files (can be chained)"
+    echo -e "    \033[1mgcc\033[0m:                             sets the compiler to gcc (can be chained)"
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation (can be chained)"
     echo -e "    \033[1mbuild\033[0m:                           builds binaries for given targets, skipping tests"
     echo -e "       <copts...> <targets...>"
@@ -144,6 +145,12 @@ while [ "$1" != "" ]; do
         shift 1
         bazel clean
         rm -rf doc
+    elif [ "$1" == "gcc" ]; then
+        gcc=$(which $(compgen -c | grep "^gcc-.$" | uniq))
+        gpp=$(which $(compgen -c | grep "^g++-.$" | uniq))
+        export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
+        export CC="$gcc"
+        export CXX="$gpp"
     else
         usage
     fi

@@ -300,6 +300,9 @@ struct type_sequence<> {
     template<typename... Ss>
     using unite = type_sequence<Ss...>;
     
+    template<typename... Ss>
+    using subtract = type_sequence<>;
+    
     using repeated = type_sequence<>;
     
     using uniq = type_sequence<>;

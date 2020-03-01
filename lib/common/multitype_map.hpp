@@ -8,11 +8,13 @@
 #ifndef FCPP_COMMON_MULTITYPE_MAP_H_
 #define FCPP_COMMON_MULTITYPE_MAP_H_
 
+#include <ostream>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
 
 
@@ -44,7 +46,7 @@ class multitype_map {
     
   private:
     //! @brief Map associating keys to data.
-    std::tuple<std::unordered_map<T, Ts>...> m_data;
+    tagged_tuple<type_sequence<Ts...>, type_sequence<std::unordered_map<T, Ts>...>> m_data;
     //! @brief Set of keys (for void data).
     std::unordered_set<T> m_keys;
     
@@ -81,14 +83,14 @@ class multitype_map {
     template<typename A>
     void insert(T key, const A& value) {
         static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
+        get<std::remove_reference_t<A>>(m_data)[key] = value;
     }
     
     //! @brief Inserts value at corresponding key by moving.
     template<typename A>
     void insert(T key, A&& value) {
         static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data)[key] = value;
+        get<std::remove_reference_t<A>>(m_data)[key] = value;
     }
 
     //! @brief Inserts void value at corresponding key.
@@ -100,7 +102,7 @@ class multitype_map {
     template<typename A>
     void erase(T key) {
         static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).erase(key);
+        get<std::remove_reference_t<A>>(m_data).erase(key);
     }
 
     //! @brief Deletes void value at corresponding key.
@@ -112,26 +114,32 @@ class multitype_map {
     template<typename A>
     const A& at(T key) const {
         static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        return std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
+        return get<std::remove_reference_t<A>>(m_data).at(key);
     }
 
     //! @brief Mutable reference to the value of a certain type at a given key.
     template<typename A>
     A& at(T key) {
         static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        return std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).at(key);
+        return get<std::remove_reference_t<A>>(m_data).at(key);
     }
 
     //! @brief Whether the key is present in the value map or not for a certain type.
     template<typename A>
     bool count(T key) const {
         static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        return std::get<type_find<typename std::remove_reference<A>::type, Ts...>>(m_data).count(key);
+        return get<std::remove_reference_t<A>>(m_data).count(key);
     }
     
     //! @brief Whether the key is present in the value map or not for the void type.
     bool contains(T key) const {
         return m_keys.count(key);
+    }
+    
+    //! @brief Prints the content of the multitype map.
+    template <typename... Ss>
+    void print(std::ostream& o, Ss... xs) const {
+        m_data.print(o, xs...);
     }
 };
 

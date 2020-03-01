@@ -129,6 +129,13 @@ T norm(const array<T,n>& x) {
 //! @}
 
 
+//! @brief Creates an array from its arguments.
+template <typename T, typename... Ts>
+array<T, sizeof...(Ts)+1> make_array(T x, Ts... xs) {
+    return array<T, sizeof...(Ts)+1>{x, ((T)xs)...};
+}
+
+
 }
 
 

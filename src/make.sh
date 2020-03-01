@@ -132,6 +132,7 @@ while [ "$1" != "" ]; do
         else
             while [ "$1" != "" ]; do
                 finder "test" "$1"
+                finder "project" "$1"
                 builder test  $targets
                 if [ "$targets" == "" ]; then
                     echo -e "\033[1mtarget \"$1\" not found\033[0m"
@@ -161,6 +162,7 @@ while [ "$1" != "" ]; do
         builder build project/...
         builder build test/...
         builder test  test/...
+        builder test  project/...
     elif [ "$1" == "clean" ]; then
         shift 1
         bazel clean

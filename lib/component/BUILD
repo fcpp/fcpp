@@ -17,7 +17,9 @@ cc_library(
     hdrs = ['calculus.hpp'],
     srcs = ['calculus.cpp'],
     deps = [
+        "//lib:settings",
         "//lib/common:multitype_map",
+        "//lib/common:tagged_tuple",
         "//lib/common:traits",
         "//lib/common:twin",
         "//lib/data:context",

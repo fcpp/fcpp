@@ -90,6 +90,11 @@ class context {
         return m_data.size() + 1-m_data.count(m_self);
     }
     
+    //! @brief Whether the queue of exports is empty.
+    metric_type empty() const {
+        return m_queue.empty();
+    }
+    
     //! @brief The highest metrics contained.
     metric_type top() const {
         return m_queue.top().first;
@@ -100,6 +105,11 @@ class context {
         return m_data;
     }
     
+    //! @brief Const access to the context metrics.
+    const std::unordered_map<device_t, metric_type>& metrics() const {
+        return m_metrics;
+    }
+
     //! @brief Inserts an export for a device.
     void insert(device_t device, export_type e, metric_type m) {
         insert(device, m);

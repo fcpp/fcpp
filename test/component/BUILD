@@ -15,7 +15,10 @@ cc_test(
     srcs = ["calculus.cpp"],
     deps = [
         "@gtest//:main",
+        "//lib/common:tagged_tuple",
+        "//lib/component:base",
         "//lib/component:calculus",
+        "//lib/data:field",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

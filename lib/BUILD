@@ -24,3 +24,17 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'simulation',
+    hdrs = ['simulation.hpp'],
+    srcs = ['simulation.cpp'],
+    deps = [
+        "//lib/simulation:physical_connector",
+        "//lib/simulation:physical_position",
+        "//lib/simulation:spawner",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)

@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "lib/common/flat_ptr.hpp"
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/random_access_map.hpp"
 #include "lib/common/tagged_tuple.hpp"
@@ -24,6 +25,20 @@
  * @brief Namespace of the C++ standard library.
  */
 namespace std {
+    //! @brief Printing arrays.
+    template <typename T, size_t n>
+    std::ostream& operator<<(std::ostream& o, const std::array<T, n>& m) {
+        o << "[";
+        bool first = true;
+        for (const auto& x : m) {
+            if (not first) o << ", ";
+            o << x;
+            first = false;
+        }
+        o << "]";
+        return o;
+    }
+
     //! @brief Printing vectors.
     template <typename T>
     std::ostream& operator<<(std::ostream& o, const std::vector<T>& m) {
@@ -104,6 +119,12 @@ namespace fcpp {
 
 //! @brief Namespace containing objects of common use.
 namespace common {
+    //! @brief Printing content of flat pointers.
+    template <typename T, bool is_flat>
+    std::ostream& operator<<(std::ostream& o, const flat_ptr<T, is_flat>& p) {
+        return o << *p;
+    }
+
     //! @brief Printing multitype maps in dictionary format.
     template <typename T, typename... Ts>
     std::ostream& operator<<(std::ostream& o, const multitype_map<T, Ts...>& m) {

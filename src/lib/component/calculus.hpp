@@ -137,7 +137,8 @@ struct calculus {
             }
 
             //! @brief Performs computations at round end with current time `t`.
-            void round_end(times_t) {
+            void round_end(times_t t) {
+                P::node::round_end(t);
                 // recomputes metrics, cleaning obsolete values
                 std::unordered_map<device_t, metric_type> new_metrics;
                 for (const auto& x : m_context.metrics())

@@ -29,6 +29,7 @@ In order to get started on your machine you need the following installed:
 
 - [Bazel](https://bazel.build) (tested with versions 2.1.0+)
 - [GCC](https://gcc.gnu.org) (tested with versions 9.2.0+)
+- [Doxygen](http://www.doxygen.nl)
 
 In the `src` folder, you should be able to run `./make.sh all`, getting output about building and testing the whole library.
 

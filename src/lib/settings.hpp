@@ -43,7 +43,7 @@
 #define FCPP_CONFIGURATION_DEPENDENT  2222
 
 #ifndef FCPP_CONFIGURATION
-//! @brief Setting defining the overall environment: @ref FCPP_CONFIGURATION_STANDALONE or @ref FCPP_CONFIGURATION_DEPENDENT (default).
+//! @brief Setting defining the overall environment: @ref FCPP_CONFIGURATION_STANDALONE (default) or @ref FCPP_CONFIGURATION_DEPENDENT.
 #define FCPP_CONFIGURATION FCPP_CONFIGURATION_STANDALONE
 #endif
 
@@ -129,8 +129,10 @@
 
 #ifndef FCPP_THREADS
     #if FCPP_PARALLEL == true
+    //! @brief Setting regulating the number of threads to be used.
     #define FCPP_THREADS std::thread::hardware_concurrency()
     #else
+    //! @brief Setting regulating the number of threads to be used.
     #define FCPP_THREADS 1
     #endif
 #endif
@@ -157,8 +159,11 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+    //! @brief Type used for times.
     using times_t = FCPP_TIME_TYPE;
+    //! @brief Minimum time (infinitely in the past).
     constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
+    //! @brief Maximum time (infinitely in the future).
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
 
 #if   FCPP_DEVICE == 8

@@ -18,7 +18,7 @@ build:asan --build_tag_filters=-no_asan
 build:asan --test_tag_filters=-no_asan
 build:asan --define signal_trace=disabled
 
-build:opt --copt -Ofast
+build:opt --copt -O3
 build:opt --copt -DNDEBUG
 
 test --copt --std=c++14

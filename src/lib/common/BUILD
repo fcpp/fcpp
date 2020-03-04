@@ -83,6 +83,7 @@ cc_library(
     hdrs = ['ostream.hpp'],
     srcs = ['ostream.cpp'],
     deps = [
+        "//lib/common:flat_ptr",
         "//lib/common:multitype_map",
         "//lib/common:random_access_map",
         "//lib/common:tagged_tuple",

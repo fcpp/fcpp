@@ -34,7 +34,9 @@ namespace random {
 struct crand {
     using result_type = int;
     
-    explicit crand(result_type val = 0) {
+    crand() {}
+    
+    crand(result_type val) {
         srand(val);
     }
     

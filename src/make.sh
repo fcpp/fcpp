@@ -168,6 +168,7 @@ while [ "$1" != "" ]; do
         bazel clean
         rm -rf doc
     elif [ "$1" == "gcc" ]; then
+        shift 1
         gcc=$(which $(compgen -c | grep "^gcc-.$" | uniq))
         gpp=$(which $(compgen -c | grep "^g++-.$" | uniq))
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1

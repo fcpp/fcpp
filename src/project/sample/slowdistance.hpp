@@ -8,6 +8,8 @@
 #ifndef SLOWDISTANCE_H_
 #define SLOWDISTANCE_H_
 
+#include <cmath>
+
 #include <functional>
 #include <limits>
 
@@ -72,8 +74,8 @@ struct slowdistance {
                 P::node::template storage<tags::fastdist>()  = fastd;
                 P::node::template storage<tags::slowdist>()  = slowd;
                 P::node::template storage<tags::idealdist>() = ideal;
-                P::node::template storage<tags::fasterr>()  = abs(fastd - ideal);
-                P::node::template storage<tags::slowerr>()  = abs(slowd - ideal);
+                P::node::template storage<tags::fasterr>()  = std::abs(fastd - ideal);
+                P::node::template storage<tags::slowerr>()  = std::abs(slowd - ideal);
             }
             
           protected: // visible by node objects only

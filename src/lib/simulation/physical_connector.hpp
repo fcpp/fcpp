@@ -296,6 +296,7 @@ struct physical_connector {
             
             //! @brief Removes a node from all cells.
             void cell_leave(typename F::node& nn) {
+                if (m_nodes.size() == 0) return;
                 m_nodes.at(nn.uid)->second.erase(nn);
                 common::lock_guard<FCPP_PARALLEL> l(m_mutex);
                 m_nodes.erase(nn.uid);

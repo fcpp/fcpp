@@ -296,8 +296,8 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
     
     //! @brief Call operator returning a tagged tuple of call results.
     template <typename T>
-    tagged_tuple<type_sequence<Ss...>, type_sequence<std::result_of_t<Ts(T)>...>> operator()(T v) {
-        return make_tagged_tuple<Ss...>(get<Ss>(*this)(v)...);
+    tagged_tuple<type_sequence<Ss...>, type_sequence<std::result_of_t<Ts(T&&)>...>> operator()(T&& v) {
+        return make_tagged_tuple<Ss...>(get<Ss>(*this)(std::forward<T>(v))...);
     }
     
     //! @brief Prints the content of the tagged tuple in a given format, skipping a given set of tags.

@@ -92,6 +92,7 @@ function runner() {
     bazel run $copts $asan -- //$t "$@"
 }
 
+export TEST_TMPDIR=`pwd`
 while [ "$1" != "" ]; do
     if [ "$1" == "doc" ]; then
         shift 1

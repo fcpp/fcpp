@@ -2,6 +2,7 @@
 #*
 .#*
 bazel-*
+_bazel_*
 doc/
 .vagrant/
 .DS_Store

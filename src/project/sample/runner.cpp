@@ -1,7 +1,5 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#define FCPP_PARALLEL true
-
 #include "lib/common/aggregator.hpp"
 #include "lib/common/array.hpp"
 #include "lib/common/distribution.hpp"

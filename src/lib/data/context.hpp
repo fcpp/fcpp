@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file context.hpp
@@ -24,6 +24,12 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+
+
+/**
+ * @brief Namespace containing specific objects for the FCPP library.
+ */
+namespace data {
 
 
 /**
@@ -167,6 +173,9 @@ class context {
             m_queue.pop();
     }
 };
+
+
+}
 
 
 }

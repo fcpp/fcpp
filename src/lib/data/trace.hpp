@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file trace.hpp
@@ -11,7 +11,9 @@
 //! @brief Macro for uniquely identifying source code locations.
 #define ___ __COUNTER__
 
+#include <cassert>
 #include <cstdint>
+
 #include <vector>
 
 #include "lib/settings.hpp"
@@ -61,35 +63,23 @@ constexpr trace_t k_hash_mod = (trace_t(1)<<k_hash_len)-1;
 //! @brief Maximium value allowed for code counters.
 constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_TRACE - k_hash_len);
 
-    
-/** @brief Keeps an updated representation of the current stack trace.
+
+/**
+ * @brief Namespace containing specific objects for the FCPP library.
+ */
+namespace data {
+
+
+/**
+ * @brief Keeps an updated representation of the current stack trace.
  *
- *  The intended usage is:
- *  - for function definition and call,
- *    ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *    template<trace_t __>
- *    T func(...) {
- *        push<__>();
- *        ...
- *        pop();
- *    }
- *    ... func<___>(...) ...
- *    ~~~~~~~~~~~~~~~~~~~~~~~~~
- *  - for cycles,
- *    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *    push_cycle<___>();
- *    someway_repeating {
- *        push<___>();
- *        ....
- *    }
- *    pop_cycle();
- *    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *  - to handle branching, we follow "delayed alignment" by inserting `align`
- *    calls into conditional operators and assignments.
- *    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *    ... ? align<___>(...) : align<___>(...)
- *    ... = align<___>(...)
- *    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Should be used only indirectly through classes @ref trace_call and @ref trace_cycle.
+ * In order to handle branching, we follow "delayed alignment" by inserting `align`
+ * calls into conditional operators and assignments.
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * ... ? align(___, ...) : align(___, ...)
+ * ... = align(___, ...)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class trace {
   private:
@@ -100,7 +90,7 @@ class trace {
 
   public:
     //! @brief Constructs an empty trace.
-    trace() : m_stack(), m_stack_hash(0) {};
+    trace() : m_stack{}, m_stack_hash{0} {};
 
     //! @brief `true` if the trace is empty, `false` otherwise.
     bool empty() const {
@@ -114,48 +104,115 @@ class trace {
     }
     
     //! @brief Returns the hash together with the template argument into a @ref trace_t.
-    template<trace_t x>
-    trace_t hash() {
-        static_assert(x < k_hash_max, "code points overflow: reduce code or increase FCPP_TRACE");
+    inline trace_t hash(trace_t x) {
+        assert(x < k_hash_max and "code points overflow: reduce code or increase FCPP_TRACE");
     	return m_stack_hash + (x << k_hash_len);
     }
 
     //! @brief Add a function call to the stack trace updating the hash.
-    template<trace_t x>
-    void push() {
-        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_TRACE");
-        static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
+    inline void push(trace_t x) {
+        assert(x <= k_hash_mod and "code points overflow: reduce code or increase FCPP_TRACE");
+        assert((x < k_hash_factor or !FCPP_WARNING_TRACE) and "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
     	m_stack_hash = (m_stack_hash * k_hash_factor + x) & k_hash_mod;
     	m_stack.push_back(x);
     }
 
     //! @brief Remove the last function call from the stack trace updating the hash.
-    void pop() {
+    inline void pop() {
     	trace_t x = m_stack.back();
     	m_stack.pop_back();
     	m_stack_hash = ((m_stack_hash + k_hash_mod+1 - x) * k_hash_inverse) & k_hash_mod;
     }
+};
 
-    //! @brief Calls push with `x + k_hash_mod+1`.
-    template<trace_t x>
-    void push_cycle() {
-        static_assert(x <= k_hash_mod, "code points overflow: reduce code or increase FCPP_TRACE");
-        static_assert(x < k_hash_factor || !FCPP_WARNING_TRACE, "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
-    	push<x>();
-        m_stack.back() += k_hash_mod+1;
+
+//! @brief A global trace variable, maintained separately for different threads.
+thread_local trace thread_trace;
+#ifdef _OPENMP
+    #pragma omp threadprivate(thread_trace)
+#endif
+
+
+/**
+ * @brief Stateless class for handling trace update on function call.
+ *
+ * The intended usage is:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * T func(trace_t __, ...) {
+ *     trace_call _(__);
+ *     ...
+ * }
+ * ... func(___, ...) ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+struct trace_call {
+    /**
+     * @brief Constructor (adds elements to trace).
+     *
+     * @param x Identifier of the calling point.
+     */
+    trace_call(trace_t x) {
+        thread_trace.push(x);
     }
-
-    //! @brief Calls pop until removing value larger than @ref k_hash_mod.
-    void pop_cycle() {
-    	while (m_stack.back() <= k_hash_mod) pop();
-        m_stack.back() -= k_hash_mod+1;
-    	pop();
+    //! @brief Destructor (removes elements from trace).
+    ~trace_call() {
+        thread_trace.pop();
     }
 };
 
-    
-//! @brief A global trace variable, maintained separately for different threads.
-thread_local trace thread_trace;
+/**
+ * @brief Stateless class for handling trace update on cycles.
+ *
+ * The intended usage is:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * {
+ *     trace_cycle _;
+ *     while (...) {
+ *         ....
+ *         ++_;
+ *     }
+ * }
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Additionally, a `trace_cycle` can be directly used as a `trace_t` index:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * {
+ *     for (trace_cycle i = 1; i < N; ++i) {
+ *         ... // can use i as trace_t index here
+ *     }
+ * }
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+struct trace_cycle {
+    //! @brief Default constructor (adds a zero cycle element to the trace).
+    trace_cycle() : m_i{0} {
+        thread_trace.push(m_i);
+    }
+    //! @brief Constructor with starting index (adds a starting cycle element to the trace).
+    trace_cycle(trace_t i) : m_i{i} {
+        thread_trace.push(m_i);
+    }
+    //! @brief Destructor (removes the cycle element from the trace).
+    ~trace_cycle() {
+        thread_trace.pop();
+    }
+    //! @brief Increment operator (increases the cycle element in the trace).
+    inline trace_cycle& operator++() {
+        thread_trace.pop();
+        thread_trace.push(++m_i);
+        return *this;
+    }
+    //! @brief Returns the current cycle element.
+    inline operator trace_t() {
+        return m_i;
+    }
+
+  private:
+    //! @brief The actual cycle index.
+    trace_t m_i;
+};
+
+
+}
 
 
 }

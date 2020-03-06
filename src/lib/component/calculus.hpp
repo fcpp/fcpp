@@ -8,7 +8,6 @@
 #ifndef FCPP_COMPONENT_CALCULUS_H_
 #define FCPP_COMPONENT_CALCULUS_H_
 
-#include <functional>
 #include <limits>
 #include <unordered_map>
 
@@ -107,7 +106,7 @@ struct calculus {
             using metric_type = typename M<typename F::node>::result_type;
             
             //! @brief The type of the collection of exports from other devices.
-            using context_type = typename context<metric_type, Ts...>::export_type;
+            using context_type = typename data::context<metric_type, Ts...>::export_type;
             
             //! @brief The type of the exports of the current device (`first` is for the local device, `second` for other devices).
             using export_type = common::twin<common::multitype_map<trace_t, Ts...>, FCPP_EXPORTS == 1>;
@@ -133,7 +132,7 @@ struct calculus {
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
                 P::node::round_start(t);
-                thread_trace = trace{}; // resets the trace
+                data::thread_trace = data::trace{}; // resets the trace
             }
 
             //! @brief Performs computations at round end with current time `t`.
@@ -166,59 +165,6 @@ struct calculus {
             }
 
           protected: // visible by node objects only
-            /** @brief Stateless class for handling trace update on function call.
-             *
-             * The intended usage is:
-             * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-             * template<trace_t __>
-             * T func(...) {
-             *     trace_call<__> _;
-             *     ...
-             * }
-             * ... func<___>(...) ...
-             * ~~~~~~~~~~~~~~~~~~~~~~~~~
-             */
-            template<trace_t x>
-            struct trace_call {
-                //! @brief Constructor (adds element to trace).
-                trace_call() {
-                    thread_trace.push<x>();
-                }
-                //! @brief Destructor (removes element from trace).
-                ~trace_call() {
-                    thread_trace.pop();
-                }
-            };
-            
-            /** @brief Stateless class for handling trace update on cycles.
-             *
-             * The intended usage is:
-             * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-             * {
-             *     trace_cycle<___> _;
-             *     someway_repeating {
-             *         _();
-             *         ....
-             *     }
-             * }
-             * ~~~~~~~~~~~~~~~~~~~~~~~~~
-             */
-            template<trace_t x>
-            struct trace_cycle {
-                //! @brief Constructor (adds a cycle element to trace).
-                trace_cycle() {
-                    thread_trace.push_cycle<x>();
-                }
-                //! @brief Destructor (removes all cycle elements from trace).
-                ~trace_cycle() {
-                    thread_trace.pop_cycle();
-                }
-                //! @brief Call operator (adds a further element to trace).
-                void operator()() {
-                    thread_trace.push<x>();
-                }
-            };
-            
             //! @name field operators
             //@{
             //! @brief Selects the local value of a field.
@@ -234,17 +180,17 @@ struct calculus {
             }
 
             //! @brief Computes the restriction of a field to a given domain.
-            template <trace_t x, typename A>
-            A align(A&& f) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A>
+            A align(trace_t x, A&& f) {
+                trace_t t = data::thread_trace.hash(x);
                 m_export.second().insert(t);
                 return fcpp::details::align(std::forward<A>(f), m_context.align(t));
             }
             
             //! @brief Reduces the values in the domain of a field to a single value through a binary operation.
-            template <trace_t x, typename O, typename A>
-            local_result<O,A,A> fold_hood(O&& op, const A& f) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename O, typename A>
+            local_result<O,A,A> fold_hood(trace_t x, O&& op, const A& f) {
+                trace_t t = data::thread_trace.hash(x);
                 m_export.second().insert(t);
                 return fcpp::details::fold_hood(op, f, m_context.align(t));
             }
@@ -257,9 +203,9 @@ struct calculus {
              *
              * Equivalent to `old(f, f)`.
              */
-            template <trace_t x, typename A>
-            const A& old(const A& f) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A>
+            const A& old(trace_t x, const A& f) {
+                trace_t t = data::thread_trace.hash(x);
                 m_export.first().insert(t, f);
                 return m_context.old(t, f);
             }
@@ -273,9 +219,9 @@ struct calculus {
              * })
              * ~~~~~~~~~~~~~~~~~~~~~~~~~
              */
-            template <trace_t x, typename A>
-            const A& old(const A& f0, const A& f) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A>
+            const A& old(trace_t x, const A& f0, const A& f) {
+                trace_t t = data::thread_trace.hash(x);
                 m_export.first().insert(t, f);
                 return m_context.old(t, f0);
             }
@@ -291,9 +237,9 @@ struct calculus {
              * })
              * ~~~~~~~~~~~~~~~~~~~~~~~~~
              */
-            template <trace_t x, typename A>
-            A old(const A& f0, std::function<A(const A&)> op) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A, typename G, typename = common::if_signature<G, A(const A&)>>
+            A old(trace_t x, const A& f0, G&& op) {
+                trace_t t = data::thread_trace.hash(x);
                 A f = op(m_context.old(t, f0));
                 m_export.first().insert(t, f);
                 return std::move(f);
@@ -305,9 +251,9 @@ struct calculus {
              * The first element of the returned pair is returned by the function.
              * The second element of the returned pair is written in the exports.
              */
-            template <trace_t x, typename A, typename B>
-            B old(const A& f0, std::function<std::pair<B,A>(const A&)> op) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&)>>
+            B old(trace_t x, const A& f0, G&& op) {
+                trace_t t = data::thread_trace.hash(x);
                 std::pair<B,A> f = op(m_context.old(t, f0));
                 m_export.first().insert(t, std::move(f.second));
                 return std::move(f.first);
@@ -321,9 +267,9 @@ struct calculus {
              *
              * Equivalent to `nbr(f, f)`.
              */
-            template <trace_t x, typename A>
-            common::add_template<field, A> nbr(const A& f) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A>
+            common::add_template<field, A> nbr(trace_t x, const A& f) {
+                trace_t t = data::thread_trace.hash(x);
                 m_export.second().insert(t, f);
                 return m_context.nbr(t, f);
             }
@@ -337,9 +283,9 @@ struct calculus {
              * })
              * ~~~~~~~~~~~~~~~~~~~~~~~~~
              */
-            template <trace_t x, typename A>
-            common::add_template<field, A> nbr(const A& f0, const A& f) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A>
+            common::add_template<field, A> nbr(trace_t x, const A& f0, const A& f) {
+                trace_t t = data::thread_trace.hash(x);
                 m_export.second().insert(t, f);
                 return m_context.nbr(t, f0);
             }
@@ -355,9 +301,9 @@ struct calculus {
              * })
              * ~~~~~~~~~~~~~~~~~~~~~~~~~
              */
-            template <trace_t x, typename A>
-            A nbr(const A& f0, std::function<A(common::add_template<field, A>)> op) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A, typename G, typename = common::if_signature<G, A(common::add_template<field, A>)>>
+            A nbr(trace_t x, const A& f0, G&& op) {
+                trace_t t = data::thread_trace.hash(x);
                 A f = op(m_context.nbr(t, f0));
                 m_export.second().insert(t, f);
                 return std::move(f);
@@ -369,9 +315,9 @@ struct calculus {
              * The first element of the returned pair is returned by the function.
              * The second element of the returned pair is written in the exports.
              */
-            template <trace_t x, typename A, typename B>
-            B nbr(const A& f0, std::function<std::pair<B,A>(common::add_template<field, A>)> op) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(common::add_template<field, A>)>>
+            B nbr(trace_t x, const A& f0, G&& op) {
+                trace_t t = data::thread_trace.hash(x);
                 std::pair<B,A> f = op(m_context.nbr(t, f0));
                 m_export.second().insert(t, std::move(f.second));
                 return std::move(f.first);
@@ -392,9 +338,9 @@ struct calculus {
              * })
              * ~~~~~~~~~~~~~~~~~~~~~~~~~
              */
-            template <trace_t x, typename A>
-            A oldnbr(const A& f0, std::function<A(const A&, common::add_template<field, A>)> op) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A, typename G, typename = common::if_signature<G, A(const A&, common::add_template<field, A>)>>
+            A oldnbr(trace_t x, const A& f0, G&& op) {
+                trace_t t = data::thread_trace.hash(x);
                 A f = op(m_context.old(t, f0), m_context.nbr(t, f0));
                 m_export.second().insert(t, f);
                 return std::move(f);
@@ -406,9 +352,9 @@ struct calculus {
              * The first element of the returned pair is returned by the function.
              * The second element of the returned pair is written in the exports.
              */
-            template <trace_t x, typename A, typename B>
-            B oldnbr(const A& f0, std::function<std::pair<B,A>(const A&, common::add_template<field, A>)> op) {
-                trace_t t = thread_trace.hash<x>();
+            template <typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&, common::add_template<field, A>)>>
+            B oldnbr(trace_t x, const A& f0, G&& op) {
+                trace_t t = data::thread_trace.hash(x);
                 std::pair<B,A> f = op(m_context.old(t, f0), m_context.nbr(t, f0));
                 m_export.second().insert(t, std::move(f.second));
                 return std::move(f.first);
@@ -417,7 +363,7 @@ struct calculus {
             
           private: // implementation details
             //! @brief Map associating devices to their exports.
-            context<metric_type, Ts...> m_context;
+            data::context<metric_type, Ts...> m_context;
             
             //! @brief Exports of the current device.
             export_type m_export;

@@ -93,6 +93,26 @@ struct storage {
                 return common::get<T>(m_storage);
             }
             
+            /**
+             * @brief Write access to stored data.
+             *
+             * @param T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage(T) {
+                return common::get<T>(m_storage);
+            }
+            
+            /**
+             * @brief Const access to stored data.
+             *
+             * @param T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            const typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage(T) const {
+                return common::get<T>(m_storage);
+            }
+            
           private: // implementation details
             //! @brief The data storage.
             common::tagged_tuple_t<Ss...> m_storage;

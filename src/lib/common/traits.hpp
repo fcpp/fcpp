@@ -21,6 +21,7 @@
 #endif
 
 #include <array>
+#include <functional>
 #include <memory>
 #include <tuple>
 #include <type_traits>
@@ -487,6 +488,15 @@ namespace details {
  */
 template <class A, template<class> class... Ts>
 using nest_template = typename details::nest_template<A, Ts...>::type;
+
+
+/**
+ * @name if_signature
+ *
+ * Enables template resolution if a callable class @param G complies to a given signature @param F.
+ */
+template <typename G, typename F>
+using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value>;
 
 
 }

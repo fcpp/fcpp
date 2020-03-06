@@ -9,7 +9,6 @@
 #define FCPP_COORDINATION_SPREADING_H_
 
 #include <algorithm>
-#include <functional>
 #include <limits>
 
 #include "lib/common/tagged_tuple.hpp"
@@ -70,23 +69,26 @@ struct spreading {
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t) {}
             
           protected: // visible by node objects only
+            using P::node::fold_hood;
+            using P::node::nbr;
+            
             //! @brief Reduces the values in the domain of a field to a single value by minimum.
-            template <trace_t __, typename A>
-            A min_hood(const field<A>& f) {
-                typename P::node::template trace_call<__> _;
+            template <typename A>
+            A min_hood(trace_t __, const field<A>& f) {
+                data::trace_call _(__);
 
-                return P::node::template fold_hood<___>([] (A x, A y) {
+                return fold_hood(___, [] (A x, A y) {
                     return std::min(x, y);
                 }, f);
             }
 
             //! @brief Computes the distance from a source through adaptive bellmann-ford.
-            template<trace_t __>
-            double distance(bool source, std::function<field<double>()> metric) {
-                typename P::node::template trace_call<__> _;
+            template <typename G, typename = common::if_signature<G, field<double>()>>
+            double distance(trace_t __, bool source, G&& metric) {
+                data::trace_call _(__);
 
-                return P::node::template nbr<___, double>(std::numeric_limits<double>::infinity(), [this,source,&metric] (fcpp::field<double> d) {
-                    double r = min_hood<___>( d + metric() );
+                return nbr(___, std::numeric_limits<double>::infinity(), [this,source,&metric] (fcpp::field<double> d) {
+                    double r = min_hood(___, d + metric());
                     return source ? 0.0 : r;
                 });
             }

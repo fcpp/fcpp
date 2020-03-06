@@ -21,9 +21,10 @@ struct exposer {
     struct component : public P {
         struct node : public P::node {
             using P::node::node;
+            using P::node::distance;
             
             double hop_count(bool source) {
-                return P::node::template distance<___>(source, [](){
+                return distance(___, source, [](){
                     return fcpp::field<double>(1.0);
                 });
             }

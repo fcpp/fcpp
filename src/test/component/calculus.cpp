@@ -20,8 +20,6 @@ struct exposer {
     struct component : public P {
         struct node : public P::node {
             using P::node::node;
-            using P::node::trace_call;
-            using P::node::trace_cycle;
             using P::node::fold_hood;
             using P::node::old;
             using P::node::nbr;
@@ -29,28 +27,28 @@ struct exposer {
             using P::node::round;
             
             times_t delayed(times_t t) {
-                return P::node::template old<___>(t);
+                return old(___, t);
             }
             
             times_t delayed(times_t start, times_t t) {
-                return P::node::template old<___>(t, start);
+                return old(___, t, start);
             }
 
             int counter() {
-                return P::node::template old<___, int>(0, [](const int& o){
+                return old(___, 0, [](const int& o){
                     return o+1;
                 });
             }
-            
+
             int sharing(int x) {
-                return P::node::template fold_hood<___>([](int x, int y) {
+                return fold_hood(___, [](int x, int y) {
                     return x+y;
-                }, P::node::template nbr<___>(x));
+                }, nbr(___, x));
             }
-            
+
             int gossip(int x) {
-                return P::node::template nbr<___, int>(x, [x,this](fcpp::field<int> n){
-                    return std::max(P::node::template fold_hood<___>([](int x, int y) {
+                return nbr(___, x, [x,this](fcpp::field<int> n){
+                    return std::max(fold_hood(___, [](int x, int y) {
                         return std::max(x,y);
                     }, n), x);
                 });
@@ -96,7 +94,6 @@ TEST(CalculusTest, Size) {
     EXPECT_EQ(2, (int)d0.size());
 }
 
-
 TEST(CalculusTest, Old) {
     combo1::net  network{common::make_tagged_tuple<>()};
     combo1::node d0{network, common::make_tagged_tuple<component::tags::uid>(0)};
@@ -130,7 +127,6 @@ TEST(CalculusTest, Old) {
     d = d0.counter();
     EXPECT_EQ(3, d);
 }
-
 
 TEST(CalculusTest, Nbr) {
     combo1::net  network{common::make_tagged_tuple<>()};

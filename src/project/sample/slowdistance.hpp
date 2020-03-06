@@ -10,7 +10,6 @@
 
 #include <cmath>
 
-#include <functional>
 #include <limits>
 
 #include "lib/common/array.hpp"
@@ -65,27 +64,33 @@ struct slowdistance {
             //! @brief Performs computations at round middle with current time `t`.
             void round_main(times_t) {
                 bool source = P::node::uid == 0;
-                std::function<field<double>()> metric = [this](){
+                auto metric = [this](){
                     return P::node::nbr_dist();
                 };
-                double fastd = P::node::template distance<___>(source, metric);
-                double slowd = slowdistance<___>(source, metric);
+                double fastd = distance(___, source, metric);
+                double slowd = slowdistance(___, source, metric);
                 double ideal = std::norm(P::node::net.node_at(0).position() - P::node::position());
-                P::node::template storage<tags::fastdist>()  = fastd;
-                P::node::template storage<tags::slowdist>()  = slowd;
-                P::node::template storage<tags::idealdist>() = ideal;
-                P::node::template storage<tags::fasterr>()  = std::abs(fastd - ideal);
-                P::node::template storage<tags::slowerr>()  = std::abs(slowd - ideal);
+                storage(tags::fastdist{})  = fastd;
+                storage(tags::slowdist{})  = slowd;
+                storage(tags::idealdist{}) = ideal;
+                storage(tags::fasterr{})   = std::abs(fastd - ideal);
+                storage(tags::slowerr{})   = std::abs(slowd - ideal);
             }
             
           protected: // visible by node objects only
+            using P::node::old;
+            using P::node::nbr;
+            using P::node::min_hood;
+            using P::node::distance;
+            using P::node::storage;
+            
             //! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
-            template<trace_t __>
-            double slowdistance(bool source, std::function<field<double>()> metric) {
-                typename P::node::template trace_call<__> _;
+            template <typename G, typename = common::if_signature<G, field<double>()>>
+            double slowdistance(trace_t __, bool source, G&& metric) {
+                data::trace_call _(__);
 
-                return P::node::template old<___, double>(std::numeric_limits<double>::infinity(), [this,source,&metric] (double d) {
-                    double r = P::node::template min_hood<___>( P::node::template nbr<___>(d) + metric() );
+                return old(___, std::numeric_limits<double>::infinity(), [this,source,&metric] (double d) {
+                    double r = min_hood(___, nbr(___, d) + metric());
                     return source ? 0.0 : r;
                 });
             }

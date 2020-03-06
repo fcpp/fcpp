@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <unordered_set>
 #include <utility>
@@ -22,13 +22,13 @@ class ContextTest : public ::testing::Test {
         data.insert(1, m, 0.5);
     }
     
-    common::multitype_map<fcpp::trace_t, fcpp::field<int>, char> m;
-    fcpp::context<double, fcpp::field<int>, char> data{0};
+    common::multitype_map<trace_t, fcpp::field<int>, char> m;
+    data::context<double, fcpp::field<int>, char> data{0};
 };
 
 
 TEST_F(ContextTest, Operators) {
-    fcpp::context<double, fcpp::field<int>, char> x(data), y(-1), z(-1);
+    data::context<double, fcpp::field<int>, char> x(data), y(-1), z(-1);
     z = y;
     y = x;
     z = std::move(y);
@@ -36,9 +36,9 @@ TEST_F(ContextTest, Operators) {
 }
 
 TEST_F(ContextTest, InsertErase) {
-    fcpp::context<double, fcpp::field<int>, char> x(data);
+    data::context<double, fcpp::field<int>, char> x(data);
     x.insert(2, m, 0.3);
-    EXPECT_EQ(fcpp::device_t(0), x.self());
+    EXPECT_EQ(device_t(0), x.self());
     EXPECT_EQ(size_t(3), x.size());
     EXPECT_EQ(0.5, x.top());
     for (const auto& p : x.data())
@@ -58,11 +58,11 @@ TEST_F(ContextTest, InsertErase) {
 TEST_F(ContextTest, Align) {
     m.insert(9);
     data.insert(2, m, 1.0);
-    std::unordered_set<fcpp::device_t> ex, res;
-    ex = std::unordered_set<fcpp::device_t>{0,1,2};
+    std::unordered_set<device_t> ex, res;
+    ex = std::unordered_set<device_t>{0,1,2};
     res = data.align(8);
     EXPECT_EQ(ex, res);
-    ex = std::unordered_set<fcpp::device_t>{0,2};
+    ex = std::unordered_set<device_t>{0,2};
     res = data.align(9);
     EXPECT_EQ(ex, res);
 }

@@ -12,10 +12,10 @@
 #include "lib/component/calculus.hpp"
 #include "lib/component/identifier.hpp"
 #include "lib/component/storage.hpp"
-#include "lib/simulation/physical_position.hpp"
 #include "lib/coordination/spreading.hpp"
 #include "lib/data/field.hpp"
 #include "lib/data/trace.hpp"
+#include "lib/simulation/physical_position.hpp"
 
 #include "project/sample/slowdistance.hpp"
 
@@ -61,9 +61,16 @@ void round(times_t t, combo::net& network) {
 }
 
 void sendto(times_t t, combo::net& network, device_t source, device_t dest) {
-    common::unique_lock<FCPP_PARALLEL> l1, l2;
-    message_t m;
-    network.node_at(dest, l2).receive(t, source, network.node_at(source, l1).send(t, dest, m));
+    if (source != dest) {
+        common::unique_lock<FCPP_PARALLEL> l1, l2;
+        message_t m;
+        network.node_at(dest, l2).receive(t, source, network.node_at(source, l1).send(t, dest, m));
+    } else {
+        common::unique_lock<FCPP_PARALLEL> l;
+        message_t m;
+        auto& n = network.node_at(dest, l);
+        n.receive(t, source, n.send(t, dest, m));
+    }
 }
 
 void sendto(times_t t, combo::net& network) {

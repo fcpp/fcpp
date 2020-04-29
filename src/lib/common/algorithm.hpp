@@ -9,7 +9,6 @@
 #define FCPP_COMMON_ALGORITHM_H_
 
 #include <algorithm>
-#include <functional>
 #include <iterator>
 #include <thread>
 #include <type_traits>

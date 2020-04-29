@@ -1,23 +1,6 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include "lib/common/aggregator.hpp"
-#include "lib/common/array.hpp"
-#include "lib/common/distribution.hpp"
-#include "lib/common/sequence.hpp"
-#include "lib/common/tagged_tuple.hpp"
-#include "lib/component/base.hpp"
-#include "lib/component/calculus.hpp"
-#include "lib/component/exporter.hpp"
-#include "lib/component/identifier.hpp"
-#include "lib/component/randomizer.hpp"
-#include "lib/component/scheduler.hpp"
-#include "lib/component/storage.hpp"
-#include "lib/simulation/physical_connector.hpp"
-#include "lib/simulation/physical_position.hpp"
-#include "lib/simulation/spawner.hpp"
-#include "lib/coordination/spreading.hpp"
-#include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
+#include "lib/fcpp.hpp"
 
 #include "project/sample/slowdistance.hpp"
 

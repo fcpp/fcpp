@@ -231,7 +231,10 @@ struct physical_connector {
                             for (typename F::node* nn : *c)
                                 if (P::node::net.connection_success(m_data, P::node::position(t), nn->m_data, nn->position(t))) {
                                     typename F::node::message_t m;
-                                    nn->receive(t, P::node::uid, P::node::as_final().send(t, nn->uid, m));
+                                    if (nn != this) {
+                                        common::unique_lock<FCPP_PARALLEL> l(nn->mutex);
+                                        nn->receive(t, P::node::uid, P::node::as_final().send(t, nn->uid, m));
+                                    } else nn->receive(t, P::node::uid, P::node::as_final().send(t, nn->uid, m));
                                 }
                     }
                 } else P::node::update();

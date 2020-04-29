@@ -9,6 +9,9 @@
 #define FCPP_COMPONENT_H_
 
 #include "lib/component/base.hpp"
+#include "lib/component/calculus.hpp"
+#include "lib/component/exporter.hpp"
+#include "lib/component/identifier.hpp"
 #include "lib/component/randomizer.hpp"
 #include "lib/component/scheduler.hpp"
 #include "lib/component/storage.hpp"

@@ -8,8 +8,10 @@
 #ifndef FCPP_FCPP_H_
 #define FCPP_FCPP_H_
 
+#include "lib/common.hpp"
 #include "lib/component.hpp"
 #include "lib/coordination.hpp"
+#include "lib/data.hpp"
 #include "lib/settings.hpp"
 #include "lib/simulation.hpp"
 

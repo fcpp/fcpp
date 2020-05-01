@@ -34,3 +34,15 @@ cc_test(
     args = ['--gtest_color=yes'],
     timeout = 'short',
 )
+
+cc_test(
+    name = "tuple",
+    srcs = ["tuple.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/data:tuple",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)

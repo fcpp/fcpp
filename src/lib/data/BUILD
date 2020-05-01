@@ -38,3 +38,13 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'tuple',
+    hdrs = ['tuple.hpp'],
+    srcs = ['tuple.cpp'],
+    deps = [],
+    visibility = [
+        '//visibility:public',
+    ],
+)

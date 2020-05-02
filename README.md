@@ -1,11 +1,11 @@
-# FCPP - Field Calculus++
+# FCPP - FieldCalc++
 
-FCPP is a C++14 implementation of the Pure Field Calculus, for fast and effective simulation of pervasive computing scenarios.
-Documentation of the API is available [here](brokenlink).
+An efficient C++14 implementation of the Pure Field Calculus, for fast and effective simulation of pervasive computing scenarios, and deployment on microcontroller architectures.
+Documentation of the API is available [here](http://fcpp-doc.surge.sh).
 
 #### Status Badges
 
-[![Build Status](https://travis-ci.org/Harniver/fcpp.svg?branch=master)](https://travis-ci.org/Harniver/fcpp)
+[![Build Status](https://travis-ci.com/fcpp/fcpp.svg?branch=master)](https://travis-ci.com/fcpp/fcpp)
 
 ## Getting Started
 

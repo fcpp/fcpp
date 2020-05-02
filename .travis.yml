@@ -29,3 +29,9 @@ before_script:
 
 script:
 - ./make.sh all
+
+deploy:
+  provider: surge
+  project: ./src/doc/html/
+  domain: fcpp-doc.surge.sh
+  skip_cleanup: true

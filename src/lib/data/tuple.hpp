@@ -267,25 +267,25 @@ namespace details {
 
     //! @brief Macros defining every operator on a tuple_wrapper pointwise on the referenced tuple.
     //! @{
-    #define _DEF_UOP(op)                                                    \
-    template <typename T, size_t... is>                                     \
-    auto operator op(tuple_wrapper<T, std::index_sequence<is...>> x) {      \
-        return fcpp::make_tuple((op get<is>(x.tuple()))...);                      \
+    #define _DEF_UOP(op)                                                        \
+    template <typename T, size_t... is>                                         \
+    auto operator op(tuple_wrapper<T, std::index_sequence<is...>> x) {          \
+        return fcpp::make_tuple((op get<is>(x.tuple()))...);                    \
     }
 
-    #define _DEF_BOP(op)                                                    \
-    template <typename T, typename U, size_t... is>                         \
-    auto operator op(tuple_wrapper<T, std::index_sequence<is...>> x,        \
-                    tuple_wrapper<U, std::index_sequence<is...>> y) {       \
-        return fcpp::make_tuple((get<is>(x.tuple()) op get<is>(y.tuple()))...);   \
+    #define _DEF_BOP(op)                                                        \
+    template <typename T, typename U, size_t... is>                             \
+    auto operator op(tuple_wrapper<T, std::index_sequence<is...>> x,            \
+                     tuple_wrapper<U, std::index_sequence<is...>> y) {          \
+        return fcpp::make_tuple((get<is>(x.tuple()) op get<is>(y.tuple()))...); \
     }
 
-    #define _DEF_IOP(op)                                                    \
-    template <typename T, typename U, size_t... is>                         \
-    auto operator op##=(tuple_wrapper<T, std::index_sequence<is...>> x,     \
-                     tuple_wrapper<U, std::index_sequence<is...>> y) {      \
-        ignore_args((get<is>(x.tuple()) op##= get<is>(y.tuple()))...);      \
-        return x.tuple();                                                   \
+    #define _DEF_IOP(op)                                                        \
+    template <typename T, typename U, size_t... is>                             \
+    auto operator op##=(tuple_wrapper<T, std::index_sequence<is...>> x,         \
+                        tuple_wrapper<U, std::index_sequence<is...>> y) {       \
+        ignore_args((get<is>(x.tuple()) op##= get<is>(y.tuple()))...);          \
+        return x.tuple();                                                       \
     }
 
     _DEF_UOP(+)

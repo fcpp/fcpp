@@ -163,7 +163,7 @@ class context {
         for (const auto& x : m_data)
             if (x.second->template count<A>(trace))
                 m[x.first] = details::self(x.second->template at<A>(trace), m_self);
-        return details::make_field(other(def), m);
+        return details::make_field(details::other(def), m);
     }
     
   private:

@@ -21,6 +21,7 @@ cc_library(
     deps = [
         "//lib:settings",
         "//lib/common:traits",
+        "//lib/data:tuple",
     ],
     visibility = [
         '//visibility:public',

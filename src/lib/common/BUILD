@@ -87,6 +87,7 @@ cc_library(
         "//lib/common:multitype_map",
         "//lib/common:random_access_map",
         "//lib/common:tagged_tuple",
+        "//lib/data:tuple",
     ],
     visibility = [
         '//visibility:public',

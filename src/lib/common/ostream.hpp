@@ -19,6 +19,7 @@
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/random_access_map.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/data/tuple.hpp"
 
 
 /**
@@ -36,6 +37,46 @@ namespace std {
             first = false;
         }
         o << "]";
+        return o;
+    }
+
+    //! @cond INTERNAL
+    namespace details {
+        void print(std::ostream&) {}
+    
+        template <typename T>
+        void print(std::ostream& o, const T& x) {
+            o << x;
+        }
+
+        template <typename T, typename... Ts>
+        void print(std::ostream& o, const T& x, const Ts&... xs) {
+            o << x << "; ";
+            print(o, xs...);
+        }
+    
+        template <typename T, size_t... is>
+        void print(std::ostream& o, const T& x, std::index_sequence<is...>) {
+            print(o, get<is>(x)...);
+        }
+    }
+    //! @endcond
+
+    //! @brief Printing pairs.
+    template <typename T, typename U>
+    std::ostream& operator<<(std::ostream& o, const std::pair<T, U>& m) {
+        o << "(";
+        details::print(o, m.first, m.second);
+        o << ")";
+        return o;
+    }
+
+    //! @brief Printing tuples.
+    template <typename... Ts>
+    std::ostream& operator<<(std::ostream& o, const std::tuple<Ts...>& m) {
+        o << "(";
+        details::print(o, m, std::make_index_sequence<sizeof...(Ts)>{});
+        o << ")";
         return o;
     }
 
@@ -115,7 +156,14 @@ namespace std {
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-
+//! @brief Printing tuples.
+template <typename... Ts>
+std::ostream& operator<<(std::ostream& o, const tuple<Ts...>& m) {
+    o << "(";
+    std::details::print(o, m, std::make_index_sequence<sizeof...(Ts)>{});
+    o << ")";
+    return o;
+}
 
 //! @brief Namespace containing objects of common use.
 namespace common {
@@ -125,7 +173,7 @@ namespace common {
         return o << *p;
     }
 
-    //! @brief Printing multitype maps in dictionary format.
+    //! @brief Printing multitype maps in arrowhead format.
     template <typename T, typename... Ts>
     std::ostream& operator<<(std::ostream& o, const multitype_map<T, Ts...>& m) {
         o << "(";
@@ -148,7 +196,7 @@ namespace common {
         return o;
     }
 
-    //! @brief Printing tagged tuples in dictionary format.
+    //! @brief Printing tagged tuples in arrowhead format.
     template <typename S, typename T>
     std::ostream& operator<<(std::ostream& o, const tagged_tuple<S,T>& t) {
         o << "(";

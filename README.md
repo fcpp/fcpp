@@ -5,9 +5,11 @@ Documentation of the API is available [here](http://fcpp-doc.surge.sh).
 
 #### Status Badges
 
-master:
+#### Stable branch
 [![Build Status](https://travis-ci.com/fcpp/fcpp.svg?branch=master)](https://travis-ci.com/fcpp/fcpp)
-dev:
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/90634407d674499cb62da7d7d74e8b42)](https://app.codacy.com/gh/fcpp/fcpp?utm_source=github.com&utm_medium=referral&utm_content=fcpp/fcpp&utm_campaign=Badge_Grade_Dashboard)
+
+#### Development branch
 [![Build Status](https://travis-ci.com/fcpp/fcpp.svg?branch=dev)](https://travis-ci.com/fcpp/fcpp/branches)
 
 ## Getting Started

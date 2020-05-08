@@ -57,10 +57,46 @@ TEST(TupleTest, Operators) {
     u = tuple<int,double>{s} + tuple<int,double>{t};
     EXPECT_EQ(10,   get<0>(u));
     EXPECT_EQ(12.0, get<1>(u));
-    auto x = (s <= u);
-    EXPECT_EQ(true, get<0>(x));
-    EXPECT_EQ(true, get<1>(x));
+    bool x = (s <= u);
     EXPECT_TRUE(x);
+}
+
+struct boolwrap {
+    boolwrap(bool b) : x(b) {}
+    
+    operator bool() const {
+        return x;
+    }
+    
+    boolwrap operator==(const boolwrap& c) const {
+        return {x == c.x};
+    }
+    boolwrap operator<(const boolwrap& c) const {
+        return {x < c.x};
+    }
+
+    bool x;
+};
+
+TEST(TupleTest, Relational) {
+    bool b;
+    b = details::lexical_order<tuple<int,bool>, tuple<double,char>>::value;
+    EXPECT_TRUE(b);
+    b = details::lexical_order<tuple<boolwrap,bool>, tuple<boolwrap,char>>::value;
+    EXPECT_FALSE(b);
+    b = tuple<int,int>{2,4} < tuple<int,int>{3,2};
+    EXPECT_TRUE(b);
+    b = tuple<int,int,int>{4,2,4} < tuple<int,int,double>{4,3,2};
+    EXPECT_TRUE(b);
+    b = tuple<int,int,int>{4,2,4} >= tuple<int,int,int>{4,3,2};
+    EXPECT_FALSE(b);
+    b = tuple<int,int,int>{4,2,4} <= tuple<int,int,int>{4,2,4};
+    EXPECT_TRUE(b);
+    tuple<boolwrap,bool> t{{true}, false};
+    EXPECT_EQ(t, false);
+    t = tuple<boolwrap,int>{{false}, 2} < tuple<boolwrap,double>{{true}, 1};
+    EXPECT_EQ(get<0>(t), boolwrap{true});
+    EXPECT_EQ(get<1>(t), false);
 }
 
 TEST(TupleTest, NestedTuples) {

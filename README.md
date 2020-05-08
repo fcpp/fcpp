@@ -5,7 +5,10 @@ Documentation of the API is available [here](http://fcpp-doc.surge.sh).
 
 #### Status Badges
 
+master:
 [![Build Status](https://travis-ci.com/fcpp/fcpp.svg?branch=master)](https://travis-ci.com/fcpp/fcpp)
+dev:
+[![Build Status](https://travis-ci.com/fcpp/fcpp.svg?branch=dev)](https://travis-ci.com/fcpp/fcpp/branches)
 
 ## Getting Started
 

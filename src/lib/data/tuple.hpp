@@ -11,11 +11,22 @@
 #include <tuple>
 #include <type_traits>
 
+#include "lib/common/traits.hpp"
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+
+
+//! @cond INTERNAL
+template <typename... Ts> class tuple;
+
+namespace details {
+    template <bool b, typename... Ts> class tuple_base {};
+}
+//! @endcond
 
 
 /**
@@ -24,7 +35,7 @@ namespace fcpp {
 //! @{
 //! @brief General case.
 template <typename... Ts>
-class tuple {
+class tuple : public details::tuple_base<common::all_true<std::is_convertible<Ts,bool>::value...>, Ts...> {
     //! @cond INTERNAL
     template <typename... Us> friend class tuple;
     //! @endcond
@@ -46,9 +57,9 @@ class tuple {
     tuple(tuple<Us...>&& t) : m_tuple(std::move(t.m_tuple)) {}
     //! @brief Initialization copy constructor.
     tuple(const Ts&... xs) : m_tuple(xs...) {}
-    //! @brief Initialization move and convert constructor.
+    //! @brief Initialization convert constructor.
     template <typename... Us, typename = std::enable_if_t<sizeof...(Us) >= 2>>
-    tuple(Us&&... xs) : m_tuple(std::move(xs)...) {}
+    tuple(Us&&... xs) : m_tuple(std::forward<Us>(xs)...) {}
     //! @}
     
     //! @brief assignment
@@ -114,6 +125,24 @@ class tuple<> {
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Additional cast to bool for a tuple of bool-convertible types
+    template <typename... Ts>
+    class tuple_base<true, Ts...> {
+      public:
+        operator bool() const {
+            return all_true(std::make_index_sequence<sizeof...(Ts)>{});
+        }
+        
+      private:
+        template <size_t... is>
+        bool all_true(std::index_sequence<is...>) const {
+            const std::tuple<Ts...>& t = *((const std::tuple<Ts...>*)this);
+            std::array<bool, sizeof...(Ts)> v = {((bool)std::get<is>(t))...};
+            for (bool b : v) if (not b) return false;
+            return true;
+        }
+    };
+
     //! @brief Helper class unwrapping `std::reference_wrapper` objects (general case).
     template <typename T>
     struct unwrap_refwrapper {
@@ -164,6 +193,13 @@ tuple<details::special_decay_t<Ts>...> make_tuple(Ts&&... xs) {
 //! @brief Construct a `tuple` suitable to be forwarded as argument to a function, as `std::forward_as_tuple`.
 template <typename... Ts>
 constexpr tuple<Ts&&...> forward_as_tuple(Ts&&... xs) noexcept {
+    return {std::forward<Ts>(xs)...};
+}
+
+
+//! @brief Construct a `tuple` referencing lvalues and moving rvalues.
+template <typename... Ts>
+constexpr tuple<Ts...> capture_as_tuple(Ts&&... xs) noexcept {
     return {std::forward<Ts>(xs)...};
 }
 

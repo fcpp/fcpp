@@ -60,6 +60,7 @@ TEST(TupleTest, Operators) {
     auto x = (s <= u);
     EXPECT_EQ(true, get<0>(x));
     EXPECT_EQ(true, get<1>(x));
+    EXPECT_TRUE(x);
 }
 
 TEST(TupleTest, NestedTuples) {

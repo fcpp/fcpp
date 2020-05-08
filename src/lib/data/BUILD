@@ -43,7 +43,9 @@ cc_library(
     name = 'tuple',
     hdrs = ['tuple.hpp'],
     srcs = ['tuple.cpp'],
-    deps = [],
+    deps = [
+        "//lib/common:traits",
+    ],
     visibility = [
         '//visibility:public',
     ],

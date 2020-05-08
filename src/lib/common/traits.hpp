@@ -39,11 +39,59 @@ namespace fcpp {
 namespace common {
 
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief Representation of constness and value type of a type.
+    //! @{
+    //! @brief base case.
+    template <typename T>
+    struct reference_string {
+        inline static std::string mangled() {
+            return "";
+        }
+        inline static std::string demangled() {
+            return "";
+        }
+    };
+    //! @brief const case.
+    template <typename T>
+    struct reference_string<const T> {
+        inline static std::string mangled() {
+            return "K";
+        }
+        inline static std::string demangled() {
+            return " const";
+        }
+    };
+    //! @brief lvalue reference case.
+    template <typename T>
+    struct reference_string<T&> {
+        inline static std::string mangled() {
+            return "R" + reference_string<T>::mangled();
+        }
+        inline static std::string demangled() {
+            return reference_string<T>::demangled() + "&";
+        }
+    };
+    //! @brief rvalue reference case.
+    template <typename T>
+    struct reference_string<T&&> {
+        inline static std::string mangled() {
+            return "O" + reference_string<T>::mangled();
+        }
+        inline static std::string demangled() {
+            return reference_string<T>::demangled() + "&&";
+        }
+    };
+    //! @}
+}
+//! @endcond
+
 #ifdef NABI
 //! @brief Returns the string representation of a type `T`.
 template <typename T>
 std::string type_name() {
-    return typeid(T).name();
+    return details::reference_string<T>::mangled() + typeid(T).name();
 }
 #else
 //! @brief Returns the string representation of a type `T`.
@@ -52,9 +100,15 @@ std::string type_name() {
     int status = 42;
     const char* name = typeid(T).name();
     std::unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
-    return (status==0) ? res.get() : name;
+    return (status==0) ? res.get() + details::reference_string<T>::demangled() : details::reference_string<T>::mangled() + name;
 }
 #endif
+
+//! @brief Returns the string representation of the type of the argument.
+template <typename T>
+std::string type_name(T&&) {
+    return type_name<T>();
+}
 
 
 /**
@@ -344,10 +398,82 @@ constexpr bool some_false = not all_true<v...>;
 
 
 /**
+ * @name is_sized_template
+ *
+ * Constant which is true if and only if the second (type) parameter is an instantiation of the first (template) parameter with class arguments.
+ */
+//! @{
+//! @brief False in general.
+template <template<class,size_t> class T, class A>
+constexpr bool is_sized_template = false;
+
+//! @brief Ignore constness.
+template <template<class,size_t> class T, class A>
+constexpr bool is_sized_template<T, const A> = is_sized_template<T, A>;
+
+//! @brief Ignore lvalue references.
+template <template<class,size_t> class T, class A>
+constexpr bool is_sized_template<T, A&> = is_sized_template<T, A>;
+
+//! @brief Ignore rvalue references.
+template <template<class,size_t> class T, class A>
+constexpr bool is_sized_template<T, A&&> = is_sized_template<T, A>;
+
+//! @brief True if second parameter is of the form T<A,N>.
+template <template<class,size_t> class T, class A, size_t N>
+constexpr bool is_sized_template<T, T<A, N>> = true;
+//! @}
+
+//! @brief Enables if type is instance of a sized template.
+template <template<class,size_t> class T, class A, class B = void>
+using if_sized_template = std::enable_if_t<is_sized_template<T, A>, B>;
+
+//! @brief Enables if type is instance of a sized template.
+template <template<class,size_t> class T, class A, class B = void>
+using ifn_sized_template = std::enable_if_t<not is_sized_template<T, A>, B>;
+
+
+/**
+ * @name is_class_template
+ *
+ * Constant which is true if and only if the second (type) parameter is an instantiation of the first (template) parameter with class arguments.
+ */
+//! @{
+//! @brief False in general.
+template <template<class...> class T, class A>
+constexpr bool is_class_template = false;
+
+//! @brief Ignore constness.
+template <template<class...> class T, class A>
+constexpr bool is_class_template<T, const A> = is_class_template<T, A>;
+
+//! @brief Ignore lvalue references.
+template <template<class...> class T, class A>
+constexpr bool is_class_template<T, A&> = is_class_template<T, A>;
+
+//! @brief Ignore rvalue references.
+template <template<class...> class T, class A>
+constexpr bool is_class_template<T, A&&> = is_class_template<T, A>;
+
+//! @brief True if second parameter is of the form T<A>.
+template <template<class...> class T, class... A>
+constexpr bool is_class_template<T, T<A...>> = true;
+//! @}
+
+//! @brief Enables if type is instance of a class template.
+template <template<class...> class T, class A, class B = void>
+using if_class_template = std::enable_if_t<is_class_template<T, A>, B>;
+
+//! @brief Enables if type is not instance of a class template.
+template <template<class...> class T, class A, class B = void>
+using ifn_class_template = std::enable_if_t<not is_class_template<T, A>, B>;
+
+
+/**
  * @name has_template
  *
- * Constant which is true if and only if the second (type) parameter is built through arrays and tuples
- * from specializations of the first (template) parameter.
+ * Constant which is true if and only if the second (type) parameter is built through array-like
+ * and tuple-like classes from specializations of the first (template) parameter.
  */
 //@{
 //! @brief False in general.
@@ -370,124 +496,319 @@ constexpr bool has_template<T, A&&> = has_template<T, A>;
 template <template<class...> class T, class... A>
 constexpr bool has_template<T, T<A...>> = true;
 
-//! @brief Recurse on std::array value type arguments.
-template <template<class...> class T, class A, size_t N>
-constexpr bool has_template<T, std::array<A, N>> = has_template<T, A>;
+//! @brief Recurse on tuple-like type arguments.
+template <template<class...> class T, template<class...> class U, class... A>
+constexpr bool has_template<T, U<A...>> = some_true<has_template<T, A>...>;
 
-//! @brief Recurse on std::tuple value type arguments.
-template <template<class...> class T, class... A>
-constexpr bool has_template<T, std::tuple<A...>> = some_true<has_template<T, A>...>;
-//@}
+//! @brief Recurse on array-like type arguments.
+template <template<class...> class T, template<class,size_t> class U, class A, size_t N>
+constexpr bool has_template<T, U<A, N>> = has_template<T, A>;
 
 
 //! @cond INTERNAL
 namespace details {
-    // If no occurrences of the template are present.
+    //! @brief General form.
     template <template<class> class T, class A>
-    struct del_template {
-        typedef A type;
-    };
-    
-    // Propagate constness.
+    struct extract_template;
+
+    //! @brief Base case assuming no occurrences of the template.
     template <template<class> class T, class A>
-    struct del_template<T, const A> {
-        typedef const typename del_template<T, A>::type type;
-    };
-    
-    // Propagate lvalue references.
-    template <template<class> class T, class A>
-    struct del_template<T, A&> {
-        typedef typename del_template<T, A>::type& type;
-    };
-    
-    // Propagate rvalue references.
-    template <template<class> class T, class A>
-    struct del_template<T, A&&> {
-        typedef typename del_template<T, A>::type&& type;
-    };
-    
-    // If the second parameter is of the form T<A>.
-    template <template<class> class T, class A>
-    struct del_template<T, T<A>> {
-        typedef A type;
+    struct extract_missing_template {
+        using type = const A;
     };
 
-    // Removes occurrences from the argument of an std::array value type.
-    template <template<class> class T, class A, size_t N>
-    struct del_template<T, std::array<A, N>> {
-        typedef std::array<typename del_template<T, A>::type, N> type;
+    //! @brief Propagate constness assuming no occurrences of the template.
+    template <template<class> class T, class A>
+    struct extract_missing_template<T, const A> {
+        using type = const typename extract_missing_template<T, A>::type;
     };
 
-    // Removes occurrences from the arguments of an std::tuple value types.
-    template <template<class> class T, class... A>
-    struct del_template<T, std::tuple<A...>> {
-        typedef std::tuple<typename del_template<T, A>::type...> type;
+    //! @brief Propagate lvalue references assuming no occurrences of the template.
+    template <template<class> class T, class A>
+    struct extract_missing_template<T, A&> {
+        using type = typename extract_missing_template<T, A>::type&;
+    };
+
+    //! @brief Propagate rvalue references assuming no occurrences of the template.
+    template <template<class> class T, class A>
+    struct extract_missing_template<T, A&&> {
+        using type = typename extract_missing_template<T, A>::type&&;
+    };
+
+    //! @brief Base case assuming occurrences of the template are present.
+    template <template<class> class T, class A>
+    struct extract_present_template {
+        using type = void;
+    };
+
+    //! @brief Propagate const assuming occurrences of the template are present.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct extract_present_template<T, const U<A...>> {
+        using type = typename extract_present_template<T, U<const A...>>::type;
+    };
+
+    //! @brief Propagate & assuming occurrences of the template are present.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct extract_present_template<T, U<A...>&> {
+        using type = typename extract_present_template<T, U<A&...>>::type;
+    };
+
+    //! @brief Propagate const& assuming occurrences of the template are present.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct extract_present_template<T, const U<A...>&> {
+        using type = typename extract_present_template<T, U<const A&...>>::type;
+    };
+
+    //! @brief Propagate && assuming occurrences of the template are present.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct extract_present_template<T, U<A...>&&> {
+        using type = typename extract_present_template<T, U<A&&...>>::type;
+    };
+
+    //! @brief Propagate const&& assuming occurrences of the template are present.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct extract_present_template<T, const U<A...>&&> {
+        using type = typename extract_present_template<T, U<const A&&...>>::type;
+    };
+
+    //! @brief If the second parameter is of the form T<A>.
+    template <template<class> class T, class A>
+    struct extract_present_template<T, T<A>> {
+        using type = A;
+    };
+
+    //! @brief Removes occurrences from the arguments of a tuple-like type.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct extract_present_template<T, U<A...>> {
+        using type = U<typename extract_template<T, A>::type...>;
+    };
+
+    //! @brief Propagate const assuming occurrences of the template are present.
+    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
+    struct extract_present_template<T, const U<A, N>> {
+        using type = typename extract_present_template<T, U<const A, N>>::type;
+    };
+
+    //! @brief Propagate & assuming occurrences of the template are present.
+    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
+    struct extract_present_template<T, U<A, N>&> {
+        using type = typename extract_present_template<T, U<A&, N>>::type;
+    };
+
+    //! @brief Propagate const& assuming occurrences of the template are present.
+    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
+    struct extract_present_template<T, const U<A, N>&> {
+        using type = typename extract_present_template<T, U<const A&, N>>::type;
+    };
+
+    //! @brief Propagate && assuming occurrences of the template are present.
+    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
+    struct extract_present_template<T, U<A, N>&&> {
+        using type = typename extract_present_template<T, U<A&&, N>>::type;
+    };
+
+    //! @brief Propagate const&& assuming occurrences of the template are present.
+    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
+    struct extract_present_template<T, const U<A, N>&&> {
+        using type = typename extract_present_template<T, U<const A&&, N>>::type;
+    };
+
+    //! @brief Removes occurrences from the argument of an array-like type.
+    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
+    struct extract_present_template<T, U<A, N>> {
+        using type = U<typename extract_template<T, A>::type, N>;
+    };
+
+    //! @brief Base case if no occurrences of the template are present.
+    template <template<class> class T, class A>
+    struct extract_template {
+        using type = std::conditional_t<
+                        has_template<T, A>,
+                        typename extract_present_template<T, A>::type,
+                        typename extract_missing_template<T, A>::type
+                     >;
     };
 }
 //! @endcond
 
+/**
+ * @brief Deletes occurrences of the first (template) parameter within the second (type) parameter, which is built through array-like and tuple-like classes, adding constness where the template is not present.
+ */
+template <template<class> class T, class A>
+using extract_template = typename details::extract_template<T, A>::type;
+
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief If no occurrences of the template are present.
+    template <template<class> class T, class A>
+    struct del_template {
+        using type = A;
+    };
+    
+    //! @brief Propagate constness.
+    template <template<class> class T, class A>
+    struct del_template<T, const A> {
+        using type = const typename del_template<T, A>::type;
+    };
+    
+    //! @brief Propagate lvalue references.
+    template <template<class> class T, class A>
+    struct del_template<T, A&> {
+        using type = typename del_template<T, A>::type&;
+    };
+    
+    //! @brief Propagate rvalue references.
+    template <template<class> class T, class A>
+    struct del_template<T, A&&> {
+        using type = typename del_template<T, A>::type&&;
+    };
+    
+    //! @brief If the second parameter is of the form T<A>.
+    template <template<class> class T, class A>
+    struct del_template<T, T<A>> {
+        using type = A;
+    };
+
+    //! @brief Removes occurrences from the arguments of a tuple-like type.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct del_template<T, U<A...>> {
+        using type = U<typename del_template<T, A>::type...>;
+    };
+
+    //! @brief Removes occurrences from the argument of an array-like type.
+    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
+    struct del_template<T, U<A, N>> {
+        using type = U<typename del_template<T, A>::type, N>;
+    };
+}
+//! @endcond
 
 /**
- * @brief Deletes occurrences of the first (template) parameter within the second (type) parameter, which is built through arrays and tuples.
+ * @brief Deletes occurrences of the first (template) parameter within the second (type) parameter, which is built through array-like and tuple-like classes.
  */
 template <template<class> class T, class A>
 using del_template = typename details::del_template<T, A>::type;
 
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief General case.
+    template <template<class> class T, class A>
+    struct add_template {
+        using type = T<typename del_template<T, A>::type>;
+    };
+    
+    //! @brief Propagate constness.
+    template <template<class> class T, class A>
+    struct add_template<T, const A> {
+        using type = const typename add_template<T, A>::type;
+    };
+    
+    //! @brief Propagate lvalue references.
+    template <template<class> class T, class A>
+    struct add_template<T, A&> {
+        using type = typename add_template<T, A>::type&;
+    };
+    
+    //! @brief Propagate rvalue references.
+    template <template<class> class T, class A>
+    struct add_template<T, A&&> {
+        using type = typename add_template<T, A>::type&&;
+    };
+}
+//! @endcond
     
 //! @brief Converts the second (type) parameter into a specialization of the first (template) parameter.
 template <template<class> class T, class A>
-using add_template = T<del_template<T, A>>;
+using add_template = typename details::add_template<T, A>::type;
 
 
-/**
- * @name nested_template
- *
- * Constant which is true if and only if the second (type) parameter is built by using the first (template) parameter, possibly nested within other templates.
- */
-//@{
-//! @brief False if the second argument is not a template.
-template <template<class> class T, class A>
-constexpr bool nested_template = false;
-
-//! @brief True if second argument is T<A> or T is found in A.
-template <template<class> class T, template<class> class S, class A>
-constexpr bool nested_template<T, S<A>> = std::is_same<T<A>, S<A>>::value or nested_template<T, A>;
-//@}
-
-
-namespace details {
 //! @cond INTERNAL
-    // General form.
-    template <class A, template<class> class... Ts>
-    struct nest_template;
-
-    // Nesting no templates.
+namespace details {
+    //! @brief general case.
     template <class A>
-    struct nest_template<A> {
-        typedef A type;
+    struct template_args;
+
+    //! @brief tuple-like case.
+    template <template<class...> class T, class... A>
+    struct template_args<T<A...>> {
+        using type = type_sequence<A...>;
+    };
+
+    //! @brief const tuple-like case.
+    template <template<class...> class T, class... A>
+    struct template_args<const T<A...>> {
+        using type = type_sequence<const A...>;
+    };
+
+    //! @brief & tuple-like case.
+    template <template<class...> class T, class... A>
+    struct template_args<T<A...>&> {
+        using type = type_sequence<A&...>;
+    };
+
+    //! @brief const& tuple-like case.
+    template <template<class...> class T, class... A>
+    struct template_args<const T<A...>&> {
+        using type = type_sequence<const A&...>;
+    };
+
+    //! @brief && tuple-like case.
+    template <template<class...> class T, class... A>
+    struct template_args<T<A...>&&> {
+        using type = type_sequence<A&&...>;
+    };
+
+    //! @brief const&& tuple-like case.
+    template <template<class...> class T, class... A>
+    struct template_args<const T<A...>&&> {
+        using type = type_sequence<const A&&...>;
+    };
+
+    //! @brief array-like case.
+    template <template<class,size_t> class T, class A, size_t N>
+    struct template_args<T<A, N>> {
+        using type = type_sequence<A>;
     };
     
-    // Nesting a single template.
-    template <class A, template<class> class T>
-    struct nest_template<A, T> {
-        typedef std::conditional_t<nested_template<T, A>, A, T<A>> type;
+    //! @brief const array-like case.
+    template <template<class,size_t> class T, class A, size_t N>
+    struct template_args<const T<A, N>> {
+        using type = type_sequence<const A>;
+    };
+
+    //! @brief & array-like case.
+    template <template<class,size_t> class T, class A, size_t N>
+    struct template_args<T<A, N>&> {
+        using type = type_sequence<A&>;
     };
     
-    // Nesting more templates.
-    template <class A, template<class> class T, template<class> class... Ts>
-    struct nest_template<A, T, Ts...> {
-        typedef typename nest_template<typename nest_template<A, Ts...>::type, T>::type type;
+    //! @brief const& array-like case.
+    template <template<class,size_t> class T, class A, size_t N>
+    struct template_args<const T<A, N>&> {
+        using type = type_sequence<const A&>;
     };
-//! @endcond
+
+    //! @brief && array-like case.
+    template <template<class,size_t> class T, class A, size_t N>
+    struct template_args<T<A, N>&&> {
+        using type = type_sequence<A&&>;
+    };
+    
+    //! @brief const&& array-like case.
+    template <template<class,size_t> class T, class A, size_t N>
+    struct template_args<const T<A, N>&&> {
+        using type = type_sequence<const A&&>;
+    };
 }
+//! @endcond
 
 /**
- * @name nest_templates
- *
- * Nests (one or more) template to a type only if the template is not already present in the type.
+ * @brief Returns the class arguments of a template types as a type sequence, propagating value type.
  */
-template <class A, template<class> class... Ts>
-using nest_template = typename details::nest_template<A, Ts...>::type;
+template <class A>
+using template_args = typename details::template_args<A>::type;
 
 
 /**

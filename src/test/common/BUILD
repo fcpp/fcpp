@@ -126,6 +126,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:traits",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

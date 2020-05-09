@@ -4,13 +4,9 @@ An efficient C++14 implementation of the Pure Field Calculus, for fast and effec
 
 ## Users: Getting Started
 
-Start from the [main website](https://fcpp.github.io) of this project, while keeping the [documentation of the API](http://fcpp-doc.surge.sh) handy.
+Start from the [main website](https://fcpp.github.io) of this project, while keeping the [documentation of the API](http://fcpp-doc.surge.sh) handy. The repository is set up to be run in a virtual environment through [Vagrant](https://www.vagrantup.com) or [Docker](https://www.docker.com/). Alternatively, you can directly run it in your local machine through a custom build.
 
-### Virtual Environment
-
-The repository is set up to be run in a virtual environment through [Vagrant](https://www.vagrantup.com) or [Docker](https://www.docker.com/).
-
-#### Vagrant
+### Vagrant
 
 Type the following commands in a terminal, starting from the `src` folder of the repository:
 ```
@@ -25,7 +21,7 @@ exit
 vagrant halt
 ```
 
-#### Docker
+### Docker
 
 Type the following commands in a terminal, starting from the `src` folder of the repository:
 ```

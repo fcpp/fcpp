@@ -46,6 +46,8 @@ TEST_F(TagTupleTest, Operators) {
     common::tagged_tuple_t<> e(y);
     common::tagged_tuple_t<> f = common::make_tagged_tuple<>();
     EXPECT_EQ(e, f);
+    common::tagged_tuple_t<tag, const int, gat, const bool> u{t};
+    EXPECT_EQ(u, t);
 }
 
 TEST_F(TagTupleTest, Get) {

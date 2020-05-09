@@ -102,13 +102,13 @@ get(const tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
 
 //! @cond INTERNAL
 namespace details {
-    template <typename Ss, typename Ts, typename T>
-    auto get_or(const tagged_tuple<Ss, Ts>&, T&& def, type_sequence<>) {
+    template <typename S, typename T>
+    T&& get_or(S&&, T&& def, type_sequence<>) {
         return std::forward<T>(def);
     }
-    template <typename Ss, typename Ts, typename T, typename S>
-    const auto& get_or(const tagged_tuple<Ss, Ts>& t, T&&, type_sequence<S>) {
-        return get<S>(t);
+    template <typename S, typename T, typename U>
+    auto&& get_or(S&& t, T&&, type_sequence<U>) {
+        return get<U>(std::forward<S>(t));
     }
 }
 //! @endcond
@@ -121,10 +121,16 @@ namespace details {
  * @param S The tag to be extracted.
  * @param def A default value if tag is missing.
  */
+//! @{
 template <typename S, typename Ss, typename Ts, typename T>
-auto get_or(const tagged_tuple<Ss, Ts>& t, T&& def) {
+auto&& get_or(const tagged_tuple<Ss, Ts>& t, T&& def) {
     return details::get_or(t, std::forward<T>(def), typename Ss::template intersect<S>());
 }
+template <typename S, typename Ss, typename Ts, typename T>
+auto&& get_or(tagged_tuple<Ss, Ts>&& t, T&& def) {
+    return details::get_or(std::move(t), std::forward<T>(def), typename Ss::template intersect<S>());
+}
+//! @}
 
 
 //! @brief Utility function for creating tagged tuples.
@@ -140,17 +146,16 @@ namespace details {
     template <class... Ts>
     void ignore(const Ts&...) {}
     
-    // Copy assignment of elements of type Us.
-    template <class T, class S, class... Us>
-    T& tt_assign(T& t, const S& s, type_sequence<Us...>) {
-        ignore((get<Us>(t) = get<Us>(s))...);
-        return t;
+    // Extracts elements from a tagged tuple as a tuple.
+    template <class T, class... Ss, class... Ts>
+    auto tt_tie(T&& t, type_sequence<Ss...>, type_sequence<Ts...>) {
+        return std::forward_as_tuple(get_or<Ss>(std::forward<T>(t), Ts{})...);
     }
-    
-    // Move assignment of elements of type Us.
+
+    // Assignment of elements of type Us.
     template <class T, class S, class... Us>
     T& tt_assign(T& t, S&& s, type_sequence<Us...>) {
-        ignore((get<Us>(t) = std::move(get<Us>(s)))...);
+        ignore((get<Us>(t) = get<Us>(std::forward<S>(s)))...);
         return t;
     }
 
@@ -270,15 +275,13 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
     
     //! @brief Copy constructor from another `tagged_tuple`.
     template <class... OSs, class... OTs>
-    tagged_tuple(const tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>& t) {
-        details::tt_assign(*this, t, typename type_sequence<Ss...>::template intersect<OSs...>());
-    }
+    tagged_tuple(const tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>& t) :
+        std::tuple<Ts...>(details::tt_tie(t, type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
     
     //! @brief Move constructor from another `tagged_tuple`.
     template <class... OSs, class... OTs>
-    tagged_tuple(tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>&& t) {
-        details::tt_assign(*this, std::move(t), typename type_sequence<Ss...>::template intersect<OSs...>());
-    }
+    tagged_tuple(tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>&& t) :
+        std::tuple<Ts...>(details::tt_tie(std::move(t), type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
     
     //! @brief Copy assignment from another `tagged_tuple`.
     template <class... OSs, class... OTs>

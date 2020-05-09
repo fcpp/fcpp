@@ -8,6 +8,8 @@
 #ifndef FCPP_COMPONENT_CALCULUS_H_
 #define FCPP_COMPONENT_CALCULUS_H_
 
+#include <cassert>
+
 #include <limits>
 #include <unordered_map>
 
@@ -132,11 +134,12 @@ struct calculus {
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
                 P::node::round_start(t);
-                data::thread_trace = data::trace{}; // resets the trace
+                assert(stack_trace.empty());
             }
 
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
+                assert(stack_trace.empty());
                 P::node::round_end(t);
                 // recomputes metrics, cleaning obsolete values
                 std::unordered_map<device_t, metric_type> new_metrics;
@@ -164,6 +167,9 @@ struct calculus {
                 return m;
             }
 
+            //! @brief Stack trace maintained during aggregate function execution.
+            data::trace stack_trace;
+
           protected: // visible by node objects only
             //! @name field operators
             //@{
@@ -182,7 +188,7 @@ struct calculus {
             //! @brief Computes the restriction of a field to a given domain.
             template <typename A>
             A align(trace_t x, A&& f) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 m_export.second().insert(t);
                 return fcpp::details::align(std::forward<A>(f), m_context.align(t));
             }
@@ -190,7 +196,7 @@ struct calculus {
             //! @brief Reduces the values in the domain of a field to a single value through a binary operation.
             template <typename O, typename A>
             local_result<O,A,A> fold_hood(trace_t x, O&& op, const A& f) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 m_export.second().insert(t);
                 return fcpp::details::fold_hood(op, f, m_context.align(t));
             }
@@ -205,7 +211,7 @@ struct calculus {
              */
             template <typename A>
             const A& old(trace_t x, const A& f) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 m_export.first().insert(t, f);
                 return m_context.old(t, f);
             }
@@ -221,7 +227,7 @@ struct calculus {
              */
             template <typename A>
             const A& old(trace_t x, const A& f0, const A& f) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 m_export.first().insert(t, f);
                 return m_context.old(t, f0);
             }
@@ -239,7 +245,7 @@ struct calculus {
              */
             template <typename A, typename G, typename = common::if_signature<G, A(const A&)>>
             A old(trace_t x, const A& f0, G&& op) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 A f = op(m_context.old(t, f0));
                 m_export.first().insert(t, f);
                 return std::move(f);
@@ -253,7 +259,7 @@ struct calculus {
              */
             template <typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&)>>
             B old(trace_t x, const A& f0, G&& op) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 std::pair<B,A> f = op(m_context.old(t, f0));
                 m_export.first().insert(t, std::move(f.second));
                 return std::move(f.first);
@@ -269,7 +275,7 @@ struct calculus {
              */
             template <typename A>
             common::add_template<field, A> nbr(trace_t x, const A& f) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 m_export.second().insert(t, f);
                 return m_context.nbr(t, f);
             }
@@ -285,7 +291,7 @@ struct calculus {
              */
             template <typename A>
             common::add_template<field, A> nbr(trace_t x, const A& f0, const A& f) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 m_export.second().insert(t, f);
                 return m_context.nbr(t, f0);
             }
@@ -303,7 +309,7 @@ struct calculus {
              */
             template <typename A, typename G, typename = common::if_signature<G, A(common::add_template<field, A>)>>
             A nbr(trace_t x, const A& f0, G&& op) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 A f = op(m_context.nbr(t, f0));
                 m_export.second().insert(t, f);
                 return std::move(f);
@@ -317,7 +323,7 @@ struct calculus {
              */
             template <typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(common::add_template<field, A>)>>
             B nbr(trace_t x, const A& f0, G&& op) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 std::pair<B,A> f = op(m_context.nbr(t, f0));
                 m_export.second().insert(t, std::move(f.second));
                 return std::move(f.first);
@@ -340,7 +346,7 @@ struct calculus {
              */
             template <typename A, typename G, typename = common::if_signature<G, A(const A&, common::add_template<field, A>)>>
             A oldnbr(trace_t x, const A& f0, G&& op) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 A f = op(m_context.old(t, f0), m_context.nbr(t, f0));
                 m_export.second().insert(t, f);
                 return std::move(f);
@@ -354,7 +360,7 @@ struct calculus {
              */
             template <typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&, common::add_template<field, A>)>>
             B oldnbr(trace_t x, const A& f0, G&& op) {
-                trace_t t = data::thread_trace.hash(x);
+                trace_t t = stack_trace.hash(x);
                 std::pair<B,A> f = op(m_context.old(t, f0), m_context.nbr(t, f0));
                 m_export.second().insert(t, std::move(f.second));
                 return std::move(f.first);

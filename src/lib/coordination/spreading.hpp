@@ -74,8 +74,8 @@ struct spreading {
             
             //! @brief Reduces the values in the domain of a field to a single value by minimum.
             template <typename A>
-            A min_hood(trace_t __, const field<A>& f) {
-                data::trace_call _(__);
+            A min_hood(trace_t call_point, const field<A>& f) {
+                data::trace_call trace_caller(P::node::stack_trace, call_point);
 
                 return fold_hood(___, [] (A x, A y) {
                     return std::min(x, y);
@@ -84,8 +84,8 @@ struct spreading {
 
             //! @brief Computes the distance from a source through adaptive bellmann-ford.
             template <typename G, typename = common::if_signature<G, field<double>()>>
-            double distance(trace_t __, bool source, G&& metric) {
-                data::trace_call _(__);
+            double distance(trace_t call_point, bool source, G&& metric) {
+                data::trace_call trace_caller(P::node::stack_trace, call_point);
 
                 return nbr(___, std::numeric_limits<double>::infinity(), [this,source,&metric] (fcpp::field<double> d) {
                     double r = min_hood(___, d + metric());

@@ -70,6 +70,14 @@ constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_TRACE - k_hash_len);
 namespace data {
 
 
+//! @cond INTERNAL
+//! @brief Forward declarations for friendship.
+struct trace_reset;
+struct trace_call;
+struct trace_cycle;
+//! @endcond
+
+
 /**
  * @brief Keeps an updated representation of the current stack trace.
  *
@@ -82,11 +90,14 @@ namespace data {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class trace {
-  private:
-    //! @brief Stack trace.
-    std::vector<trace_t> m_stack;
-    //! @brief Summarising hash (@ref k_hash_len bits used, starting from 0).
-    trace_t m_stack_hash;
+    //! @cond INTERNAL
+    //! @brief Class friendships
+    //! @{
+    friend struct trace_reset;
+    friend struct trace_call;
+    friend struct trace_cycle;
+    //! @}
+    //! @endcond
 
   public:
     //! @brief Constructs an empty trace.
@@ -96,17 +107,18 @@ class trace {
     bool empty() const {
         return m_stack.size() == 0;
     }
-    
+
+    //! @brief Returns the hash together with the template argument into a @ref trace_t.
+    inline trace_t hash(trace_t x) const {
+        assert(x < k_hash_max and "code points overflow: reduce code or increase FCPP_TRACE");
+    	return m_stack_hash + (x << k_hash_len);
+    }
+
+  protected:
     //! @brief Clears the trace.
     void clear() {
         m_stack_hash = 0;
         m_stack.clear();
-    }
-    
-    //! @brief Returns the hash together with the template argument into a @ref trace_t.
-    inline trace_t hash(trace_t x) {
-        assert(x < k_hash_max and "code points overflow: reduce code or increase FCPP_TRACE");
-    	return m_stack_hash + (x << k_hash_len);
     }
 
     //! @brief Add a function call to the stack trace updating the hash.
@@ -123,14 +135,30 @@ class trace {
     	m_stack.pop_back();
     	m_stack_hash = ((m_stack_hash + k_hash_mod+1 - x) * k_hash_inverse) & k_hash_mod;
     }
+
+  private:
+    //! @brief Stack trace.
+    std::vector<trace_t> m_stack;
+    //! @brief Summarising hash (@ref k_hash_len bits used, starting from 0).
+    trace_t m_stack_hash;
 };
 
 
-//! @brief A global trace variable, maintained separately for different threads.
-thread_local trace thread_trace;
-#ifdef _OPENMP
-    #pragma omp threadprivate(thread_trace)
-#endif
+//! @brief Stateless class ensuring execution within an empty trace.
+struct trace_reset {
+    //! @brief Constructor (clears the trace).
+    trace_reset(trace& t) : m_trace{t} {
+        m_trace.clear();
+    }
+    //! @brief Destructor (clears the trace).
+    ~trace_reset() {
+        m_trace.clear();
+    }
+    
+  private:
+    //! @brief Reference trace object.
+    trace& m_trace;
+};
 
 
 /**
@@ -138,26 +166,27 @@ thread_local trace thread_trace;
  *
  * The intended usage is:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * T func(trace_t __, ...) {
- *     trace_call _(__);
+ * template <class node_t, ...>
+ * type func(node_t& node, trace_t call_point, ...) {
+ *     data::trace_call trace_caller(node.stack_trace, call_point);
  *     ...
  * }
- * ... func(___, ...) ...
+ * ... func(node, __COUNTER__, ...) ...
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 struct trace_call {
-    /**
-     * @brief Constructor (adds elements to trace).
-     *
-     * @param x Identifier of the calling point.
-     */
-    trace_call(trace_t x) {
-        thread_trace.push(x);
+    //! @brief Constructor (adds element to trace).
+    trace_call(trace& t, trace_t x) : m_trace{t} {
+        m_trace.push(x);
     }
-    //! @brief Destructor (removes elements from trace).
+    //! @brief Destructor (removes element from trace).
     ~trace_call() {
-        thread_trace.pop();
+        m_trace.pop();
     }
+
+  private:
+    //! @brief Reference trace object.
+    trace& m_trace;
 };
 
 /**
@@ -166,39 +195,35 @@ struct trace_call {
  * The intended usage is:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * {
- *     trace_cycle _;
+ *     data::trace_cycle trace_cycler(node.stack_trace);
  *     while (...) {
  *         ....
- *         ++_;
+ *         ++trace_cycler;
  *     }
  * }
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  * Additionally, a `trace_cycle` can be directly used as a `trace_t` index:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * {
- *     for (trace_cycle i = 1; i < N; ++i) {
+ *     for (data::trace_cycle i{node.stack_trace, 1}; i < N; ++i) {
  *         ... // can use i as trace_t index here
  *     }
  * }
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 struct trace_cycle {
-    //! @brief Default constructor (adds a zero cycle element to the trace).
-    trace_cycle() : m_i{0} {
-        thread_trace.push(m_i);
-    }
-    //! @brief Constructor with starting index (adds a starting cycle element to the trace).
-    trace_cycle(trace_t i) : m_i{i} {
-        thread_trace.push(m_i);
+    //! @brief Constructor (adds a starting cycle element to the trace).
+    trace_cycle(trace& t, trace_t i = 0) : m_trace{t}, m_i{i} {
+        m_trace.push(m_i);
     }
     //! @brief Destructor (removes the cycle element from the trace).
     ~trace_cycle() {
-        thread_trace.pop();
+        m_trace.pop();
     }
     //! @brief Increment operator (increases the cycle element in the trace).
     inline trace_cycle& operator++() {
-        thread_trace.pop();
-        thread_trace.push(++m_i);
+        m_trace.pop();
+        m_trace.push(++m_i);
         return *this;
     }
     //! @brief Returns the current cycle element.
@@ -207,7 +232,10 @@ struct trace_cycle {
     }
 
   private:
-    //! @brief The actual cycle index.
+    //! @brief Reference trace object.
+    trace& m_trace;
+
+    //! @brief Cycle index.
     trace_t m_i;
 };
 

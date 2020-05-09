@@ -86,8 +86,8 @@ struct slowdistance {
             
             //! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
             template <typename G, typename = common::if_signature<G, field<double>()>>
-            double slowdistance(trace_t __, bool source, G&& metric) {
-                data::trace_call _(__);
+            double slowdistance(trace_t call_point, bool source, G&& metric) {
+                data::trace_call trace_caller(P::node::stack_trace, call_point);
 
                 return old(___, std::numeric_limits<double>::infinity(), [this,source,&metric] (double d) {
                     double r = min_hood(___, nbr(___, d) + metric());

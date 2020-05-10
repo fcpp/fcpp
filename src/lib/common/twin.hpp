@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file twin.hpp
@@ -7,6 +7,9 @@
 
 #ifndef FCPP_COMMON_TWIN_H_
 #define FCPP_COMMON_TWIN_H_
+
+#include <type_traits>
+#include <utility>
 
 
 /**
@@ -40,7 +43,7 @@ class twin<T, true> {
     
   public:
     //! @name constructors
-    //@{
+    //! @{
     //! @brief Default constructor.
     twin() = default;
     
@@ -49,16 +52,20 @@ class twin<T, true> {
     
     //! @brief Move constructor.
     twin(twin<T, true>&&) = default;
-    //@}
+    
+    //! @brief Initialising constructor.
+    template <typename... Ts, typename = std::enable_if_t<not std::is_same<std::tuple<std::decay_t<Ts>...>, std::tuple<twin>>::value>>
+    twin(Ts&&... xs) : m_data(std::forward<Ts>(xs)...) {}
+    //! @}
 
     //! @name assignment operators
-    //@{
+    //! @{
     //! @brief Copy assignment.
     twin<T, true>& operator=(const twin<T, true>&) = default;
     
     //! @brief Move assignment.
     twin<T, true>& operator=(twin<T, true>&&) = default;
-    //@}
+    //! @}
 
     //! @brief Equality operator.
     bool operator==(const twin<T, true>& o) const {
@@ -100,7 +107,7 @@ class twin<T, false> {
     
   public:
     //! @name constructors
-    //@{
+    //! @{
     //! @brief Default constructor.
     twin() = default;
     
@@ -109,16 +116,20 @@ class twin<T, false> {
     
     //! @brief Move constructor.
     twin(twin<T, false>&&) = default;
-    //@}
+    
+    //! @brief Initialising constructor.
+    template <typename... Ts, typename = std::enable_if_t<not std::is_same<std::tuple<std::decay_t<Ts>...>, std::tuple<twin>>::value>>
+    twin(Ts&&... xs) : m_data1(std::forward<Ts>(xs)...), m_data2(std::forward<Ts>(xs)...) {}
+    //! @}
 
     //! @name assignment operators
-    //@{
+    //! @{
     //! @brief Copy assignment.
     twin<T, false>& operator=(const twin<T, false>&) = default;
     
     //! @brief Move assignment.
     twin<T, false>& operator=(twin<T, false>&&) = default;
-    //@}
+    //! @}
 
     //! @brief Equality operator.
     bool operator==(const twin<T, false>& o) const {

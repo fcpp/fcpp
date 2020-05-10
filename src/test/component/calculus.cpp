@@ -13,61 +13,60 @@
 
 using namespace fcpp;
 
+template <typename node_t>
+times_t delayed(node_t& node, trace_t call_point, times_t t) {
+    return old(node, call_point, t);
+}
 
-// Component exposing the calculus interface.
-struct exposer {
-    template <typename F, typename P>
-    struct component : public P {
-        struct node : public P::node {
-            using P::node::node;
-            using P::node::fold_hood;
-            using P::node::old;
-            using P::node::nbr;
-            using P::node::oldnbr;
-            using P::node::round;
-            
-            times_t delayed(times_t t) {
-                return old(___, t);
-            }
-            
-            times_t delayed(times_t start, times_t t) {
-                return old(___, t, start);
-            }
+template <typename node_t>
+times_t delayed(node_t& node, trace_t call_point, times_t start, times_t t) {
+    return old(node, call_point, t, start);
+}
 
-            int counter() {
-                return old(___, 0, [](const int& o){
-                    return o+1;
-                });
-            }
+template <typename node_t>
+int counter(node_t& node, trace_t call_point) {
+    return old(node, call_point, 0, [](const int& o) {
+        return o+1;
+    });
+}
 
-            int sharing(int x) {
-                return fold_hood(___, [](int x, int y) {
-                    return x+y;
-                }, nbr(___, x));
-            }
+template <typename node_t>
+int sharing(node_t& node, trace_t call_point, int x) {
+    data::trace_call trace_caller(node.stack_trace, call_point);
+    return fold_hood(node, 0, [](int x, int y) {
+        return x+y;
+    }, nbr(node, 1, x));
+}
 
-            int gossip(int x) {
-                return nbr(___, x, [x,this](fcpp::field<int> n){
-                    return std::max(fold_hood(___, [](int x, int y) {
-                        return std::max(x,y);
-                    }, n), x);
-                });
-            }
-        };
-        using net = typename P::net;
-    };
+template <typename node_t>
+int gossip(node_t& node, trace_t call_point, int x) {
+    data::trace_call trace_caller(node.stack_trace, call_point);
+    return nbr(node, 0, x, [&](fcpp::field<int> n) {
+        return std::max(fold_hood(node, 1, [](int x, int y) {
+            return std::max(x,y);
+        }, n), x);
+    });
+}
+
+struct main {
+    template <typename node_t>
+    void operator()(node_t&, times_t) {}
 };
 
 using combo1 = component::combine<
-    exposer,
-    component::calculus<metric::once, fcpp::field<int>, times_t, int>
+    component::calculus<main, metric::once, fcpp::field<int>, times_t, int>
 >;
 
 using message_t = typename combo1::node::message_t;
 
-void sendto(times_t t, const combo1::node& source, combo1::node& dest) {
+void sendto(const combo1::node& source, combo1::node& dest) {
     message_t m;
-    dest.receive(t, source.uid, source.send(t, dest.uid, m));
+    dest.receive(0.0, source.uid, source.send(0.0, dest.uid, m));
+}
+
+void rounder(combo1::node& node) {
+    node.round_end(0.0);
+    node.round_start(0.0);
 }
 
 TEST(CalculusTest, Size) {
@@ -78,19 +77,19 @@ TEST(CalculusTest, Size) {
     combo1::node d3{network, common::make_tagged_tuple<component::tags::uid>(3)};
     combo1::node d4{network, common::make_tagged_tuple<component::tags::uid>(4)};
     EXPECT_EQ(1, (int)d0.size());
-    sendto(1.0, d0, d0);
+    sendto(d0, d0);
     EXPECT_EQ(1, (int)d0.size());
-    sendto(1.0, d1, d0);
+    sendto(d1, d0);
     EXPECT_EQ(2, (int)d0.size());
-    sendto(1.0, d2, d0);
+    sendto(d2, d0);
     EXPECT_EQ(3, (int)d0.size());
-    sendto(1.0, d3, d0);
+    sendto(d3, d0);
     EXPECT_EQ(3, (int)d0.size());
-    sendto(1.0, d4, d0);
+    sendto(d4, d0);
     EXPECT_EQ(3, (int)d0.size());
-    d0.round(2.0);
+    rounder(d0);
     EXPECT_EQ(1, (int)d0.size());
-    sendto(3.0, d4, d0);
+    sendto(d4, d0);
     EXPECT_EQ(2, (int)d0.size());
 }
 
@@ -98,33 +97,38 @@ TEST(CalculusTest, Old) {
     combo1::net  network{common::make_tagged_tuple<>()};
     combo1::node d0{network, common::make_tagged_tuple<component::tags::uid>(0)};
     double d;
-    d = d0.delayed(2.0);
+    d = delayed(d0, 0, 2.0);
     EXPECT_EQ(2.0, d);
-    d = d0.delayed(1.0);
+    d = delayed(d0, 0, 1.0);
     EXPECT_EQ(1.0, d);
-    sendto(1.0, d0, d0);
-    d = d0.delayed(3.0);
+    sendto(d0, d0);
+    rounder(d0);
+    d = delayed(d0, 0, 3.0);
     EXPECT_EQ(1.0, d);
-    d0.round(3.0);
-    d = d0.delayed(5.0);
+    rounder(d0);
+    d = delayed(d0, 0, 5.0);
     EXPECT_EQ(1.0, d);
-    sendto(1.0, d0, d0);
-    d = d0.delayed(3.0);
+    sendto(d0, d0);
+    rounder(d0);
+    d = delayed(d0, 0, 3.0);
     EXPECT_EQ(5.0, d);
-    d = d0.delayed(3.0, 2.0);
+    d = delayed(d0, 1, 3.0, 2.0);
     EXPECT_EQ(2.0, d);
-    sendto(1.0, d0, d0);
-    d = d0.delayed(6.0, 2.0);
+    sendto(d0, d0);
+    rounder(d0);
+    d = delayed(d0, 1, 6.0, 2.0);
     EXPECT_EQ(3.0, d);
-    d = d0.counter();
+    d = counter(d0, 2);
     EXPECT_EQ(1, d);
-    d = d0.counter();
+    d = counter(d0, 2);
     EXPECT_EQ(1, d);
-    sendto(1.0, d0, d0);
-    d = d0.counter();
+    sendto(d0, d0);
+    rounder(d0);
+    d = counter(d0, 2);
     EXPECT_EQ(2, d);
-    sendto(1.0, d0, d0);
-    d = d0.counter();
+    sendto(d0, d0);
+    rounder(d0);
+    d = counter(d0, 2);
     EXPECT_EQ(3, d);
 }
 
@@ -134,30 +138,40 @@ TEST(CalculusTest, Nbr) {
     combo1::node d1{network, common::make_tagged_tuple<component::tags::uid>(1)};
     combo1::node d2{network, common::make_tagged_tuple<component::tags::uid>(2)};
     int d;
-    d = d0.sharing(3);
+    d = sharing(d0, 0, 3);
     EXPECT_EQ(3, d);
-    d = d0.sharing(4);
+    d = sharing(d0, 0, 4);
     EXPECT_EQ(4, d);
-    d = d1.sharing(2);
+    d = sharing(d1, 0, 2);
     EXPECT_EQ(2, d);
-    d = d2.sharing(1);
+    d = sharing(d2, 0, 1);
     EXPECT_EQ(1, d);
-    sendto(1.0, d0, d0);
-    sendto(1.0, d1, d0);
-    sendto(1.0, d2, d0);
-    d = d0.sharing(3);
+    d0.round_end(0.0);
+    d1.round_end(0.0);
+    d2.round_end(0.0);
+    sendto(d0, d0);
+    sendto(d1, d0);
+    sendto(d2, d0);
+    d0.round_start(0.0);
+    d = sharing(d0, 0, 3);
     EXPECT_EQ(7, d);
-    d = d0.gossip(3);
+    d = gossip(d0, 1, 3);
     EXPECT_EQ(3, d);
-    d = d1.gossip(2);
+    d = gossip(d1, 1, 2);
     EXPECT_EQ(2, d);
-    d = d2.gossip(4);
+    d = gossip(d2, 1, 4);
     EXPECT_EQ(4, d);
-    sendto(1.0, d0, d0);
-    sendto(1.0, d1, d0);
-    sendto(1.0, d2, d0);
-    d = d0.gossip(1);
+    d0.round_end(0.0);
+    d1.round_end(0.0);
+    d2.round_end(0.0);
+    sendto(d0, d0);
+    sendto(d1, d0);
+    sendto(d2, d0);
+    d0.round_start(0.0);
+    d = gossip(d0, 1, 1);
     EXPECT_EQ(4, d);
-    d = d0.gossip(5);
+    d = gossip(d0, 1, 5);
     EXPECT_EQ(5, d);
+    d = gossip(d0, 1, 3);
+    EXPECT_EQ(4, d);
 }

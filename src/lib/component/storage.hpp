@@ -72,7 +72,6 @@ struct storage {
                 return m_storage;
             }
             
-          protected: // visible by node objects only
             /**
              * @brief Write access to stored data.
              *

@@ -114,10 +114,10 @@ struct base {
             //! @brief A mutex for regulating access to the node.
             common::mutex<FCPP_PARALLEL> mutex;
 
-          protected: // visible by node objects only
             //! @brief A reference to the corresponding net object.
             typename F::net& net;
-            
+
+          protected: // visible by node objects only
             //! @brief Gives access to the node as instance of `F::node`. Should NEVER be overridden.
             typename F::node& as_final() {
                 return *static_cast<typename F::node*>(this);

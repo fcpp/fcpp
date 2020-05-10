@@ -3,7 +3,6 @@ cc_library(
     hdrs = ['spreading.hpp'],
     srcs = ['spreading.cpp'],
     deps = [
-        "//lib/common:tagged_tuple",
         "//lib/common:traits",
         "//lib/data:field",
         "//lib/data:trace",

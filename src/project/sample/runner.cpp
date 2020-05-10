@@ -20,9 +20,7 @@ using export_s = random::sequence_periodic<random::constant_distribution<times_t
 using rectangle_d = random::array_distribution<random::interval_d<double, 0, AREA_SIZE>, random::interval_d<double, 0, AREA_SIZE>>;
 
 using combo = component::combine<
-    coordination::slowdistance,
-    coordination::spreading,
-    component::calculus<metric::once, double>,
+    component::calculus<main, metric::once, double>,
 
     component::physical_connector<random::constant_distribution<times_t, 1, 4>, connector::fixed<1>>,
     component::physical_position<>,

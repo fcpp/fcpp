@@ -275,7 +275,6 @@ struct physical_position {
                 return m;
             }
             
-          protected: // visible by node objects only
             //! @brief Perceived positions of neighbours as difference vectors.
             const fcpp::field<std::array<double, n>>& nbr_vec() const {
                 return m_nbr_vec;

@@ -2,7 +2,7 @@
 
 /**
  * @file spreading.hpp
- * @brief Implementation of the `spreading` component providing field calculus distance estimation routines.
+ * @brief Collection of field calculus distance estimation routines.
  */
 
 #ifndef FCPP_COORDINATION_SPREADING_H_
@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <limits>
 
-#include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
 #include "lib/data/field.hpp"
 #include "lib/data/trace.hpp"
@@ -27,77 +26,26 @@ namespace fcpp {
 namespace coordination {
 
 
-/**
- * @brief Component providing field calculus distance estimation routines.
- *
- * Must be unique in a composition of components.
- */
-struct spreading {
-    /**
-     * @brief The actual component.
-     *
-     * Component functionalities are added to those of the parent by inheritance at multiple levels: the whole component class inherits tag for static checks of correct composition, while `node` and `net` sub-classes inherit actual behaviour.
-     * Further parametrisation with F enables <a href="https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern">CRTP</a> for static emulation of virtual calls.
-     *
-     * @param F The final composition of all components.
-     * @param P The parent component to inherit from.
-     */
-    template <typename F, typename P>
-    struct component : public P {
-        //! @brief Marks that a storage component is present.
-        struct spreading_tag {};
-        
-        //! @brief Checks if T has a `spreading_tag`.
-        template <typename T, typename = int>
-        struct has_stag : std::false_type {};
-        template <typename T>
-        struct has_stag<T, std::conditional_t<true,int,typename T::spreading_tag>> : std::true_type {};
-        
-        //! @brief Asserts that P has no `spreading_tag`.
-        static_assert(not has_stag<P>::value, "cannot combine multiple spreading components");
+//! @brief Reduces the values in the domain of a field to a single value by minimum.
+template <typename node_t, typename A>
+A min_hood(node_t& node, trace_t call_point, const field<A>& f) {
+    data::trace_call trace_caller(node.stack_trace, call_point);
 
-        //! @brief The local part of the component.
-        class node : public P::node {
-          public: // visible by net objects and the main program
-            /**
-             * @brief Main constructor.
-             *
-             * @param n The corresponding net object.
-             * @param t A `tagged_tuple` gathering initialisation values.
-             */
-            template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t) {}
-            
-          protected: // visible by node objects only
-            using P::node::fold_hood;
-            using P::node::nbr;
-            
-            //! @brief Reduces the values in the domain of a field to a single value by minimum.
-            template <typename A>
-            A min_hood(trace_t call_point, const field<A>& f) {
-                data::trace_call trace_caller(P::node::stack_trace, call_point);
+    return fold_hood(node, 0, [] (A x, A y) {
+        return std::min(x, y);
+    }, f);
+}
 
-                return fold_hood(___, [] (A x, A y) {
-                    return std::min(x, y);
-                }, f);
-            }
+//! @brief Computes the distance from a source through adaptive bellmann-ford.
+template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
+double distance(node_t& node, trace_t call_point, bool source, G&& metric) {
+    data::trace_call trace_caller(node.stack_trace, call_point);
 
-            //! @brief Computes the distance from a source through adaptive bellmann-ford.
-            template <typename G, typename = common::if_signature<G, field<double>()>>
-            double distance(trace_t call_point, bool source, G&& metric) {
-                data::trace_call trace_caller(P::node::stack_trace, call_point);
-
-                return nbr(___, std::numeric_limits<double>::infinity(), [this,source,&metric] (fcpp::field<double> d) {
-                    double r = min_hood(___, d + metric());
-                    return source ? 0.0 : r;
-                });
-            }
-        };
-        
-        //! @brief The global part of the component.
-        using net = typename P::net;
-    };
-};
+    return nbr(node, 0, std::numeric_limits<double>::infinity(), [&] (fcpp::field<double> d) {
+        double r = min_hood(node, 1, d + metric());
+        return source ? 0.0 : r;
+    });
+}
 
 
 }

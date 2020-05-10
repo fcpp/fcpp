@@ -28,6 +28,18 @@ namespace fcpp {
 namespace coordination {
 
 
+//! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
+template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
+double slow_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
+    data::trace_call trace_caller(node.stack_trace, call_point);
+
+    return old(node, 0, std::numeric_limits<double>::infinity(), [&] (double d) {
+        double r = min_hood(node, 1, nbr(node, 2, d) + metric());
+        return source ? 0.0 : r;
+    });
+}
+
+
 namespace tags {
     //! @brief Ideal distance values.
     struct idealdist {};
@@ -46,61 +58,34 @@ namespace tags {
 }
 
 
-//! @brief Component providing a slower version of distance estimation, and comparing it with the faster one.
-struct slowdistance {
-    template <typename F, typename P>
-    struct component : public P {
-        class node : public P::node {
-          public: // visible by net objects and the main program
-            /**
-             * @brief Main constructor.
-             *
-             * @param n The corresponding net object.
-             * @param t A `tagged_tuple` gathering initialisation values.
-             */
-            template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t) {}
-            
-            //! @brief Performs computations at round middle with current time `t`.
-            void round_main(times_t) {
-                bool source = P::node::uid == 0;
-                auto metric = [this](){
-                    return P::node::nbr_dist();
-                };
-                double fastd = distance(___, source, metric);
-                double slowd = slowdistance(___, source, metric);
-                double ideal = std::norm(P::node::net.node_at(0).position() - P::node::position());
-                storage(tags::fastdist{})  = fastd;
-                storage(tags::slowdist{})  = slowd;
-                storage(tags::idealdist{}) = ideal;
-                storage(tags::fasterr{})   = std::abs(fastd - ideal);
-                storage(tags::slowerr{})   = std::abs(slowd - ideal);
-            }
-            
-          protected: // visible by node objects only
-            using P::node::old;
-            using P::node::nbr;
-            using P::node::min_hood;
-            using P::node::distance;
-            using P::node::storage;
-            
-            //! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
-            template <typename G, typename = common::if_signature<G, field<double>()>>
-            double slowdistance(trace_t call_point, bool source, G&& metric) {
-                data::trace_call trace_caller(P::node::stack_trace, call_point);
-
-                return old(___, std::numeric_limits<double>::infinity(), [this,source,&metric] (double d) {
-                    double r = min_hood(___, nbr(___, d) + metric());
-                    return source ? 0.0 : r;
-                });
-            }
-        };
-        using net = typename P::net;
+template <typename node_t>
+void distance_compare(node_t& node, trace_t call_point) {
+    data::trace_call trace_caller(node.stack_trace, call_point);
+    
+    bool source = node.uid == 0;
+    auto metric = [&](){
+        return node.nbr_dist();
     };
-};
+    double fastd = distance(node, 0, source, metric);
+    double slowd = slow_distance(node, 1, source, metric);
+    double ideal = std::norm(node.net.node_at(0).position() - node.position());
+    node.storage(tags::fastdist{})  = fastd;
+    node.storage(tags::slowdist{})  = slowd;
+    node.storage(tags::idealdist{}) = ideal;
+    node.storage(tags::fasterr{})   = std::abs(fastd - ideal);
+    node.storage(tags::slowerr{})   = std::abs(slowd - ideal);
+}
 
 
 }
+
+
+struct main {
+    template <typename node_t>
+    void operator()(node_t& node, times_t) {
+        coordination::distance_compare(node, 0);
+    }
+};
 
 
 }

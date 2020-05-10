@@ -8,6 +8,7 @@
 #ifndef FCPP_DATA_CONTEXT_H_
 #define FCPP_DATA_CONTEXT_H_
 
+#include <ostream>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -26,9 +27,7 @@
 namespace fcpp {
 
 
-/**
- * @brief Namespace containing specific objects for the FCPP library.
- */
+//! @brief Namespace containing specific objects for the FCPP library.
 namespace data {
 
 
@@ -166,6 +165,16 @@ class context {
         return details::make_field(details::other(def), m);
     }
     
+    //! @brief Prints the context in a stream.
+    void print(std::ostream& o) const {
+        o << m_self << ":";
+        if (m_data.count(m_self) == 1)
+            o << m_data.at(m_self) << "@" << 0+m_metrics.at(m_self);
+        else o << "null";
+        for (const auto& x : m_metrics) if (x.first != m_self)
+            o << ", " << x.first << ":" << m_data.at(x.first) << "@" << 0+x.second;
+    }
+
   private:
     // Erases invalid elements at the top of m_queue.
     void clean() {

@@ -40,12 +40,10 @@ struct exposer {
 
 using combo = component::combine<
     exposer,
-    coordination::slowdistance,
-    coordination::spreading,
     component::physical_position<>,
     component::storage<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>,
     component::identifier<true>,
-    component::calculus<metric::once, double>
+    component::calculus<main, metric::once, double>
 >;
 
 using message_t = typename combo::node::message_t;

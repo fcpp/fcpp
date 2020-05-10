@@ -15,35 +15,27 @@
 using namespace fcpp;
 
 
-// Component exposing the calculus interface.
-struct exposer {
-    template <typename F, typename P>
-    struct component : public P {
-        struct node : public P::node {
-            using P::node::node;
-            using P::node::distance;
-            
-            double hop_count(bool source) {
-                return distance(___, source, [](){
-                    return fcpp::field<double>(1.0);
-                });
-            }
-        };
-        using net = typename P::net;
-    };
+template <typename node_t>
+double hop_count(node_t& node, bool source) {
+    return coordination::distance(node, 0, source, [](){
+        return fcpp::field<double>(1.0);
+    });
+}
+
+struct main {
+    template <typename node_t>
+    void operator()(node_t&, times_t) {}
 };
 
 using combo1 = component::combine<
-    exposer,
-    coordination::spreading,
-    component::calculus<metric::once, fcpp::field<int>, times_t, int>
+    component::calculus<main, metric::once, fcpp::field<int>, times_t, int>
 >;
 
 using message_t = typename combo1::node::message_t;
 
-void sendto(times_t t, const combo1::node& source, combo1::node& dest) {
+void sendto(const combo1::node& source, combo1::node& dest) {
     message_t m;
-    dest.receive(t, source.uid, source.send(t, dest.uid, m));
+    dest.receive(0.0, source.uid, source.send(0.0, dest.uid, m));
 }
 
 TEST(SpreadingTest, Distance) {
@@ -51,39 +43,42 @@ TEST(SpreadingTest, Distance) {
     combo1::node d0{network, common::make_tagged_tuple<component::tags::uid>(0)};
     combo1::node d1{network, common::make_tagged_tuple<component::tags::uid>(1)};
     combo1::node d2{network, common::make_tagged_tuple<component::tags::uid>(2)};
+    auto newround = [&]() {
+        d0.round_end(0.0);
+        d1.round_end(0.0);
+        d2.round_end(0.0);
+        sendto(d0, d0);
+        sendto(d0, d1);
+        sendto(d1, d0);
+        sendto(d1, d1);
+        sendto(d1, d2);
+        sendto(d2, d1);
+        sendto(d2, d2);
+        d0.round_start(0.0);
+        d1.round_start(0.0);
+        d2.round_start(0.0);
+    };
     double d;
-    d = d0.hop_count(false);
+    d = hop_count(d0, false);
     EXPECT_EQ(1.0/0.0, d);
-    d = d0.hop_count(true);
+    d = hop_count(d0, true);
     EXPECT_EQ(0.0, d);
-    d = d1.hop_count(false);
+    d = hop_count(d1, false);
     EXPECT_EQ(1.0/0.0, d);
-    d = d2.hop_count(false);
+    d = hop_count(d2, false);
     EXPECT_EQ(1.0/0.0, d);
-    sendto(1.0, d0, d0);
-    sendto(1.0, d0, d1);
-    sendto(1.0, d1, d0);
-    sendto(1.0, d1, d1);
-    sendto(1.0, d1, d2);
-    sendto(1.0, d2, d1);
-    sendto(1.0, d2, d2);
-    d = d0.hop_count(true);
+    newround();
+    d = hop_count(d0, true);
     EXPECT_EQ(0.0, d);
-    d = d1.hop_count(false);
+    d = hop_count(d1, false);
     EXPECT_EQ(1.0, d);
-    d = d2.hop_count(false);
+    d = hop_count(d2, false);
     EXPECT_EQ(1.0/0.0, d);
-    sendto(1.0, d0, d0);
-    sendto(1.0, d0, d1);
-    sendto(1.0, d1, d0);
-    sendto(1.0, d1, d1);
-    sendto(1.0, d1, d2);
-    sendto(1.0, d2, d1);
-    sendto(1.0, d2, d2);
-    d = d0.hop_count(true);
+    newround();
+    d = hop_count(d0, true);
     EXPECT_EQ(0.0, d);
-    d = d1.hop_count(false);
+    d = hop_count(d1, false);
     EXPECT_EQ(1.0, d);
-    d = d2.hop_count(false);
+    d = hop_count(d2, false);
     EXPECT_EQ(2.0, d);
 }

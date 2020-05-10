@@ -19,6 +19,8 @@
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/random_access_map.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/common/twin.hpp"
+#include "lib/data/context.hpp"
 #include "lib/data/tuple.hpp"
 
 
@@ -202,6 +204,31 @@ namespace common {
         o << "(";
         t.print(o, arrowhead_tuple);
         o << ")";
+        return o;
+    }
+
+    //! @brief Printing identical twin objects.
+    template <typename T>
+    std::ostream& operator<<(std::ostream& o, const twin<T,true>& t) {
+        return o << "(" << t.first() << ")";
+    }
+
+    //! @brief Printing different twin objects.
+    template <typename T>
+    std::ostream& operator<<(std::ostream& o, const twin<T,false>& t) {
+        return o << "(" << t.first() << "; " << t.second() << ")";
+    }
+}
+
+
+//! @brief Namespace containing specific objects for the FCPP library.
+namespace data {
+    //! @brief Printing calculus contexts.
+    template <typename... Ts>
+    std::ostream& operator<<(std::ostream& o, const context<Ts...>& c) {
+        o << "{";
+        c.print(o);
+        o << "}";
         return o;
     }
 }

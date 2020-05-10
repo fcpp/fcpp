@@ -197,7 +197,7 @@ struct exporter {
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "##########################################################\n";
-                *m_stream << "# FC++ data export started at:  " << tstr << " #\n";
+                *m_stream << "# FCPP data export started at:  " << tstr << " #\n";
                 *m_stream << "##########################################################\n# ";
                 t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output>);
                 *m_stream << "\n#\n";
@@ -212,7 +212,7 @@ struct exporter {
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "##########################################################\n";
-                *m_stream << "# FC++ data export finished at: " << tstr << " #\n";
+                *m_stream << "# FCPP data export finished at: " << tstr << " #\n";
                 *m_stream << "##########################################################" << std::endl;
             }
 

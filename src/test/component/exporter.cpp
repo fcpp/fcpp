@@ -115,7 +115,7 @@ TEST(ExporterTest, Push) {
     EXPECT_EQ("##########################################################", line);
     getline(s, line);
     EXPECT_EQ(58, (int)line.size());
-    EXPECT_EQ("# FC++ data export started at:  ", line.substr(0, 32));
+    EXPECT_EQ("# FCPP data export started at:  ", line.substr(0, 32));
     getline(s, line);
     EXPECT_EQ(58, (int)line.size());
     EXPECT_EQ("##########################################################", line);
@@ -137,7 +137,7 @@ TEST(ExporterTest, Push) {
     EXPECT_EQ("##########################################################", line);
     getline(s, line);
     EXPECT_EQ(58, (int)line.size());
-    EXPECT_EQ("# FC++ data export finished at: ", line.substr(0, 32));
+    EXPECT_EQ("# FCPP data export finished at: ", line.substr(0, 32));
     getline(s, line);
     EXPECT_EQ("##########################################################", line);
     getline(s, line);
@@ -189,7 +189,7 @@ TEST(ExporterTest, Pull) {
     EXPECT_EQ("##########################################################", line);
     getline(s, line);
     EXPECT_EQ(58, (int)line.size());
-    EXPECT_EQ("# FC++ data export started at:  ", line.substr(0, 32));
+    EXPECT_EQ("# FCPP data export started at:  ", line.substr(0, 32));
     getline(s, line);
     EXPECT_EQ(58, (int)line.size());
     EXPECT_EQ("##########################################################", line);
@@ -211,7 +211,7 @@ TEST(ExporterTest, Pull) {
     EXPECT_EQ("##########################################################", line);
     getline(s, line);
     EXPECT_EQ(58, (int)line.size());
-    EXPECT_EQ("# FC++ data export finished at: ", line.substr(0, 32));
+    EXPECT_EQ("# FCPP data export finished at: ", line.substr(0, 32));
     getline(s, line);
     EXPECT_EQ("##########################################################", line);
     getline(s, line);

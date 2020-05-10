@@ -146,10 +146,15 @@ namespace details {
     template <class... Ts>
     void ignore(const Ts&...) {}
     
+    template <class... Ts>
+    std::tuple<Ts...> capture_as_tuple(Ts&&... xs) {
+        return {xs...};
+    }
+    
     // Extracts elements from a tagged tuple as a tuple.
     template <class T, class... Ss, class... Ts>
-    auto tt_tie(T&& t, type_sequence<Ss...>, type_sequence<Ts...>) {
-        return std::forward_as_tuple(get_or<Ss>(std::forward<T>(t), Ts{})...);
+    auto tt_capture(T&& t, type_sequence<Ss...>, type_sequence<Ts...>) {
+        return capture_as_tuple(get_or<Ss>(std::forward<T>(t), Ts{})...);
     }
 
     // Assignment of elements of type Us.
@@ -276,12 +281,12 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
     //! @brief Copy constructor from another `tagged_tuple`.
     template <class... OSs, class... OTs>
     tagged_tuple(const tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>& t) :
-        std::tuple<Ts...>(details::tt_tie(t, type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
+        std::tuple<Ts...>(details::tt_capture(t, type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
     
     //! @brief Move constructor from another `tagged_tuple`.
     template <class... OSs, class... OTs>
     tagged_tuple(tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>&& t) :
-        std::tuple<Ts...>(details::tt_tie(std::move(t), type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
+        std::tuple<Ts...>(details::tt_capture(std::move(t), type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
     
     //! @brief Copy assignment from another `tagged_tuple`.
     template <class... OSs, class... OTs>

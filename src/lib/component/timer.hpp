@@ -123,7 +123,6 @@ struct timer {
                 fcpp::details::self(m_neigh, d) = t;
             }
             
-          protected: // visible by node objects only
             //! @brief Returns the time of the second most recent round (previous during rounds).
             times_t previous_time() {
                 return m_prev;
@@ -158,6 +157,11 @@ struct timer {
                 return m_neigh;
             }
             
+            //! @brief Returns the time difference with neighbours.
+            field<times_t> nbr_lag() {
+                return m_cur - m_neigh;
+            }
+
             //! @brief Returns the warping factor applied to following schedulers.
             double frequency() {
                 return m_fact;

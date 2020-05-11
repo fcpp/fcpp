@@ -271,13 +271,13 @@ to_local<A&> other(node_t& node, trace_t call_point, A& x) {
     return details::other(align(node, call_point, x));
 }
 
-//! @brief Computes the restriction of a local to a given domain.
+//! @brief Computes the restriction of a local to the current domain.
 template <typename node_t, typename A, typename = if_local<A>>
 A&& align(const node_t&, trace_t, A&& x) {
     return std::forward<A>(x);
 }
 
-//! @brief Computes the restriction of a field to a given domain.
+//! @brief Computes the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
 auto&& align(node_t& node, trace_t call_point, A&& x) {
     trace_t t = node.stack_trace.hash(call_point);
@@ -307,20 +307,28 @@ A& mod_hood(node_t& node, trace_t call_point, O&& op, A& a, const B&... b) {
     return a;
 }
 
-//! @brief Reduces the values in the domain of a field to a single value through a binary operation.
+//! @brief Reduces a field to a single value by a binary operation.
 template <typename node_t, typename O, typename A>
-local_result<O,A,A> fold_hood(node_t& node, trace_t call_point, O&& op, const A& f) {
+local_result<O,A,A> fold_hood(node_t& node, trace_t call_point, O&& op, const A& a) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
-    return details::fold_hood(op, f, details::get_context(node).second().align(t));
+    return details::fold_hood(op, a, details::get_context(node).second().align(t));
 }
 
-//! @brief Reduces the values in the domain of a field to a single value through a binary operation.
+//! @brief Reduces a field to a single value by a binary operation with a default value for self.
 template <typename node_t, typename O, typename A, typename B>
-local_result<O,A,B> fold_hood(node_t& node, trace_t call_point, O&& op, const A& f, const B& b) {
+local_result<O,A,B> fold_hood(node_t& node, trace_t call_point, O&& op, const A& a, const B& b) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
-    return details::fold_hood(op, f, b, details::get_context(node).second().align(t), node.uid);
+    return details::fold_hood(op, a, b, details::get_context(node).second().align(t), node.uid);
+}
+
+//! @brief Computes the number of neighbours aligned to the current call point.
+template <typename node_t>
+size_t count_hood(node_t& node, trace_t call_point) {
+    trace_t t = node.stack_trace.hash(call_point);
+    details::get_export(node).second()->insert(t);
+    return details::get_context(node).second().align(t).size();
 }
 //! @}
 
@@ -371,7 +379,7 @@ A old(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     A f = op(details::get_context(node).first().old(t, f0));
     details::get_export(node).first()->insert(t, f);
-    return std::move(f);
+    return f;
 }
 /**
  * @brief The previous-round value (defaults to first argument), modified through the second argument.
@@ -381,11 +389,11 @@ A old(node_t& node, trace_t call_point, const A& f0, G&& op) {
  * The second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&)>>
-B old(node_t& node, trace_t call_point, const A& f0, G&& op) {
+B old(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     std::pair<B,A> f = op(details::get_context(node).first().old(t, f0));
     details::get_export(node).first()->insert(t, std::move(f.second));
-    return std::move(f.first);
+    return f.first;
 }
 //! @}
 
@@ -436,7 +444,7 @@ A nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     A f = op(details::get_context(node).second().nbr(t, f0));
     details::get_export(node).second()->insert(t, f);
-    return std::move(f);
+    return f;
 }
 /**
  * @brief The neighbours' value (defaults to first argument), modified through the second argument.
@@ -446,11 +454,11 @@ A nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
  * The second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(common::add_template<field, A>)>>
-B nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
+B nbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     std::pair<B,A> f = op(details::get_context(node).second().nbr(t, f0));
     details::get_export(node).second()->insert(t, std::move(f.second));
-    return std::move(f.first);
+    return f.first;
 }
 //! @}
 
@@ -474,7 +482,7 @@ A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     A f = op(details::get_context(node).second().old(t, f0), details::get_context(node).second().nbr(t, f0));
     details::get_export(node).second()->insert(t, f);
-    return std::move(f);
+    return f;
 }
 /**
  * @brief The result of the second argument given info from neighbours' and self.
@@ -484,11 +492,11 @@ A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
  * The second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&, common::add_template<field, A>)>>
-B oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
+B oldnbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     std::pair<B,A> f = op(details::get_context(node).second().old(t, f0), details::get_context(node).second().nbr(t, f0));
     details::get_export(node).second()->insert(t, std::move(f.second));
-    return std::move(f.first);
+    return f.first;
 }
 //! @}
 

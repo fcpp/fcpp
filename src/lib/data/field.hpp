@@ -596,8 +596,8 @@ to_field<A> mux(field<bool> b, A&& x, A&& y) {
 //! @{
 //! @brief max between locals.
 template <typename A, typename = if_local<A>>
-A&& max(A&& x, A&& y) {
-    return std::max(std::forward<A>(x), std::forward<A>(y));
+const A& max(const A& x, const A& y) {
+    return std::max(x, y);
 }
 
 //! @brief max between fields.
@@ -618,8 +618,8 @@ to_field<A> max(const A& x, const A& y) {
 //! @{
 //! @brief min between locals.
 template <typename A, typename = if_local<A>>
-A&& min(A&& x, A&& y) {
-    return std::min(std::forward<A>(x), std::forward<A>(y));
+const A& min(const A& x, const A& y) {
+    return std::min(x, y);
 }
 
 //! @brief min between fields.

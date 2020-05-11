@@ -46,7 +46,10 @@ cc_library(
     hdrs = ['coordination.hpp'],
     srcs = ['coordination.cpp'],
     deps = [
+        "//lib/coordination:collection",
+        "//lib/coordination:geometry",
         "//lib/coordination:spreading",
+        "//lib/coordination:utils",
     ],
     visibility = [
         '//visibility:public',

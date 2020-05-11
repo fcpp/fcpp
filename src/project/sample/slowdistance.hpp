@@ -66,7 +66,7 @@ void distance_compare(node_t& node, trace_t call_point) {
     auto metric = [&](){
         return node.nbr_dist();
     };
-    double fastd = distance(node, 0, source, metric);
+    double fastd = abf_distance(node, 0, source, metric);
     double slowd = slow_distance(node, 1, source, metric);
     double ideal = std::norm(node.net.node_at(0).position() - node.position());
     node.storage(tags::fastdist{})  = fastd;

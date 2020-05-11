@@ -8,6 +8,9 @@
 #ifndef FCPP_COORDINATION_H_
 #define FCPP_COORDINATION_H_
 
+#include "lib/coordination/collection.hpp"
+#include "lib/coordination/geometry.hpp"
 #include "lib/coordination/spreading.hpp"
+#include "lib/coordination/utils.hpp"
 
 #endif // FCPP_COORDINATION_H_

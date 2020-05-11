@@ -113,7 +113,7 @@ array<T,n> operator*(const T& x, array<T,n> y) {
 //! @}
 
 
-//! @brief Scalar multiplication and vector norm.
+//! @brief Scalar multiplication, vector norm and normalisation.
 //! @{
 template <typename T, size_t n>
 T operator*(const array<T,n>& x, const array<T,n>& y) {
@@ -125,6 +125,11 @@ T operator*(const array<T,n>& x, const array<T,n>& y) {
 template <typename T, size_t n>
 T norm(const array<T,n>& x) {
     return sqrt(x * x);
+}
+
+template <typename T, size_t n>
+T unit(const array<T,n>& x) {
+    return x / norm(x);
 }
 //! @}
 

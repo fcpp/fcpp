@@ -12,8 +12,6 @@
 #include "lib/coordination/geometry.hpp"
 #include "lib/coordination/spreading.hpp"
 
-#include "test/profiler.hpp"
-
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -127,7 +125,6 @@ void collection_compare(node_t& node, trace_t call_point) {
 struct main {
     template <typename node_t>
     void operator()(node_t& node, times_t) {
-        PROFILE("round");
         coordination::collection_compare(node, 0);
     }
 };

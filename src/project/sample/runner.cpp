@@ -24,8 +24,8 @@ using rectangle_d = random::array_distribution<random::interval_d<double, 0, MAX
 
 using combo = component::combine<
     component::calculus<main, metric::once,
-        device_t, double, field<double>, tuple<double,device_t>, tuple<double,int>, tuple<double,double>, std::array<double, 2>>,
-
+        device_t, double, field<double>, std::array<double, 2>,
+        tuple<double,device_t>, tuple<double,int>, tuple<double,double>>,
     component::exporter<false, export_s,
         spc_sum,    aggregator::sum<double>,
         mpc_sum,    aggregator::sum<double>,

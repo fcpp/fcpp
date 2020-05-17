@@ -131,6 +131,11 @@ template <typename T, size_t n>
 T unit(const array<T,n>& x) {
     return x / norm(x);
 }
+
+template <typename T, size_t n>
+T distance(const array<T,n>& x, const array<T,n>& y) {
+    return norm(x - y);
+}
 //! @}
 
 

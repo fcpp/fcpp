@@ -1,21 +1,14 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
- * @file spreading.hpp
- * @brief Implementation of the `spreading` component providing field calculus distance estimation routines.
+ * @file slowdistance.hpp
+ * @brief Implementation of the `slowdistance` case study.
  */
 
 #ifndef SLOWDISTANCE_H_
 #define SLOWDISTANCE_H_
 
-#include <cmath>
-
-#include <limits>
-
-#include "lib/common/array.hpp"
-#include "lib/common/tagged_tuple.hpp"
-#include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
+#include "lib/coordination/spreading.hpp"
 
 
 /**

@@ -4,8 +4,6 @@ cc_library(
     srcs = ['collection.cpp'],
     deps = [
         "//lib/coordination:utils",
-        "//lib/data:field",
-        "//lib/data:trace",
     ],
     visibility = [
         '//visibility:public',
@@ -19,8 +17,6 @@ cc_library(
     deps = [
         "//lib/common:array",
         "//lib/coordination:utils",
-        "//lib/data:field",
-        "//lib/data:trace",
     ],
     visibility = [
         '//visibility:public',
@@ -33,8 +29,6 @@ cc_library(
     srcs = ['spreading.cpp'],
     deps = [
         "//lib/coordination:utils",
-        "//lib/data:field",
-        "//lib/data:trace",
     ],
     visibility = [
         '//visibility:public',

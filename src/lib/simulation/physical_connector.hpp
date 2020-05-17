@@ -125,11 +125,11 @@ namespace details {
  * bool operator()(const type& data1, const std::array<double, n>& position1, const type& data2, const std::array<double, n>& position2) const;
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  *
- * @param G A generator for delays in sending messages.
  * @param C A connection predicate.
+ * @param G A generator for delays in sending messages (defaults to zero).
  * @param n Dimensionality of the space (defaults to 2).
  */
-template <typename G, typename C, size_t n = 2>
+template <typename C, typename G = random::constant_distribution<times_t, 0>, size_t n = 2>
 struct physical_connector {
     /**
      * @brief The actual component.
@@ -222,8 +222,10 @@ struct physical_connector {
                     times_t t = next();
                     if (t == m_leave) {
                         m_leave = TIME_MAX;
-                        P::node::net.cell_move(P::node::as_final(), t);
-                        set_leave_time(t);
+                        if (P::node::next() < TIME_MAX) {
+                            P::node::net.cell_move(P::node::as_final(), t);
+                            set_leave_time(t);
+                        }
                     }
                     if (t == m_send) {
                         m_send = TIME_MAX;

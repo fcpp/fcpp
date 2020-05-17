@@ -26,7 +26,7 @@ vagrant halt
 Type the following commands in a terminal, starting from the `src` folder of the repository:
 ```
 docker build -t fcpp .
-docker run -it --volume $PWD:/fcpp --workdir /fcpp fcpp
+docker run -it --volume $PWD:/fcpp --workdir /fcpp fcpp bash
 ./make.sh all
 ```
 Then you should get output about building and testing the whole library (in the Docker container). After that you can exit and stop the container through:

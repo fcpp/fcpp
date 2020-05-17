@@ -78,7 +78,6 @@ struct randomizer {
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_generator(common::get_or<tags::seed>(t, P::node::uid)) {}
 
-          protected: // visible by node objects only
             /**
              * @brief Write access to stored data.
              *

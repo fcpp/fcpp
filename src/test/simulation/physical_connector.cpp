@@ -40,7 +40,7 @@ using seq_per = random::sequence_periodic<random::constant_distribution<times_t,
 using combo1 = component::combine<
     exposer,
     component::scheduler<seq_per>,
-    component::physical_connector<random::constant_distribution<times_t, 1, 4>, connector::fixed<1>>,
+    component::physical_connector<connector::fixed<1>, random::constant_distribution<times_t, 1, 4>>,
     component::physical_position<>
 >;
 

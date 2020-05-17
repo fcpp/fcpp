@@ -6,18 +6,13 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/array.hpp"
-#include "lib/common/tagged_tuple.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/calculus.hpp"
 #include "lib/component/identifier.hpp"
 #include "lib/component/storage.hpp"
-#include "lib/coordination/spreading.hpp"
-#include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
 #include "lib/simulation/physical_position.hpp"
 
-#include "project/sample/slowdistance.hpp"
+#include "test/general/slowdistance.hpp"
 
 using namespace fcpp;
 using namespace coordination::tags;

@@ -2,35 +2,58 @@
 
 #include "lib/fcpp.hpp"
 
-#include "project/sample/slowdistance.hpp"
+#include "project/sample/collection_compare.hpp"
 
 using namespace fcpp;
+using namespace component::tags;
 using namespace coordination::tags;
 
-#define DEVICE_NUM 10000
-#define ROUND_NUM  50
-#define AREA_SIZE  30
+#define ALGO        1
+#define DEVICE_NUM  1000
+#define END_TIME    500
+#define MAXX        2000
+#define MAXY        200
 
 using spawn_s = random::sequence_multiple<random::constant_distribution<times_t, 0>, DEVICE_NUM>;
 
-using round_s = random::sequence_periodic<random::constant_distribution<times_t, 1>, random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 2*ROUND_NUM>>;
+using round_s = random::sequence_periodic<random::interval_d<times_t, 0, 1>, random::weibull_d<times_t, 100, 25, 100>, random::constant_distribution<times_t, END_TIME>>;
 
-using export_s = random::sequence_periodic<random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 2*ROUND_NUM+1>>;
+using export_s = random::sequence_periodic<random::constant_distribution<times_t, 10>, random::constant_distribution<times_t, 10>, random::constant_distribution<times_t, END_TIME>>;
 
-using rectangle_d = random::array_distribution<random::interval_d<double, 0, AREA_SIZE>, random::interval_d<double, 0, AREA_SIZE>>;
+using rectangle_d = random::array_distribution<random::interval_d<double, 0, MAXX>, random::interval_d<double, 0, MAXY>>;
 
 using combo = component::combine<
-    component::calculus<main, metric::once, double>,
+    component::calculus<main, metric::once,
+        device_t, double, field<double>, tuple<double,device_t>, tuple<double,int>, tuple<double,double>, std::array<double, 2>>,
 
-    component::physical_connector<random::constant_distribution<times_t, 1, 4>, connector::fixed<1>>,
+    component::exporter<false, export_s,
+        spc_sum,    aggregator::sum<double>,
+        mpc_sum,    aggregator::sum<double>,
+        wmpc_sum,   aggregator::sum<double>,
+        ideal_sum,  aggregator::sum<double>,
+        spc_max,    aggregator::max<double>,
+        mpc_max,    aggregator::max<double>,
+        wmpc_max,   aggregator::max<double>,
+        ideal_max,  aggregator::max<double>>,
+    component::storage<
+        algorithm,  int,
+        spc_sum,    double,
+        mpc_sum,    double,
+        wmpc_sum,   double,
+        ideal_sum,  double,
+        spc_max,    double,
+        mpc_max,    double,
+        wmpc_max,   double,
+        ideal_max,  double>,
+    component::spawner<spawn_s,
+        x,          rectangle_d,
+        algorithm,  random::constant_distribution<int, ALGO>>,
+
+    component::physical_connector<connector::fixed<100>>,
     component::physical_position<>,
-
-    component::exporter<false,export_s,fasterr,aggregator::stats<double>,slowerr,aggregator::stats<double>>,
-    component::storage<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>,
-
+    component::timer,
     component::scheduler<round_s>,
-    component::spawner<spawn_s, component::tags::x, rectangle_d>,
-    component::identifier<true>,
+    component::identifier<false>,
     component::randomizer<>
 >;
 

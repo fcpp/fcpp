@@ -16,6 +16,7 @@
 #include "lib/settings.hpp"
 #include "lib/common/array.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
 
 
@@ -243,6 +244,7 @@ struct physical_position {
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
                 P::node::round_start(t);
+                PROFILE_COUNT("positioner");
                 if (m_last > TIME_MIN) {
                     double dt = t - m_last;
                     if (m_f == 0) {

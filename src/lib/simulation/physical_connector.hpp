@@ -21,6 +21,7 @@
 #include "lib/common/distribution.hpp"
 #include "lib/common/mutex.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/component/base.hpp"
 
 
 /**
@@ -219,8 +220,10 @@ struct physical_connector {
             //! @brief Updates the internal status of node component.
             void update() {
                 if (std::min(m_send, m_leave) < P::node::next()) {
+                    PROFILE_COUNT("connector");
                     times_t t = next();
                     if (t == m_leave) {
+                        PROFILE_COUNT("connector/cell");
                         m_leave = TIME_MAX;
                         if (P::node::next() < TIME_MAX) {
                             P::node::net.cell_move(P::node::as_final(), t);
@@ -228,6 +231,7 @@ struct physical_connector {
                         }
                     }
                     if (t == m_send) {
+                        PROFILE_COUNT("connector/send");
                         m_send = TIME_MAX;
                         for (const details::cell<typename F::node>* c : P::node::net.neighbour_cells(P::node::as_final()))
                             for (typename F::node* nn : *c)

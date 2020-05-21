@@ -228,6 +228,7 @@ struct exporter {
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_schedule.next() < P::net::next()) {
+                    PROFILE_COUNT("exporter");
                     *m_stream << m_schedule.next() << " ";
                     m_schedule.step(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
                     data_puller(common::bool_pack<not push>(), *this);

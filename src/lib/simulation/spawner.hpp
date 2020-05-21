@@ -15,6 +15,7 @@
 #include "lib/common/distribution.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
+#include "lib/component/base.hpp"
 #include "lib/component/timer.hpp"
 
 
@@ -92,6 +93,7 @@ struct spawner {
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_schedule.next() < P::net::next()) {
+                    PROFILE_COUNT("spawner");
                     times_t t = m_schedule.next();
                     auto&& gen = get_generator(common::bool_pack<has_rtag<P>::value>(), *this);
                     m_schedule.step(gen);

@@ -5,6 +5,7 @@ cc_library(
     deps = [
         "//lib:settings",
         "//lib/common:mutex",
+        "//lib/common:profiler",
         "//lib/common:tagged_tuple",
     ],
     visibility = [

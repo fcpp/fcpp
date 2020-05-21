@@ -38,14 +38,11 @@ function parseopt() {
         if [ "${1:0:2}" == "-O" ]; then
             asan="--config=opt"
         else
-            copts="$copts $1"
+            copts="$copts --copt=$1"
         fi
         i=$[i+1]
         shift 1
     done
-    if [ "$copts" != "" ]; then
-        copts="--copt=\"${copts:1}\""
-    fi
     return $i
 }
 

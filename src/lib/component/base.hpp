@@ -13,6 +13,7 @@
 
 #include "lib/settings.hpp"
 #include "lib/common/mutex.hpp"
+#include "lib/common/profiler.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
 
@@ -130,9 +131,19 @@ struct base {
             
             //! @brief Performs a computation round with current time `t`. Should NEVER be overridden.
             void round(times_t t) {
-                as_final().round_start(t);
-                as_final().round_main(t);
-                as_final().round_end(t);
+                PROFILE_COUNT("round");
+                {
+                    PROFILE_COUNT("round/start");
+                    as_final().round_start(t);
+                }
+                {
+                    PROFILE_COUNT("round/main");
+                    as_final().round_main(t);
+                }
+                {
+                    PROFILE_COUNT("round/end");
+                    as_final().round_end(t);
+                }
             }
         };
         
@@ -172,6 +183,7 @@ struct base {
                 while (as_final().next() < end)
                     if (as_final().next() <= real_time())
                         as_final().update();
+                PROFILE_REPORT();
             }
             
           protected: // visible by net objects only

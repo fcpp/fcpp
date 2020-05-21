@@ -18,7 +18,7 @@ using spawn_s = random::sequence_multiple<random::constant_distribution<times_t,
 
 using round_s = random::sequence_periodic<random::interval_d<times_t, 0, 1>, random::weibull_d<times_t, 100, 25, 100>, random::constant_distribution<times_t, END_TIME>>;
 
-using export_s = random::sequence_periodic<random::constant_distribution<times_t, 10>, random::constant_distribution<times_t, 10>, random::constant_distribution<times_t, END_TIME>>;
+using export_s = random::sequence_periodic<random::constant_distribution<times_t, 0>, random::constant_distribution<times_t, 10>, random::constant_distribution<times_t, END_TIME>>;
 
 using rectangle_d = random::array_distribution<random::interval_d<double, 0, MAXX>, random::interval_d<double, 0, MAXY>>;
 

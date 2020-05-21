@@ -7,6 +7,7 @@ cc_library(
         "//lib/common:distribution",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
+        "//lib/component:base",
         "//lib/component:timer",
     ],
     visibility = [
@@ -24,6 +25,7 @@ cc_library(
         "//lib/common:distribution",
         "//lib/common:mutex",
         "//lib/common:tagged_tuple",
+        "//lib/component:base",
     ],
     visibility = [
         '//visibility:public',
@@ -38,6 +40,7 @@ cc_library(
         "//lib:settings",
         "//lib/common:array",
         "//lib/common:tagged_tuple",
+        "//lib/component:base",
         "//lib/data:field",
     ],
     visibility = [

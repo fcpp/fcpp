@@ -258,7 +258,7 @@ class sequence_periodic {
     
     //! @brief Returns next event, without stepping over.
     times_t next() const {
-        return (i < n and t < te) ? t : TIME_MAX;
+        return (i < n and t <= te) ? t : TIME_MAX;
     }
     
     //! @brief Steps over to next event, without returning.

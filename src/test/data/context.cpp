@@ -1,6 +1,5 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include <unordered_set>
 #include <utility>
 
 #include "gtest/gtest.h"
@@ -11,85 +10,116 @@
 using namespace fcpp;
 
 
+// mock metric class returning a given value and never updating
+struct metric {
+    metric() = default;
+    
+    metric(double v) : val(v) {}
+    
+    template <typename... Ts>
+    double build(Ts const&...) const {
+        return val;
+    }
+    
+    template <typename... Ts>
+    double update(const double& r, Ts const&...) const {
+        return val == 0.0 ? r : val;
+    }
+    
+  private:
+    double val;
+};
+
 class ContextTest : public ::testing::Test {
   protected:
     virtual void SetUp() {
         m.insert(7, 'a');
         m.insert(42,'+');
-        m.insert(3,  fcpp::details::make_field(1,{{0,3}, {6,4}}));
-        m.insert(18, fcpp::details::make_field(9,{{1,2}, {9,2}}));
+        m.insert(3,  details::make_field({0,6}, std::vector<int>{1,3,4}));
+        m.insert(18, details::make_field({1,9}, std::vector<int>{9,2,2}));
         m.insert(8);
-        data.insert(1, m, 0.5);
+        data.insert(1, m, 0.5, 1.5, 9);
     }
     
     common::multitype_map<trace_t, fcpp::field<int>, char> m;
-    data::context<double, fcpp::field<int>, char> data{0};
+    data::context<FCPP_ONLINE_DROP, double, fcpp::field<int>, char> data;
 };
 
 
 TEST_F(ContextTest, Operators) {
-    data::context<double, fcpp::field<int>, char> x(data), y(-1), z(-1);
+    data::context<FCPP_ONLINE_DROP, double, fcpp::field<int>, char> x(data), y, z;
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(data, z);
 }
 
+#if FCPP_ONLINE_DROP
 TEST_F(ContextTest, InsertErase) {
-    data::context<double, fcpp::field<int>, char> x(data);
-    x.insert(2, m, 0.3);
-    EXPECT_EQ(device_t(0), x.self());
-    EXPECT_EQ(size_t(3), x.size());
-    EXPECT_EQ(0.5, x.top());
-    for (const auto& p : x.data())
-        EXPECT_EQ(*(p.second), m);
-    x.insert(2, 1.0);
-    EXPECT_EQ(size_t(3), x.size());
-    EXPECT_EQ(1.0, x.top());
+    data::context<FCPP_ONLINE_DROP, double, fcpp::field<int>, char> x(data);
+    x.insert(2, m, 0.3, 1.5, 9);
+    x.insert(3, m, 0.4, 1.5, 9);
+    EXPECT_EQ(size_t(3), x.size(1));
+    EXPECT_EQ(size_t(4), x.size(0));
+    EXPECT_EQ(device_t(1), x.top());
     x.pop();
-    EXPECT_EQ(data, x);
-    EXPECT_EQ(size_t(2), x.size());
-    EXPECT_EQ(0.5, x.top());
-    x.insert(0, m, 2.0);
-    EXPECT_EQ(size_t(2), x.size());
-    EXPECT_EQ(2.0, x.top());
+    EXPECT_EQ(device_t(3), x.top());
+    x.pop();
+    EXPECT_EQ(device_t(2), x.top());
+    x.unfreeze(0, metric{0.5}, 1.0);
+    EXPECT_EQ(device_t(2), x.top());
+    x.insert(3, m, 0.4, 1.5, 9);
+    EXPECT_EQ(device_t(2), x.top());
+    x.pop();
+    EXPECT_EQ(device_t(3), x.top());
+    x.unfreeze(0, metric{1.0}, 0.5);
+    EXPECT_EQ(size_t(1), x.size(9));
 }
+#endif
 
 TEST_F(ContextTest, Align) {
     m.insert(9);
-    data.insert(2, m, 1.0);
-    std::unordered_set<device_t> ex, res;
-    ex = std::unordered_set<device_t>{0,1,2};
-    res = data.align(8);
+    data.insert(2, m, 1.0, 1.5, 9);
+    data.freeze(9, 0);
+    std::vector<device_t> ex, res;
+    ex = std::vector<device_t>{0,1,2};
+    res = data.align(8, 0);
     EXPECT_EQ(ex, res);
-    ex = std::unordered_set<device_t>{0,2};
-    res = data.align(9);
+    ex = std::vector<device_t>{0,2};
+    res = data.align(9, 0);
     EXPECT_EQ(ex, res);
+    data.unfreeze(0, metric{}, 1.5);
 }
 
 TEST_F(ContextTest, Old) {
     char c;
-    c = data.old(7, 'c');
+    data.freeze(9, 0);
+    c = data.old(7, 'c', 0);
     EXPECT_EQ('c', c);
-    data.insert(0, m, 1.0);
-    c = data.old(7, 'c');
+    data.unfreeze(0, metric{}, 1.5);
+    data.insert(0, m, 1.0, 1.5, 9);
+    data.freeze(9, 0);
+    c = data.old(7, 'c', 0);
     EXPECT_EQ('a', c);
+    data.unfreeze(0, metric{}, 1.5);
 }
 
 TEST_F(ContextTest, Nbr) {
     m.insert(42, '-');
-    m.insert(3,  fcpp::details::make_field(1, {{0,2}, {5,9}}));
-    m.insert(18, fcpp::details::make_field(1, {{0,3}, {5,7}}));
-    data.insert(2, m, 1.0);
+    m.insert(3,  details::make_field({0,5}, std::vector<int>{1,2,9}));
+    m.insert(18, details::make_field({0,5}, std::vector<int>{1,3,7}));
+    data.insert(2, m, 1.0, 1.5, 9);
+    data.freeze(9, 0);
     fcpp::field<char> fcr, fce;
-    fcr = data.template nbr<char>(42, '*');
-    fce = fcpp::details::make_field('*', {{1,'+'}, {2,'-'}});
+    fcr = data.nbr(42, '*', 0);
+    fce = details::make_field({1,2}, std::vector<char>{'*', '+', '-'});
     EXPECT_EQ(fce, fcr);
     fcpp::field<int> fir, fie;
-    fir = data.template nbr<fcpp::field<int>>(18, -1);
-    fie = fcpp::details::make_field(-1, {{1,9}, {2,3}});
+    fir = data.nbr(18, field<int>{-1}, 0);
+    fie = details::make_field({1,2}, std::vector<int>{-1,9,3});
     EXPECT_EQ(fie, fir);
-    fir = data.template nbr<fcpp::field<int>>(3, 7);
-    fie = fcpp::details::make_field(7, {{1,3}, {2,2}});
+    fir = data.nbr(3, field<int>{7}, 0);
+    fie = details::make_field({1,2}, std::vector<int>{7,3,2});
     EXPECT_EQ(fie, fir);
+    data.unfreeze(0, metric{}, 1.5);
 }

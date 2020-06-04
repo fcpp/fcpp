@@ -12,7 +12,6 @@
 #include "lib/coordination/spreading.hpp"
 
 using namespace fcpp;
-using fcpp::coordination::INF;
 
 constexpr int I = std::numeric_limits<int>::max()-1;
 

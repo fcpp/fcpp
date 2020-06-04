@@ -1,4 +1,14 @@
 cc_library(
+    name = 'beautify',
+    hdrs = ['beautify.hpp'],
+    srcs = ['beautify.cpp'],
+    deps = [],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'common',
     hdrs = ['common.hpp'],
     srcs = ['common.cpp'],

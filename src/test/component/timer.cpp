@@ -90,7 +90,7 @@ TEST(TimerTest, NodePlanning) {
     EXPECT_EQ(2.0, device.previous_time());
     EXPECT_EQ(7.0, device.current_time());
     EXPECT_EQ(12.0, device.next_time());
-    fcpp::field<bool> f = device.message_time() == fcpp::details::make_field(TIME_MIN, {{1,2},{2,3},{3,4}});
+    fcpp::field<bool> f = device.message_time() == details::make_field({1,2,3}, std::vector<times_t>{TIME_MIN,2,3,4});
     EXPECT_TRUE(f);
     device.next_time(8.0);
     EXPECT_EQ(8.0, device.next_time());
@@ -125,7 +125,7 @@ TEST(TimerTest, NodeScheduling) {
     device.receive(5.0, 2, common::make_tagged_tuple<>());
     device.receive(7.0, 3, common::make_tagged_tuple<>());
     device.update();
-    fcpp::field<bool> f = device.message_time() == fcpp::details::make_field(TIME_MIN, {{1,3},{2,5},{3,7}});
+    fcpp::field<bool> f = device.message_time() == details::make_field({1,2,3}, std::vector<times_t>{TIME_MIN,3,5,7});
     EXPECT_TRUE(f);
     EXPECT_EQ(3.0, device.previous_time());
     EXPECT_EQ(8.0, device.current_time());

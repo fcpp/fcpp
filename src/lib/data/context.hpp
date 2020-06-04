@@ -8,11 +8,12 @@
 #ifndef FCPP_DATA_CONTEXT_H_
 #define FCPP_DATA_CONTEXT_H_
 
+#include <algorithm>
 #include <ostream>
 #include <queue>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "lib/common/flat_ptr.hpp"
 #include "lib/common/multitype_map.hpp"
@@ -33,154 +34,334 @@ namespace data {
 
 /**
  * @brief Keeps associations between devices and export received.
+ *
  * Exports are added to neighbours' contexts at end of rounds,
  * possibly triggering filtering of old (or less relevant) exports.
  *
+ * @param online Whether the number of stored exports should be kept cleaned as exports are inserted.
  * @param M Type of the export metrics.
  * @param Ts Types included in the exports.
  */
+template <bool online, typename M, typename... Ts>
+class context;
+
+
+/**
+ * @brief Keeps associations between devices and export received.
+ *
+ * Specialisation for online cleaning of export as they are inserted.
+ */
 template <typename M, typename... Ts>
-class context {
+class context<true, M, Ts...> {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, FCPP_EXPORTS == 2> export_type;
+    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not FCPP_EXPORT_PTR> export_type;
 
     //! @brief The type of the metric on exports.
     typedef M metric_type;
-    
-  private:
-    //! @brief Map associating devices to exports.
-    std::unordered_map<device_t, export_type> m_data;
-    //! @brief Map associating devices to metric results
-    std::unordered_map<device_t, metric_type> m_metrics;
-    //! @brief Exports ordered by metric results
-    std::priority_queue<std::pair<metric_type, device_t>> m_queue;
-    //! @brief The identifier of the local device.
-    device_t m_self;
-    
-  public:
+
     //! @name constructors
     //@{
     //! @brief Default constructor creating an empty context.
-    context(device_t self) : m_data(), m_metrics(), m_queue(), m_self(self) {};
-    
+    context() = default;
+
     //! @brief Copy constructor.
-    context(const context<M, Ts...>&) = default;
-    
+    context(context const&) = default;
+
     //! @brief Move constructor.
-    context(context<M, Ts...>&&) = default;
+    context(context&&) = default;
     //@}
 
     //! @name assignment operators
     //@{
     //! @brief Copy assignment.
-    context<M, Ts...>& operator=(const context<M, Ts...>&) = default;
-    
+    context& operator=(context const&) = default;
+
     //! @brief Move assignment.
-    context<M, Ts...>& operator=(context<M, Ts...>&&) = default;
+    context& operator=(context&&) = default;
     //@}
 
     //! @brief Equality operator.
-    bool operator==(const context<M, Ts...>& o) const {
-        return m_self == o.m_self && m_data == o.m_data && m_metrics == o.m_metrics;
+    bool operator==(context const& o) const {
+        return m_data == o.m_data && m_metrics == o.m_metrics;
     }
 
-    //! @brief Access to the local device identifier.
-    device_t self() const {
-        return m_self;
-    }
-    
     //! @brief Number of exports contained.
-    size_t size() const {
-        return m_data.size() + 1-m_data.count(m_self);
-    }
-    
-    //! @brief Whether the queue of exports is empty.
-    metric_type empty() const {
-        return m_queue.empty();
-    }
-    
-    //! @brief The highest metrics contained.
-    metric_type top() const {
-        return m_queue.top().first;
-    }
-    
-    //! @brief Const access to the context data.
-    const std::unordered_map<device_t, export_type>& data() const {
-        return m_data;
-    }
-    
-    //! @brief Const access to the context metrics.
-    const std::unordered_map<device_t, metric_type>& metrics() const {
-        return m_metrics;
+    size_t size(device_t self) const {
+        return m_data.size() + 1-m_data.count(self);
     }
 
-    //! @brief Inserts an export for a device.
-    void insert(device_t device, export_type e, metric_type m) {
-        insert(device, m);
-        m_data[device] = std::move(e);
+    //! @brief Inserts an export for a device with a certain metric, possibly cleaning up.
+    void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t hoodsize) {
+        if (m <= threshold) {
+            m_queue.emplace(m, d);
+            m_metrics[d] = m;
+            m_data[d] = std::move(e);
+            if (m_data.size() > hoodsize) pop();
+        }
     }
-    
-    //! @brief Update the metric for an existing export of a device.
-    void insert(device_t device, metric_type m) {
-        m_queue.emplace(m, device);
-        m_metrics[device] = m;
-        clean();
+
+    //! @brief The worst export currently in context.
+    device_t top() {
+        // erases invalid values
+        while (m_metrics.count(m_queue.top().second) == 0 or m_metrics.at(m_queue.top().second) != m_queue.top().first)
+            m_queue.pop();
+        return m_queue.top().second;
     }
-    
+
     //! @brief Erases the worst export.
     void pop() {
-        device_t device = m_queue.top().second;
-        m_data.erase(device);
-        m_metrics.erase(device);
+        // erases invalid values
+        while (m_metrics.count(m_queue.top().second) == 0 or m_metrics.at(m_queue.top().second) != m_queue.top().first)
+            m_queue.pop();
+        m_data.erase(m_queue.top().second);
+        m_metrics.erase(m_queue.top().second);
         m_queue.pop();
-        clean();
     }
-    
+
+    //! @brief Changes the status of the context from "modify" to "query".
+    void freeze(device_t, device_t) {
+        for (const auto& x : m_data)
+            m_sorted_data.emplace_back(x.first, &x.second);
+        std::sort(m_sorted_data.begin(), m_sorted_data.end());
+    }
+
+    //! @brief Changes the status of the context from "query" to "modify", updating metrics.
+    template <typename N, typename T>
+    void unfreeze(N const& node, T const& metric, metric_type threshold) {
+        m_sorted_data.clear();
+        m_queue = {};
+        for (auto it = m_metrics.begin(); it != m_metrics.end(); ) {
+            it->second = metric.update(it->second, node);
+            if (it->second > threshold) {
+                m_data.erase(it->first);
+                it = m_metrics.erase(it);
+            } else {
+                m_queue.emplace(it->second, it->first);
+                ++it;
+            }
+        }
+    }
+
     //! @brief Returns list of devices with specified trace.
-    std::unordered_set<device_t> align(trace_t trace) const {
-        std::unordered_set<device_t> v;
-        for (const auto& d : m_data)
-            if (d.second->contains(trace))
-                v.insert(d.first);
-        v.insert(m_self);
+    std::vector<device_t> align(trace_t trace, device_t self) const {
+        std::vector<device_t> v;
+        auto it = m_sorted_data.begin();
+        for (; it != m_sorted_data.end() and it->first < self; ++it)
+            if ((*(it->second))->contains(trace)) {
+                v.push_back(it->first);
+            }
+        v.push_back(self);
+        if (it != m_sorted_data.end() and it->first == self) ++it;
+        for (; it != m_sorted_data.end(); ++it)
+            if ((*(it->second))->contains(trace)) {
+                v.push_back(it->first);
+            }
         return v;
     }
-    
+
     //! @brief Returns the old value for a certain trace (unaligned).
     template <typename A>
-    const A& old(trace_t trace, const A& def) const {
-        if (m_data.count(m_self) and m_data.at(m_self)->template count<A>(trace))
-            return m_data.at(m_self)->template at<A>(trace);
+    const A& old(trace_t trace, const A& def, device_t self) const {
+        if (m_data.count(self) and m_data.at(self)->template count<A>(trace))
+            return m_data.at(self)->template at<A>(trace);
         return def;
     }
 
     //! @brief Returns neighbours' values for a certain trace (default from `def`, and also self if not present).
     template <typename A>
-    common::add_template<field, A> nbr(trace_t trace, const A& def) const {
-        std::unordered_map<device_t, common::del_template<field, A>> m;
-        for (const auto& x : m_data)
-            if (x.second->template count<A>(trace))
-                m[x.first] = details::self(x.second->template at<A>(trace), m_self);
-        return details::make_field(details::other(def), m);
+    common::add_template<field, A> nbr(trace_t trace, A const& def, device_t self) const {
+        std::vector<device_t> ids;
+        std::vector<common::del_template<field, A>> vals;
+        vals.push_back(details::other(def));
+        for (const auto& x : m_sorted_data)
+            if ((*x.second)->template count<A>(trace)) {
+                ids.push_back(x.first);
+                vals.push_back(details::self(static_cast<A const&>((*x.second)->template at<A>(trace)), self));
+            }
+        return details::make_field(std::move(ids), std::move(vals));
     }
-    
+
     //! @brief Prints the context in a stream.
     void print(std::ostream& o) const {
-        o << m_self << ":";
-        if (m_data.count(m_self) == 1)
-            o << m_data.at(m_self) << "@" << 0+m_metrics.at(m_self);
-        else o << "null";
-        for (const auto& x : m_metrics) if (x.first != m_self)
-            o << ", " << x.first << ":" << m_data.at(x.first) << "@" << 0+x.second;
+        bool first = true;
+        for (const auto& x : m_metrics) {
+            if (first) first = false;
+            else o << ", ";
+            o << x.first << ":" << m_data.at(x.first) << "@" << 0+x.second;
+        }
     }
 
   private:
-    // Erases invalid elements at the top of m_queue.
-    void clean() {
-        while (m_metrics.count(m_queue.top().second) == 0 or m_metrics[m_queue.top().second] != m_queue.top().first)
-            m_queue.pop();
+    //! @brief Map associating devices to exports.
+    std::unordered_map<device_t, export_type> m_data;
+    //! @brief Map associating devices to metric results.
+    std::unordered_map<device_t, metric_type> m_metrics;
+    //! @brief Exports ordered by metric results.
+    std::priority_queue<std::pair<metric_type, device_t>> m_queue;
+    //! @brief Exports ordered by device.
+    std::vector<std::pair<device_t, export_type const*>> m_sorted_data;
+};
+
+
+/**
+ * @brief Keeps associations between devices and export received.
+ *
+ * Specialisation for cleaning of exports only at round start.
+ */
+template <typename M, typename... Ts>
+class context<false, M, Ts...> {
+  public:
+    //! @brief The type of the exports contained in the context.
+    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not FCPP_EXPORT_PTR> export_type;
+
+    //! @brief The type of the metric on exports.
+    typedef M metric_type;
+
+    //! @name constructors
+    //@{
+    //! @brief Default constructor creating an empty context.
+    context() = default;
+
+    //! @brief Copy constructor.
+    context(context const&) = default;
+
+    //! @brief Move constructor.
+    context(context&&) = default;
+    //@}
+
+    //! @name assignment operators
+    //@{
+    //! @brief Copy assignment.
+    context& operator=(context const&) = default;
+
+    //! @brief Move assignment.
+    context& operator=(context&&) = default;
+    //@}
+
+    //! @brief Equality operator.
+    bool operator==(context const& o) const {
+        return m_data == o.m_data;
     }
+
+    //! @brief Number of exports contained.
+    size_t size(device_t self) const {
+        return m_data.size() + (m_self == m_data.size() or get<0>(m_data[m_self]) != self);
+    }
+
+    //! @brief Inserts an export for a device with a certain metric, possibly cleaning up.
+    void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t) {
+        if (m <= threshold) {
+            if (m_data.size() > 0 and get<0>(m_data.back()) == d)
+                m_data.back() = data_type{d, m, e};
+            else m_data.emplace_back(d, m, e);
+        }
+    }
+
+    //! @brief Changes the status of the context from "modify" to "query".
+    void freeze(device_t hoodsize, device_t self) {
+        std::stable_sort(m_data.begin(), m_data.end(), [](data_type const& x, data_type const& y){
+            return get<0>(x) < get<0>(y);
+        });
+        size_t w = 0;
+        for (size_t r = 0; r+1 < m_data.size(); ++r) {
+            if (get<0>(m_data[r]) < get<0>(m_data[r+1])) {
+                if (r > w) m_data[w] = std::move(m_data[r]);
+                ++w;
+            }
+        }
+        if (m_data.size() > w+1) m_data[w] = std::move(m_data.back());
+        m_data.resize(w+1);
+        if (m_data.size() > hoodsize) {
+            std::vector<size_t> v(m_data.size());
+            for (size_t i=0; i<m_data.size(); ++i) v[i] = i;
+            std::nth_element(v.begin(), v.begin()+hoodsize, v.end(), [this](size_t i, size_t j){
+                if (get<1>(m_data[i]) < get<1>(m_data[j])) return true;
+                if (get<1>(m_data[i]) > get<1>(m_data[j])) return false;
+                return get<0>(m_data[i]) < get<0>(m_data[j]);
+            });
+            size_t i = v[hoodsize];
+            m_data.resize(std::remove_if(m_data.begin(), m_data.end(), [this, i](data_type const& x){
+                if (get<1>(x) > get<1>(m_data[i])) return true;
+                if (get<1>(x) < get<1>(m_data[i])) return false;
+                return get<0>(x) >= get<0>(m_data[i]);
+            }) - m_data.begin());
+        }
+        m_self = std::lower_bound(m_data.begin(), m_data.end(), data_type{self, metric_type{}, export_type{}}, [](data_type const& x, data_type const& y) {
+            return get<0>(x) < get<0>(y);
+        }) - m_data.begin();
+    }
+
+    //! @brief Changes the status of the context from "query" to "modify", updating metrics.
+    template <typename N, typename T>
+    void unfreeze(N const& node, T const& metric, metric_type threshold) {
+        size_t w = 0;
+        for (size_t r = 0; r < m_data.size(); ++r) {
+            get<1>(m_data[r]) = metric.update(get<1>(m_data[r]), node);
+            if (get<1>(m_data[r]) < threshold) {
+                if (r > w) m_data[w] = std::move(m_data[r]);
+                ++w;
+            }
+        }
+        m_data.resize(w);
+    }
+
+    //! @brief Returns list of devices with specified trace.
+    std::vector<device_t> align(trace_t trace, device_t self) const {
+        std::vector<device_t> v;
+        size_t i = 0;
+        for (; i < m_self; ++i)
+            if (get<2>(m_data[i])->contains(trace))
+                v.push_back(get<0>(m_data[i]));
+        v.push_back(self);
+        if (i < m_data.size() and get<0>(m_data[i]) == self) ++i;
+        for (; i < m_data.size(); ++i)
+            if (get<2>(m_data[i])->contains(trace))
+                v.push_back(get<0>(m_data[i]));
+        return v;
+    }
+
+    //! @brief Returns the old value for a certain trace (unaligned).
+    template <typename A>
+    const A& old(trace_t trace, const A& def, device_t self) const {
+        if (m_self < m_data.size() and get<0>(m_data[m_self]) == self and get<2>(m_data[m_self])->template count<A>(trace))
+            return get<2>(m_data[m_self])->template at<A>(trace);
+        return def;
+    }
+
+    //! @brief Returns neighbours' values for a certain trace (default from `def`, and also self if not present).
+    template <typename A>
+    common::add_template<field, A> nbr(trace_t trace, A const& def, device_t self) const {
+        std::vector<device_t> ids;
+        std::vector<common::del_template<field, A>> vals;
+        vals.push_back(details::other(def));
+        for (const auto& x : m_data)
+            if (get<2>(x)->template count<A>(trace)) {
+                ids.push_back(get<0>(x));
+                vals.push_back(details::self(static_cast<A const&>(get<2>(x)->template at<A>(trace)), self));
+            }
+        return details::make_field(std::move(ids), std::move(vals));
+    }
+
+    //! @brief Prints the context in a stream.
+    void print(std::ostream& o) const {
+        bool first = true;
+        for (const auto& x : m_data) {
+            if (first) first = false;
+            else o << ", ";
+            o << get<0>(x) << ":" << get<2>(x) << "@" << 0+get<1>(x);
+        }
+    }
+
+  private:
+    //! @brief The type of elements stored.
+    using data_type = std::tuple<device_t, metric_type, export_type>;
+
+    //! @brief Sequence of exports stored.
+    std::vector<data_type> m_data;
+
+    //! @brief Index of self in @ref m_data.
+    size_t m_self;
 };
 
 

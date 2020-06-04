@@ -27,10 +27,6 @@ namespace fcpp {
 namespace coordination {
 
 
-////! @brief Shorthand to double infinity value.
-const double INF = std::numeric_limits<double>::infinity();
-
-
 //! @brief Reduces a field to a single value by minimum.
 template <typename node_t, typename A>
 inline to_local<A> min_hood(node_t& node, trace_t call_point, const A& a) {

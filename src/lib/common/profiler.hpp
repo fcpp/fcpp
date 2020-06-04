@@ -46,7 +46,7 @@ class profiler {
         }
         o << "ACTION";
         for (size_t i=3; i<maxlen; ++i) o << " ";
-        o << "TOTAL     PARTIAL\n";
+        o << "TOTAL     PARTIAL   SECS\n";
         for (const auto& k : keys) {
             o << k << ": ";
             for (size_t i=k.size(); i<maxlen; ++i) o << " ";
@@ -60,9 +60,21 @@ class profiler {
                 if (p < 10000) o << " ";
                 if (p < 1000) o << " ";
                 o << "   " << p/100 << "." << (p/10)%10 << p%10 << "%";
-            }
-            o << "\n";
+            } else o << "          ";
+            double t = clock_counters[k] * 1.0 / CLOCKS_PER_SEC;
+            o << "    ";
+            if (t < 1000) o << " ";
+            if (t < 100) o << " ";
+            if (t < 10) o << " ";
+            o << t << "\n";
         }
+        o << "TOT";
+        for (size_t i=0; i<maxlen+20; ++i) o << " ";
+        double t = tot * 1.0 / CLOCKS_PER_SEC;
+        if (t < 1000) o << " ";
+        if (t < 100) o << " ";
+        if (t < 10) o << " ";
+        o << t << "\n";
         o.flush();
     }
 
@@ -73,10 +85,10 @@ class profiler {
         return x == std::string::npos ? "" : s.substr(0, x);
     }
     
-    //! @brief Stores the clock during construction.
-    std::clock_t start;
     //! @brief Stores the counter name.
     std::string name;
+    //! @brief Stores the clock during construction.
+    std::clock_t start;
 
     //! @brief Map storing counts for all counters.
     static std::unordered_map<std::string, std::clock_t> clock_counters;

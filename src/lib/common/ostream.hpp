@@ -224,8 +224,8 @@ namespace common {
 //! @brief Namespace containing specific objects for the FCPP library.
 namespace data {
     //! @brief Printing calculus contexts.
-    template <typename... Ts>
-    std::ostream& operator<<(std::ostream& o, const context<Ts...>& c) {
+    template <bool b, typename... Ts>
+    std::ostream& operator<<(std::ostream& o, const context<b, Ts...>& c) {
         o << "{";
         c.print(o);
         o << "}";

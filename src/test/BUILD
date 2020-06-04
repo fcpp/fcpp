@@ -4,6 +4,7 @@ cc_library(
     srcs = ['helper.cpp'],
     deps = [
         "@gtest//:main",
+        "//lib:beautify",
         "//lib/common:ostream",
         "//lib/common:traits",
     ],

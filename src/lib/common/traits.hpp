@@ -25,6 +25,7 @@
 #include <memory>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 
 /**
@@ -507,126 +508,128 @@ constexpr bool has_template<T, U<A, N>> = has_template<T, A>;
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Handles references to vector value (general case).
+    template <typename T>
+    struct vectorize {
+        using type = T;
+    };
+
+    //! @brief Handles references to vector value (reference case).
+    template <typename T>
+    struct vectorize<T&> {
+        using type = typename std::vector<T>::reference;
+    };
+
+    //! @brief Handles references to vector value (const reference case).
+    template <typename T>
+    struct vectorize<T const&> {
+        using type = typename std::vector<T>::const_reference;
+    };
+
     //! @brief General form.
-    template <template<class> class T, class A>
+    template <template<class> class T, class A, bool b = has_template<T, A>>
     struct extract_template;
 
     //! @brief Base case assuming no occurrences of the template.
     template <template<class> class T, class A>
-    struct extract_missing_template {
-        using type = const A;
+    struct extract_template<T, A, false> {
+        using type = A const;
     };
 
     //! @brief Propagate constness assuming no occurrences of the template.
     template <template<class> class T, class A>
-    struct extract_missing_template<T, const A> {
-        using type = const typename extract_missing_template<T, A>::type;
+    struct extract_template<T, A const, false> {
+        using type = typename extract_template<T, A, false>::type const;
     };
 
     //! @brief Propagate lvalue references assuming no occurrences of the template.
     template <template<class> class T, class A>
-    struct extract_missing_template<T, A&> {
-        using type = typename extract_missing_template<T, A>::type&;
+    struct extract_template<T, A&, false> {
+        using type = typename extract_template<T, A, false>::type&;
     };
 
     //! @brief Propagate rvalue references assuming no occurrences of the template.
     template <template<class> class T, class A>
-    struct extract_missing_template<T, A&&> {
-        using type = typename extract_missing_template<T, A>::type&&;
-    };
-
-    //! @brief Base case assuming occurrences of the template are present.
-    template <template<class> class T, class A>
-    struct extract_present_template {
-        using type = void;
+    struct extract_template<T, A&&, false> {
+        using type = typename extract_template<T, A, false>::type&&;
     };
 
     //! @brief Propagate const assuming occurrences of the template are present.
     template <template<class> class T, template<class...> class U, class... A>
-    struct extract_present_template<T, const U<A...>> {
-        using type = typename extract_present_template<T, U<const A...>>::type;
+    struct extract_template<T, U<A...> const, true> {
+        using type = typename extract_template<T, U<A const...>, true>::type;
     };
 
     //! @brief Propagate & assuming occurrences of the template are present.
     template <template<class> class T, template<class...> class U, class... A>
-    struct extract_present_template<T, U<A...>&> {
-        using type = typename extract_present_template<T, U<A&...>>::type;
+    struct extract_template<T, U<A...>&, true> {
+        using type = typename extract_template<T, U<A&...>, true>::type;
     };
 
     //! @brief Propagate const& assuming occurrences of the template are present.
     template <template<class> class T, template<class...> class U, class... A>
-    struct extract_present_template<T, const U<A...>&> {
-        using type = typename extract_present_template<T, U<const A&...>>::type;
+    struct extract_template<T, U<A...> const&, true> {
+        using type = typename extract_template<T, U<A const&...>, true>::type;
     };
 
     //! @brief Propagate && assuming occurrences of the template are present.
     template <template<class> class T, template<class...> class U, class... A>
-    struct extract_present_template<T, U<A...>&&> {
-        using type = typename extract_present_template<T, U<A&&...>>::type;
+    struct extract_template<T, U<A...>&&, true> {
+        using type = typename extract_template<T, U<A&&...>, true>::type;
     };
 
     //! @brief Propagate const&& assuming occurrences of the template are present.
     template <template<class> class T, template<class...> class U, class... A>
-    struct extract_present_template<T, const U<A...>&&> {
-        using type = typename extract_present_template<T, U<const A&&...>>::type;
+    struct extract_template<T, U<A...> const&&, true> {
+        using type = typename extract_template<T, U<A const&&...>, true>::type;
     };
 
     //! @brief If the second parameter is of the form T<A>.
     template <template<class> class T, class A>
-    struct extract_present_template<T, T<A>> {
-        using type = A;
+    struct extract_template<T, T<A>, true> {
+        using type = typename vectorize<A>::type;
     };
 
     //! @brief Removes occurrences from the arguments of a tuple-like type.
     template <template<class> class T, template<class...> class U, class... A>
-    struct extract_present_template<T, U<A...>> {
+    struct extract_template<T, U<A...>, true> {
         using type = U<typename extract_template<T, A>::type...>;
     };
 
     //! @brief Propagate const assuming occurrences of the template are present.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_present_template<T, const U<A, N>> {
-        using type = typename extract_present_template<T, U<const A, N>>::type;
+    struct extract_template<T, U<A, N> const, true> {
+        using type = typename extract_template<T, U<A const, N>, true>::type;
     };
 
     //! @brief Propagate & assuming occurrences of the template are present.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_present_template<T, U<A, N>&> {
-        using type = typename extract_present_template<T, U<A&, N>>::type;
+    struct extract_template<T, U<A, N>&, true> {
+        using type = typename extract_template<T, U<A&, N>, true>::type;
     };
 
     //! @brief Propagate const& assuming occurrences of the template are present.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_present_template<T, const U<A, N>&> {
-        using type = typename extract_present_template<T, U<const A&, N>>::type;
+    struct extract_template<T, U<A, N> const&, true> {
+        using type = typename extract_template<T, U<A const&, N>, true>::type;
     };
 
     //! @brief Propagate && assuming occurrences of the template are present.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_present_template<T, U<A, N>&&> {
-        using type = typename extract_present_template<T, U<A&&, N>>::type;
+    struct extract_template<T, U<A, N>&&, true> {
+        using type = typename extract_template<T, U<A&&, N>, true>::type;
     };
 
     //! @brief Propagate const&& assuming occurrences of the template are present.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_present_template<T, const U<A, N>&&> {
-        using type = typename extract_present_template<T, U<const A&&, N>>::type;
+    struct extract_template<T, U<A, N> const&&, true> {
+        using type = typename extract_template<T, U<A const&&, N>, true>::type;
     };
 
     //! @brief Removes occurrences from the argument of an array-like type.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_present_template<T, U<A, N>> {
+    struct extract_template<T, U<A, N>, true> {
         using type = U<typename extract_template<T, A>::type, N>;
-    };
-
-    //! @brief Base case if no occurrences of the template are present.
-    template <template<class> class T, class A>
-    struct extract_template {
-        using type = std::conditional_t<
-                        has_template<T, A>,
-                        typename extract_present_template<T, A>::type,
-                        typename extract_missing_template<T, A>::type
-                     >;
     };
 }
 //! @endcond

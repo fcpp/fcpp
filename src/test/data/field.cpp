@@ -9,14 +9,39 @@
 using namespace fcpp;
 
 
+//! @brief Builds a field for testing purposes
+template <typename A>
+field<A> build_field(A def, std::unordered_map<device_t, A> data) {
+    std::vector<device_t> ids;
+    ids.reserve(data.size());
+    for (const auto& x : data)
+        ids.push_back(x.first);
+    std::sort(ids.begin(), ids.end());
+    std::vector<A> vals;
+    vals.resize(data.size()+1);
+    vals[0] = def;
+    for (size_t i = 0; i < data.size(); ++i)
+        vals[i+1] = data[ids[i]];
+    return details::make_field(std::move(ids), std::move(vals));
+}
+
+//! @brief Joins the domain of a sequence of fields.
+template <typename... A>
+std::vector<device_t> joined_domain(A const&... a) {
+    std::vector<device_t> res;
+    for (details::field_iterator<tuple<A...> const> it(a...); not it.end(); ++it)
+        res.push_back(it.id());
+    return res;
+}
+
 class FieldTest : public ::testing::Test {
   protected:
     virtual void SetUp() {
-        fi1 = details::make_field(2, {{1,1},{3,-1}});
-        fi2 = details::make_field(1, {{1,4},{2,3}});
-        fd  = details::make_field(0.5, {{2,3.25}});
-        fb1 = details::make_field(true, {{2,false},{3,true}});
-        fb2 = details::make_field(false,{{1,true}, {2,true}});
+        fi1 = build_field(2, {{1,1},{3,-1}});
+        fi2 = build_field(1, {{1,4},{2,3}});
+        fd  = build_field(0.5, {{2,3.25}});
+        fb1 = build_field(true, {{2,false},{3,true}});
+        fb2 = build_field(false,{{1,true}, {2,true}});
     }
     
     template <typename T>
@@ -107,6 +132,7 @@ TEST_F(FieldTest, TupleAccess) {
     x2 = details::other(std::move(t3));
     EXPECT_EQ(5,   get<0>(x3));
     EXPECT_EQ(2.5, get<1>(x3));
+    details::self(t4, 24);
     auto x4 = details::other(t4);
     EXPECT_EQ(2,   get<0>(get<0>(x4)));
     EXPECT_EQ(42,  get<1>(get<0>(x4)));
@@ -126,16 +152,16 @@ TEST_F(FieldTest, TupleAccess) {
     EXPECT_EQ(2,   get<0>(get<0>(x5)));
     EXPECT_EQ(42,  get<1>(get<0>(x5)));
     EXPECT_EQ(9.0, get<1>(x5));
-    std::unordered_set<device_t> ex, res;
+    std::vector<device_t> ex, res;
     ex  = {1, 2, 3, 24};
-    res = details::joined_domain(t1, t2, t3, t4);
+    res = joined_domain(t1, t2, t3, t4);
     EXPECT_EQ(ex, res);
     auto f4 = details::align(t4, {1,2});
     ex  = {1, 2, 3};
-    res = details::joined_domain(t1,t2,t3,t4);
+    res = joined_domain(t1,t2,t3,t4);
     EXPECT_EQ(ex, res);
     ex  = {1, 2};
-    res = details::joined_domain(t1,t4);
+    res = joined_domain(t1,t4);
     EXPECT_EQ(ex, res);
     EXPECT_EQ(1,   details::self(get<0>(get<0>(t4)), 1));
     EXPECT_EQ(12,  details::self(get<0>(get<0>(t4)), 2));
@@ -160,10 +186,10 @@ TEST_F(FieldTest, TupleAccess) {
 TEST_F(FieldTest, MapReduce) {
     field<bool> eq;
     field<int> x = details::map_hood([] (int i) {return i%2;}, fi2);
-    eq = details::map_hood([] (int i, int j) {return i==j;}, x, details::make_field(1, {{1,0},{2,1}}));
+    eq = details::map_hood([] (int i, int j) {return i==j;}, x, build_field(1, {{1,0},{2,1}}));
     EXPECT_TRUE(eq);
     details::mod_hood([] (int i, int j) {return i+j;}, x, fi1);
-    eq = details::map_hood([] (int i, int j) {return i==j;}, x, details::make_field(3, {{1,1},{2,3},{3,0}}));
+    eq = details::map_hood([] (int i, int j) {return i==j;}, x, build_field(3, {{1,1},{2,3},{3,0}}));
     EXPECT_TRUE(eq);
     double sum = details::fold_hood([] (double i, double j) {return i+j;}, fd, {0,1,2});
     EXPECT_DOUBLE_EQ(4.25, sum);
@@ -180,7 +206,7 @@ TEST_F(FieldTest, MapReduce) {
     field<tuple<int,int>> w = details::map_hood([] (tuple<int,int> a, tuple<int,int> b, tuple<int,int> c) {
         return b * c - a;
     }, y, z, y);
-    EXPECT_EQ(std::unordered_set<device_t>({0,1,2}), details::joined_domain(w));
+    EXPECT_EQ(std::vector<device_t>({0,1,2}), joined_domain(w));
     tuple<int,int> ex, res;
     ex  = {10,6};
     res = details::self(w, 0);
@@ -199,7 +225,7 @@ TEST_F(FieldTest, MapReduce) {
     details::mod_hood([] (tuple<int,int> a, tuple<int,int> b, tuple<int,int> c) {
         return a + b + c;
     }, f, z, y);
-    EXPECT_EQ(std::unordered_set<device_t>({0,1,2}), details::joined_domain(f));
+    EXPECT_EQ(std::vector<device_t>({0,1,2}), joined_domain(f));
     EXPECT_EQ(details::self(f, 0), make_tuple(9,8));
     EXPECT_EQ(details::self(f, 1), make_tuple(16,14));
     EXPECT_EQ(details::self(f, 2), make_tuple(11,4));
@@ -231,36 +257,36 @@ TEST_F(FieldTest, BasicFunctions) {
     x = mux(false, field<int>(fi1), field<int>(fi2));
     EXPECT_EQ(x, fi2);
     x = mux(fb1, fi1, fi2);
-    field<int> y = details::make_field(2, {{1,1}, {2,3}, {3,-1}});
+    field<int> y = build_field(2, {{1,1}, {2,3}, {3,-1}});
     EXPECT_EQ(x, y);
     tuple<field<int>, int> a{fi1, 1};
     tuple<field<int>, int> b{fi2, 2};
     field<tuple<int,int>> c = mux(fb2, a, b);
-    field<tuple<int,int>> d = details::make_field(make_tuple(1, 2), {
+    field<tuple<int,int>> d = build_field(make_tuple(1, 2), {
         {1, make_tuple(1, 1)},
         {2, make_tuple(2, 1)},
         {3, make_tuple(1, 2)}
     });
     EXPECT_EQ(c, d);
     c = max(a, b);
-    d = details::make_field(make_tuple(2, 1), {
+    d = build_field(make_tuple(2, 1), {
         {1, make_tuple(4, 2)},
         {2, make_tuple(3, 2)},
         {3, make_tuple(1, 2)}
     });
     EXPECT_EQ(c, d);
     c = min(a, b);
-    d = details::make_field(make_tuple(1, 2), {
+    d = build_field(make_tuple(1, 2), {
         {1, make_tuple( 1, 1)},
         {2, make_tuple( 2, 1)},
         {3, make_tuple(-1, 1)}
     });
     EXPECT_EQ(c, d);
     x = get<0>(d);
-    y = details::make_field(1, {{1,1}, {2,2}, {3,-1}});
+    y = build_field(1, {{1,1}, {2,2}, {3,-1}});
     EXPECT_EQ(x,y);
     x = get<1>(d);
-    y = details::make_field(2, {{1,1}, {2,1}, {3,1}});
+    y = build_field(2, {{1,1}, {2,1}, {3,1}});
     EXPECT_EQ(x,y);
 }
 
@@ -272,28 +298,28 @@ TEST_F(FieldTest, UnaryOperators) {
     EXPECT_FALSE(details::self(eq,3));
     eq = details::map_hood([] (int i, int j) {return i==j;}, fi1, +fi1);
     EXPECT_TRUE(eq);
-    eq = details::map_hood([] (int i, int j) {return i==j;}, -fi1, details::make_field(-2, {{1,-1},{3,1}}));
+    eq = details::map_hood([] (int i, int j) {return i==j;}, -fi1, build_field(-2, {{1,-1},{3,1}}));
     EXPECT_TRUE(eq);
-    field<char> fc = details::make_field<char>(15, {{1,22}});
-    eq = details::map_hood([] (int i, int j) {return i==j;}, ~fc, details::make_field<char>(-16, {{1,-23}}));
+    field<char> fc = build_field<char>(15, {{1,22}});
+    eq = details::map_hood([] (int i, int j) {return i==j;}, ~fc, build_field<char>(-16, {{1,-23}}));
     EXPECT_TRUE(eq);
     tuple<field<bool>, bool> x{{true}, false};
     details::self(get<0>(x), 2) = false;
     x = !x;
-    EXPECT_EQ(std::unordered_set<device_t>({2}), details::joined_domain(x));
+    EXPECT_EQ(std::vector<device_t>({2}), joined_domain(x));
     EXPECT_EQ(make_tuple(true,true), details::self(x, 2));
     EXPECT_EQ(make_tuple(false,true), details::other(x));
 }
 
 TEST_F(FieldTest, BinaryOperators) {
     field<bool> eq;
-    eq = (fi1 + fi2) == details::make_field(3, {{1,5},{2,5},{3,0}});
+    eq = (fi1 + fi2) == build_field(3, {{1,5},{2,5},{3,0}});
     EXPECT_TRUE(eq);
-    eq = (fi1 * 2) == details::make_field(4, {{1,2},{3,-2}});
+    eq = (fi1 * 2) == build_field(4, {{1,2},{3,-2}});
     EXPECT_TRUE(eq);
-    eq = (2 * fi1) == details::make_field(4, {{1,2},{3,-2}});
+    eq = (2 * fi1) == build_field(4, {{1,2},{3,-2}});
     EXPECT_TRUE(eq);
-    eq = (1 << fi2) == details::make_field(2, {{1,16},{2,8}});
+    eq = (1 << fi2) == build_field(2, {{1,16},{2,8}});
     EXPECT_TRUE(eq);
     eq = fi2 >= (fi2 >> 1);
     EXPECT_TRUE(eq);
@@ -306,7 +332,7 @@ TEST_F(FieldTest, BinaryOperators) {
     EXPECT_TRUE(eq);
     eq = ((fi1 + fi2) - fi1) == fi2;
     EXPECT_TRUE(eq);
-    eq = (fi2 % 2) == details::make_field(1, {{1,0},{2,1}});
+    eq = (fi2 % 2) == build_field(1, {{1,0},{2,1}});
     EXPECT_TRUE(eq);
     double d = details::fold_hood([] (double i, double j) {return i+j;}, fd / fi1, {0,1,2,3});
     EXPECT_DOUBLE_EQ(1.875, d);
@@ -322,7 +348,7 @@ TEST_F(FieldTest, BinaryOperators) {
     y = x + y;
     z = x + z;
     z = z - y;
-    EXPECT_EQ(std::unordered_set<device_t>({0,1,2}), details::joined_domain(z));
+    EXPECT_EQ(std::vector<device_t>({0,1,2}), joined_domain(z));
     EXPECT_EQ(make_tuple(1,0.5), details::self(z, 0));
     EXPECT_EQ(make_tuple(4,1.5), details::self(z, 1));
     EXPECT_EQ(make_tuple(2,1.0), details::self(z, 2));
@@ -344,7 +370,7 @@ TEST_F(FieldTest, InfixOperators) {
     fi2 -= fi1;
     EXPECT_EQ(fi2, f);
     fi2 %= 2;
-    EXPECT_EQ(fi2, details::make_field(1, {{1,0},{2,1}}));
+    EXPECT_EQ(fi2, build_field(1, {{1,0},{2,1}}));
     fi1 ^= fi1;
     EXPECT_EQ(fi1, 0);
     f = fb1;
@@ -364,7 +390,7 @@ TEST_F(FieldTest, InfixOperators) {
     y += x;
     z += x;
     z -= y;
-    EXPECT_EQ(std::unordered_set<device_t>({0,1,2}), details::joined_domain(z));
+    EXPECT_EQ(std::vector<device_t>({0,1,2}), joined_domain(z));
     EXPECT_EQ(make_tuple(1,0.5), details::self(z, 0));
     EXPECT_EQ(make_tuple(4,1.5), details::self(z, 1));
     EXPECT_EQ(make_tuple(2,1.0), details::self(z, 2));

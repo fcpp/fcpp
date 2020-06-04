@@ -71,10 +71,6 @@ namespace tags {
  * void operator()(node_t& node, times_t t);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  * The \p M class should:
- * - be a template with a class argument (which will be instantiated to the final `node` type):
- *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *   template <typename N> class M { ... };
- *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  * - provide a `result_type` type member which has to be totally ordered, for example:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  *   using result_type = double;
@@ -83,23 +79,24 @@ namespace tags {
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  *   result_type build();
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
- * - be able to build a `result_type` from a `tagged_tuple` message:
+ * - be able to build a `result_type` from a `tagged_tuple` message possibly using node data:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *   template <typename S, typename T>
+ *   template <typename N, typename S, typename T>
  *   result_type build(const N& node, times_t t, device_t d, const common::tagged_tuple<S,T>& m);
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
- * - be able to update by comparing a `result_type` with a node data:
+ * - be able to update by comparing a `result_type` with node data:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ *   template <typename N>
  *   result_type update(const result_type&, const N& node);
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  *   These methods are called to compute the "goodness" of a neighbour export with
  *   respect to data on the current device.
  *
  * @param C  Callable class representing the main round execution.
- * @param M  Templated class realising a metric on exports.
+ * @param M  Class realising a metric on exports.
  * @param Ts Types to be included in the exports.
  */
-template <class C, template<class> class M, class... Ts>
+template <class C, class M, class... Ts>
 struct calculus {
     /**
      * @brief The actual component.
@@ -136,10 +133,10 @@ struct calculus {
 
           private: // implementation details
             //! @brief The type of the metric on exports.
-            using metric_type = typename M<typename F::node>::result_type;
+            using metric_type = typename M::result_type;
 
             //! @brief The type of the context of exports from other devices.
-            using context_type = data::context<metric_type, Ts...>;
+            using context_type = data::context<FCPP_ONLINE_DROP, metric_type, Ts...>;
             
             //! @brief The type of the exports of the current device.
             using export_type = typename context_type::export_type;
@@ -155,17 +152,18 @@ struct calculus {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_context{P::node::uid}, m_metric{}, m_hoodsize{common::get_or<tags::hoodsize>(t, std::numeric_limits<device_t>::max())}, m_threshold{common::get_or<tags::threshold>(t, m_metric.build())} {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_context{}, m_metric{}, m_hoodsize{common::get_or<tags::hoodsize>(t, std::numeric_limits<device_t>::max())}, m_threshold{common::get_or<tags::threshold>(t, m_metric.build())} {}
             
             //! @brief Number of neighbours (including self).
             size_t size() const {
-                return m_context.second().size();
+                return m_context.second().size(P::node::uid);
             }
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
                 P::node::round_start(t);
                 assert(stack_trace.empty());
+                m_context.second().freeze(m_hoodsize, P::node::uid);
                 m_export = {};
             }
             
@@ -179,24 +177,18 @@ struct calculus {
             void round_end(times_t t) {
                 assert(stack_trace.empty());
                 P::node::round_end(t);
-                // recomputes metrics, cleaning obsolete values
-                std::unordered_map<device_t, metric_type> new_metrics;
-                for (const auto& x : m_context.second().metrics())
-                    new_metrics[x.first] = m_metric.update(x.second, P::node::as_final());
-                for (const auto& x : new_metrics)
-                    m_context.second().insert(x.first, x.second);
-                while (not m_context.second().empty() and m_context.second().top() > m_threshold)
-                    m_context.second().pop();
+                m_context.second().unfreeze(P::node::as_final(), m_metric, m_threshold);
             }
             
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
-                m_context.second().insert(d, common::get<calculus_tag>(m), m_metric.build(P::node::as_final(), t, d, m));
-                if (m_context.second().size() > m_hoodsize) m_context.second().pop();
-                if (FCPP_EXPORTS == 2 and d == P::node::uid)
-                    m_context.first().insert(d, m_export.first(), metric_type{});
+                m_context.second().insert(d, common::get<calculus_tag>(m), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
+#if FCPP_EXPORT_NUM == 2
+                if (d == P::node::uid)
+                    m_context.first().insert(d, m_export.first(), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
+#endif
             }
             
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
@@ -212,16 +204,16 @@ struct calculus {
             
           private: // implementation details
             //! @brief Map associating devices to their exports (`first` for local device, `second` for others).
-            common::twin<context_type, FCPP_EXPORTS == 1> m_context;
+            common::twin<context_type, FCPP_EXPORT_NUM == 1> m_context;
             
             //! @brief Exports of the current device (`first` for local device, `second` for others).
-            common::twin<export_type,  FCPP_EXPORTS == 1> m_export;
+            common::twin<export_type,  FCPP_EXPORT_NUM == 1> m_export;
             
             //! @brief The callable class representing the main round.
             C m_callback;
 
             //! @brief The metric class.
-            M<typename F::node> m_metric;
+            M m_metric;
             
             //! @brief Maximum amount of neighbours allowed.
             device_t m_hoodsize;
@@ -279,32 +271,22 @@ A&& align(const node_t&, trace_t, A&& x) {
 
 //! @brief Computes the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
-auto&& align(node_t& node, trace_t call_point, A&& x) {
+decltype(auto) align(node_t& node, trace_t call_point, A&& x) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
-    return details::align(std::forward<A>(x), details::get_context(node).second().align(t));
+    return details::align(std::forward<A>(x), details::get_context(node).second().align(t, node.uid));
 }
 
 //! @brief Applies an operator pointwise on a sequence of field arguments.
 template <typename node_t, typename O, typename... A>
-field_result<O,A...> map_hood(node_t& node, trace_t call_point, O&& op, const A&... a) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    field_result<O,A...> r{op(details::other(a)...)};
-    for (device_t x : details::get_context(node).second().align(t))
-        details::self(r,x) = op(details::self(a,x)...);
-    return r;
+field_result<O,A...> map_hood(const node_t&, trace_t, O&& op, A&&... a) {
+    return details::map_hood(std::forward<O>(op), std::forward<A>(a)...);
 }
 
 //! @brief Modifies a field in-place, by applying an operator pointwise (with a sequence of parameters).
 template <typename node_t, typename O, typename A, typename... B>
-A& mod_hood(node_t& node, trace_t call_point, O&& op, A& a, const B&... b) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    details::other(a) = op(details::other(a), details::other(b)...);
-    for (device_t x : details::get_context(node).second().align(t))
-        details::self(a,x) = op(details::self(a,x), details::self(b,x)...);
-    return a;
+A& mod_hood(const node_t&, trace_t, O&& op, A& a, B&&... b) {
+    return details::mod_hood(std::forward<O>(op), a, std::forward<B>(b)...);
 }
 
 //! @brief Reduces a field to a single value by a binary operation.
@@ -312,7 +294,7 @@ template <typename node_t, typename O, typename A>
 local_result<O,A,A> fold_hood(node_t& node, trace_t call_point, O&& op, const A& a) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
-    return details::fold_hood(op, a, details::get_context(node).second().align(t));
+    return details::fold_hood(op, a, details::get_context(node).second().align(t, node.uid));
 }
 
 //! @brief Reduces a field to a single value by a binary operation with a default value for self.
@@ -320,7 +302,7 @@ template <typename node_t, typename O, typename A, typename B>
 local_result<O,A,B> fold_hood(node_t& node, trace_t call_point, O&& op, const A& a, const B& b) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
-    return details::fold_hood(op, a, b, details::get_context(node).second().align(t), node.uid);
+    return details::fold_hood(op, a, b, details::get_context(node).second().align(t, node.uid), node.uid);
 }
 
 //! @brief Computes the number of neighbours aligned to the current call point.
@@ -328,7 +310,7 @@ template <typename node_t>
 size_t count_hood(node_t& node, trace_t call_point) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
-    return details::get_context(node).second().align(t).size();
+    return details::get_context(node).second().align(t, node.uid).size();
 }
 //! @}
 
@@ -343,8 +325,8 @@ size_t count_hood(node_t& node, trace_t call_point) {
 template <typename node_t, typename A>
 const A& old(node_t& node, trace_t call_point, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).first()->insert(t, f);
-    return details::get_context(node).first().old(t, f);
+    details::get_export(node).first()->insert(t, align(node, call_point, f));
+    return details::get_context(node).first().old(t, f, node.uid);
 }
 /**
  * @brief The previous-round value of the second argument, defaulting to the first argument if no previous value.
@@ -359,8 +341,8 @@ const A& old(node_t& node, trace_t call_point, const A& f) {
 template <typename node_t, typename A>
 const A& old(node_t& node, trace_t call_point, const A& f0, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).first()->insert(t, f);
-    return details::get_context(node).first().old(t, f0);
+    details::get_export(node).first()->insert(t, align(node, call_point, f));
+    return details::get_context(node).first().old(t, f0, node.uid);
 }
 /**
  * @brief The previous-round value of the result (defaults to first argument), modified through the second argument.
@@ -377,8 +359,8 @@ const A& old(node_t& node, trace_t call_point, const A& f0, const A& f) {
 template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(const A&)>>
 A old(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    A f = op(details::get_context(node).first().old(t, f0));
-    details::get_export(node).first()->insert(t, f);
+    A f = op(details::get_context(node).first().old(t, f0, node.uid));
+    details::get_export(node).first()->insert(t, align(node, call_point, f));
     return f;
 }
 /**
@@ -391,8 +373,8 @@ A old(node_t& node, trace_t call_point, const A& f0, G&& op) {
 template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&)>>
 B old(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    std::pair<B,A> f = op(details::get_context(node).first().old(t, f0));
-    details::get_export(node).first()->insert(t, std::move(f.second));
+    std::pair<B,A> f = op(details::get_context(node).first().old(t, f0, node.uid));
+    details::get_export(node).first()->insert(t, align(node, call_point, std::move(f.second)));
     return f.first;
 }
 //! @}
@@ -408,8 +390,8 @@ B old(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
 template <typename node_t, typename A>
 common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t, f);
-    return details::get_context(node).second().nbr(t, f);
+    details::get_export(node).second()->insert(t, align(node, call_point, f));
+    return details::get_context(node).second().nbr(t, f, node.uid);
 }
 /**
  * @brief The neighbours' value of the second argument, defaulting to the first argument.
@@ -424,8 +406,8 @@ common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f)
 template <typename node_t, typename A>
 common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f0, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t, f);
-    return details::get_context(node).second().nbr(t, f0);
+    details::get_export(node).second()->insert(t, align(node, call_point, f));
+    return details::get_context(node).second().nbr(t, f0, node.uid);
 }
 /**
  * @brief The neighbours' value of the result (defaults to first argument), modified through the second argument.
@@ -442,8 +424,8 @@ common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f0
 template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(common::add_template<field, A>)>>
 A nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    A f = op(details::get_context(node).second().nbr(t, f0));
-    details::get_export(node).second()->insert(t, f);
+    A f = op(details::get_context(node).second().nbr(t, f0, node.uid));
+    details::get_export(node).second()->insert(t, align(node, call_point, f));
     return f;
 }
 /**
@@ -456,8 +438,8 @@ A nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
 template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(common::add_template<field, A>)>>
 B nbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    std::pair<B,A> f = op(details::get_context(node).second().nbr(t, f0));
-    details::get_export(node).second()->insert(t, std::move(f.second));
+    std::pair<B,A> f = op(details::get_context(node).second().nbr(t, f0, node.uid));
+    details::get_export(node).second()->insert(t, align(node, call_point, std::move(f.second)));
     return f.first;
 }
 //! @}
@@ -480,8 +462,8 @@ B nbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
 template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(const A&, common::add_template<field, A>)>>
 A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    A f = op(details::get_context(node).second().old(t, f0), details::get_context(node).second().nbr(t, f0));
-    details::get_export(node).second()->insert(t, f);
+    A f = op(details::get_context(node).second().old(t, f0, node.uid), details::get_context(node).second().nbr(t, f0, node.uid));
+    details::get_export(node).second()->insert(t, align(node, call_point, f));
     return f;
 }
 /**
@@ -494,8 +476,8 @@ A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
 template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&, common::add_template<field, A>)>>
 B oldnbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    std::pair<B,A> f = op(details::get_context(node).second().old(t, f0), details::get_context(node).second().nbr(t, f0));
-    details::get_export(node).second()->insert(t, std::move(f.second));
+    std::pair<B,A> f = op(details::get_context(node).second().old(t, f0, node.uid), details::get_context(node).second().nbr(t, f0, node.uid));
+    details::get_export(node).second()->insert(t, align(node, call_point, std::move(f.second)));
     return f.first;
 }
 //! @}
@@ -504,29 +486,94 @@ B oldnbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
 //! @brief Namespace for metrics between messages.
 namespace metric {
     /**
-     * Metric predicate which clears out everything every round.
-     *
-     * @param N The node type.
+     * @brief Metric predicate which clears out everything every round.
      */
-    template <typename N>
     struct once {
         //! @brief The data type.
         using result_type = char;
         
         //! @brief Default threshold.
-        result_type build() {
+        result_type build() const {
             return 1;
         }
         
         //! @brief Measures an incoming message.
-        template <typename S, typename T>
-        result_type build(const N& n, times_t, device_t d, const common::tagged_tuple<S,T>&) {
+        template <typename N, typename S, typename T>
+        result_type build(const N& n, times_t, device_t d, const common::tagged_tuple<S,T>&) const {
             return d == n.uid ? 0 : 1;
         }
         
         //! @brief Updates an existing measure.
-        result_type update(const result_type& r, const N&) {
+        template <typename N>
+        result_type update(const result_type& r, const N&) const {
             return r > 0 ? 2 : 0;
+        }
+    };
+
+    /**
+     * @brief Metric predicate which clears out values after a retain time.
+     *
+     * Requires nodes to have a `next_time()` and `current_time()` interface (as per the `timer` component).
+     *
+     * @param period The period of time after which values are discarded.
+     * @param scale A scale by which `period` is divided.
+     */
+    template <intmax_t period = 1, intmax_t scale = 1>
+    struct retain {
+        //! @brief The data type.
+        using result_type = times_t;
+        
+        //! @brief Default threshold.
+        result_type build() const {
+            return period / times_t(scale);
+        }
+        
+        //! @brief Measures an incoming message.
+        template <typename N, typename S, typename T>
+        result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>&) const {
+            return n.next_time() - t;
+        }
+        
+        //! @brief Updates an existing measure.
+        template <typename N>
+        result_type update(const result_type& r, const N& n) const {
+            return r + n.next_time() - n.current_time();
+        }
+    };
+
+    /**
+     * @brief Metric predicate which clears out values based on space-time distance.
+     *
+     * The metric is tuned to equiparate a temporal distance of `period` with a spatial distance of `radius`.
+     * Requires nodes to have a `next_time()`, `current_time()` and `position(t)` interface
+     * (as per the `timer` and `physical_position` components).
+     *
+     * @param position_tag The tag storing position data in messages.
+     * @param radius The maximum communication radius.
+     * @param period The maximum temporal interval between rounds.
+     * @param scale A scale by which `radius` and `period` are divided.
+     *
+     */
+    template <typename position_tag, intmax_t radius = 1, intmax_t period = 1, intmax_t scale = 1>
+    struct minkowski {
+        //! @brief The data type.
+        using result_type = double;
+        
+        //! @brief Default threshold.
+        result_type build() const {
+            return 2 * radius / double(scale);
+        }
+        
+        //! @brief Measures an incoming message.
+        template <typename N, typename S, typename T>
+        result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>& m) const {
+            return norm(get<position_tag>(m) - n.position(t)) + (n.next_time() - t) * radius / double(period);
+        }
+        
+        //! @brief Updates an existing measure.
+        template <typename N>
+        result_type update(const result_type& r, const N& n) const {
+            return r + (n.next_time() - n.current_time()) * radius / double(period);
         }
     };
 }

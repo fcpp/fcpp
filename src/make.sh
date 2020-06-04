@@ -24,12 +24,37 @@ fi
 asan="--config=asan"
 copts=""
 targets=""
+errored=( )
+exitcodes=( )
+
+function reporter() {
+    "$@"
+    code=$?
+    if [ $code -gt 0 ]; then
+        exitcodes=( ${exitcodes[@]} $code )
+        failcmd="\033[4m$@\033[0m"
+        errored=( "${errored[@]}" "$failcmd" )
+    fi
+    return ${#exitcodes[@]}
+}
+
+function quitter() {
+    code=${#exitcodes[@]}
+    if [ $code -gt 0 ]; then
+        echo
+        echo -e "\033[1mBuild terminated with errors:\033[0m"
+        for ((i=0; i<code; ++i)); do
+            echo -e "${errored[i]}: exit with ${exitcodes[i]}"
+        done
+    fi
+    exit $code
+}
 
 function mkdoc() {
     if [ ! -d doc ]; then
         mkdir doc
     fi
-    doxygen Doxyfile
+    reporter doxygen Doxyfile
 }
 
 function parseopt() {
@@ -73,7 +98,7 @@ function builder() {
     shift 1
     for t in "$@"; do
         echo -e "\033[4mbazel $cmd $copts $asan //$t\033[0m"
-        bazel $cmd $copts $asan //$t
+        reporter bazel $cmd $copts $asan //$t
     done
 }
 
@@ -86,7 +111,19 @@ function runner() {
     fi
     shift 1
     echo -e "\033[4mbazel run $copts $asan -- //$t "$@"\033[0m"
-    bazel run $copts $asan -- //$t "$@"
+    reporter bazel run $copts $asan -- //$t "$@"
+}
+
+function powerset() {
+    first="$1"
+    if [ "$first" == "" ]; then
+        echo ""
+        exit 0
+    fi
+    shift 1
+    rec=`powerset "$@"`
+    echo -n "$rec"
+    echo " $rec" | sed "s| | #$first|g"
 }
 
 export TEST_TMPDIR=`pwd`
@@ -98,14 +135,10 @@ while [ "$1" != "" ]; do
         shift 1
         parseopt "$@"
         shift $?
-        if [ "$1" == "all" ]; then
-            if [ "$2" != "" ]; then
-                usage
-            fi
-            builder build lib/...
-            builder build project/...
-        else
-            while [ "$1" != "" ]; do
+        while [ "$1" != "" ]; do
+            if [ "$1" == "all" ]; then
+                builder build lib/... project/...
+            else
                 finder "project" "$1"
                 finder "lib"    "$1"
                 finder "test"   "$1"
@@ -114,21 +147,18 @@ while [ "$1" != "" ]; do
                 fi
                 builder build $targets
                 targets=""
-                shift 1
-            done
-        fi
-        exit 0
+            fi
+            shift 1
+        done
+        quitter
     elif [ "$1" == "test" ]; then
         shift 1
         parseopt "$@"
         shift $?
-        if [ "$1" == "all" ]; then
-            if [ "$2" != "" ]; then
-                usage
-            fi
-            builder test test/...
-        else
-            while [ "$1" != "" ]; do
+        while [ "$1" != "" ]; do
+            if [ "$1" == "all" ]; then
+                builder test test/... project/...
+            else
                 finder "test" "$1"
                 finder "project" "$1"
                 builder test  $targets
@@ -136,10 +166,10 @@ while [ "$1" != "" ]; do
                     echo -e "\033[1mtarget \"$1\" not found\033[0m"
                 fi
                 targets=""
-                shift 1
-            done
-        fi
-        exit 0
+            fi
+            shift 1
+        done
+        quitter
     elif [ "$1" == "run" ]; then
         shift 1
         parseopt "$@"
@@ -147,7 +177,7 @@ while [ "$1" != "" ]; do
         finder "project" "$1"
         shift 1
         runner "$targets" "$@"
-        exit 0
+        quitter
     elif [ "$1" == "all" ]; then
         shift 1
         parseopt "$@"
@@ -156,15 +186,18 @@ while [ "$1" != "" ]; do
             usage
         fi
         mkdoc
-        builder build lib/...
-        builder build project/...
-        builder build test/...
-        builder test  test/...
-        builder test  project/...
+        builder test test/... project/...
+        if [ "$copts" == "" ]; then
+            for o in `powerset FCPP_EXPORT_NUM=2 FCPP_EXPORT_PTR=false FCPP_ONLINE_DROP=true`; do
+                copts=`echo "$o" | sed "s|#| --copt=-D|g"`
+                builder test test/... project/...
+            done
+        fi
+        quitter
     elif [ "$1" == "clean" ]; then
         shift 1
-        bazel clean
         rm -rf doc
+        bazel clean
     elif [ "$1" == "gcc" ]; then
         shift 1
         gcc=$(which $(compgen -c | grep "^gcc-.$" | uniq))

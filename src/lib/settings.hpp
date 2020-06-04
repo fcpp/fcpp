@@ -72,9 +72,17 @@
 
 
 #if   FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_LOGICAL
-    #ifndef FCPP_EXPORTS
-    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
-    #define FCPP_EXPORTS 1
+    #ifndef FCPP_EXPORT_NUM
+    //! @brief Setting defining whether exports for self and other devices should be separated (2, default for physical systems) or together (1, default for simulated and logical systems).
+    #define FCPP_EXPORT_NUM 1
+    #endif
+    #ifndef FCPP_EXPORT_PTR
+    //! @brief Setting defining whether exports should be handled as values (false, default for physical systems) or shared pointers (true, default for simulated and logical systems).
+    #define FCPP_EXPORT_PTR true
+    #endif
+    #ifndef FCPP_ONLINE_DROP
+    //! @brief Setting defining whether old messages should be dropped while new ones arrive (true, default for physical systems) or at round start (false, default for simulated and logical systems).
+    #define FCPP_ONLINE_DROP false
     #endif
     #ifndef FCPP_TIME_TYPE
     //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
@@ -89,9 +97,17 @@
     #define FCPP_PARALLEL true
     #endif
 #elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL
-    #ifndef FCPP_EXPORTS
-    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
-    #define FCPP_EXPORTS 2
+    #ifndef FCPP_EXPORT_NUM
+    //! @brief Setting defining whether exports for self and other devices should be separated (2, default for physical systems) or together (1, default for simulated and logical systems).
+    #define FCPP_EXPORT_NUM 2
+    #endif
+    #ifndef FCPP_EXPORT_PTR
+    //! @brief Setting defining whether exports should be handled as values (false, default for physical systems) or shared pointers (true, default for simulated and logical systems).
+    #define FCPP_EXPORT_PTR false
+    #endif
+    #ifndef FCPP_ONLINE_DROP
+    //! @brief Setting defining whether old messages should be dropped while new ones arrive (true, default for physical systems) or at round start (false, default for simulated and logical systems).
+    #define FCPP_ONLINE_DROP true
     #endif
     #ifndef FCPP_TIME_TYPE
     //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
@@ -106,9 +122,17 @@
     #define FCPP_PARALLEL false
     #endif
 #elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_SIMULATED
-    #ifndef FCPP_EXPORTS
-    //! @brief Settings defining whether exports for self and other devices should be separated (2, default for physical systems) or together in a `shared_ptr` (1, default for simulated and logical systems).
-    #define FCPP_EXPORTS 1
+    #ifndef FCPP_EXPORT_NUM
+    //! @brief Setting defining whether exports for self and other devices should be separated (2, default for physical systems) or together (1, default for simulated and logical systems).
+    #define FCPP_EXPORT_NUM 1
+    #endif
+    #ifndef FCPP_EXPORT_PTR
+    //! @brief Setting defining whether exports should be handled as values (false, default for physical systems) or shared pointers (true, default for simulated and logical systems).
+    #define FCPP_EXPORT_PTR true
+    #endif
+    #ifndef FCPP_ONLINE_DROP
+    //! @brief Setting defining whether old messages should be dropped while new ones arrive (true, default for physical systems) or at round start (false, default for simulated and logical systems).
+    #define FCPP_ONLINE_DROP false
     #endif
     #ifndef FCPP_TIME_TYPE
     //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
@@ -150,7 +174,7 @@
 
 
 #ifndef FCPP_WARNING_TRACE
-    //! @brief Settings defining whether hash colliding of code points is admissible.
+    //! @brief Setting defining whether hash colliding of code points is admissible.
     #define FCPP_WARNING_TRACE true
 #endif
 
@@ -165,6 +189,8 @@ namespace fcpp {
     constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
     //! @brief Maximum time (infinitely in the future).
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
+    ////! @brief Shorthand to double infinity value.
+    constexpr double INF = std::numeric_limits<double>::infinity();
 
 #if   FCPP_DEVICE == 8
     typedef uint8_t device_t;

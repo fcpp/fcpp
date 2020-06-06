@@ -111,6 +111,7 @@ cc_library(
     hdrs = ['simulation.hpp'],
     srcs = ['simulation.cpp'],
     deps = [
+        "//lib/simulation:batch",
         "//lib/simulation:physical_connector",
         "//lib/simulation:physical_position",
         "//lib/simulation:spawner",

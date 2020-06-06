@@ -8,6 +8,7 @@
 #ifndef FCPP_SIMULATION_H_
 #define FCPP_SIMULATION_H_
 
+#include "lib/simulation/batch.hpp"
 #include "lib/simulation/physical_connector.hpp"
 #include "lib/simulation/physical_position.hpp"
 #include "lib/simulation/spawner.hpp"

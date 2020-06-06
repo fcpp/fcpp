@@ -233,39 +233,9 @@ struct calculus {
 
 //! @name field operators
 //! @{
-//! @brief Selects the local value of a field.
-template <typename node_t, typename A>
-to_local<A&&> self(const node_t& node, trace_t, A&& x) {
-    return details::self(std::forward<A>(x), node.uid);
-}
-
-//! @brief Read access to the default value of a local.
-template <typename node_t, typename A, typename = if_local<A>>
-A const&& other(const node_t&, trace_t, A&& x) {
-    return static_cast<A const&&>(x);
-}
-
-//! @brief Read access to the default value of a field value.
-template <typename node_t, typename A, typename = if_field<A>>
-to_local<A&&> other(const node_t&, trace_t, A&& x) {
-    return details::other(std::move(x));
-}
-
-//! @brief Read access to the default value of a field.
-template <typename node_t, typename A, typename = if_field<A>>
-to_local<A const&> other(const node_t&, trace_t, A const& x) {
-    return details::other(x);
-}
-
-//! @brief Write access to the default value of a field, ensuring alignment.
-template <typename node_t, typename A, typename = if_field<A>>
-to_local<A&> other(node_t& node, trace_t call_point, A& x) {
-    return details::other(align(node, call_point, x));
-}
-
 //! @brief Computes the restriction of a local to the current domain.
 template <typename node_t, typename A, typename = if_local<A>>
-A&& align(const node_t&, trace_t, A&& x) {
+A align(const node_t&, trace_t, A&& x) {
     return std::forward<A>(x);
 }
 
@@ -275,6 +245,58 @@ decltype(auto) align(node_t& node, trace_t call_point, A&& x) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
     return details::align(std::forward<A>(x), details::get_context(node).second().align(t, node.uid));
+}
+
+//! @brief Accesses the local value of a field.
+template <typename node_t, typename A>
+to_local<A const&> self(const node_t& node, trace_t, A const& x) {
+    return details::self(x, node.uid);
+}
+
+//! @brief Accesses the local value of a field (moving).
+template <typename node_t, typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
+to_local<A&&> self(const node_t& node, trace_t, A&& x) {
+    return details::self(std::move(x), node.uid);
+}
+
+//! @brief Returns the local value of a field (modifiable).
+template <typename node_t, typename A>
+to_local<A&> mod_self(const node_t& node, trace_t, A& x) {
+    return details::self(x, node.uid);
+}
+
+//! @brief Modifies the local value of a field.
+template <typename node_t, typename A, typename B>
+to_field<std::decay_t<A>> mod_self(const node_t& node, trace_t, A&& x, B&& y) {
+    return details::mod_self(std::forward<A>(x), std::forward<B>(y), node.uid);
+}
+
+//! @brief Accesses the default value of a field.
+template <typename node_t, typename A>
+to_local<A const&> other(const node_t&, trace_t, A const& x) {
+    return details::other(x);
+}
+
+//! @brief Accesses the default value of a field (moving).
+template <typename node_t, typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
+to_local<A&&> other(const node_t&, trace_t, A&& x) {
+    return details::other(std::move(x));
+}
+
+//! @brief Returns the default value of a field (modifiable, ensuring alignment).
+template <typename node_t, typename A, typename = if_field<A>>
+to_local<A&> mod_other(node_t& node, trace_t call_point, A& x) {
+    trace_t t = node.stack_trace.hash(call_point);
+    details::get_export(node).second()->insert(t);
+    return details::other(details::align_inplace(x, details::get_context(node).second().align(t, node.uid)));
+}
+
+//! @brief Modifies the local value of a field (ensuring alignment).
+template <typename node_t, typename A, typename B>
+to_field<std::decay_t<A>> mod_other(const node_t& node, trace_t call_point, A const& x, B const& y) {
+    trace_t t = node.stack_trace.hash(call_point);
+    details::get_export(node).second()->insert(t);
+    return details::mod_other(x, y, details::get_context(node).second().align(t, node.uid));
 }
 
 //! @brief Applies an operator pointwise on a sequence of field arguments.
@@ -388,7 +410,7 @@ B old(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
  * Equivalent to `nbr(f, f)`.
  */
 template <typename node_t, typename A>
-common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f) {
+to_field<A> nbr(node_t& node, trace_t call_point, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t, align(node, call_point, f));
     return details::get_context(node).second().nbr(t, f, node.uid);
@@ -398,13 +420,13 @@ common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f)
  *
  * Equivalent to:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * nbr(f0, [](add_template<field, A> fn){
+ * nbr(f0, [](to_field<A> fn){
  *     return std::make_pair(fn, f);
  * })
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <typename node_t, typename A>
-common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f0, const A& f) {
+to_field<A> nbr(node_t& node, trace_t call_point, const A& f0, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t, align(node, call_point, f));
     return details::get_context(node).second().nbr(t, f0, node.uid);
@@ -415,13 +437,13 @@ common::add_template<field, A> nbr(node_t& node, trace_t call_point, const A& f0
  * Applies if the \p op argument has return type `A`.
  * Equivalent to:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * nbr(f0, [](add_template<field, A> fn){
+ * nbr(f0, [](to_field<A> fn){
  *     A f = op(fn);
  *     return std::make_pair(f, f);
  * })
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(common::add_template<field, A>)>>
+template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(to_field<A>)>>
 A nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     A f = op(details::get_context(node).second().nbr(t, f0, node.uid));
@@ -435,7 +457,7 @@ A nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
  * The first element of the returned pair is returned by the function.
  * The second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(common::add_template<field, A>)>>
+template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(to_field<A>)>>
 B nbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     std::pair<B,A> f = op(details::get_context(node).second().nbr(t, f0, node.uid));
@@ -453,13 +475,13 @@ B nbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
  * Applies if the \p op argument has return type `A`.
  * Equivalent to:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * share(f0, [](const A& fo, add_template<field, A> fn){
+ * oldnbr(f0, [](const A& fo, to_field<A> fn){
  *     A f = op(fo, fn);
  *     return std::make_pair(f, f);
  * })
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(const A&, common::add_template<field, A>)>>
+template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(const A&, to_field<A>)>>
 A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     A f = op(details::get_context(node).second().old(t, f0, node.uid), details::get_context(node).second().nbr(t, f0, node.uid));
@@ -473,7 +495,7 @@ A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
  * The first element of the returned pair is returned by the function.
  * The second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&, common::add_template<field, A>)>>
+template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&, to_field<A>)>>
 B oldnbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     std::pair<B,A> f = op(details::get_context(node).second().old(t, f0, node.uid), details::get_context(node).second().nbr(t, f0, node.uid));

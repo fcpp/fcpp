@@ -170,9 +170,9 @@ class context<true, M, Ts...> {
 
     //! @brief Returns neighbours' values for a certain trace (default from `def`, and also self if not present).
     template <typename A>
-    common::add_template<field, A> nbr(trace_t trace, A const& def, device_t self) const {
+    to_field<A> nbr(trace_t trace, A const& def, device_t self) const {
         std::vector<device_t> ids;
-        std::vector<common::del_template<field, A>> vals;
+        std::vector<to_local<A>> vals;
         vals.push_back(details::other(def));
         for (const auto& x : m_sorted_data)
             if ((*x.second)->template count<A>(trace)) {
@@ -331,9 +331,9 @@ class context<false, M, Ts...> {
 
     //! @brief Returns neighbours' values for a certain trace (default from `def`, and also self if not present).
     template <typename A>
-    common::add_template<field, A> nbr(trace_t trace, A const& def, device_t self) const {
+    to_field<A> nbr(trace_t trace, A const& def, device_t self) const {
         std::vector<device_t> ids;
-        std::vector<common::del_template<field, A>> vals;
+        std::vector<to_local<A>> vals;
         vals.push_back(details::other(def));
         for (const auto& x : m_data)
             if (get<2>(x)->template count<A>(trace)) {

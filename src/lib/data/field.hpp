@@ -47,7 +47,7 @@ template <typename A>
 using to_local = common::extract_template<field, A>;
 //! @brief Type returned upon field construction.
 template <typename A>
-using to_field = common::add_template<field, A>;
+using to_field = field<common::extract_template<field, A>>;
 //! @brief Computes the result type of applying F pointwise to local versions of A.
 template <typename F, typename... A>
 using local_result = std::result_of_t<F(to_local<const A&>...)>;
@@ -69,26 +69,26 @@ namespace details {
     template <typename A>
     std::vector<device_t>& get_ids(field<A>&);
     template <typename A>
-    std::vector<device_t>&& get_ids(field<A>&&);
+    std::vector<device_t> get_ids(field<A>&&);
     template <typename A>
     std::vector<device_t> const& get_ids(field<A> const&);
 
     template <typename A>
     std::vector<A>& get_vals(field<A>&);
     template <typename A>
-    std::vector<A>&& get_vals(field<A>&&);
+    std::vector<A> get_vals(field<A>&&);
     template <typename A>
     std::vector<A> const& get_vals(field<A> const&);
 
-    template <typename A, typename = if_local<A>>
-    A const&& other(A&&);
+    template <typename A>
+    if_local<A, to_local<A&&>> other(A&&);
     template <typename A, typename = common::if_class_template<field, A>>
     to_local<A&&> other(A&&);
     template <typename A, typename = if_field<A>, typename = common::if_class_template<tuple, A>>
     to_local<A&&> other(A&&);
 
-    template <typename A, typename = if_local<A>>
-    A const&& self(A&&, device_t);
+    template <typename A>
+    if_local<A, to_local<A&&>> self(A&&, device_t);
     template <typename A, typename = common::if_class_template<field, A>>
     to_local<A&&> self(A&&, device_t);
     template <typename A, typename = if_field<A>, typename = common::if_class_template<tuple, A>>
@@ -104,6 +104,11 @@ namespace details {
     field<A> align(field<A> const&, std::vector<device_t> const&);
     template <typename A, typename = if_field<A>, typename = common::if_class_template<tuple, A>>
     decltype(auto) align(A&&, std::vector<device_t> const&);
+
+    template <typename A>
+    field<A>& align_inplace(field<A>&, std::vector<device_t>&&);
+    template <typename... A>
+    tuple<A...>& align_inplace(tuple<A...>&, std::vector<device_t>&&);
 }
 //! @endcond
 
@@ -131,14 +136,14 @@ class field : public details::field_base<std::is_convertible<T, bool>::value, T>
     template <typename A>
     friend std::vector<device_t>& details::get_ids(field<A>&);
     template <typename A>
-    friend std::vector<device_t>&& details::get_ids(field<A>&&);
+    friend std::vector<device_t> details::get_ids(field<A>&&);
     template <typename A>
     friend std::vector<device_t> const& details::get_ids(field<A> const&);
 
     template <typename A>
     friend std::vector<A>& details::get_vals(field<A>&);
     template <typename A>
-    friend std::vector<A>&& details::get_vals(field<A>&&);
+    friend std::vector<A> details::get_vals(field<A>&&);
     template <typename A>
     friend std::vector<A> const& details::get_vals(field<A> const&);
     //! @}
@@ -248,7 +253,7 @@ namespace details {
         return f.m_ids;
     }
     template <typename A>
-    std::vector<device_t>&& get_ids(field<A>&& f) {
+    std::vector<device_t> get_ids(field<A>&& f) {
         return std::move(f.m_ids);
     }
     template <typename A>
@@ -264,7 +269,7 @@ namespace details {
         return f.m_vals;
     }
     template <typename A>
-    std::vector<A>&& get_vals(field<A>&& f) {
+    std::vector<A> get_vals(field<A>&& f) {
         return std::move(f.m_vals);
     }
     template <typename A>
@@ -280,15 +285,15 @@ namespace details {
      */
     //! @{
     //! @brief Const access for non-field values (treated as constant fields).
-    template <typename A, typename = if_local<A>>
-    A const&& other(A&& x) {
-        return static_cast<A const&&>(x);
+    template <typename A>
+    if_local<A, to_local<A&&>> other(A&& x) {
+        return std::forward<A>(x);
     }
 
     //! @brief Full access on fields. WARNING: may lead to unexpected results if the argument is not aligned.
     template <typename A, typename = common::if_class_template<field, A>>
     to_local<A&&> other(A&& x) {
-        return static_cast<to_local<A&&>>(get_vals(std::forward<A>(x))[0]);
+        return get_vals(std::forward<A>(x))[0];
     }
 
     //! @brief Full access on indexed structures.
@@ -311,9 +316,9 @@ namespace details {
      */
     //! @{
     //! @brief Const access for non-field values (treated as constant fields).
-    template <typename A, typename = if_local<A>>
-    A const&& self(A&& x, device_t) {
-        return static_cast<A const&&>(x);
+    template <typename A>
+    if_local<A, to_local<A&&>> self(A&& x, device_t) {
+        return std::forward<A>(x);
     }
 
     template <typename A>
@@ -333,10 +338,10 @@ namespace details {
     //! @brief Full access on fields.
     template <typename A, typename = common::if_class_template<field, A>>
     to_local<A&&> self(A&& x, device_t i) {
-        auto it = std::lower_bound(get_ids(x).begin(), get_ids(x).end(), i);
-        if (it == get_ids(x).end() or *it != i)
-            return static_cast<to_local<A&&>>(maybe_emplace(std::forward<A>(x), i, it - get_ids(x).begin()));
-        return static_cast<to_local<A&&>>(get_vals(x)[it - get_ids(x).begin() + 1]);
+        size_t j = std::lower_bound(get_ids(x).begin(), get_ids(x).end(), i) - get_ids(x).begin();
+        if (j == get_ids(x).size() or get_ids(x)[j] != i)
+            return maybe_emplace(std::forward<A>(x), i, j);
+        return get_vals(std::forward<A>(x))[j+1];
     }
 
     //! @brief Full access on indexed structures.
@@ -786,6 +791,89 @@ namespace details {
     //! @}
 
     /**
+     * @name align_inplace
+     *
+     * Changes the domain of a field-like structure to match a given one.
+     */
+    //! @{
+    //! @brief Field case.
+    template <typename A>
+    field<A>& align_inplace(field<A>& x, std::vector<device_t>&& s) {
+        std::vector<A> vals;
+        vals.reserve(s.size()+1);
+        vals.push_back(other(x));
+        field_iterator<field<A> const> it(x);
+        for (device_t i : s) {
+            while (it.id() < i) ++it;
+            vals.push_back(it.value(i));
+        }
+        get_ids(x) = std::move(s);
+        get_vals(x) = std::move(vals);
+        return x;
+    }
+    //! @brief Indexed structures case.
+    template <typename A, size_t i, size_t... is>
+    A& align_inplace(A& x, std::vector<device_t>&& s, std::index_sequence<i, is...>) {
+        ignore_args(align_inplace(get<is>(x), std::vector<device_t>{s})...);
+        align_inplace(get<i>(x), std::move(s));
+        return x;
+    }
+    //! @brief Tuple case.
+    template <typename... A>
+    tuple<A...>& align_inplace(tuple<A...>& x, std::vector<device_t>&& s) {
+        return align_inplace(x, std::move(s), std::make_index_sequence<sizeof...(A)>{});
+    }
+    //! @{
+
+    //! @brief Returns a fully aligned field with the default value modified.
+    template <typename A, typename B>
+    to_field<A> mod_other(A const& x, B const& y, std::vector<device_t>&& s) {
+        std::vector<to_local<A>> vals;
+        vals.reserve(s.size()+1);
+        vals.push_back(other(y));
+        field_iterator<A const> it(x);
+        for (device_t i : s) {
+            while (it.id() < i) ++it;
+            vals.push_back(it.value(i));
+        }
+        return make_field(std::move(s), std::move(vals));
+    }
+
+    /**
+     * @name mod_self
+     *
+     * Returns a field with the self value modified.
+     */
+    //! @{
+    //! @brief General case.
+    template <typename A, typename B>
+    to_field<A> mod_self(A const& x, B const& y, device_t i) {
+        std::vector<device_t> ids;
+        std::vector<to_local<A>> vals;
+        vals.push_back(other(x));
+        field_iterator<A const> it(x);
+        for (; it.id() < i; ++it) {
+            ids.push_back(it.id());
+            vals.push_back(it.value());
+        }
+        ids.push_back(i);
+        vals.push_back(self(y, i));
+        if (it.id() == i) ++it;
+        for (; not it.end(); ++it) {
+            ids.push_back(it.id());
+            vals.push_back(it.value());
+        }
+        return make_field(std::move(ids), std::move(vals));
+    }
+    //! @brief Optimisation for a movable field argument.
+    template <typename A, typename B>
+    field<A> mod_self(field<A>&& x, B const& y, device_t i) {
+        self(x, i) = self(y, i);
+        return x;
+    }
+    //! @}
+
+    /**
      * @name map_hood
      *
      * Applies an operator pointwise on a sequence of fields.
@@ -1008,16 +1096,14 @@ A mux(bool b, A&& x, A&& y) {
 //! @brief field guard
 template <typename A>
 to_field<A> mux(field<bool> b, const A& x, const A& y) {
-    return map_hood([] (bool b, to_local<const A&> x, to_local<const A&> y) -> common::del_template<field, A> {
-        return b ? x : y;
+    return map_hood([] (bool b, to_local<const A&> x, to_local<const A&> y) -> to_local<A> {
+        return b ? std::move(x) : std::move(y);
     }, b, x, y);
 }
 //! @brief field guard, moving arguments
 template <typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
 to_field<A> mux(field<bool> b, A&& x, A&& y) {
-    return map_hood([] (bool b, to_local<const A&> x, to_local<const A&> y) -> common::del_template<field, A> {
-        return b ? std::move(x) : std::move(y);
-    }, b, x, y);
+    return mux(b, x, y);
 }
 //! @}
 
@@ -1037,8 +1123,8 @@ const A& max(const A& x, const A& y) {
 //! @brief max between fields.
 template <typename A, typename = if_field<A>>
 to_field<A> max(const A& x, const A& y) {
-    return map_hood([] (to_local<const A&> x, to_local<const A&> y) -> common::del_template<field, A> {
-        return std::max(x, y);
+    return map_hood([] (to_local<const A&> x, to_local<const A&> y) -> to_local<A> {
+        return std::max(std::move(x), std::move(y));
     }, x, y);
 }
 //! @}
@@ -1059,8 +1145,8 @@ const A& min(const A& x, const A& y) {
 //! @brief min between fields.
 template <typename A, typename = if_field<A>>
 to_field<A> min(const A& x, const A& y) {
-    return map_hood([] (to_local<const A&> x, to_local<const A&> y) -> common::del_template<field, A> {
-        return std::min(x, y);
+    return map_hood([] (to_local<const A&> x, to_local<const A&> y) -> to_local<A> {
+        return std::min(std::move(x), std::move(y));
     }, x, y);
 }
 //! @}

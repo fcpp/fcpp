@@ -508,19 +508,46 @@ constexpr bool has_template<T, U<A, N>> = has_template<T, A>;
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Handles references to vector value (general case).
+    //! @brief Value type case ignoring constness.
     template <typename T>
-    struct vectorize {
-        using type = T;
+    struct partial_decay {
+        using type = std::remove_const_t<T>;
     };
 
-    //! @brief Handles references to vector value (reference case).
+    //! @brief Preserves lvalue references with constness.
+    template <typename T>
+    struct partial_decay<T&> {
+        using type = T&;
+    };
+
+    //! @brief Ignores rvalue references and constness.
+    template <typename T>
+    struct partial_decay<T&&> {
+        using type = std::remove_const_t<T>;
+    };
+    //! @}
+}
+
+//! @brief The type that should be returned by a function forwarding an argument of type T.
+template <typename T>
+using partial_decay = typename details::partial_decay<T>::type;
+
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief Type referencing vector values (value type case).
+    template <typename T>
+    struct vectorize {
+        using type = typename std::vector<T>::value_type;
+    };
+
+    //! @brief Type referencing vector values (reference case).
     template <typename T>
     struct vectorize<T&> {
         using type = typename std::vector<T>::reference;
     };
 
-    //! @brief Handles references to vector value (const reference case).
+    //! @brief Type referencing vector values (const reference case).
     template <typename T>
     struct vectorize<T const&> {
         using type = typename std::vector<T>::const_reference;
@@ -533,31 +560,13 @@ namespace details {
     //! @brief Base case assuming no occurrences of the template.
     template <template<class> class T, class A>
     struct extract_template<T, A, false> {
-        using type = A const;
+        using type = A;
     };
 
-    //! @brief Propagate constness assuming no occurrences of the template.
-    template <template<class> class T, class A>
-    struct extract_template<T, A const, false> {
-        using type = typename extract_template<T, A, false>::type const;
-    };
-
-    //! @brief Propagate lvalue references assuming no occurrences of the template.
+    //! @brief Propagate & assuming no occurrences of the template.
     template <template<class> class T, class A>
     struct extract_template<T, A&, false> {
-        using type = typename extract_template<T, A, false>::type&;
-    };
-
-    //! @brief Propagate rvalue references assuming no occurrences of the template.
-    template <template<class> class T, class A>
-    struct extract_template<T, A&&, false> {
-        using type = typename extract_template<T, A, false>::type&&;
-    };
-
-    //! @brief Propagate const assuming occurrences of the template are present.
-    template <template<class> class T, template<class...> class U, class... A>
-    struct extract_template<T, U<A...> const, true> {
-        using type = typename extract_template<T, U<A const...>, true>::type;
+        using type = A const&;
     };
 
     //! @brief Propagate & assuming occurrences of the template are present.
@@ -572,36 +581,6 @@ namespace details {
         using type = typename extract_template<T, U<A const&...>, true>::type;
     };
 
-    //! @brief Propagate && assuming occurrences of the template are present.
-    template <template<class> class T, template<class...> class U, class... A>
-    struct extract_template<T, U<A...>&&, true> {
-        using type = typename extract_template<T, U<A&&...>, true>::type;
-    };
-
-    //! @brief Propagate const&& assuming occurrences of the template are present.
-    template <template<class> class T, template<class...> class U, class... A>
-    struct extract_template<T, U<A...> const&&, true> {
-        using type = typename extract_template<T, U<A const&&...>, true>::type;
-    };
-
-    //! @brief If the second parameter is of the form T<A>.
-    template <template<class> class T, class A>
-    struct extract_template<T, T<A>, true> {
-        using type = typename vectorize<A>::type;
-    };
-
-    //! @brief Removes occurrences from the arguments of a tuple-like type.
-    template <template<class> class T, template<class...> class U, class... A>
-    struct extract_template<T, U<A...>, true> {
-        using type = U<typename extract_template<T, A>::type...>;
-    };
-
-    //! @brief Propagate const assuming occurrences of the template are present.
-    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_template<T, U<A, N> const, true> {
-        using type = typename extract_template<T, U<A const, N>, true>::type;
-    };
-
     //! @brief Propagate & assuming occurrences of the template are present.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
     struct extract_template<T, U<A, N>&, true> {
@@ -614,22 +593,22 @@ namespace details {
         using type = typename extract_template<T, U<A const&, N>, true>::type;
     };
 
-    //! @brief Propagate && assuming occurrences of the template are present.
-    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_template<T, U<A, N>&&, true> {
-        using type = typename extract_template<T, U<A&&, N>, true>::type;
+    //! @brief Extracts occurrences from the arguments of a tuple-like type.
+    template <template<class> class T, template<class...> class U, class... A>
+    struct extract_template<T, U<A...>, true> {
+        using type = U<typename extract_template<T, common::partial_decay<A>>::type...>;
     };
 
-    //! @brief Propagate const&& assuming occurrences of the template are present.
-    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct extract_template<T, U<A, N> const&&, true> {
-        using type = typename extract_template<T, U<A const&&, N>, true>::type;
-    };
-
-    //! @brief Removes occurrences from the argument of an array-like type.
+    //! @brief Extracts occurrences from the argument of an array-like type.
     template <template<class> class T, template<class,size_t> class U, class A, size_t N>
     struct extract_template<T, U<A, N>, true> {
-        using type = U<typename extract_template<T, A>::type, N>;
+        using type = U<typename extract_template<T, common::partial_decay<A>>::type, N>;
+    };
+    
+    //! @brief If the second parameter is of the form T<A>.
+    template <template<class> class T, class A>
+    struct extract_template<T, T<A>, true> {
+        using type = typename vectorize<common::partial_decay<A>>::type;
     };
 }
 //! @endcond
@@ -638,93 +617,7 @@ namespace details {
  * @brief Deletes occurrences of the first (template) parameter within the second (type) parameter, which is built through array-like and tuple-like classes, adding constness where the template is not present.
  */
 template <template<class> class T, class A>
-using extract_template = typename details::extract_template<T, A>::type;
-
-
-//! @cond INTERNAL
-namespace details {
-    //! @brief If no occurrences of the template are present.
-    template <template<class> class T, class A>
-    struct del_template {
-        using type = A;
-    };
-    
-    //! @brief Propagate constness.
-    template <template<class> class T, class A>
-    struct del_template<T, const A> {
-        using type = const typename del_template<T, A>::type;
-    };
-    
-    //! @brief Propagate lvalue references.
-    template <template<class> class T, class A>
-    struct del_template<T, A&> {
-        using type = typename del_template<T, A>::type&;
-    };
-    
-    //! @brief Propagate rvalue references.
-    template <template<class> class T, class A>
-    struct del_template<T, A&&> {
-        using type = typename del_template<T, A>::type&&;
-    };
-    
-    //! @brief If the second parameter is of the form T<A>.
-    template <template<class> class T, class A>
-    struct del_template<T, T<A>> {
-        using type = A;
-    };
-
-    //! @brief Removes occurrences from the arguments of a tuple-like type.
-    template <template<class> class T, template<class...> class U, class... A>
-    struct del_template<T, U<A...>> {
-        using type = U<typename del_template<T, A>::type...>;
-    };
-
-    //! @brief Removes occurrences from the argument of an array-like type.
-    template <template<class> class T, template<class,size_t> class U, class A, size_t N>
-    struct del_template<T, U<A, N>> {
-        using type = U<typename del_template<T, A>::type, N>;
-    };
-}
-//! @endcond
-
-/**
- * @brief Deletes occurrences of the first (template) parameter within the second (type) parameter, which is built through array-like and tuple-like classes.
- */
-template <template<class> class T, class A>
-using del_template = typename details::del_template<T, A>::type;
-
-
-//! @cond INTERNAL
-namespace details {
-    //! @brief General case.
-    template <template<class> class T, class A>
-    struct add_template {
-        using type = T<typename del_template<T, A>::type>;
-    };
-    
-    //! @brief Propagate constness.
-    template <template<class> class T, class A>
-    struct add_template<T, const A> {
-        using type = const typename add_template<T, A>::type;
-    };
-    
-    //! @brief Propagate lvalue references.
-    template <template<class> class T, class A>
-    struct add_template<T, A&> {
-        using type = typename add_template<T, A>::type&;
-    };
-    
-    //! @brief Propagate rvalue references.
-    template <template<class> class T, class A>
-    struct add_template<T, A&&> {
-        using type = typename add_template<T, A>::type&&;
-    };
-}
-//! @endcond
-    
-//! @brief Converts the second (type) parameter into a specialization of the first (template) parameter.
-template <template<class> class T, class A>
-using add_template = typename details::add_template<T, A>::type;
+using extract_template = typename details::extract_template<T, partial_decay<A>>::type;
 
 
 //! @cond INTERNAL

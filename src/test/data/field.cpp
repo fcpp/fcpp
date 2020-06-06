@@ -5,6 +5,8 @@
 #include "lib/data/field.hpp"
 #include "lib/data/tuple.hpp"
 
+#define FIELD_EQ(a, b)  EXPECT_EQ(a, b); EXPECT_EQ(joined_domain(a), joined_domain(b))
+
 
 using namespace fcpp;
 
@@ -49,6 +51,11 @@ class FieldTest : public ::testing::Test {
         return static_cast<const T&>(x);
     }
     
+    template <typename T>
+    T copy(T const& x) {
+        return x;
+    }
+
     field<int> fi1, fi2;
     field<double> fd;
     field<bool> fb1, fb2;
@@ -62,6 +69,16 @@ TEST_F(FieldTest, Constructors) {
     EXPECT_EQ(details::self(fd, 1), details::self(y, 1));
     EXPECT_EQ(details::self(fd, 2), details::self(y, 2));
     EXPECT_EQ(details::self(fd, 3), details::self(y, 3));
+}
+
+TEST_F(FieldTest, Conversion) {
+    fi1 = fb1;
+    fd = fi1;
+    EXPECT_EQ(fd, fb1);
+    fb1 = fd;
+    EXPECT_EQ(fd, fb1);
+    field<char> fc = fi2;
+    EXPECT_EQ(fc, fi2);
 }
 
 TEST_F(FieldTest, Access) {
@@ -87,27 +104,26 @@ TEST_F(FieldTest, TupleAccess) {
     EXPECT_SAME(const field<tuple<int,double>>&,    decltype(constify(t1)));
     EXPECT_SAME(const field<tuple<int,double>>&&,   decltype(std::move(constify(t1))));
     EXPECT_SAME(tuple<int, double>&,                decltype(details::other(t1)));
-    EXPECT_SAME(tuple<int, double>&&,               decltype(details::other(std::move(t1))));
+    EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(t1))));
     EXPECT_SAME(const tuple<int, double>&,          decltype(details::other(constify(t1))));
-    EXPECT_SAME(const tuple<int, double>&&,         decltype(details::other(std::move(constify(t1)))));
+    EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(constify(t1)))));
     EXPECT_SAME(tuple<int&, double&>,               decltype(details::other(t2)));
-    EXPECT_SAME(tuple<int&&, double&&>,             decltype(details::other(std::move(t2))));
+    EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(t2))));
     EXPECT_SAME(tuple<const int&, const double&>,   decltype(details::other(constify(t2))));
-    EXPECT_SAME(tuple<const int&&, const double&&>, decltype(details::other(std::move(constify(t2)))));
+    EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(constify(t2)))));
     EXPECT_SAME(tuple<int&, const double&>,         decltype(details::other(t3)));
-    EXPECT_SAME(tuple<int&&, const double&&>,       decltype(details::other(std::move(t3))));
+    EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(t3))));
     EXPECT_SAME(tuple<const int&, const double&>,   decltype(details::other(constify(t3))));
-    EXPECT_SAME(tuple<const int&&, const double&&>, decltype(details::other(std::move(constify(t3)))));
-    EXPECT_SAME(tuple<tuple<int&, const int&>, double&>,                decltype(details::other(t4)));
-    EXPECT_SAME(tuple<tuple<int&&, const int&&>, double&&>,             decltype(details::other(std::move(t4))));
-    EXPECT_SAME(tuple<tuple<const int&, const int&>, const double&>,    decltype(details::other(constify(t4))));
-    EXPECT_SAME(tuple<tuple<const int&&, const int&&>, const double&&>,
-                decltype(details::other(std::move(constify(t4)))));
+    EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(constify(t3)))));
+    EXPECT_SAME(tuple<tuple<int&, const int&>, double&>,             decltype(details::other(t4)));
+    EXPECT_SAME(tuple<tuple<int, int>, double>,                      decltype(details::other(std::move(t4))));
+    EXPECT_SAME(tuple<tuple<const int&, const int&>, const double&>, decltype(details::other(constify(t4))));
+    EXPECT_SAME(tuple<tuple<int, int>, double>,                      decltype(details::other(std::move(constify(t4)))));
     auto x1 = details::other(t1);
     EXPECT_EQ(42,  get<0>(x1));
     EXPECT_EQ(2.5, get<1>(x1));
     details::other(t1) = make_tuple(10, 0.0);
-    x1 = details::other(std::move(t1));
+    x1 = details::other(copy(t1));
     EXPECT_EQ(10,  get<0>(x1));
     EXPECT_EQ(0.0, get<1>(x1));
     auto x2 = details::other(t2);
@@ -118,7 +134,7 @@ TEST_F(FieldTest, TupleAccess) {
     details::other(t2) = make_tuple(5, 0.0);
     EXPECT_EQ(5,   details::other(get<0>(t2)));
     EXPECT_EQ(0.0, details::other(get<1>(t2)));
-    x2 = details::other(std::move(t2));
+    x2 = details::other(copy(t2));
     EXPECT_EQ(5,   get<0>(x2));
     EXPECT_EQ(0.0, get<1>(x2));
     auto x3 = details::other(t3);
@@ -129,7 +145,7 @@ TEST_F(FieldTest, TupleAccess) {
     get<0>(details::other(t3)) = 5;
     EXPECT_EQ(5,   details::other(get<0>(t3)));
     EXPECT_EQ(2.5, details::other(get<1>(t3)));
-    x2 = details::other(std::move(t3));
+    x2 = details::other(copy(t3));
     EXPECT_EQ(5,   get<0>(x3));
     EXPECT_EQ(2.5, get<1>(x3));
     details::self(t4, 24);
@@ -181,6 +197,62 @@ TEST_F(FieldTest, TupleAccess) {
     EXPECT_EQ(3.25,details::self(get<1>(f4), 2));
     EXPECT_EQ(5.0, details::self(get<1>(f4), 3));
     EXPECT_EQ(5.0, details::self(get<1>(f4), 24));
+}
+
+TEST_F(FieldTest, AlignInplace) {
+    field<int> fex, fres;
+    fex = build_field(2, {{1,1},{3,-1}});
+    details::align_inplace(fex, {2,3,4});
+    fres = build_field(2, {{2,2},{3,-1},{4,2}});
+    FIELD_EQ(fex, fres);
+    tuple<field<int>,field<int>> tex, tres;
+    tex = {build_field(2, {{1,1},{3,-1}}), build_field(3, {{2,1},{3,-1},{5,7}})};
+    details::align_inplace(tex, {2,3,4});
+    tres = {build_field(2, {{2,2},{3,-1},{4,2}}), build_field(3, {{2,1},{3,-1},{4,3}})};
+    FIELD_EQ(tex, tres);
+    tuple<tuple<field<int>,field<int>>,field<int>> ttex, ttres;
+    ttex = {{build_field(2, {{1,1},{3,-1}}), build_field(3, {{2,1},{3,-1},{5,7}})}, build_field(2, {{1,1},{3,-1}})};
+    details::align_inplace(ttex, {2,3,4});
+    ttres = {{build_field(2, {{2,2},{3,-1},{4,2}}), build_field(3, {{2,1},{3,-1},{4,3}})}, build_field(2, {{2,2},{3,-1},{4,2}})};
+    FIELD_EQ(ttex, ttres);
+}
+
+TEST_F(FieldTest, ModOther) {
+    field<int> fin, fex, fres;
+    fin = build_field(2, {{1,1},{3,-1}});
+    fres = details::mod_other(fin, 4, {2,3,4});
+    fex = build_field(4, {{2,2},{3,-1},{4,2}});
+    FIELD_EQ(fin, build_field(2, {{1,1},{3,-1}}));
+    FIELD_EQ(fex, fres);
+    tuple<tuple<field<int>,int>,int> tin = {{build_field(2, {{1,1},{3,-1}}), 4}, 2};
+    tuple<tuple<int,int>,int> to = {{1,2},0};
+    field<tuple<tuple<int,int>,int>> tex, tres;
+    tres = details::mod_other(tin, to, {2,3,4});
+    tex = build_field(to, {{2,{{2,4},2}},{3,{{-1,4},2}},{4,{{2,4},2}}});
+    FIELD_EQ(tex, tres);
+}
+
+TEST_F(FieldTest, ModSelf) {
+    field<int> fin, fex, fres;
+    fin = build_field(2, {{1,1},{3,-1}});
+    fres = details::mod_self(fin, 4, 3);
+    fex = build_field(2, {{1,1},{3,4}});
+    FIELD_EQ(fin, build_field(2, {{1,1},{3,-1}}));
+    FIELD_EQ(fex, fres);
+    fres = details::mod_self(fin, build_field(42, {{0,5},{1,3}}), 0);
+    fex = build_field(2, {{0,5},{1,1},{3,-1}});
+    FIELD_EQ(fex, fres);
+    fres = details::mod_self(std::move(fin), 4, 3);
+    fex = build_field(2, {{1,1},{3,4}});
+    FIELD_EQ(fex, fres);
+    tuple<tuple<field<int>,int>,field<int>> tin = {{build_field(2, {{1,1},{3,-1}}), 4}, build_field(1, {{2,5},{3,0}})};
+    tuple<tuple<int,int>,int> t;
+    field<tuple<tuple<int,int>,int>> tex, tres;
+    t = {{1,2},0};
+    tres = details::mod_self(tin, t, 2);
+    t = {{2,4},1};
+    tex = build_field(t, {{1,{{1,4},1}},{2,{{1,2},0}},{3,{{-1,4},0}}});
+    FIELD_EQ(tex, tres);
 }
 
 TEST_F(FieldTest, MapReduce) {
@@ -238,16 +310,6 @@ TEST_F(FieldTest, MapReduce) {
            return a < b ? a : b;
     }, f, {1,2,3});
     EXPECT_EQ(make_tuple(5,8), g);
-}
-
-TEST_F(FieldTest, Conversion) {
-    fi1 = fb1;
-    fd = fi1;
-    EXPECT_EQ(fd, fb1);
-    fb1 = fd;
-    EXPECT_EQ(fd, fb1);
-    field<char> fc = fi2;
-    EXPECT_EQ(fc, fi2);
 }
 
 TEST_F(FieldTest, BasicFunctions) {

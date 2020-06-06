@@ -1,14 +1,10 @@
 cc_library(
-    name = 'spawner',
-    hdrs = ['spawner.hpp'],
-    srcs = ['spawner.cpp'],
+    name = 'batch',
+    hdrs = ['batch.hpp'],
+    srcs = ['batch.cpp'],
     deps = [
-        "//lib:settings",
-        "//lib/common:distribution",
+        "//lib/common:algorithm",
         "//lib/common:tagged_tuple",
-        "//lib/common:traits",
-        "//lib/component:base",
-        "//lib/component:timer",
     ],
     visibility = [
         '//visibility:public',
@@ -42,6 +38,23 @@ cc_library(
         "//lib/common:tagged_tuple",
         "//lib/component:base",
         "//lib/data:field",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'spawner',
+    hdrs = ['spawner.hpp'],
+    srcs = ['spawner.cpp'],
+    deps = [
+        "//lib:settings",
+        "//lib/common:distribution",
+        "//lib/common:tagged_tuple",
+        "//lib/common:traits",
+        "//lib/component:base",
+        "//lib/component:timer",
     ],
     visibility = [
         '//visibility:public',

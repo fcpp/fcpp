@@ -1,4 +1,18 @@
 cc_test(
+    name = "batch",
+    srcs = ["batch.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:mutex",
+        "//lib/simulation:batch",
+        "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "physical_connector",
     srcs = ["physical_connector.cpp"],
     deps = [

@@ -16,6 +16,7 @@
 #include <limits>
 #include <ostream>
 #include <unordered_set>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,23 @@ namespace fcpp {
 namespace aggregator {
 
 
+//! @cond INTERNAL
+namespace details {
+    inline std::string header(std::string const&) {
+        return "";
+    }
+    template <typename... Ts>
+    inline std::string header(std::string const& tag, std::string stat, Ts... xs) {
+#ifdef ALCHEMIST
+        return tag + "[" + stat + "] " + header(tag, xs...);
+#else
+        return stat + "(" + tag + ") " + header(tag, xs...);
+#endif
+    }
+}
+//! @endcond
+
+
 /**
  * @brief Invertible aggregators.
  *
@@ -48,44 +66,92 @@ class count {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     count() = default;
-    
+
     //! @brief Combines aggregated values.
     count& operator+=(const count& o) {
         m_count += o.m_count;
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
         if (value) m_count--;
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (value) m_count++;
     }
-    
+
     //! @brief The results of aggregation.
     size_t result() const {
         return m_count;
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "count(" << tag << ") ";
+        os << details::header(tag, "count");
     }
-    
+
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         os << result() << " ";
     }
-    
+
   private:
     //! @brief The counter.
     size_t m_count = 0;
+};
+
+
+//! @brief Aggregates values by counting how many distinct values are present.
+template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+class distinct {
+  public:
+    //! @brief The type of values aggregated.
+    using type = T;
+
+    //! @brief Default constructor.
+    distinct() = default;
+
+    //! @brief Combines aggregated values.
+    distinct& operator+=(const distinct& o) {
+        for (auto const& x : o)
+            m_counts[x.first] += x.second;
+        return *this;
+    }
+
+    //! @brief Erases a value from the aggregation set.
+    void erase(T value) {
+        if (--m_counts.at(value) == 0) m_counts.erase(value);
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    void insert(T value) {
+        ++m_counts[value];
+    }
+
+    //! @brief The results of aggregation.
+    size_t result() const {
+        return m_counts.size();
+    }
+
+    //! @brief Outputs the aggregator description.
+    void header(std::ostream& os, std::string tag) const {
+        os << details::header(tag, "distinct");
+    }
+
+    //! @brief Printed results of aggregation.
+    void output(std::ostream& os) const {
+        os << result() << " ";
+    }
+
+  private:
+    //! @brief Counters for every distinct item.
+    std::unordered_map<T,size_t> m_counts;
 };
 
 
@@ -95,44 +161,44 @@ class sum {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     sum() = default;
-    
+
     //! @brief Combines aggregated values.
     sum& operator+=(const sum& o) {
         m_sum += o.m_sum;
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
         if (not only_finite or std::isfinite(value))
             m_sum -= value;
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value)) {
             m_sum += value;
         }
     }
-    
+
     //! @brief The results of aggregation.
     T result() const {
         return m_sum;
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "sum(" << tag << ") ";
+        os << details::header(tag, "sum");
     }
-    
+
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         os << result() << " ";
     }
-    
+
   private:
     T m_sum = 0;
 };
@@ -144,17 +210,17 @@ class mean {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     mean() = default;
-    
+
     //! @brief Combines aggregated values.
     mean& operator+=(const mean& o) {
         m_sum += o.m_sum;
         m_count += o.m_count;
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -162,7 +228,7 @@ class mean {
             m_count--;
         }
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -170,22 +236,22 @@ class mean {
             m_count++;
         }
     }
-    
+
     //! @brief The results of aggregation.
     T result() const {
         return m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : m_sum/m_count;
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "mean(" << tag << ") ";
+        os << details::header(tag, "mean");
     }
-    
+
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         os << result() << " ";
     }
-    
+
   private:
     T m_sum = 0;
     size_t m_count = 0;
@@ -198,17 +264,17 @@ class moment {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     moment() = default;
-    
+
     //! @brief Combines aggregated values.
     moment& operator+=(const moment& o) {
         m_sum += o.m_sum;
         m_count += o.m_count;
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -216,7 +282,7 @@ class moment {
             m_count--;
         }
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -224,22 +290,22 @@ class moment {
             m_count++;
         }
     }
-    
+
     //! @brief The results of aggregation.
     T result() const {
         return m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : pow(m_sum/m_count, 1.0/n);
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "moment" << int(n) << "(" << tag << ") ";
+        os << details::header(tag, "moment" + std::to_string(int{n}));
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         os << result() << " ";
     }
-    
+
   private:
     T m_sum = 0;
     size_t m_count = 0;
@@ -252,10 +318,10 @@ class deviation {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     deviation() = default;
-    
+
     //! @brief Combines aggregated values.
     deviation& operator+=(const deviation& o) {
         m_sum += o.m_sum;
@@ -263,7 +329,7 @@ class deviation {
         m_count += o.m_count;
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -272,7 +338,7 @@ class deviation {
             m_count--;
         }
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -281,7 +347,7 @@ class deviation {
             m_count++;
         }
     }
-    
+
     //! @brief The results of aggregation.
     T result() const {
         if (m_count == 0) return std::numeric_limits<T>::quiet_NaN();
@@ -290,17 +356,17 @@ class deviation {
         if (std::isfinite(d1) and (d1+1)*(d1+1) <= d2) ++d1;
         return d1;
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "dev(" << tag << ") ";
+        os << details::header(tag, "dev");
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         os << result() << " ";
     }
-    
+
   private:
     T m_sum = 0;
     T m_sqsum = 0;
@@ -314,10 +380,10 @@ class stats {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     stats() = default;
-    
+
     //! @brief Combines aggregated values.
     stats& operator+=(const stats& o) {
         m_sum += o.m_sum;
@@ -325,7 +391,7 @@ class stats {
         m_count += o.m_count;
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -334,7 +400,7 @@ class stats {
             m_count--;
         }
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value)) {
@@ -343,7 +409,7 @@ class stats {
             m_count++;
         }
     }
-    
+
     //! @brief The results of aggregation.
     std::tuple<T,T> result() const {
         if (m_count == 0) return {std::numeric_limits<T>::quiet_NaN(), std::numeric_limits<T>::quiet_NaN()};
@@ -352,10 +418,10 @@ class stats {
         if (std::isfinite(d1) and (d1+1)*(d1+1) <= d2) ++d1;
         return {m_sum/m_count, d1};
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "mean(" << tag << ") " << "dev(" << tag << ") ";
+        os << details::header(tag, "mean", "dev");
     }
 
     //! @brief Printed results of aggregation.
@@ -363,7 +429,7 @@ class stats {
         std::tuple<T,T> res = result();
         os << std::get<0>(res) << " " << std::get<1>(res) << " ";
     }
-    
+
   private:
     T m_sum = 0;
     T m_sqsum = 0;
@@ -384,43 +450,43 @@ class min {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     min() = default;
-    
+
     //! @brief Combines aggregated values.
     min& operator+=(const min& o) {
         m_min = std::min(m_min, o.m_min);
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set (not supported).
     void erase(T) {
         assert(false);
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value)) {
             m_min = std::min(m_min, value);
         }
     }
-    
+
     //! @brief The results of aggregation.
     T result() const {
         return m_min;
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "min(" << tag << ") ";
+        os << details::header(tag, "min");
     }
-    
+
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         os << result() << " ";
     }
-    
+
   private:
     T m_min = std::numeric_limits<T>::has_infinity ? std::numeric_limits<T>::infinity() : std::numeric_limits<T>::max();
 };
@@ -432,43 +498,43 @@ class max {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     max() = default;
-    
+
     //! @brief Combines aggregated values.
     max& operator+=(const max& o) {
         m_max = std::max(m_max, o.m_max);
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set (not supported).
     void erase(T) {
         assert(false);
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value)) {
             m_max = std::max(m_max, value);
         }
     }
-    
+
     //! @brief The results of aggregation.
     T result() const {
         return m_max;
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << "max(" << tag << ") ";
+        os << details::header(tag, "max");
     }
-    
+
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         os << result() << " ";
     }
-    
+
   private:
     T m_max = std::numeric_limits<T>::has_infinity ? -std::numeric_limits<T>::infinity() : std::numeric_limits<T>::lowest();
 };
@@ -492,15 +558,11 @@ class quantile;
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Outputs the aggregator description for quantile.
-    template <size_t n>
-    void quant_header(std::ostream& os, std::string& tag, const std::array<char,n>& quantiles) {
-        for (int q : quantiles) {
-            if (q == 0) os << "min";
-            else if (q == 100) os << "max";
-            else os << "q" << int(q);
-        	os << "(" << tag << ") ";
-        }
+    //! @brief The aggregator description for a quantile.
+    std::string quant_repr(char q) {
+        if (q == 0)   return "min";
+        if (q == 100) return "max";
+        return "q" + std::to_string(int{q});
     }
 
     //! @brief The results of aggregation for quantile.
@@ -532,10 +594,10 @@ class quantile<T, only_finite, false, qs...> {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     quantile() = default;
-    
+
     //! @brief Combines aggregated values.
     quantile& operator+=(const quantile& o) {
         m_values.insert(o.m_values.begin(), o.m_values.end());
@@ -547,30 +609,30 @@ class quantile<T, only_finite, false, qs...> {
         if (not only_finite or std::isfinite(value))
             m_values.erase(m_values.find(value));
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value))
             m_values.insert(value);
     }
-    
+
     //! @brief The results of aggregation.
     std::array<T,sizeof...(qs)> result() const {
         std::vector<T> ev(m_values.begin(), m_values.end());
         return details::quantiles(ev, m_quantiles);
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        details::quant_header(os, tag, m_quantiles);
+        os << details::header(tag, details::quant_repr(qs)...);
     }
-    
+
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         for (T x : result())
             os << x << " ";
     }
-    
+
   private:
     const std::array<char, sizeof...(qs)> m_quantiles = {qs...};
     std::unordered_multiset<T> m_values;
@@ -582,10 +644,10 @@ class quantile<T, only_finite, true, qs...> {
   public:
     //! @brief The type of values aggregated.
     using type = T;
-    
+
     //! @brief Default constructor.
     quantile() = default;
-    
+
     //! @brief Combines aggregated values.
     quantile& operator+=(const quantile& o) {
         m_values.insert(m_values.end(), o.m_values.begin(), o.m_values.end());
@@ -596,29 +658,29 @@ class quantile<T, only_finite, true, qs...> {
     void erase(T) {
         assert(false);
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
         if (not only_finite or std::isfinite(value))
             m_values.push_back(value);
     }
-    
+
     //! @brief The results of aggregation.
     std::array<T,sizeof...(qs)> result() {
         return details::quantiles(m_values, m_quantiles);
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        details::quant_header(os, tag, m_quantiles);
+        os << details::header(tag, details::quant_repr(qs)...);
     }
-    
+
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
         for (T x : result())
             os << x << " ";
     }
-    
+
   private:
     const std::array<char, sizeof...(qs)> m_quantiles = {qs...};
     std::vector<T> m_values;
@@ -656,31 +718,31 @@ template <typename... Ts>
 class combine : public Ts... {
   public:
     using type = typename common::type_sequence<Ts...>::front::type;
-    
+
     //! @brief Default constructor.
     combine() = default;
-    
+
     //! @brief Combines aggregated values.
     combine& operator+=(const combine& o) {
         common::details::ignore(Ts::operator+=(o)...);
         return *this;
     }
-    
+
     //! @brief Erases a value from the aggregation set.
     void erase(type value) {
         common::details::ignore((Ts::erase(value),0)...);
     }
-    
+
     //! @brief Inserts a new value to be aggregated.
     void insert(type value) {
         common::details::ignore((Ts::insert(value),0)...);
     }
-    
+
     //! @brief The results of aggregation.
     auto result() const {
         return std::make_tuple(Ts::result()...);
     }
-    
+
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
         header_impl(os, tag, common::type_sequence<Ts...>());
@@ -690,7 +752,7 @@ class combine : public Ts... {
     void output(std::ostream& os) const {
         output_impl(os, common::type_sequence<Ts...>());
     }
-    
+
   private:
     //! @brief Outputs the aggregator description.
     template <typename S, typename... Ss>
@@ -699,7 +761,7 @@ class combine : public Ts... {
         header_impl(os, tag, common::type_sequence<Ss...>());
     }
     void header_impl(std::ostream&, std::string&, common::type_sequence<>) const {}
-    
+
     //! @brief Printed results of aggregation.
     template <typename S, typename... Ss>
     void output_impl(std::ostream& os, common::type_sequence<S,Ss...>) const {

@@ -28,6 +28,27 @@ TEST(AggregatorTest, Count) {
     EXPECT_EQ(1ULL, v.result());
 }
 
+TEST(AggregatorTest, Distinct) {
+    std::stringstream ss;
+    aggregator::distinct<std::string> v;
+    v.header(ss, "tag");
+    EXPECT_EQ("distinct(tag) ", ss.str());
+
+    EXPECT_EQ(0ULL, v.result());
+    v.insert("hello");
+    EXPECT_EQ(1ULL, v.result());
+    v.insert("world");
+    EXPECT_EQ(2ULL, v.result());
+    v.insert("world");
+    EXPECT_EQ(2ULL, v.result());
+    v.erase("hello");
+    EXPECT_EQ(1ULL, v.result());
+    v.erase("world");
+    EXPECT_EQ(1ULL, v.result());
+    v.erase("world");
+    EXPECT_EQ(0ULL, v.result());
+}
+
 TEST(AggregatorTest, Sum) {
     std::stringstream ss;
     aggregator::sum<int> v;

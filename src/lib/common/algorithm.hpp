@@ -236,16 +236,12 @@ void parallel_for(tags::parallel_execution e, size_t len, F&& f) {
         parallel_for(tags::sequential_execution(), len, f);
         return;
     }
-    size_t slice = std::max(len / e.num, (size_t)1);
-    size_t threshold = (e.num - std::max(int(len - slice*e.num), 0))*slice;
     std::vector<std::thread> pool;
     pool.reserve(e.num);
-    for (size_t i=0, t=0; i!=len; i+=slice, ++t) {
-        if (i >= threshold) ++slice;
-        pool.emplace_back([&f,i,slice,t] () {
-            for (size_t x=i; x<i+slice; ++x) f(x,t);
+    for (size_t t=0; t<e.num; ++t)
+        pool.emplace_back([=,&f] () {
+            for (size_t i=t; i<len; i+=e.num) f(i,t);
         });
-    }
     for (std::thread& t : pool) t.join();
 }
 #endif

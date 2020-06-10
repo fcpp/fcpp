@@ -56,22 +56,6 @@ namespace details {
         cell(cell&&) = default;
         cell& operator=(const cell&) = default;
         cell& operator=(cell&&) = default;
-
-        //! @brief Iterator to the first node containted.
-        typename std::unordered_set<N*>::iterator begin() {
-            return m_contents.begin();
-        }
-        typename std::unordered_set<N*>::const_iterator begin() const {
-            return m_contents.begin();
-        }
-        
-        //! @brief Iterator beyond the last node contained.
-        typename std::unordered_set<N*>::iterator end() {
-            return m_contents.end();
-        }
-        typename std::unordered_set<N*>::const_iterator end() const {
-            return m_contents.end();
-        }
         
         //! @brief Inserts a node in the cell.
         void insert(N& n) {
@@ -92,8 +76,16 @@ namespace details {
         }
         
         //! @brief Gives const access to linked cells.
-        const std::vector<const cell*>& linked() const {
+        std::conditional_t<FCPP_PARALLEL, std::vector<const cell*>, std::vector<const cell*> const&>
+        linked() const {
+            common::lock_guard<FCPP_PARALLEL> l(m_mutex);
             return m_linked;
+        }
+
+        std::conditional_t<FCPP_PARALLEL, std::unordered_set<N*>, std::unordered_set<N*> const&>
+        content() const {
+            common::lock_guard<FCPP_PARALLEL> l(m_mutex);
+            return m_contents;
         }
 
       private:
@@ -104,7 +96,7 @@ namespace details {
         std::vector<const cell*> m_linked;
         
         //! @brief A mutex regulating access to this cell.
-        common::mutex<FCPP_PARALLEL> m_mutex;
+        mutable common::mutex<FCPP_PARALLEL> m_mutex;
     };
 }
 //! @endcond
@@ -188,8 +180,7 @@ struct physical_connector {
              */
             template <typename S, typename T>
             node(typename F::net& nt, const common::tagged_tuple<S,T>& t) : P::node(nt,t), m_delay(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_data(common::get_or<tags::connector>(t, connector_type{})) {
-                m_send = TIME_MAX;
-                m_leave = TIME_MAX;
+                m_send = m_leave = TIME_MAX;
                 P::node::net.cell_enter(P::node::as_final());
             }
 
@@ -233,12 +224,14 @@ struct physical_connector {
                     if (t == m_send) {
                         PROFILE_COUNT("connector/send");
                         m_send = TIME_MAX;
-                        for (const details::cell<typename F::node>* c : P::node::net.neighbour_cells(P::node::as_final()))
-                            for (typename F::node* nn : *c)
+                        for (const details::cell<typename F::node>* c : P::node::net.cell_of(P::node::as_final()).linked())
+                            for (typename F::node* nn : c->content())
                                 if (P::node::net.connection_success(m_data, P::node::position(t), nn->m_data, nn->position(t))) {
                                     typename F::node::message_t m;
                                     if (nn != this) {
-                                        common::unique_lock<FCPP_PARALLEL> l(nn->mutex);
+                                        P::node::mutex.unlock();
+                                        common::lock(P::node::mutex, nn->mutex);
+                                        common::lock_guard<FCPP_PARALLEL> l(nn->mutex, std::adopt_lock);
                                         nn->receive(t, P::node::uid, P::node::as_final().send(t, nn->uid, m));
                                     } else nn->receive(t, P::node::uid, P::node::as_final().send(t, nn->uid, m));
                                 }
@@ -318,8 +311,8 @@ struct physical_connector {
             }
             
             //! @brief Returns the cells in proximity of node `n`.
-            const std::vector<const details::cell<typename F::node>*>& neighbour_cells(const typename F::node& nn) const {
-                return m_nodes.at(nn.uid)->second.linked();
+            details::cell<typename F::node> const& cell_of(const typename F::node& nn) const {
+                return m_nodes.at(nn.uid)->second;
             }
             
             //! @brief The maximum connection radius.

@@ -73,3 +73,48 @@ TEST(MutexTest, Trying) {
     res = work_trylock(common::tags::parallel_execution(4), common::mutex<true>());
     EXPECT_EQ(TRIES, res);
 }
+
+TEST(MutexTest, Locking) {
+    {
+        constexpr bool enabled = false;
+        common::mutex<enabled> m1, m2;
+        common::lock_guard<enabled> l(m1);
+        EXPECT_EQ(try_lock(m2, m1), -1);
+        {
+            common::unlock_guard<enabled> u(m1);
+            lock(m1, m2);
+            EXPECT_EQ(try_lock(m1, m2), -1);
+            EXPECT_EQ(try_lock(m2, m1), -1);
+            m1.unlock();
+            m2.unlock();
+        }
+        EXPECT_EQ(try_lock(m2, m1), -1);
+        {
+            common::unlock_guard<enabled> u(m1);
+            EXPECT_EQ(try_lock(m1, m2), -1);
+            m1.unlock();
+            m2.unlock();
+        }
+    }
+    {
+        constexpr bool enabled = true;
+        common::mutex<enabled> m1, m2;
+        common::lock_guard<enabled> l(m1);
+        EXPECT_EQ(try_lock(m2, m1), 1);
+        {
+            common::unlock_guard<enabled> u(m1);
+            lock(m1, m2);
+            EXPECT_EQ(try_lock(m1, m2), 0);
+            EXPECT_EQ(try_lock(m2, m1), 0);
+            m1.unlock();
+            m2.unlock();
+        }
+        EXPECT_EQ(try_lock(m2, m1), 1);
+        {
+            common::unlock_guard<enabled> u(m1);
+            EXPECT_EQ(try_lock(m1, m2), -1);
+            m1.unlock();
+            m2.unlock();
+        }
+    }
+}

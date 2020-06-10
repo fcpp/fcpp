@@ -188,7 +188,7 @@ while [ "$1" != "" ]; do
         mkdoc
         builder test test/... project/...
         if [ "$copts" == "" ]; then
-            for o in `powerset FCPP_EXPORT_NUM=2 FCPP_EXPORT_PTR=false FCPP_ONLINE_DROP=true`; do
+            for o in `powerset FCPP_EXPORT_NUM=2 FCPP_EXPORT_PTR=false FCPP_ONLINE_DROP=true FCPP_PARALLEL=true`; do
                 copts=`echo "$o" | sed "s|#| --copt=-D|g"`
                 builder test test/... project/...
             done

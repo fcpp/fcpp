@@ -48,13 +48,6 @@ std::array<double, 2> vec(double x, double y) {
     return {x,y};
 }
 
-template <typename C>
-int size(const C& c) {
-    int n = 0;
-    for (auto it = c.begin(); it != c.end(); ++it) ++n;
-    return n;
-}
-
 TEST(PhysicalConnectorTest, Cell) {
     int n[4]; // 4 nodes
     component::details::cell<int> c[4]; // 4 cells
@@ -65,11 +58,11 @@ TEST(PhysicalConnectorTest, Cell) {
     c[3].insert(n[3]);
     c[2].erase(n[2]);
     c[1].insert(n[2]);
-    EXPECT_EQ(1, size(c[0]));
-    EXPECT_EQ(2, size(c[1]));
-    EXPECT_EQ(0, size(c[2]));
-    EXPECT_EQ(1, size(c[3]));
-    for (auto nn : c[1]) *nn = 1;
+    EXPECT_EQ(1ULL, c[0].content().size());
+    EXPECT_EQ(2ULL, c[1].content().size());
+    EXPECT_EQ(0ULL, c[2].content().size());
+    EXPECT_EQ(1ULL, c[3].content().size());
+    for (auto nn : c[1].content()) *nn = 1;
     EXPECT_EQ(0, n[0]);
     EXPECT_EQ(1, n[1]);
     EXPECT_EQ(1, n[2]);
@@ -80,21 +73,21 @@ TEST(PhysicalConnectorTest, Cell) {
     c[1].link(c[1]);
     c[0].link(c[2]);
     c[3].link(c[3]);
-    EXPECT_EQ(3, size(c[0].linked()));
-    EXPECT_EQ(2, size(c[1].linked()));
-    EXPECT_EQ(0, size(c[2].linked()));
-    EXPECT_EQ(1, size(c[3].linked()));
-    for (auto nc : c[0].linked()) for (auto nn : *nc) *nn = 2;
+    EXPECT_EQ(3ULL, c[0].linked().size());
+    EXPECT_EQ(2ULL, c[1].linked().size());
+    EXPECT_EQ(0ULL, c[2].linked().size());
+    EXPECT_EQ(1ULL, c[3].linked().size());
+    for (auto nc : c[0].linked()) for (auto nn : nc->content()) *nn = 2;
     EXPECT_EQ(2, n[0]);
     EXPECT_EQ(2, n[1]);
     EXPECT_EQ(2, n[2]);
     EXPECT_EQ(0, n[3]);
-    for (auto nc : c[3].linked()) for (auto nn : *nc) *nn = 3;
+    for (auto nc : c[3].linked()) for (auto nn : nc->content()) *nn = 3;
     EXPECT_EQ(2, n[0]);
     EXPECT_EQ(2, n[1]);
     EXPECT_EQ(2, n[2]);
     EXPECT_EQ(3, n[3]);
-    for (auto nc : c[1].linked()) for (auto nn : *nc) *nn = 4;
+    for (auto nc : c[1].linked()) for (auto nn : nc->content()) *nn = 4;
     EXPECT_EQ(4, n[0]);
     EXPECT_EQ(4, n[1]);
     EXPECT_EQ(4, n[2]);
@@ -131,10 +124,16 @@ TEST(PhysicalConnectorTest, EnterLeave) {
     network.cell_enter(d4);
     network.cell_enter(d0);
     std::vector<device_t> close, target;
-    for (auto c : network.neighbour_cells(d0)) for (auto n : *c) close.push_back(n->uid);
+    for (auto c : network.cell_of(d0).linked()) for (auto n : c->content()) close.push_back(n->uid);
     std::sort(close.begin(), close.end());
     target = {0,1,2,3};
     EXPECT_EQ(target, close);
+}
+
+template <typename node_t>
+void update(node_t& node) {
+    common::lock_guard<FCPP_PARALLEL> l(node.mutex);
+    node.update();
 }
 
 TEST(PhysicalConnectorTest, Messages) {
@@ -150,21 +149,21 @@ TEST(PhysicalConnectorTest, Messages) {
     EXPECT_EQ(2.0, d3.next());
     EXPECT_EQ(2.0, d4.next());
     d0.velocity() = vec(1,1);
-    d0.update();
-    d1.update();
-    d2.update();
-    d3.update();
-    d4.update();
+    update(d0);
+    update(d1);
+    update(d2);
+    update(d3);
+    update(d4);
     EXPECT_EQ(2.25, d0.next());
     EXPECT_EQ(2.25, d1.next());
     EXPECT_EQ(2.25, d2.next());
     EXPECT_EQ(2.25, d3.next());
     EXPECT_EQ(2.25, d4.next());
-    d0.update();
-    d1.update();
-    d2.update();
-    d3.update();
-    d4.update();
+    update(d0);
+    update(d1);
+    update(d2);
+    update(d3);
+    update(d4);
     double d;
     d = fcpp::details::self(d0.nbr_dist(), 0);
     EXPECT_NEAR(0, d, 1e-9);
@@ -183,23 +182,23 @@ TEST(PhysicalConnectorTest, Messages) {
     EXPECT_EQ(3.0, d2.next());
     EXPECT_EQ(3.0, d3.next());
     EXPECT_EQ(3.0, d4.next());
-    d0.update();
+    update(d0);
     EXPECT_EQ(3.0, d0.next());
-    d0.update();
-    d1.update();
-    d2.update();
-    d3.update();
-    d4.update();
+    update(d0);
+    update(d1);
+    update(d2);
+    update(d3);
+    update(d4);
     EXPECT_EQ(3.25, d0.next());
     EXPECT_EQ(3.25, d1.next());
     EXPECT_EQ(3.25, d2.next());
     EXPECT_EQ(3.25, d3.next());
     EXPECT_EQ(3.25, d4.next());
-    d0.update();
-    d1.update();
-    d2.update();
-    d3.update();
-    d4.update();
+    update(d0);
+    update(d1);
+    update(d2);
+    update(d3);
+    update(d4);
     d = fcpp::details::self(d0.nbr_dist(), 0);
     EXPECT_NEAR(0, d, 1e-9);
     d = fcpp::details::self(d0.nbr_dist(), 1);

@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <mutex>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -31,20 +32,24 @@ namespace common {
 namespace tags {
     //! @brief Tag for sequential execution policy.
     struct sequential_execution {
-        sequential_execution() = default;
-        sequential_execution(size_t) {}
+        sequential_execution(size_t = 1) {}
     };
 
     //! @brief Tag for parallel execution policy (with a given number of threads).
     struct parallel_execution {
-        parallel_execution() = default;
-        parallel_execution(size_t n) : num(n) {}
+        parallel_execution(size_t n = std::thread::hardware_concurrency()) : num(n) {}
         size_t num;
     };
 
     //! @brief Tag for general execution policies depending on the template parameter.
     template <bool parallel>
     using general_execution = std::conditional_t<parallel, parallel_execution, sequential_execution>;
+
+    //! @brief Tag for parallel execution policy, assigning tasks dynamically (with a given number of threads and chunk size).
+    struct dynamic_execution {
+        dynamic_execution(size_t n = std::thread::hardware_concurrency(), size_t s = 1) : num(n), size(s) {}
+        size_t num, size;
+    };
 }
 
 
@@ -233,7 +238,7 @@ void parallel_for(tags::parallel_execution e, size_t len, F&& f) {
 template <typename F>
 void parallel_for(tags::parallel_execution e, size_t len, F&& f) {
     if (e.num == 1) {
-        parallel_for(tags::sequential_execution(), len, f);
+        parallel_for(tags::sequential_execution{}, len, f);
         return;
     }
     std::vector<std::thread> pool;
@@ -247,17 +252,71 @@ void parallel_for(tags::parallel_execution e, size_t len, F&& f) {
 #endif
 
 
+#if defined(_OPENMP)
+/**
+ * @brief Bypassable parallel for (parallel OpenMP version with dynamic scheduling).
+ *
+ * Executes a function (with index and thread number as arguments) for indices up to `len`.
+ * The thread numbers range from zero to `omp_get_num_threads()-1`.
+ *
+ * @param e   The policy determining the number of threads to be spawned and chunk size.
+ * @param len The maximum index fed to the function.
+ * @param f   The function `void(size_t,size_t)` to be executed.
+ */
+template <typename F>
+void parallel_for(tags::dynamic_execution e, size_t len, F&& f) {
+    #pragma omp parallel for num_threads(e.num) schedule(dynamic, e.size)
+    for (size_t i=0; i<len; ++i) f(i,omp_get_thread_num());
+}
+#else
+/**
+ * @brief Bypassable parallel for (standard parallel version with dynamic scheduling).
+ *
+ * Executes a function (with index and thread number as arguments) for indices up to `len`.
+ * The thread numbers range from zero to `n-1`.
+ *
+ * @param e   The policy determining the number of threads to be spawned and chunk size.
+ * @param len The maximum index fed to the function.
+ * @param f   The function `void(size_t,size_t)` to be executed.
+ */
+template <typename F>
+void parallel_for(tags::dynamic_execution e, size_t len, F&& f) {
+    if (e.num == 1) {
+        parallel_for(tags::sequential_execution{}, len, f);
+        return;
+    }
+    std::vector<std::thread> pool;
+    pool.reserve(e.num);
+    std::mutex m;
+    size_t i=0;
+    for (size_t t=0; t<e.num; ++t)
+        pool.emplace_back([=,&i,&f,&m] () {
+            size_t j;
+            while (true) {
+                m.lock();
+                j = i;
+                i += e.size;
+                m.unlock();
+                if (j >= len) break;
+                for (size_t k=j; k<j+e.size and k<len; ++k) f(k,t);
+            }
+        });
+    for (std::thread& t : pool) t.join();
+}
+#endif
+
+
 /**
  * @brief Bypassable parallel while (sequential version).
  *
- * Executes a function (with the thread number as argument) until it returns `false`.
+ * Executes a function (with index and thread number as argument) until it returns `false`.
  * The thread number is guaranteed to be 0 in this version.
  *
- * @param f The function `bool(size_t)` to be executed.
+ * @param f The function `bool(size_t,size_t)` to be executed.
  */
 template <typename F>
 void parallel_while(tags::sequential_execution, F&& f) {
-    while (f(0));
+    for (size_t i=0; f(i,0); ++i);
 }
 
 
@@ -265,38 +324,90 @@ void parallel_while(tags::sequential_execution, F&& f) {
 /**
  * @brief Bypassable parallel while (parallel OpenMP version).
  *
- * Executes a function (with the thread number as argument) until it returns `false`.
+ * Executes a function (with index and thread number as argument) until it returns `false`.
  * The thread numbers range from zero to `omp_get_num_threads()-1`.
  *
  * @param e The policy determining the number of threads to be spawned.
- * @param f The function `bool(size_t)` to be executed.
+ * @param f The function `bool(size_t,size_t)` to be executed.
  */
 template <typename F>
 void parallel_while(tags::parallel_execution e, F&& f) {
     #pragma omp parallel num_threads(e.num)
-    while (f(omp_get_thread_num()));
+    for (size_t i=omp_get_thread_num(); f(i, omp_get_thread_num()); i+=e.num);
 }
 #else
 /**
  * @brief Bypassable parallel for (standard parallel version).
  *
- * Executes a function (with the thread number as argument) until it returns `false`.
+ * Executes a function (with index and thread number as argument) until it returns `false`.
  * The thread numbers range from zero to `n-1`.
  *
  * @param e The policy determining the number of threads to be spawned.
- * @param f The function `bool(size_t)` to be executed.
+ * @param f The function `bool(size_t,size_t)` to be executed.
  */
 template <typename F>
 void parallel_while(tags::parallel_execution e, F&& f) {
     if (e.num == 1) {
-        parallel_while(tags::sequential_execution(), f);
+        parallel_while(tags::sequential_execution{}, f);
         return;
     }
     std::vector<std::thread> pool;
     pool.reserve(e.num);
-    for (size_t i=0; i<e.num; ++i)
-        pool.emplace_back([&f,i] () {
-            while (f(i));
+    for (size_t t=0; t<e.num; ++t)
+        pool.emplace_back([=,&f] () {
+            for (size_t i=t; f(i,t); i+=e.num);
+        });
+    for (std::thread& t : pool) t.join();
+}
+#endif
+
+
+#if defined(_OPENMP)
+/**
+ * @brief Bypassable parallel while (parallel OpenMP version with dynamic scheduling).
+ *
+ * Executes a function (with index and thread number as argument) until it returns `false`.
+ * The thread numbers range from zero to `omp_get_num_threads()-1`.
+ *
+ * @param e The policy determining the number of threads to be spawned and chunk size.
+ * @param f The function `bool(size_t,size_t)` to be executed.
+ */
+template <typename F>
+void parallel_while(tags::dynamic_execution e, F&& f) {
+    #pragma omp parallel num_threads(e.num) schedule(dynamic, e.size)
+    for (size_t i=omp_get_thread_num(); f(i, omp_get_thread_num()); i+=e.num);
+}
+#else
+/**
+ * @brief Bypassable parallel for (standard parallel version with dynamic scheduling).
+ *
+ * Executes a function (with index and thread number as argument) until it returns `false`.
+ * The thread numbers range from zero to `n-1`.
+ *
+ * @param e The policy determining the number of threads to be spawned and chunk size.
+ * @param f The function `bool(size_t,size_t)` to be executed.
+ */
+template <typename F>
+void parallel_while(tags::dynamic_execution e, F&& f) {
+    if (e.num == 1) {
+        parallel_while(tags::sequential_execution{}, f);
+        return;
+    }
+    std::vector<std::thread> pool;
+    pool.reserve(e.num);
+    std::mutex m;
+    size_t i=0;
+    for (size_t t=0; t<e.num; ++t)
+        pool.emplace_back([=,&i,&f,&m] () {
+            size_t j;
+            while (true) {
+                m.lock();
+                j = i;
+                i += e.size;
+                m.unlock();
+                for (size_t k=j; k<j+e.size; ++k)
+                    if (not f(k,t)) return;
+            }
         });
     for (std::thread& t : pool) t.join();
 }

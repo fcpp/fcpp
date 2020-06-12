@@ -220,7 +220,7 @@ namespace details {
  * @brief Runs a series of experiments.
  *
  * @param T The combination of components to be tested.
- * @param e An execution policy (see @ref sequential_execution, @ref parallel_execution, @ref general_execution).
+ * @param e An execution policy (see @ref sequential_execution, @ref parallel_execution, @ref general_execution, @ref dynamic_execution).
  * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
  */
 template <typename T, typename exec_t, typename... S, typename... U>

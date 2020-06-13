@@ -117,7 +117,7 @@ namespace details {
  * @brief Class representing a neighboring field of T values.
  */
 template <typename T>
-class field : public details::field_base<std::is_convertible<T, bool>::value, T> {
+class field : public details::field_base<std::is_constructible<bool, T>::value, T> {
     static_assert(not common::has_template<field, T>, "cannot instantiate a field of fields");
 
     //! @cond INTERNAL
@@ -233,9 +233,9 @@ namespace details {
     //! @brief Additional cast to bool for field of type convertible to bool.
     template <typename T>
     struct field_base<true, T> {
-        operator bool() const {
+        explicit operator bool() const {
             const field<T>& f = *((const field<T>*)this);
-            for (const auto& x : f.m_vals) if (not ((bool)x)) return false;
+            for (const auto& x : f.m_vals) if (not bool(x)) return false;
             return true;
         }
     };

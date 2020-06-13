@@ -93,7 +93,7 @@ TEST(TupleTest, Relational) {
     b = tuple<int,int,int>{4,2,4} <= tuple<int,int,int>{4,2,4};
     EXPECT_TRUE(b);
     tuple<boolwrap,bool> t{{true}, false};
-    EXPECT_EQ(t, false);
+    EXPECT_EQ((bool)t, false);
     t = tuple<boolwrap,int>{{false}, 2} < tuple<boolwrap,double>{{true}, 1};
     EXPECT_EQ(get<0>(t), boolwrap{true});
     EXPECT_EQ(get<1>(t), false);

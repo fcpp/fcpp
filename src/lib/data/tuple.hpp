@@ -35,7 +35,7 @@ namespace details {
 //! @{
 //! @brief General case.
 template <typename... Ts>
-class tuple : public details::tuple_base<common::all_true<std::is_convertible<Ts,bool>::value...>, Ts...> {
+class tuple : public details::tuple_base<common::all_true<std::is_constructible<bool,Ts>::value...>, Ts...> {
     //! @cond INTERNAL
     template <typename... Us> friend class tuple;
     //! @endcond
@@ -129,7 +129,7 @@ namespace details {
     template <typename... Ts>
     class tuple_base<true, Ts...> {
       public:
-        operator bool() const {
+        explicit operator bool() const {
             return all_true(std::make_index_sequence<sizeof...(Ts)>{});
         }
         
@@ -137,7 +137,7 @@ namespace details {
         template <size_t... is>
         bool all_true(std::index_sequence<is...>) const {
             const std::tuple<Ts...>& t = *((const std::tuple<Ts...>*)this);
-            std::array<bool, sizeof...(Ts)> v = {((bool)std::get<is>(t))...};
+            std::array<bool, sizeof...(Ts)> v = {bool(std::get<is>(t))...};
             for (bool b : v) if (not b) return false;
             return true;
         }

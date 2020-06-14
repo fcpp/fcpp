@@ -43,6 +43,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/data:tuple",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

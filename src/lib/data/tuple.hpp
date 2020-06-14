@@ -20,22 +20,13 @@
 namespace fcpp {
 
 
-//! @cond INTERNAL
-template <typename... Ts> class tuple;
-
-namespace details {
-    template <bool b, typename... Ts> class tuple_base {};
-}
-//! @endcond
-
-
 /**
  * @brief Object holding a collection of elements of possibly different types, as `std::tuple` with point-wise operators.
  */
 //! @{
 //! @brief General case.
 template <typename... Ts>
-class tuple : public details::tuple_base<common::all_true<std::is_constructible<bool,Ts>::value...>, Ts...> {
+class tuple {
     //! @cond INTERNAL
     template <typename... Us> friend class tuple;
     //! @endcond
@@ -125,24 +116,6 @@ class tuple<> {
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Additional cast to bool for a tuple of bool-convertible types
-    template <typename... Ts>
-    class tuple_base<true, Ts...> {
-      public:
-        explicit operator bool() const {
-            return all_true(std::make_index_sequence<sizeof...(Ts)>{});
-        }
-        
-      private:
-        template <size_t... is>
-        bool all_true(std::index_sequence<is...>) const {
-            const std::tuple<Ts...>& t = *((const std::tuple<Ts...>*)this);
-            std::array<bool, sizeof...(Ts)> v = {bool(std::get<is>(t))...};
-            for (bool b : v) if (not b) return false;
-            return true;
-        }
-    };
-
     //! @brief Helper class unwrapping `std::reference_wrapper` objects (general case).
     template <typename T>
     struct unwrap_refwrapper {
@@ -262,18 +235,6 @@ void swap(tuple<Ts...>& x, tuple<Ts...>& y) noexcept {
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Integral constant which is true if the comparison between two tuples may be made lexicographically.
-    template <typename T, typename S>
-    struct lexical_order;
-    template <typename... Ts, typename... Ss>
-    struct lexical_order<tuple<Ts...>, tuple<Ss...>> : std::integral_constant<bool, common::all_true<std::is_same<decltype(std::declval<Ts>() == std::declval<Ss>()), bool>::value...>> {};
-
-    //! @brief Enables if the comparison between two tuples may be made lexicographically.
-    template <typename T, typename S, typename U = void>
-    using if_lexical = std::enable_if_t<lexical_order<std::decay_t<T>,std::decay_t<S>>::value, U>;
-    template <typename T, typename S, typename U = void>
-    using ifn_lexical = std::enable_if_t<not lexical_order<std::decay_t<T>,std::decay_t<S>>::value, U>;
-
     //! @brief A reference to a tuple, together with an index sequence as parameter.
     template <typename T, typename I>
     struct tuple_wrapper {
@@ -328,13 +289,6 @@ namespace details {
         return fcpp::make_tuple((get<is>(x.tuple()) op get<is>(y.tuple()))...); \
     }
 
-    #define _DEF_ROP(op)                                                        \
-    template <typename T, typename U, size_t... is, typename = ifn_lexical<T,U>>\
-    auto operator op(tuple_wrapper<T, std::index_sequence<is...>> x,            \
-                     tuple_wrapper<U, std::index_sequence<is...>> y) {          \
-        return fcpp::make_tuple((get<is>(x.tuple()) op get<is>(y.tuple()))...); \
-    }
-
     #define _DEF_IOP(op)                                                        \
     template <typename T, typename U, size_t... is>                             \
     auto operator op##=(tuple_wrapper<T, std::index_sequence<is...>> x,         \
@@ -343,59 +297,84 @@ namespace details {
         return x.tuple();                                                       \
     }
 
+    template <typename T, typename U, typename I>
+    inline auto tw_lt(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
+        return false;
+    }
+
     template <typename T, typename U, typename I, size_t i>
-    bool tw_lesser(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i>) {
+    inline auto tw_lt(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i>) {
         return get<i>(x.tuple()) < get<i>(y.tuple());
     }
 
     template <typename T, typename U, typename I, size_t i, size_t... is>
-    bool tw_lesser(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
-        if ( get<i>(x.tuple()) < get<i>(y.tuple()) ) return true;
-        if ( get<i>(x.tuple()) == get<i>(y.tuple()) )
-            return tw_lesser(x, y, std::index_sequence<is...>{});
-        return false;
-    }
-
-    template <typename T, typename U, typename I, typename = if_lexical<T,U>>
-    bool operator <(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y) {
-        return tw_lesser(x, y, I{});
-    }
-
-    template <typename T, typename U, typename I, typename = if_lexical<T,U>>
-    inline bool operator >(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
-        return (y < x);
-    }
-
-    template <typename T, typename U, typename I, typename = if_lexical<T,U>>
-    inline bool operator <=(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
-        return not (y < x);
-    }
-
-    template <typename T, typename U, typename I, typename = if_lexical<T,U>>
-    inline bool operator >=(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
-        return not (x < y);
+    inline auto tw_lt(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
+        return ( get<i>(x.tuple()) < get<i>(y.tuple()) ) or (( get<i>(x.tuple()) == get<i>(y.tuple()) ) and tw_lt(x, y, std::index_sequence<is...>{}));
     }
 
     template <typename T, typename U, typename I>
-    bool tw_equal(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
+    auto operator <(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y) {
+        return tw_lt(x, y, I{});
+    }
+
+    template <typename T, typename U, typename I>
+    auto operator >(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
+        return tw_lt(y, x, I{});
+    }
+
+    template <typename T, typename U, typename I>
+    inline auto tw_le(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
+        return true;
+    }
+
+    template <typename T, typename U, typename I, size_t i>
+    inline auto tw_le(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i>) {
+        return get<i>(x.tuple()) <= get<i>(y.tuple());
+    }
+
+    template <typename T, typename U, typename I, size_t i, size_t... is>
+    inline auto tw_le(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
+        return ( get<i>(x.tuple()) < get<i>(y.tuple()) ) or (( get<i>(x.tuple()) == get<i>(y.tuple()) ) and tw_le(x, y, std::index_sequence<is...>{}));
+    }
+
+    template <typename T, typename U, typename I>
+    auto operator <=(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
+        return tw_le(x, y, I{});
+    }
+
+    template <typename T, typename U, typename I>
+    auto operator >=(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
+        return tw_le(y, x, I{});
+    }
+
+    template <typename T, typename U, typename I>
+    inline auto tw_eq(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
         return true;
     }
 
     template <typename T, typename U, typename I, size_t i, size_t... is>
-    bool tw_equal(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
-        if (get<i>(x.tuple()) == get<i>(y.tuple()))
-            return tw_equal(x, y, std::index_sequence<is...>{});
+    inline auto tw_eq(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
+        return ( get<i>(x.tuple()) == get<i>(y.tuple()) ) and tw_eq(x, y, std::index_sequence<is...>{});
+    }
+
+    template <typename T, typename U, typename I>
+    auto operator ==(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y) {
+        return tw_eq(x, y, I{});
+    }
+
+    template <typename T, typename U, typename I>
+    inline auto tw_ne(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
         return false;
     }
 
-    template <typename T, typename U, typename I, typename = if_lexical<T,U>>
-    inline bool operator ==(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y) {
-        return tw_equal(x, y, I{});
+    template <typename T, typename U, typename I, size_t i, size_t... is>
+    inline auto tw_ne(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
+        return ( get<i>(x.tuple()) != get<i>(y.tuple()) ) or tw_ne(x, y, std::index_sequence<is...>{});
     }
 
-    template <typename T, typename U, typename I, typename = if_lexical<T,U>>
-    inline bool operator !=(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
-        return not (x == y);
+    template <typename T, typename U, typename I>
+    auto operator !=(tuple_wrapper<T, I> x, tuple_wrapper<U, I> y) {
+        return tw_ne(x, y, I{});
     }
 
     _DEF_UOP(+)
@@ -415,13 +394,6 @@ namespace details {
     _DEF_BOP(||)
     _DEF_BOP(<<)
     _DEF_BOP(>>)
-
-    _DEF_ROP(<)
-    _DEF_ROP(>)
-    _DEF_ROP(<=)
-    _DEF_ROP(>=)
-    _DEF_ROP(==)
-    _DEF_ROP(!=)
 
     _DEF_IOP(+)
     _DEF_IOP(-)

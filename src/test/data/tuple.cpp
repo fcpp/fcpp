@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/data/tuple.hpp"
+#include "test/helper.hpp"
 
 using namespace fcpp;
 
@@ -62,17 +63,37 @@ TEST(TupleTest, Operators) {
 }
 
 struct boolwrap {
+    boolwrap() = default;
+
     boolwrap(bool b) : x(b) {}
-    
-    operator bool() const {
+
+    explicit operator bool() const {
         return x;
     }
-    
-    boolwrap operator==(const boolwrap& c) const {
-        return {x == c.x};
+
+    template <typename T>
+    boolwrap operator==(const T& c) const {
+        return {x == bool(c)};
     }
-    boolwrap operator<(const boolwrap& c) const {
-        return {x < c.x};
+
+    template <typename T>
+    boolwrap operator<(const T& c) const {
+        return {x < bool(c)};
+    }
+
+    template <typename T>
+    boolwrap operator&&(const T& c) const {
+        return {x && bool(c)};
+    }
+
+    template <typename T>
+    boolwrap operator||(const T& c) const {
+        return {x || bool(c)};
+    }
+
+    template <typename T>
+    boolwrap operator!() const {
+        return {!x};
     }
 
     bool x;
@@ -80,10 +101,6 @@ struct boolwrap {
 
 TEST(TupleTest, Relational) {
     bool b;
-    b = details::lexical_order<tuple<int,bool>, tuple<double,char>>::value;
-    EXPECT_TRUE(b);
-    b = details::lexical_order<tuple<boolwrap,bool>, tuple<boolwrap,char>>::value;
-    EXPECT_FALSE(b);
     b = tuple<int,int>{2,4} < tuple<int,int>{3,2};
     EXPECT_TRUE(b);
     b = tuple<int,int,int>{4,2,4} < tuple<int,int,double>{4,3,2};
@@ -92,11 +109,16 @@ TEST(TupleTest, Relational) {
     EXPECT_FALSE(b);
     b = tuple<int,int,int>{4,2,4} <= tuple<int,int,int>{4,2,4};
     EXPECT_TRUE(b);
-    tuple<boolwrap,bool> t{{true}, false};
-    EXPECT_EQ((bool)t, false);
-    t = tuple<boolwrap,int>{{false}, 2} < tuple<boolwrap,double>{{true}, 1};
-    EXPECT_EQ(get<0>(t), boolwrap{true});
-    EXPECT_EQ(get<1>(t), false);
+    EXPECT_SAME(decltype(std::declval<tuple<boolwrap,int>>() < std::declval<tuple<boolwrap,double>>()), boolwrap);
+    boolwrap w;
+    w = tuple<boolwrap,int>{{false}, 2} < tuple<boolwrap,double>{{true}, 1};
+    EXPECT_TRUE(w);
+    w = tuple<boolwrap,int>{{false}, 2} < tuple<boolwrap,double>{{false}, 1};
+    EXPECT_FALSE(w);
+    w = tuple<boolwrap,int>{{false}, 2} == tuple<boolwrap,double>{{true}, 1};
+    EXPECT_FALSE(w);
+    w = tuple<boolwrap,int>{{false}, 2} == tuple<boolwrap,double>{{false}, 2};
+    EXPECT_TRUE(w);
 }
 
 TEST(TupleTest, NestedTuples) {

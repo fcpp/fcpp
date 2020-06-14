@@ -136,7 +136,7 @@ struct calculus {
             using metric_type = typename M::result_type;
 
             //! @brief The type of the context of exports from other devices.
-            using context_type = data::context<FCPP_ONLINE_DROP, metric_type, Ts...>;
+            using context_type = data::context_t<FCPP_ONLINE_DROP, metric_type, common::type_sequence<Ts...>>;
             
             //! @brief The type of the exports of the current device.
             using export_type = typename context_type::export_type;

@@ -45,19 +45,22 @@ struct storage {
     struct component : public P {
         //! @brief Marks that a storage component is present.
         struct storage_tag {};
-        
+
         //! @brief Checks if T has a `storage_tag`.
         template <typename T, typename = int>
         struct has_tag : std::false_type {};
         template <typename T>
         struct has_tag<T, std::conditional_t<true,int,typename T::storage_tag>> : std::true_type {};
-        
+
         //! @brief Asserts that P has no `storage_tag`.
         static_assert(not has_tag<P>::value, "cannot combine multiple storage components");
 
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
+            //! @brief Tuple type of the contents.
+            using tuple_type = common::tagged_tuple_t<common::type_sequence<Ss...>>;
+
             /**
              * @brief Main constructor.
              *
@@ -66,57 +69,57 @@ struct storage {
              */
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_storage(t) {}
-            
+
             //! @brief Const access to stored data as tagged tuple.
-            const common::tagged_tuple_t<Ss...>& storage_tuple() const {
+            const tuple_type& storage_tuple() const {
                 return m_storage;
             }
-            
+
             /**
              * @brief Write access to stored data.
              *
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage() {
+            typename tuple_type::template tag_type<T>& storage() {
                 return common::get<T>(m_storage);
             }
-            
+
             /**
              * @brief Const access to stored data.
              *
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            const typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage() const {
+            const typename tuple_type::template tag_type<T>& storage() const {
                 return common::get<T>(m_storage);
             }
-            
+
             /**
              * @brief Write access to stored data.
              *
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage(T) {
+            typename tuple_type::template tag_type<T>& storage(T) {
                 return common::get<T>(m_storage);
             }
-            
+
             /**
              * @brief Const access to stored data.
              *
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            const typename common::tagged_tuple_t<Ss...>::template tag_type<T>& storage(T) const {
+            const typename tuple_type::template tag_type<T>& storage(T) const {
                 return common::get<T>(m_storage);
             }
-            
+
           private: // implementation details
             //! @brief The data storage.
-            common::tagged_tuple_t<Ss...> m_storage;
+            tuple_type m_storage;
         };
-        
+
         //! @brief The global part of the component.
         using net = typename P::net;
     };

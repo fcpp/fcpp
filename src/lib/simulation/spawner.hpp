@@ -55,31 +55,34 @@ struct spawner {
     struct component : public P {
         //! @brief Marks that a spawner component is present.
         struct spawner_tag {};
-        
+
         //! @brief Checks if T has a `randomizer_tag`.
         template <typename T, typename = int>
         struct has_rtag : std::false_type {};
         template <typename T>
         struct has_rtag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
-        
+
         //! @brief Checks if T has a `identifier_tag`.
         template <typename T, typename = int>
         struct has_itag : std::false_type {};
         template <typename T>
         struct has_itag<T, std::conditional_t<true,int,typename T::identifier_tag>> : std::true_type {};
-        
+
         //! @brief Asserts that P has a `identifier_tag`.
         static_assert(has_itag<P>::value, "missing identifier parent for spawner component");
 
         //! @brief The local part of the component.
         using node = typename P::node;
-        
+
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
+            //! @brief Tuple type of the contents.
+            using tuple_type = common::tagged_tuple_t<common::type_sequence<Ss...>>;
+
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_distributions(build_distributions(t, typename common::tagged_tuple_t<Ss...>::tags(), typename common::tagged_tuple_t<Ss...>::types())) {}
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_distributions(build_distributions(t, typename tuple_type::tags(), typename tuple_type::types())) {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -89,7 +92,7 @@ struct spawner {
             times_t next() const {
                 return std::min(m_schedule.next(), P::net::next());
             }
-            
+
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_schedule.next() < P::net::next()) {
@@ -100,7 +103,7 @@ struct spawner {
                     P::net::node_emplace(push_time(m_distributions(gen), t));
                 } else P::net::update();
             }
-            
+
           private: // implementation details
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
@@ -113,13 +116,13 @@ struct spawner {
             inline random::crand get_generator(common::bool_pack<false>, N&) {
                 return random::crand();
             }
-            
+
             //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
             template <typename S, typename T, typename... Ts, typename... Us>
-            common::tagged_tuple_t<Ss...> build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ts...>, common::type_sequence<Us...>) {
+            tuple_type build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ts...>, common::type_sequence<Us...>) {
                 return common::make_tagged_tuple<Ts...>(Us{get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t}...);
             }
-            
+
             //! @brief Adds a `start` time to a given tagged tuple.
             template <typename S, typename T>
             auto push_time(const common::tagged_tuple<S,T>& tup, times_t t) {
@@ -131,9 +134,9 @@ struct spawner {
 
             //! @brief The scheduling of spawning events.
             G m_schedule;
-            
+
             //! @brief The generator tuple.
-            common::tagged_tuple_t<Ss...> m_distributions;
+            tuple_type m_distributions;
         };
     };
 };

@@ -365,6 +365,25 @@ class context<false, M, Ts...> {
 };
 
 
+//! @cond INTERNAL
+namespace details {
+    // General form.
+    template <bool online, typename M, typename T>
+    struct context_t;
+
+    // Unpacking form.
+    template <bool online, typename M, typename... Ts>
+    struct context_t<online, M, common::type_sequence<Ts...>> {
+        using type = context<online, M, Ts...>;
+    };
+}
+//! @endcond
+
+//! @brief Context built with a type sequence of types.
+template <bool online, typename M, typename T>
+using context_t = typename details::context_t<online,M,T>::type;
+
+
 }
 
 

@@ -75,6 +75,10 @@ TEST(TraitsTest, SetOp) {
                 common::type_sequence<int,double,double,char>::repeated);
     EXPECT_SAME(common::type_sequence<int,double,char>,
                 common::type_sequence<int,double,double,char>::uniq);
+    EXPECT_SAME(common::type_cat<common::type_sequence<int,double,char>, common::type_sequence<float>, common::type_sequence<bool,void>>,
+                common::type_sequence<int,double,char,float,bool,void>::uniq);
+    EXPECT_SAME(common::type_product< common::type_sequence<common::type_sequence<double,float>, common::type_sequence<char>>, common::type_sequence<common::type_sequence<>, common::type_sequence<bool>>, common::type_sequence<common::type_sequence<void>> >,
+                common::type_sequence<common::type_sequence<double,float,void>, common::type_sequence<char,void>, common::type_sequence<double,float,bool,void>, common::type_sequence<char,bool,void>>);
     int i;
     i = common::type_sequence<int,double,double,char>::repeated::size;
     EXPECT_EQ(1, i);
@@ -274,4 +278,47 @@ TEST(TraitsTest, TemplateArgs) {
                 common::template_args<array<proxy<double>, 4>&&>);
     EXPECT_SAME(common::type_sequence<const proxy<double>&>,
                 common::template_args<const array<proxy<double>, 4>&>);
+}
+
+struct flagopt {};
+
+template <size_t i>
+struct onenum {};
+
+template <size_t... is>
+struct numopt {};
+
+template <typename T>
+struct onetype {};
+
+template <typename... is>
+struct typeopt {};
+
+TEST(TraitsTest, Options) {
+    bool b;
+    b = common::option_flag<flagopt, int, void, char>;
+    EXPECT_FALSE(b);
+    b = common::option_flag<flagopt, int, flagopt, char, bool, flagopt>;
+    EXPECT_TRUE(b);
+    size_t n;
+    n = common::option_num<onenum, 42, int, bool>;
+    EXPECT_EQ(n, 42ULL);
+    n = common::option_num<onenum, 42, int, bool, onenum<10>, void, onenum<6>>;
+    EXPECT_EQ(n, 10ULL);
+    EXPECT_SAME(common::option_nums<numopt,void>,
+                common::index_sequence<>);
+    EXPECT_SAME(common::option_nums<numopt,void,numopt<2,3>,bool>,
+                common::index_sequence<2,3>);
+    EXPECT_SAME(common::option_nums<numopt,void,numopt<2,3>,bool,numopt<>,numopt<4>>,
+                common::index_sequence<2,3,4>);
+    EXPECT_SAME(common::option_type<onetype,std::string,void,char>,
+                std::string);
+    EXPECT_SAME(common::option_type<onetype,std::string,void,char,onetype<int>,bool,onetype<void>>,
+                int);
+    EXPECT_SAME(common::option_types<typeopt,void>,
+                common::type_sequence<>);
+    EXPECT_SAME(common::option_types<typeopt,void,typeopt<int,char>,bool>,
+                common::type_sequence<int,char>);
+    EXPECT_SAME(common::option_types<typeopt,void,typeopt<int,char>,bool,typeopt<>,typeopt<long>>,
+                common::type_sequence<int,char,long>);
 }

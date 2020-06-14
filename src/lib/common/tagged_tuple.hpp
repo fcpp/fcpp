@@ -327,9 +327,23 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
 };
 
 
-//! @brief The `tagged_tuple_t` alias, allowing to express a `tagged_tuple` by interleaving tags and types.
+//! @cond INTERNAL
+namespace details {
+    // Unpacked arguments.
+    template <typename... Ts>
+    struct tagged_tuple_t {
+        using type = tagged_tuple<common::type_slice<0, -1, 2, Ts...>, common::type_slice<1, -1, 2, Ts...>>;
+    };
+
+    // Single type sequence argument.
+    template <typename... Ts>
+    struct tagged_tuple_t<type_sequence<Ts...>> : public tagged_tuple_t<Ts...> {};
+}
+//! @endcond
+
+//! @brief The `tagged_tuple_t` alias, allowing to express a `tagged_tuple` by interleaving tags and types (possibly wrapped in a type sequence).
 template <typename... Ts>
-using tagged_tuple_t = tagged_tuple<type_slice<0, -1, 2, Ts...>, type_slice<1, -1, 2, Ts...>>;
+using tagged_tuple_t = typename details::tagged_tuple_t<Ts...>::type;
 
 
 //! @cond INTERNAL

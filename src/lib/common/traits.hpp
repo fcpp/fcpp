@@ -246,6 +246,56 @@ namespace details {
             typename type_uniq<Ts...>::type
         >;
     };
+
+    // General form.
+    template <typename... Ts>
+    struct type_cat;
+
+    // Empty base case.
+    template <>
+    struct type_cat<> {
+        using type = type_sequence<>;
+    };
+
+    // Base case.
+    template <typename... Ts, typename... Ss>
+    struct type_cat<type_sequence<Ts...>, type_sequence<Ss...>> {
+        using type = type_sequence<Ts..., Ss...>;
+    };
+
+    // Recursive form.
+    template <typename T, typename... Ss>
+    struct type_cat<T, Ss...> {
+        using type = typename type_cat<T, typename type_cat<Ss...>::type>::type;
+    };
+
+    // General form.
+    template <typename... Ts>
+    struct type_product;
+
+    // Empty base case.
+    template <>
+    struct type_product<> {
+        using type = type_sequence<type_sequence<>>;
+    };
+
+    // Base case with single option.
+    template <typename... Ts, typename S>
+    struct type_product<type_sequence<Ts...>, type_sequence<S>> {
+        using type = type_sequence<typename type_cat<Ts,S>::type...>;
+    };
+
+    // Base case.
+    template <typename T, typename... Ss>
+    struct type_product<T, type_sequence<Ss...>> {
+        using type = typename type_cat<typename type_product<T,type_sequence<Ss>>::type...>::type;
+    };
+
+    // Recursive form.
+    template <typename T, typename... Ss>
+    struct type_product<T, Ss...> {
+        using type = typename type_product<T, typename type_product<Ss...>::type>::type;
+    };
 }
 //! @endcond
 
@@ -270,6 +320,26 @@ using type_repeated = typename details::type_repeated<Ts...>::type;
 //! @brief Extract the subsequence in which each type appears once (opposite of repeated).
 template <typename... Ts>
 using type_uniq = typename details::type_uniq<Ts...>::type;
+
+//! @brief The type sequence intersection of two type sequences.
+template <typename T, typename S>
+using type_intersect = typename details::type_intersect<T,S>::type;
+
+//! @brief The type sequence union of two type sequences.
+template <typename T, typename S>
+using type_unite = typename details::type_unite<T,S>::type;
+
+//! @brief The sequence of types that are in the first type sequence but not in the second.
+template <typename T, typename S>
+using type_subtract = typename details::type_subtract<T,S>::type;
+
+//! @brief Concatenates a sequence of type sequences.
+template <typename... Ts>
+using type_cat = typename details::type_cat<Ts...>::type;
+
+//! @brief Computes the cartesian product of a sequence of type sequences of type sequences.
+template <typename... Ts>
+using type_product = typename details::type_product<Ts...>::type;
 
 
 //! @brief Non-empty form, allows for extracting elements and subsequences.
@@ -310,15 +380,15 @@ struct type_sequence<T, Ts...> {
     
     //! @brief Set intersection with other sequence.
     template<typename... Ss>
-    using intersect = typename details::type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
+    using intersect = type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>>;
     
     //! @brief Set union with other sequence.
     template<typename... Ss>
-    using unite = typename details::type_unite<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
+    using unite = type_unite<type_sequence<T, Ts...>, type_sequence<Ss...>>;
     
     //! @brief Set difference with other sequence.
     template<typename... Ss>
-    using subtract = typename details::type_subtract<type_sequence<T, Ts...>, type_sequence<Ss...>>::type;
+    using subtract = type_subtract<type_sequence<T, Ts...>, type_sequence<Ss...>>;
     
     //! @brief Extract the types that are repeated more than once.
     using repeated = type_repeated<T, Ts...>;
@@ -714,6 +784,137 @@ using template_args = typename details::template_args<A>::type;
  */
 template <typename G, typename F>
 using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value>;
+
+
+//! @brief Wraps a sequence of `size_t` values.
+using std::index_sequence;
+
+//! @cond INTERNAL
+namespace details {
+    // Extracts a numeric option (no arguments).
+    template <template<size_t> class T, size_t d, typename... Ss>
+    struct option_num : public std::integral_constant<size_t, d> {};
+
+    // Extracts a numeric option (option in first place).
+    template <template<size_t> class T, size_t d, size_t i, typename... Ss>
+    struct option_num<T,d,T<i>,Ss...> : public std::integral_constant<size_t, i> {};
+
+    // Extracts a numeric option (option not in first place).
+    template <template<size_t> class T, size_t d, typename S, typename... Ss>
+    struct option_num<T,d,S,Ss...> : public option_num<T,d,Ss...> {};
+
+    // Concatenates arguments of a multinumeric option (S not an instance of T).
+    template <template<size_t...> class T, typename S, typename U>
+    struct maybe_numcat {
+        using type = U;
+    };
+
+    // Concatenates arguments of a multinumeric option (S is an instance of T).
+    template <template<size_t...> class T, size_t... is, size_t... js>
+    struct maybe_numcat<T, T<is...>, index_sequence<js...>> {
+        using type = index_sequence<is..., js...>;
+    };
+
+    // Extracts a multinumeric option (no arguments).
+    template <template<size_t...> class T, typename... Ss>
+    struct option_nums {
+        using type = index_sequence<>;
+    };
+
+    // Extracts a multinumeric option (some argument).
+    template <template<size_t...> class T, typename S, typename... Ss>
+    struct option_nums<T, S, Ss...> {
+        using type = typename maybe_numcat<T, S, typename option_nums<T, Ss...>::type>::type;
+    };
+
+    // Extracts a type option (no arguments).
+    template <template<class> class T, typename D, typename... Ss>
+    struct option_type {
+        using type = D;
+    };
+
+    // Extracts a type option (option in first place).
+    template <template<class> class T, typename D, typename S, typename... Ss>
+    struct option_type<T,D,T<S>,Ss...> {
+        using type = S;
+    };
+
+    // Extracts a type option (option not in first place).
+    template <template<class> class T, typename D, typename S, typename... Ss>
+    struct option_type<T,D,S,Ss...> : public option_type<T,D,Ss...> {};
+
+    // Concatenates arguments of a multitype option (S not an instance of T).
+    template <template<class...> class T, typename S, typename U>
+    struct maybe_typecat {
+        using type = U;
+    };
+
+    // Concatenates arguments of a multitype option (S is an instance of T).
+    template <template<class...> class T, typename... Ss, typename... Us>
+    struct maybe_typecat<T, T<Ss...>, type_sequence<Us...>> {
+        using type = type_sequence<Ss..., Us...>;
+    };
+
+    // Extracts a multitype option (no arguments).
+    template <template<class...> class T, typename... Ss>
+    struct option_types {
+        using type = type_sequence<>;
+    };
+
+    // Extracts a multitype option (some argument).
+    template <template<typename...> class T, typename S, typename... Ss>
+    struct option_types<T, S, Ss...> {
+        using type = typename maybe_typecat<T, S, typename option_types<T, Ss...>::type>::type;
+    };
+}
+//! @endcond
+
+/**
+ * @brief Checks whether a flag option is present in a sequence of options.
+ *
+ * @param T Flag option name.
+ * @param Ss Sequence of options.
+ */
+template <typename T, typename... Ss>
+constexpr bool option_flag = type_count<T, Ss...>;
+
+/**
+ * @brief Extracts a numeric option from a sequence of options.
+ *
+ * @param T Numeric option name.
+ * @param d Default value if the option is missing.
+ * @param Ss Sequence of options.
+ */
+template <template<size_t> class T, size_t d, typename... Ss>
+constexpr size_t option_num = details::option_num<T,d,Ss...>::value;
+
+/**
+ * @brief Extracts a multi-numeric option from a sequence of options as an index sequence.
+ *
+ * @param T Multi-numeric option name.
+ * @param Ss Sequence of options.
+ */
+template <template<size_t...> class T, typename... Ss>
+using option_nums = typename details::option_nums<T, Ss...>::type;
+
+/**
+ * @brief Extracts a type option from a sequence of options.
+ *
+ * @param T Type option name.
+ * @param D Default type if the option is missing.
+ * @param Ss Sequence of options.
+ */
+template <template<class> class T, typename D, typename... Ss>
+using option_type = typename details::option_type<T,D,Ss...>::type;
+
+/**
+ * @brief Extracts a multi-type option from a sequence of options as a type sequence.
+ *
+ * @param T Multi-type option name.
+ * @param Ss Sequence of options.
+ */
+template <template<class...> class T, typename... Ss>
+using option_types = typename details::option_types<T, Ss...>::type;
 
 
 }

@@ -11,6 +11,18 @@ cc_library(
 )
 
 cc_library(
+    name = 'election',
+    hdrs = ['election.hpp'],
+    srcs = ['election.cpp'],
+    deps = [
+        "//lib/coordination:utils",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'geometry',
     hdrs = ['geometry.hpp'],
     srcs = ['geometry.cpp'],

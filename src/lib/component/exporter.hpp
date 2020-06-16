@@ -23,11 +23,13 @@
 #include <vector>
 
 #include "lib/settings.hpp"
+#include "lib/common/algorithm.hpp"
 #include "lib/common/distribution.hpp"
 #include "lib/common/mutex.hpp"
+#include "lib/common/profiler.hpp"
+#include "lib/common/sequence.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
-#include "lib/component/identifier.hpp"
 
 
 /**
@@ -42,11 +44,30 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Tag associating to the main name of an object.
+    //! @brief Declaration tag associating to a sequence of storage tags and corresponding aggregator types.
+    template <typename... Ts>
+    struct aggregators {};
+
+    //! @brief Declaration tag associating to a sequence generator type scheduling writing of data.
+    template <typename T>
+    struct log_schedule {};
+
+    //! @brief Declaration flag associating to whether parallelism is enabled.
+    template <bool b>
+    struct parallel;
+
+    //! @brief Declaration flag associating to whether new values are pushed to aggregators or pulled when needed.
+    template <bool b>
+    struct value_push {};
+
+    //! @brief Net initialisation tag associating to the main name of a component composition instance.
     struct name {};
 
-    //! @brief Tag associating to an output stream.
+    //! @brief Net initialisation tag associating to an output stream for logging.
     struct output {};
+
+    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    struct threads;
 }
 
 
@@ -76,11 +97,6 @@ namespace details {
     std::shared_ptr<std::ostream> make_stream(std::ostream* o, const common::tagged_tuple<S,T>&) {
         return std::shared_ptr<std::ostream>(o, [] (void*) {});
     }
-    //! @brief Makes a stream reference to `std::cout` from a null pointer.
-    template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(nullptr_t, const common::tagged_tuple<S,T>& t) {
-        return make_stream(&std::cout, t);
-    }
 }
 //! @endcond
 
@@ -88,26 +104,46 @@ namespace details {
 /**
  * @brief Component logging summarisations of nodes.
  *
- * Initialises `net` with tag `output` associating to the output stream where exported data should be written.
- * Admissible values are:
- * <ul>
- * <li>`nullptr`, which is interpreted as `std::cout` (default);</li>
- * <li>a pointer to a stream `std::ostream*`;</li>
- * <li>a file name (as `std::string` or `const char*`);</li>
- * <li>a directory name ending in `/` or `\`, to which a generated file name will be appended (starting with a name set by tag `name`).</li>
- * </ul>
  * Must be unique in a composition of components.
- * Requires a `storage` parent component.
- * If a `randomizer` parent component is not found, `crand` is used as random generator.
- * If `push` is false, it also requires an `identifier` parent component and can be initialised with `threads`.
- * If `push` is true, all aggregators need to support erasing.
+ * Requires a \ref storage parent component, and also an \ref identifier parent component if \ref tags::value_push is false.
+ * If a \ref randomizer parent component is not found, \ref random::crand is passed to the \ref tags::log_schedule object.
  *
- * @param push  If true, updates are pushed immediately to aggregators, otherwise are pulled when needed.
- * @param G     A sequence generator type scheduling writing of data.
- * @param Ss    The sequence of storage tags and corresponding aggregators (intertwined).
+ * <b>Declaration tags:</b>
+ * - \ref tags::aggregators defines a sequence of storage tags and corresponding aggregator types (defaults to the empty sequence).
+ * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref random::sequence_never).
+ *
+ * <b>Declaration flags:</b>
+ * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
+ * - \ref tags::value_push defines whether new values are pushed to aggregators or pulled when needed (defaults to \ref FCPP_VALUE_PUSH).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::name associates to the main name of a component composition instance (defaults to the empty string).
+ * - \ref tags::output associates to an output stream for logging (defaults to `std::cout`).
+ * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).
+ *
+ * If \ref tags::value_push is true, all aggregators need to support erasing and \ref tags::threads is ignored; otherwise, it requires an \ref identifier parent component.
+ *
+ * Overall, \ref tags::threads is ignored whenever \ref tags::value_push is true or \ref tags::parallel is false.
+ *
+ * Admissible values for \ref tags::output are:
+ * - a pointer to a stream (as `std::ostream*`);
+ * - a file name (as `std::string` or `const char*`);
+ * - a directory name ending in `/` or `\`, to which a generated file name will be appended (starting with \ref tags::name followed by a representation of the whole initialisation parameters of the net instance).
  */
-template <bool push, typename G, typename... Ss>
+template <class... Ts>
 struct exporter {
+    //! @brief Sequence of storage tags and corresponding aggregator types.
+    using aggregators_type = common::option_types<tags::aggregators, Ts...>;
+
+    //! @brief Sequence generator type scheduling writing of data.
+    using schedule_type = common::option_type<tags::log_schedule, random::sequence_never, Ts...>;
+
+    //! @brief Whether parallelism is enabled.
+    constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Whether new values are pushed to aggregators or pulled when needed.
+    constexpr static bool value_push = common::option_flag<tags::value_push, FCPP_VALUE_PUSH, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -153,7 +189,7 @@ struct exporter {
         struct has_itag<T, std::conditional_t<true,int,typename T::identifier_tag>> : std::true_type {};
 
         //! @brief Asserts that P has a `identifier_tag`.
-        static_assert(push or has_itag<P>::value, "missing identifier parent for exporter component");
+        static_assert(value_push or has_itag<P>::value, "missing identifier parent for exporter component");
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -166,24 +202,24 @@ struct exporter {
              */
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t) {
-                if (push) P::node::net.aggregator_insert(P::node::storage_tuple());
+                if (value_push) P::node::net.aggregator_insert(P::node::storage_tuple());
             }
 
             //! @brief Destructor erasing values from aggregators.
             ~node() {
-                if (push) P::node::net.aggregator_erase(P::node::storage_tuple());
+                if (value_push) P::node::net.aggregator_erase(P::node::storage_tuple());
             }
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
                 P::node::round_start(t);
-                if (push) P::node::net.aggregator_erase(P::node::storage_tuple());
+                if (value_push) P::node::net.aggregator_erase(P::node::storage_tuple());
             }
 
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
                 P::node::round_end(t);
-                if (push) P::node::net.aggregator_insert(P::node::storage_tuple());
+                if (value_push) P::node::net.aggregator_insert(P::node::storage_tuple());
             }
         };
 
@@ -191,11 +227,11 @@ struct exporter {
         class net : public P::net {
           public: // visible by node objects and the main program
             //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<common::type_sequence<Ss...>>;
+            using tuple_type = common::tagged_tuple_t<aggregators_type>;
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, nullptr), t)), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
                 std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
@@ -234,26 +270,26 @@ struct exporter {
                     PROFILE_COUNT("exporter");
                     *m_stream << m_schedule.next() << " ";
                     m_schedule.step(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
-                    data_puller(common::bool_pack<not push>(), *this);
+                    data_puller(common::bool_pack<not value_push>(), *this);
                     print_output(t_tags());
                     *m_stream << std::endl;
-                    if (not push) m_aggregators = tuple_type{};
+                    if (not value_push) m_aggregators = tuple_type{};
                 } else P::net::update();
             }
 
             //! @brief Erases data from the aggregators.
             template <typename S, typename T>
             void aggregator_erase(const common::tagged_tuple<S,T>& t) {
-                assert(push); // disabled for pull-based exporters
-                common::lock_guard<push and FCPP_PARALLEL> lock(m_aggregators_mutex);
+                assert(value_push); // disabled for pull-based exporters
+                common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
                 aggregator_erase_impl(m_aggregators, t, t_tags());
             }
 
             //! @brief Inserts data into the aggregators.
             template <typename S, typename T>
             void aggregator_insert(const common::tagged_tuple<S,T>& t) {
-                assert(push); // disabled for pull-based exporters
-                common::lock_guard<push and FCPP_PARALLEL> lock(m_aggregators_mutex);
+                assert(value_push); // disabled for pull-based exporters
+                common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
                 aggregator_insert_impl(m_aggregators, t, t_tags());
             }
 
@@ -318,7 +354,7 @@ struct exporter {
                 std::vector<tuple_type> thread_aggregators(m_threads);
                 auto a = n.node_begin();
                 auto b = n.node_end();
-                common::parallel_for(common::tags::general_execution<FCPP_PARALLEL>(m_threads), b-a, [&thread_aggregators,&a,this] (size_t i, size_t t) {
+                common::parallel_for(common::tags::general_execution<parallel>(m_threads), b-a, [&thread_aggregators,&a,this] (size_t i, size_t t) {
                     aggregator_insert_impl(thread_aggregators[t], a[i].second.storage_tuple(), t_tags());
                 });
                 for (size_t i=0; i<m_threads; ++i)
@@ -333,13 +369,13 @@ struct exporter {
             std::shared_ptr<std::ostream> m_stream;
 
             //! @brief The scheduling of exporting events.
-            G m_schedule;
+            schedule_type m_schedule;
 
             //! @brief The aggregator tuple.
             tuple_type m_aggregators;
 
             //! @brief A mutex for accessing aggregation.
-            common::mutex<push and FCPP_PARALLEL> m_aggregators_mutex;
+            common::mutex<value_push and parallel> m_aggregators_mutex;
 
             //! @brief The number of threads to be used.
             const size_t m_threads;

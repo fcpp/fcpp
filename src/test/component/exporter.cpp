@@ -5,8 +5,6 @@
 
 #include "gtest/gtest.h"
 
-#define FCPP_PARALLEL true
-
 #include "lib/common/aggregator.hpp"
 #include "lib/common/distribution.hpp"
 #include "lib/common/sequence.hpp"
@@ -59,12 +57,12 @@ using seq_per = random::sequence_periodic<random::constant_distribution<times_t,
 using combo1 = component::combine<
     exposer,
     fakeid,
-    component::exporter<true,seq_per,gat,aggregator::mean<double>>,
+    component::exporter<component::tags::value_push<true>, component::tags::log_schedule<seq_per>, component::tags::aggregators<gat,aggregator::mean<double>>>,
     component::storage<tag,bool,gat,int>
 >;
 using combo2 = component::combine<
     exposer,
-    component::exporter<false,seq_per,gat,aggregator::mean<double>,tag,aggregator::count<bool>>,
+    component::exporter<component::tags::value_push<false>, component::tags::log_schedule<seq_per>, component::tags::aggregators<gat,aggregator::mean<double>,tag,aggregator::count<bool>>>,
     component::storage<tag,bool,gat,int>,
     component::identifier<false>
 >;
@@ -75,7 +73,6 @@ TEST(ExporterTest, MakeStream) {
     std::shared_ptr<std::ostream> p;
     p = component::details::make_stream("foo", t);
     p = component::details::make_stream(std::string("foo"), t);
-    p = component::details::make_stream(nullptr, t);
     p = component::details::make_stream("foo/", t);
     std::stringstream s;
     p = component::details::make_stream(&s, t);

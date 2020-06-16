@@ -55,11 +55,13 @@ cc_library(
     srcs = ['exporter.cpp'],
     deps = [
         "//lib:settings",
+        "//lib/common:algorithm",
         "//lib/common:distribution",
         "//lib/common:mutex",
+        "//lib/common:profiler",
+        "//lib/common:sequence",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
-        "//lib/component:identifier",
     ],
     visibility = [
         '//visibility:public',

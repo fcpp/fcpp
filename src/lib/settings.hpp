@@ -173,6 +173,12 @@
 #endif
 
 
+#ifndef FCPP_VALUE_PUSH
+    //! @brief Setting defining whether new values should be pushed to aggregators or pulled when needed.
+    #define FCPP_VALUE_PUSH false
+#endif
+
+
 #ifndef FCPP_WARNING_TRACE
     //! @brief Setting defining whether hash colliding of code points is admissible.
     #define FCPP_WARNING_TRACE true
@@ -189,7 +195,7 @@ namespace fcpp {
     constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
     //! @brief Maximum time (infinitely in the future).
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
-    ////! @brief Shorthand to double infinity value.
+    //! @brief Shorthand to double infinity value.
     constexpr double INF = std::numeric_limits<double>::infinity();
 
 #if   FCPP_DEVICE == 8

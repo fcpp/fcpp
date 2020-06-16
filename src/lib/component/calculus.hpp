@@ -187,7 +187,7 @@ namespace tags {
  *
  * <b>Declaration tags:</b>
  * - \ref tags::exports defines a sequence of types to be used in exports (defaults to the empty sequence).
- * - \ref tags::program defines a callable class to be executed during rounds (defaults to an anonymous class doing nothing).
+ * - \ref tags::program defines a callable class to be executed during rounds (defaults to \ref calculus::null_program).
  * - \ref tags::retain defines a metric class regulating the discard of exports (defaults to \ref metric::once).
  *
  * <b>Declaration flags:</b>
@@ -229,6 +229,7 @@ template <class... Ts>
 struct calculus {
     //! @brief Callable class performing no operation.
     struct null_program {
+        //! @brief Call operator doing nothing.
         template <typename node_t>
         void operator()(node_t&, times_t) {}
     };
@@ -242,7 +243,7 @@ struct calculus {
     //! @brief Sequence of types to be used in exports.
     using exports_type = common::option_types<tags::exports, Ts...>;
 
-    //! @brief whether exports are wrapped in smart pointers.
+    //! @brief Whether exports are wrapped in smart pointers.
     constexpr static bool export_pointer = common::option_flag<tags::export_pointer, FCPP_EXPORT_PTR, Ts...>;
 
     //! @brief Whether exports for neighbours are split from those for self.

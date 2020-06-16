@@ -29,7 +29,7 @@ struct exposer {
 
 using combo1 = component::combine<exposer,component::randomizer<>>;
 
-using combo2 = component::combine<exposer,component::randomizer<random::crand>>;
+using combo2 = component::combine<exposer,component::randomizer<component::tags::generator<random::crand>>>;
 
 
 TEST(RandomizerTest, Twister) {

@@ -28,21 +28,34 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Tag associating to a random number generator seed (defaults to 0).
+    //! @brief Declaration tag associating to a random number generator type.
+    template <typename T>
+    struct generator {};
+
+    //! @brief Initialisation tag associating to a random number generator seed.
     struct seed {};
 }
 
 
 /**
- * @brief Component handling a random number generator.
+ * @brief Component handling random number generation.
  *
- * Initialises `node` and `net` with tag `seed` associating to a random number generator seed (defaults to zero for the net, `uid` for nodes).
  * Must be unique in a composition of components.
  *
- * @param G The generator type (defaults to `std::mt19937_64`).
+ * <b>Declaration tags:</b>
+ * - \ref tags::generator defines a random number generator type (defaults to `std::mt19937_64`).
+ *
+ * <b>Node initialisation tags:</b>
+ * - \ref tags::seed associates to a random number generator seed (defaults to `P::node::uid`).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::seed associates to a random number generator seed (defaults to zero).
  */
-template <typename G = std::mt19937_64>
+template <class... Ts>
 struct randomizer {
+    //! @brief Random number generator type.
+    using generator_type = common::option_type<tags::generator, std::mt19937_64, Ts...>;
+
     /**
      * @brief The actual component.
      * 
@@ -84,7 +97,7 @@ struct randomizer {
              * @param T The tag corresponding to the data to be accessed.
              */
             //! @brief Gives access to the random number generator.
-            inline G& generator() {
+            inline generator_type& generator() {
                 return m_generator;
             }
             
@@ -119,7 +132,7 @@ struct randomizer {
             
           private: // implementation details
             //! @brief The random number generator.
-            G m_generator;
+            generator_type m_generator;
         };
         
         //! @brief The global part of the component.
@@ -131,7 +144,7 @@ struct randomizer {
             
           protected: // visible by net objects only
             //! @brief Gives access to the random number generator.
-            inline G& generator() {
+            inline generator_type& generator() {
                 return m_generator;
             }
 
@@ -166,7 +179,7 @@ struct randomizer {
             
           private: // implementation details
             //! @brief The random number generator.
-            G m_generator;
+            generator_type m_generator;
         };
     };
 };

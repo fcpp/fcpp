@@ -64,7 +64,7 @@ using combo2 = component::combine<
     exposer,
     component::exporter<component::tags::value_push<false>, component::tags::log_schedule<seq_per>, component::tags::aggregators<gat,aggregator::mean<double>,tag,aggregator::count<bool>>>,
     component::storage<tag,bool,gat,int>,
-    component::identifier<false>
+    component::identifier<component::tags::synchronised<false>>
 >;
 
 

@@ -37,7 +37,7 @@ using combo = component::combine<
     exposer,
     component::physical_position<>,
     component::storage<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>,
-    component::identifier<true>,
+    component::identifier<component::tags::synchronised<true>>,
     component::calculus<program<main>, exports<double>>
 >;
 

@@ -47,7 +47,7 @@ using combo = component::combine<
         ideal_max,  double>,
     component::physical_position<>,
     component::timer,
-    component::identifier<true>,
+    component::identifier<synchronised<true>>,
     component::randomizer<>
 >;
 

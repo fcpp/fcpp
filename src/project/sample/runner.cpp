@@ -55,7 +55,7 @@ using combo = component::combine<
     component::physical_position<>,
     component::timer,
     component::scheduler<round_s>,
-    component::identifier<false>,
+    component::identifier<synchronised<false>>,
     component::randomizer<>
 >;
 

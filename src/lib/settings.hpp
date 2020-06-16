@@ -96,6 +96,10 @@
     //! @brief Setting defining whether the computation should be performed with parallel threads.
     #define FCPP_PARALLEL true
     #endif
+    #ifndef FCPP_SYNCHRONISED
+    //! @brief Setting defining whether many events are expected to happen at the same time.
+    #define FCPP_SYNCHRONISED true
+    #endif
 #elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL
     #ifndef FCPP_EXPORT_NUM
     //! @brief Setting defining whether exports for self and other devices should be separated (2, default for physical systems) or together (1, default for simulated and logical systems).
@@ -121,6 +125,10 @@
     //! @brief Setting defining whether the computation should be performed with parallel threads.
     #define FCPP_PARALLEL false
     #endif
+    #ifndef FCPP_SYNCHRONISED
+    //! @brief Setting defining whether many events are expected to happen at the same time.
+    #define FCPP_SYNCHRONISED false
+    #endif
 #elif FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_SIMULATED
     #ifndef FCPP_EXPORT_NUM
     //! @brief Setting defining whether exports for self and other devices should be separated (2, default for physical systems) or together (1, default for simulated and logical systems).
@@ -145,6 +153,10 @@
     #ifndef FCPP_PARALLEL
     //! @brief Setting defining whether the computation should be performed with parallel threads.
     #define FCPP_PARALLEL false
+    #endif
+    #ifndef FCPP_SYNCHRONISED
+    //! @brief Setting defining whether many events are expected to happen at the same time.
+    #define FCPP_SYNCHRONISED false
     #endif
 #else
     static_assert(false, "invalid value for FCPP_ENVIRONMENT");

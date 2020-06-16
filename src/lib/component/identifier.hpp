@@ -30,16 +30,6 @@ namespace fcpp {
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
-namespace tags {
-    //! @brief Tag associating to the time sensitivity, allowing indeterminacy below it.
-    struct epsilon {};
-
-    //! @brief Tag associating to the number of threads that can be used.
-    struct threads {};
-}
-
-
 //! @cond INTERNAL
 namespace details {
     /**
@@ -69,7 +59,7 @@ namespace details {
             m_queue[t].push_back(uid);
         }
 
-        //! @brief Pops elements with the smaller time if up to `t`.
+        //! @brief Pops elements with the smallest time if up to `t`.
         inline std::vector<device_t> pop(times_t t) {
             if (next() > t) return {};
             std::vector<device_t> v = std::move(m_queue.begin()->second);
@@ -121,17 +111,47 @@ namespace details {
 //! @endcond
 
 
+//! @brief Namespace of tags to be used for initialising components.
+namespace tags {
+    //! @brief Declaration flag associating to whether parallelism is enabled.
+    template <bool b>
+    struct parallel;
+
+    //! @brief Declaration flag associating to whether many events are expected to happen at the same time.
+    template <bool b>
+    struct synchronised {};
+
+    //! @brief Net initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
+    struct epsilon {};
+
+    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    struct threads {};
+}
+
+
 /**
  * @brief Component handling node creation and indexing.
  *
- * Initialises `net` with tag `epsilon` associating to the time sensitivity, allowing indeterminacy below it (defaults to `FCPP_TIME_EPSILON`); and with tag `threads` associating to the number of threads that can be used (defaults to `FCPP_THREADS`).
  * Must be unique in a composition of components.
- * Optimises queuing of events according to `synchronised`.
  *
- * @param synchronised  Whether to assume that many events are going to happen at the same time.
+ * <b>Declaration flags:</b>
+ * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
+ * - \ref tags::synchronised defines whether many events are expected to happen at the same time (defaults to \ref FCPP_SYNCHRONISED).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::epsilon associates to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
+ * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).
+ *
+ * Whenever \ref tags::parallel is false, \ref tags::threads is ignored and \ref tags::epsilon has only a minor effect (it is recommended to set it to zero).
  */
-template <bool synchronised>
+template <class... Ts>
 struct identifier {
+    //! @brief Whether parallelism is enabled.
+    constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Whether new values are pushed to aggregators or pulled when needed.
+    constexpr static bool synchronised = common::option_flag<tags::synchronised, FCPP_SYNCHRONISED, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -181,10 +201,10 @@ struct identifier {
             void update() {
                 if (m_queue.next() < P::net::next()) {
                     std::vector<device_t> nv = m_queue.pop(m_queue.next() + m_epsilon);
-                    common::parallel_for(common::tags::general_execution<FCPP_PARALLEL>(m_threads), nv.size(), [&nv,this](size_t i, size_t){
+                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), nv.size(), [&nv,this](size_t i, size_t){
                         if (m_nodes.count(nv[i]) > 0) {
                             typename F::node& n = m_nodes.at(nv[i]);
-                            common::lock_guard<FCPP_PARALLEL> device_lock(n.mutex);
+                            common::lock_guard<parallel> device_lock(n.mutex);
                             n.update();
                         }
                     });
@@ -208,8 +228,8 @@ struct identifier {
             }
 
             //! @brief Access to the node with a given device device identifier (given a lock for the node's mutex).
-            typename F::node& node_at(device_t uid, common::unique_lock<FCPP_PARALLEL>& l) {
-                l = common::unique_lock<FCPP_PARALLEL>(m_nodes.at(uid).mutex);
+            typename F::node& node_at(device_t uid, common::unique_lock<parallel>& l) {
+                l = common::unique_lock<parallel>(m_nodes.at(uid).mutex);
                 return m_nodes.at(uid);
             }
             

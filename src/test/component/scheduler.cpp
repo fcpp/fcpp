@@ -9,6 +9,7 @@
 #include "lib/component/scheduler.hpp"
 
 using namespace fcpp;
+using namespace fcpp::component::tags;
 
 
 struct meantag {};
@@ -17,9 +18,13 @@ struct devtag {};
 using seq_mul = random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3>;
 using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::uniform_d<times_t, 2, 10, 1, meantag, devtag>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 5>>;
 
-using combo1 = component::combine<component::scheduler<seq_mul>,component::randomizer<>>;
-using combo2 = component::combine<component::scheduler<seq_per>,component::scheduler<seq_mul>,component::randomizer<>>;
-using combo3 = component::combine<component::scheduler<seq_mul>>;
+using combo1 = component::combine<component::scheduler<round_schedule<seq_mul>>, component::randomizer<>>;
+using combo2 = component::combine<
+    component::scheduler<round_schedule<seq_per>>,
+    component::scheduler<round_schedule<seq_mul>>,
+    component::randomizer<>
+>;
+using combo3 = component::combine<component::scheduler<round_schedule<seq_mul>>>;
 
 
 TEST(SchedulerTest, Single) {

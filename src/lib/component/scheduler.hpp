@@ -13,6 +13,7 @@
 
 #include "lib/settings.hpp"
 #include "lib/common/distribution.hpp"
+#include "lib/common/sequence.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
 
@@ -27,17 +28,29 @@ namespace fcpp {
 namespace component {
 
 
+//! @brief Namespace of tags to be used for initialising components.
+namespace tags {
+    //! @brief Declaration tag associating to a sequence generator type scheduling rounds.
+    template <typename T>
+    struct round_schedule {};
+}
+
+
 /**
  * @brief Component scheduling round executions.
  *
  * Multiple instances may coexist in a composition of components.
- * The `timer` component cannot be a parent of a `scheduler`, otherwise round planning may not work.
- * If a `randomizer` parent component is not found, `crand` is used as random generator.
+ * The \ref timer component cannot be a parent of a \ref scheduler otherwise round planning may not work.
+ * If a \ref randomizer parent component is not found, \ref random::crand is used as random generator.
  *
- * @param G A sequence generator type.
+ * <b>Declaration tags:</b>
+ * - \ref tags::round_schedule defines a sequence generator type scheduling rounds (defaults to \ref random::sequence_never).
  */
-template <typename G>
+template <class... Ts>
 struct scheduler {
+    //! @brief Sequence generator type scheduling rounds.
+    using schedule_type = common::option_type<tags::round_schedule, random::sequence_never, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -108,7 +121,7 @@ struct scheduler {
             }
             
             //! @brief The sequence generator.
-            G m_schedule;
+            schedule_type m_schedule;
         };
         
         //! @brief The global part of the component.

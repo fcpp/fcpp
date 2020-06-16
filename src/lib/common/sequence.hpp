@@ -35,11 +35,11 @@ namespace random {
 struct sequence_never {
     //! @brief The type of results generated.
     using type = times_t;
-    
+
     //! @brief Default constructor.
     template <typename G>
     sequence_never(G&&) {}
-    
+
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
     sequence_never(G&&, const common::tagged_tuple<S,T>&) {}
@@ -48,7 +48,7 @@ struct sequence_never {
     times_t next() const {
         return TIME_MAX; // no event to schedule
     }
-    
+
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&&) {}
@@ -67,7 +67,7 @@ struct sequence_never {
  * @param n Number of events.
  * @param same Whether the same event should be produced (defaults to true).
  */
-//{@
+//! @{
 //! @brief General form.
 template <typename D, size_t n, bool same = true>
 class sequence_multiple;
@@ -76,15 +76,15 @@ class sequence_multiple;
 template <typename D, size_t n>
 class sequence_multiple<D, n, true> {
     static_assert(std::is_same<typename D::type, times_t>::value, "the distribution D must generate a times_t value");
-    
+
   public:
     //! @brief The type of results generated.
     using type = times_t;
-    
+
     //! @brief Default constructor.
     template <typename G>
     sequence_multiple(G&& g) : t(details::call_distr<D>(g)) {}
-    
+
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
     sequence_multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
@@ -93,7 +93,7 @@ class sequence_multiple<D, n, true> {
     times_t next() const {
         return (i < n) ? t : TIME_MAX;
     }
-    
+
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&&) {
@@ -107,11 +107,11 @@ class sequence_multiple<D, n, true> {
         ++i;
         return nt;
     }
-    
+
   private:
     //! @brief The time of the events.
     times_t t;
-    
+
     //! @brief Number of calls to next so far.
     size_t i = 0;
 };
@@ -120,15 +120,15 @@ class sequence_multiple<D, n, true> {
 template <typename D, size_t n>
 class sequence_multiple<D, n, false> {
     static_assert(std::is_same<typename D::type, times_t>::value, "the distribution D must generate a times_t value");
-    
+
   public:
     //! @brief The type of results generated.
     using type = times_t;
-    
+
     //! @brief Default constructor.
     template <typename G>
     sequence_multiple(G&& g) : sequence_multiple(g, D{g}) {}
-    
+
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
     sequence_multiple(G&& g, const common::tagged_tuple<S,T>& tup) : sequence_multiple(g, D{g,tup}) {}
@@ -137,13 +137,13 @@ class sequence_multiple<D, n, false> {
     times_t next() const {
         return (i < n) ? pending[i] : TIME_MAX;
     }
-    
+
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&&) {
         ++i;
     }
-    
+
     //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G&&) {
@@ -151,14 +151,14 @@ class sequence_multiple<D, n, false> {
         ++i;
         return nt;
     }
-    
+
   private:
     //! @brief The time of the events.
     std::array<times_t, n> pending;
-    
+
     //! @brief Number of calls to next so far.
     size_t i = 0;
-    
+
     //! @brief Auxiliary constructor.
     template <typename G>
     sequence_multiple(G&& g, D&& distr) {
@@ -166,7 +166,7 @@ class sequence_multiple<D, n, false> {
         std::sort(pending.begin(), pending.end());
     }
 };
-//@}
+//! @}
 
 
 /**
@@ -176,28 +176,28 @@ class sequence_multiple<D, n, false> {
 template <typename... Ds>
 class sequence_list {
     static_assert(common::all_true<std::is_same<typename Ds::type, times_t>::value...>, "the distributions Ds must generate a times_t value");
-    
+
   public:
     //! @brief The type of results generated.
     using type = times_t;
-    
+
     //! @brief Default constructor.
     template <typename G>
     sequence_list(G&& g) : pending({details::call_distr<Ds>(g)...}) {
         std::sort(pending.begin(), pending.end());
     }
-    
+
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
     sequence_list(G&& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
         std::sort(pending.begin(), pending.end());
     }
-    
+
     //! @brief Returns next event, without stepping over.
     times_t next() const {
         return (i < sizeof...(Ds)) ? pending[i] : TIME_MAX;
     }
-    
+
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&&) {
@@ -211,11 +211,11 @@ class sequence_list {
         ++i;
         return nt;
     }
-    
+
   private:
     //! @brief List of events to come.
     std::array<times_t, sizeof...(Ds)> pending;
-    
+
     //! @brief Number of calls to next so far.
     size_t i = 0;
 };
@@ -239,7 +239,7 @@ class sequence_periodic {
   public:
     //! @brief The type of results generated.
     using type = times_t;
-    
+
     //! @brief Default constructor.
     template <typename G>
     sequence_periodic(G&& g) : dp(g) {
@@ -247,7 +247,7 @@ class sequence_periodic {
         te = details::call_distr<E>(g);
         t  = details::call_distr<S>(g);
     }
-    
+
     //! @brief Default constructor.
     template <typename G, typename U, typename T>
     sequence_periodic(G&& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
@@ -255,12 +255,12 @@ class sequence_periodic {
         te = details::call_distr<E>(g,tup);
         t  = details::call_distr<S>(g,tup);
     }
-    
+
     //! @brief Returns next event, without stepping over.
     times_t next() const {
         return (i < n and t <= te) ? t : TIME_MAX;
     }
-    
+
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&& g) {
@@ -276,16 +276,102 @@ class sequence_periodic {
         t += dp(g);
         return nt;
     }
-    
+
   private:
     //! @brief Period distribution;
     P dp;
-    
+
     //! @brief Last event happened and terminal time.
     times_t t, te;
-    
+
     //! @brief Number of calls to next so far.
     size_t n, i = 0;
+};
+
+
+//! @cond INTERNAL
+namespace details {
+    template <typename T, typename U>
+    U&& arg_expander(U&& x) {
+        return std::forward<U>(x);
+    }
+}
+//! @endcond
+
+
+/**
+ * @brief Merges multiple sequences in a single one.
+ * @param Ss Generators of event sequences.
+ */
+template <typename... Ss>
+class sequence_merge {
+    static_assert(common::all_true<std::is_same<typename Ss::type, times_t>::value...>, "the generators Ss must generate a times_t value");
+
+  public:
+    //! @brief The type of results generated.
+    using type = times_t;
+
+    //! @brief Default constructor.
+    template <typename G>
+    sequence_merge(G&& g) : m_generators{details::arg_expander<Ss>(g)...} {
+        set_next(std::make_index_sequence<sizeof...(Ss)>{});
+    }
+
+    //! @brief Default constructor.
+    template <typename G, typename S, typename T>
+    sequence_merge(G&& g, const common::tagged_tuple<S,T>& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
+        set_next(std::make_index_sequence<sizeof...(Ss)>{});
+    }
+
+    //! @brief Returns next event, without stepping over.
+    times_t next() const {
+        return m_next;
+    }
+
+    //! @brief Steps over to next event, without returning.
+    template <typename G>
+    void step(G&& g) {
+        step(std::forward<G>(g), std::make_index_sequence<sizeof...(Ss)>{});
+        set_next(std::make_index_sequence<sizeof...(Ss)>{});
+    }
+
+    //! @brief Returns next event, stepping over.
+    template <typename G>
+    times_t operator()(G&& g) {
+        times_t nt = next();
+        step(std::forward<G>(g));
+        return nt;
+    }
+
+  private:
+    //! @brief Steps over a given sub-sequence.
+    template <typename G, size_t i>
+    void step(G&& g, std::index_sequence<i>) {
+        assert(std::get<i>(m_generators).next() == m_next);
+        std::get<i>(m_generators).step(std::forward<G>(g));
+    }
+
+    //! @brief Steps over a sub-sequence among a list of possible ones.
+    template <typename G, size_t i, size_t... is>
+    void step(G&& g, std::index_sequence<i, is...>) {
+        if (std::get<i>(m_generators).next() == m_next)
+            std::get<i>(m_generators).step(std::forward<G>(g));
+        else
+            step(std::forward<G>(g), std::index_sequence<is...>{});
+    }
+
+    //! @brief Computes the next event.
+    template <size_t... is>
+    void set_next(std::index_sequence<is...>) {
+        std::array<times_t, sizeof...(Ss)> v{std::get<is>(m_generators).next()...};
+        m_next = *std::min_element(v.begin(), v.end());
+    }
+
+    //! @brief Tuple of sequence generators.
+    std::tuple<Ss...> m_generators;
+
+    //! @brief The next event to come.
+    times_t m_next;
 };
 
 

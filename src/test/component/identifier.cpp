@@ -58,7 +58,7 @@ using combo1 = component::combine<
 using combo2 = component::combine<
     exposer,
     worker,
-    component::scheduler<seq_per>,
+    component::scheduler<component::tags::round_schedule<seq_per>>,
     component::identifier<component::tags::synchronised<true>>
 >;
 

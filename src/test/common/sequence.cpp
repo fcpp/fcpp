@@ -139,3 +139,19 @@ TEST(SequenceTest, Periodic) {
     d = ei(rnd);
     EXPECT_DOUBLE_EQ(6.0, d);
 }
+
+TEST(SequenceTest, Merge) {
+    std::mt19937 rnd(42);
+    random::sequence_merge<
+        random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3>,
+        random::sequence_never,
+        random::sequence_list<random::constant_distribution<times_t, 73, 10>, random::constant_distribution<times_t, 52, 10>, random::constant_distribution<times_t, 15, 10>>
+    > e(rnd, common::make_tagged_tuple<void>(10));
+    EXPECT_DOUBLE_EQ(1.5, e(rnd));
+    EXPECT_DOUBLE_EQ(5.2, e(rnd));
+    EXPECT_DOUBLE_EQ(5.2, e(rnd));
+    EXPECT_DOUBLE_EQ(5.2, e(rnd));
+    EXPECT_DOUBLE_EQ(5.2, e(rnd));
+    EXPECT_DOUBLE_EQ(7.3, e(rnd));
+    EXPECT_DOUBLE_EQ(TIME_MAX, e(rnd));
+}

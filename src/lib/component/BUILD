@@ -88,6 +88,7 @@ cc_library(
     deps = [
         "//lib:settings",
         "//lib/common:distribution",
+        "//lib/common:sequence",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
     ],

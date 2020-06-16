@@ -31,9 +31,10 @@ struct exposer {
 
 using combo = component::combine<
     exposer,
-    component::calculus<main, metric::once,
+    component::calculus<program<main>, exports<
         device_t, double, field<double>, std::array<double, 2>,
-        tuple<double,device_t>, tuple<double,int>, tuple<double,double>>,
+        tuple<double,device_t>, tuple<double,int>, tuple<double,double>
+    >>,
     component::storage<
         algorithm,  int,
         spc_sum,    double,
@@ -52,14 +53,14 @@ using combo = component::combine<
 
 using message_t = typename combo::node::message_t;
 
-void round(times_t t, combo::net& network, device_t uid) {
+void fullround(times_t t, combo::net& network, device_t uid) {
     common::unique_lock<FCPP_PARALLEL> l;
     network.node_at(uid, l).round(t);
 }
 
-void round(times_t t, combo::net& network) {
+void fullround(times_t t, combo::net& network) {
     for (size_t i = 0; i < network.node_size(); ++i)
-        round(t, network, i);
+        fullround(t, network, i);
 }
 
 void sendto(times_t t, combo::net& network, device_t source, device_t dest) {

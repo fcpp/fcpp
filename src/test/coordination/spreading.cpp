@@ -33,14 +33,9 @@ struct lagdist {
     };
 };
 
-struct main {
-    template <typename node_t>
-    void operator()(node_t&, times_t) {}
-};
-
 using combo1 = component::combine<
     lagdist,
-    component::calculus<main, metric::once, times_t, int, field<int>, tuple<double,double>, tuple<double,int>>
+    component::calculus<component::tags::exports<times_t, int, field<int>, tuple<double,double>, tuple<double,int>>>
 >;
 
 struct testnet {

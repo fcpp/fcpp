@@ -46,16 +46,136 @@ namespace details {
 //! @endcond
 
 
+//! @brief Namespace for metrics between messages.
+namespace metric {
+    /**
+     * @brief Metric predicate which clears out everything every round.
+     */
+    struct once {
+        //! @brief The data type.
+        using result_type = char;
+
+        //! @brief Default threshold.
+        result_type build() const {
+            return 1;
+        }
+
+        //! @brief Measures an incoming message.
+        template <typename N, typename S, typename T>
+        result_type build(const N& n, times_t, device_t d, const common::tagged_tuple<S,T>&) const {
+            return d == n.uid ? 0 : 1;
+        }
+
+        //! @brief Updates an existing measure.
+        template <typename N>
+        result_type update(const result_type& r, const N&) const {
+            return r > 0 ? 2 : 0;
+        }
+    };
+
+    /**
+     * @brief Metric predicate which clears out values after a retain time.
+     *
+     * Requires nodes to have a `next_time()` and `current_time()` interface (as per the `timer` component).
+     *
+     * @param period The period of time after which values are discarded.
+     * @param scale A scale by which `period` is divided.
+     */
+    template <intmax_t period = 1, intmax_t scale = 1>
+    struct retain {
+        //! @brief The data type.
+        using result_type = times_t;
+
+        //! @brief Default threshold.
+        result_type build() const {
+            return period / times_t(scale);
+        }
+
+        //! @brief Measures an incoming message.
+        template <typename N, typename S, typename T>
+        result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>&) const {
+            return n.next_time() - t;
+        }
+
+        //! @brief Updates an existing measure.
+        template <typename N>
+        result_type update(const result_type& r, const N& n) const {
+            return r + n.next_time() - n.current_time();
+        }
+    };
+
+    /**
+     * @brief Metric predicate which clears out values based on space-time distance.
+     *
+     * The metric is tuned to equiparate a temporal distance of `period` with a spatial distance of `radius`.
+     * Requires nodes to have a `next_time()`, `current_time()` and `position(t)` interface
+     * (as per the `timer` and `physical_position` components).
+     *
+     * @param position_tag The tag storing position data in messages.
+     * @param radius The maximum communication radius.
+     * @param period The maximum temporal interval between rounds.
+     * @param scale A scale by which `radius` and `period` are divided.
+     *
+     */
+    template <typename position_tag, intmax_t radius = 1, intmax_t period = 1, intmax_t scale = 1>
+    struct minkowski {
+        //! @brief The data type.
+        using result_type = double;
+
+        //! @brief Default threshold.
+        result_type build() const {
+            return 2 * radius / double(scale);
+        }
+
+        //! @brief Measures an incoming message.
+        template <typename N, typename S, typename T>
+        result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>& m) const {
+            return norm(get<position_tag>(m) - n.position(t)) + (n.next_time() - t) * radius / double(period);
+        }
+
+        //! @brief Updates an existing measure.
+        template <typename N>
+        result_type update(const result_type& r, const N& n) const {
+            return r + (n.next_time() - n.current_time()) * radius / double(period);
+        }
+    };
+}
+
+
 //! @brief Namespace for all FCPP components.
 namespace component {
 
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Tag associating to the maximum size for a neighbourhood.
+    //! @brief Declaration tag associating to a sequence of types to be used in exports.
+    template <typename... Ts>
+    struct exports {};
+
+    //! @brief Declaration tag associating to a callable class to be executed during rounds.
+    template <typename T>
+    struct program {};
+
+    //! @brief Declaration tag associating to a metric class regulating the discard of exports.
+    template <typename T>
+    struct retain {};
+
+    //! @brief Declaration flag associating to whether exports are wrapped in smart pointers.
+    template <bool b>
+    struct export_pointer {};
+
+    //! @brief Declaration flag associating to whether exports for neighbours are split from those for self.
+    template <bool b>
+    struct export_split {};
+
+    //! @brief Declaration flag associating to whether messages are dropped as they arrive (reduces memory footprint).
+    template <bool b>
+    struct online_drop {};
+
+    //! @brief Node initialisation tag associating to the maximum size for a neighbourhood.
     struct hoodsize {};
 
-    //! @brief Tag associating to a threshold regulating discard of old messages.
+    //! @brief Node initialisation tag associating to a threshold regulating discard of old messages.
     struct threshold {};
 }
 
@@ -63,14 +183,23 @@ namespace tags {
 /**
  * @brief Component providing the field calculus APIs.
  *
- * Initialises `node` with tags `hoodsize` associating to the maximum number of neighbours allowed (defaults to `std::numeric_limits<device_t>::max()`), and `threshold` associating to a `M::result_type` threshold regulating discarding of old messages (defaults to the result of `M::build()`).
  * Must be unique in a composition of components.
- * The \p C class should be default-constructible and be callable with the following signature:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * template <typename node_t>
- * void operator()(node_t& node, times_t t);
- * ~~~~~~~~~~~~~~~~~~~~~~~~~
- * The \p M class should:
+ *
+ * <b>Declaration tags:</b>
+ * - \ref tags::exports defines a sequence of types to be used in exports (defaults to the empty sequence).
+ * - \ref tags::program defines a callable class to be executed during rounds (defaults to an anonymous class doing nothing).
+ * - \ref tags::retain defines a metric class regulating the discard of exports (defaults to \ref metric::once).
+ *
+ * <b>Declaration flags:</b>
+ * - \ref tags::export_pointer defines whether exports are wrapped in smart pointers (defaults to \ref FCPP_EXPORT_PTR).
+ * - \ref tags::export_split defines whether exports for neighbours are split from those for self (defaults to \ref FCPP_EXPORT_NUM `== 2`).
+ * - \ref tags::online_drop defines whether messages are dropped as they arrive (defaults to \ref FCPP_ONLINE_DROP).
+ *
+ * <b>Node initialisation tags:</b>
+ * - \ref tags::hoodsize associates to the maximum number of neighbours allowed (defaults to `std::numeric_limits<device_t>::max()`).
+ * - \ref tags::threshold associates to a `T::result_type` threshold (where `T` is the class specified with \ref tags::retain) regulating discarding of old messages (defaults to the result of `T::build()`).
+ *
+ * Retain classes should (see \ref metric for a list of available ones):
  * - provide a `result_type` type member which has to be totally ordered, for example:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  *   using result_type = double;
@@ -89,15 +218,39 @@ namespace tags {
  *   template <typename N>
  *   result_type update(const result_type&, const N& node);
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
- *   These methods are called to compute the "goodness" of a neighbour export with
- *   respect to data on the current device.
  *
- * @param C  Callable class representing the main round execution.
- * @param M  Class realising a metric on exports.
- * @param Ts Types to be included in the exports.
+ * Round classes should be default-constructible and be callable with the following signature:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * template <typename node_t>
+ * void operator()(node_t& node, times_t t);
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-template <class C, class M, class... Ts>
+template <class... Ts>
 struct calculus {
+    //! @brief Callable class performing no operation.
+    struct null_program {
+        template <typename node_t>
+        void operator()(node_t&, times_t) {}
+    };
+
+    //! @brief Callable class to be executed during rounds.
+    using program_type = common::option_type<tags::program, null_program, Ts...>;
+
+    //! @brief Metric class regulating the discard of exports.
+    using retain_type = common::option_type<tags::retain, metric::once, Ts...>;
+
+    //! @brief Sequence of types to be used in exports.
+    using exports_type = common::option_types<tags::exports, Ts...>;
+
+    //! @brief whether exports are wrapped in smart pointers.
+    constexpr static bool export_pointer = common::option_flag<tags::export_pointer, FCPP_EXPORT_PTR, Ts...>;
+
+    //! @brief Whether exports for neighbours are split from those for self.
+    constexpr static bool export_split = common::option_flag<tags::export_split, FCPP_EXPORT_NUM == 2, Ts...>;
+
+    //! @brief Whether messages are dropped as they arrive.
+    constexpr static bool online_drop = common::option_flag<tags::online_drop, FCPP_ONLINE_DROP, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -111,13 +264,13 @@ struct calculus {
     struct component : public P {
         //! @brief Marks that a calculus component is present.
         struct calculus_tag {};
-        
+
         //! @brief Checks if T has a `calculus_tag`.
         template <typename T, typename = int>
         struct has_ctag : std::false_type {};
         template <typename T>
         struct has_ctag<T, std::conditional_t<true,int,typename T::calculus_tag>> : std::true_type {};
-        
+
         //! @brief Asserts that P has no `calculus_tag`.
         static_assert(not has_ctag<P>::value, "cannot combine multiple calculus components");
 
@@ -133,14 +286,14 @@ struct calculus {
 
           private: // implementation details
             //! @brief The type of the metric on exports.
-            using metric_type = typename M::result_type;
+            using metric_type = typename retain_type::result_type;
 
             //! @brief The type of the context of exports from other devices.
-            using context_type = data::context_t<FCPP_ONLINE_DROP, metric_type, common::type_sequence<Ts...>>;
-            
+            using context_type = data::context_t<online_drop, export_pointer, metric_type, exports_type>;
+
             //! @brief The type of the exports of the current device.
             using export_type = typename context_type::export_type;
-            
+
           public: // visible by net objects and the main program
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<calculus_tag, export_type>;
@@ -153,7 +306,7 @@ struct calculus {
              */
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_context{}, m_metric{}, m_hoodsize{common::get_or<tags::hoodsize>(t, std::numeric_limits<device_t>::max())}, m_threshold{common::get_or<tags::threshold>(t, m_metric.build())} {}
-            
+
             //! @brief Number of neighbours (including self).
             size_t size() const {
                 return m_context.second().size(P::node::uid);
@@ -166,7 +319,7 @@ struct calculus {
                 m_context.second().freeze(m_hoodsize, P::node::uid);
                 m_export = {};
             }
-            
+
             //! @brief Performs computations at round middle with current time `t`.
             void round_main(times_t t) {
                 P::node::round_main(t);
@@ -179,18 +332,16 @@ struct calculus {
                 P::node::round_end(t);
                 m_context.second().unfreeze(P::node::as_final(), m_metric, m_threshold);
             }
-            
+
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
                 m_context.second().insert(d, common::get<calculus_tag>(m), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
-#if FCPP_EXPORT_NUM == 2
-                if (d == P::node::uid)
+                if (export_split and d == P::node::uid)
                     m_context.first().insert(d, m_export.first(), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
-#endif
             }
-            
+
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
             template <typename S, typename T>
             common::tagged_tuple<S,T>& send(times_t t, device_t d, common::tagged_tuple<S,T>& m) const {
@@ -201,27 +352,27 @@ struct calculus {
 
             //! @brief Stack trace maintained during aggregate function execution.
             data::trace stack_trace;
-            
+
           private: // implementation details
             //! @brief Map associating devices to their exports (`first` for local device, `second` for others).
-            common::twin<context_type, FCPP_EXPORT_NUM == 1> m_context;
-            
+            common::twin<context_type, not export_split> m_context;
+
             //! @brief Exports of the current device (`first` for local device, `second` for others).
-            common::twin<export_type,  FCPP_EXPORT_NUM == 1> m_export;
-            
+            common::twin<export_type, not export_split> m_export;
+
             //! @brief The callable class representing the main round.
-            C m_callback;
+            program_type m_callback;
 
             //! @brief The metric class.
-            M m_metric;
-            
+            retain_type m_metric;
+
             //! @brief Maximum amount of neighbours allowed.
             device_t m_hoodsize;
-            
+
             //! @brief Maximum export metric value allowed.
             metric_type m_threshold;
         };
-        
+
         //! @brief The global part of the component.
         using net = typename P::net;
     };
@@ -503,102 +654,6 @@ B oldnbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
     return f.first;
 }
 //! @}
-
-
-//! @brief Namespace for metrics between messages.
-namespace metric {
-    /**
-     * @brief Metric predicate which clears out everything every round.
-     */
-    struct once {
-        //! @brief The data type.
-        using result_type = char;
-        
-        //! @brief Default threshold.
-        result_type build() const {
-            return 1;
-        }
-        
-        //! @brief Measures an incoming message.
-        template <typename N, typename S, typename T>
-        result_type build(const N& n, times_t, device_t d, const common::tagged_tuple<S,T>&) const {
-            return d == n.uid ? 0 : 1;
-        }
-        
-        //! @brief Updates an existing measure.
-        template <typename N>
-        result_type update(const result_type& r, const N&) const {
-            return r > 0 ? 2 : 0;
-        }
-    };
-
-    /**
-     * @brief Metric predicate which clears out values after a retain time.
-     *
-     * Requires nodes to have a `next_time()` and `current_time()` interface (as per the `timer` component).
-     *
-     * @param period The period of time after which values are discarded.
-     * @param scale A scale by which `period` is divided.
-     */
-    template <intmax_t period = 1, intmax_t scale = 1>
-    struct retain {
-        //! @brief The data type.
-        using result_type = times_t;
-        
-        //! @brief Default threshold.
-        result_type build() const {
-            return period / times_t(scale);
-        }
-        
-        //! @brief Measures an incoming message.
-        template <typename N, typename S, typename T>
-        result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>&) const {
-            return n.next_time() - t;
-        }
-        
-        //! @brief Updates an existing measure.
-        template <typename N>
-        result_type update(const result_type& r, const N& n) const {
-            return r + n.next_time() - n.current_time();
-        }
-    };
-
-    /**
-     * @brief Metric predicate which clears out values based on space-time distance.
-     *
-     * The metric is tuned to equiparate a temporal distance of `period` with a spatial distance of `radius`.
-     * Requires nodes to have a `next_time()`, `current_time()` and `position(t)` interface
-     * (as per the `timer` and `physical_position` components).
-     *
-     * @param position_tag The tag storing position data in messages.
-     * @param radius The maximum communication radius.
-     * @param period The maximum temporal interval between rounds.
-     * @param scale A scale by which `radius` and `period` are divided.
-     *
-     */
-    template <typename position_tag, intmax_t radius = 1, intmax_t period = 1, intmax_t scale = 1>
-    struct minkowski {
-        //! @brief The data type.
-        using result_type = double;
-        
-        //! @brief Default threshold.
-        result_type build() const {
-            return 2 * radius / double(scale);
-        }
-        
-        //! @brief Measures an incoming message.
-        template <typename N, typename S, typename T>
-        result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>& m) const {
-            return norm(get<position_tag>(m) - n.position(t)) + (n.next_time() - t) * radius / double(period);
-        }
-        
-        //! @brief Updates an existing measure.
-        template <typename N>
-        result_type update(const result_type& r, const N& n) const {
-            return r + (n.next_time() - n.current_time()) * radius / double(period);
-        }
-    };
-}
 
 
 }

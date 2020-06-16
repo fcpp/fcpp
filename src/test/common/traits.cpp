@@ -280,6 +280,7 @@ TEST(TraitsTest, TemplateArgs) {
                 common::template_args<const array<proxy<double>, 4>&>);
 }
 
+template <bool b>
 struct flagopt {};
 
 template <size_t i>
@@ -296,9 +297,13 @@ struct typeopt {};
 
 TEST(TraitsTest, Options) {
     bool b;
-    b = common::option_flag<flagopt, int, void, char>;
+    b = common::option_flag<flagopt, false, int, void, char>;
     EXPECT_FALSE(b);
-    b = common::option_flag<flagopt, int, flagopt, char, bool, flagopt>;
+    b = common::option_flag<flagopt, true, int, flagopt<false>, char, bool, flagopt<true>>;
+    EXPECT_FALSE(b);
+    b = common::option_flag<flagopt, true, int, void, char>;
+    EXPECT_TRUE(b);
+    b = common::option_flag<flagopt, false, int, flagopt<true>, char, bool, flagopt<true>>;
     EXPECT_TRUE(b);
     size_t n;
     n = common::option_num<onenum, 42, int, bool>;

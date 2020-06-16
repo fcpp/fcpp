@@ -42,12 +42,12 @@ class ContextTest : public ::testing::Test {
     }
     
     common::multitype_map<trace_t, fcpp::field<int>, char> m;
-    data::context<FCPP_ONLINE_DROP, double, fcpp::field<int>, char> data;
+    data::context<FCPP_ONLINE_DROP, FCPP_EXPORT_PTR, double, fcpp::field<int>, char> data;
 };
 
 
 TEST_F(ContextTest, Operators) {
-    data::context<FCPP_ONLINE_DROP, double, fcpp::field<int>, char> x(data), y, z;
+    data::context<FCPP_ONLINE_DROP, FCPP_EXPORT_PTR, double, fcpp::field<int>, char> x(data), y, z;
     z = y;
     y = x;
     z = std::move(y);
@@ -56,7 +56,7 @@ TEST_F(ContextTest, Operators) {
 
 #if FCPP_ONLINE_DROP
 TEST_F(ContextTest, InsertErase) {
-    data::context<FCPP_ONLINE_DROP, double, fcpp::field<int>, char> x(data);
+    data::context<FCPP_ONLINE_DROP, FCPP_EXPORT_PTR, double, fcpp::field<int>, char> x(data);
     x.insert(2, m, 0.3, 1.5, 9);
     x.insert(3, m, 0.4, 1.5, 9);
     EXPECT_EQ(size_t(3), x.size(1));

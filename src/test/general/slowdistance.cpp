@@ -38,19 +38,19 @@ using combo = component::combine<
     component::physical_position<>,
     component::storage<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>,
     component::identifier<true>,
-    component::calculus<main, metric::once, double>
+    component::calculus<program<main>, exports<double>>
 >;
 
 using message_t = typename combo::node::message_t;
 
-void round(times_t t, combo::net& network, device_t uid) {
+void fullround(times_t t, combo::net& network, device_t uid) {
     common::unique_lock<FCPP_PARALLEL> l;
     network.node_at(uid, l).round(t);
 }
 
-void round(times_t t, combo::net& network) {
+void fullround(times_t t, combo::net& network) {
     for (size_t i = 0; i < network.node_size(); ++i)
-        round(t, network, i);
+        fullround(t, network, i);
 }
 
 void sendto(times_t t, combo::net& network, device_t source, device_t dest) {
@@ -88,27 +88,27 @@ TEST(SlowdistanceTest, Synchronous) {
     network.node_emplace(common::make_tagged_tuple<x>(std::make_array(0.0, 0.0)));
     network.node_emplace(common::make_tagged_tuple<x>(std::make_array(1.0, 0.0)));
     network.node_emplace(common::make_tagged_tuple<x>(std::make_array(1.5, 0.0)));
-    round( 0.0, network);
+    fullround( 0.0, network);
     checker(network, 0, 0.0, 0.0, 0.0);
     checker(network, 1, 1.0, inf, inf);
     checker(network, 2, 1.5, inf, inf);
     sendto(0.5, network);
-    round( 1.0, network);
+    fullround( 1.0, network);
     checker(network, 0, 0.0, 0.0, 0.0);
     checker(network, 1, 1.0, 1.0, inf);
     checker(network, 2, 1.5, inf, inf);
     sendto(1.5, network);
-    round( 2.0, network);
+    fullround( 2.0, network);
     checker(network, 0, 0.0, 0.0, 0.0);
     checker(network, 1, 1.0, 1.0, 1.0);
     checker(network, 2, 1.5, 1.5, inf);
     sendto(2.5, network);
-    round( 3.0, network);
+    fullround( 3.0, network);
     checker(network, 0, 0.0, 0.0, 0.0);
     checker(network, 1, 1.0, 1.0, 1.0);
     checker(network, 2, 1.5, 1.5, inf);
     sendto(3.5, network);
-    round( 4.0, network);
+    fullround( 4.0, network);
     checker(network, 0, 0.0, 0.0, 0.0);
     checker(network, 1, 1.0, 1.0, 1.0);
     checker(network, 2, 1.5, 1.5, 1.5);

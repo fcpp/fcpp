@@ -15,13 +15,8 @@ using namespace fcpp;
 
 constexpr int I = std::numeric_limits<int>::max()-1;
 
-struct main {
-    template <typename node_t>
-    void operator()(node_t&, times_t) {}
-};
-
 using combo1 = component::combine<
-    component::calculus<main, metric::once, tuple<int,int>, tuple<int,int,int,int>>
+    component::calculus<component::tags::exports<tuple<int,int>, tuple<int,int,int,int>>>
 >;
 
 struct testnet {

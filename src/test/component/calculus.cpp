@@ -54,7 +54,7 @@ struct main {
 };
 
 using combo1 = component::combine<
-    component::calculus<main, metric::once, fcpp::field<int>, times_t, int>
+    component::calculus<component::tags::exports<fcpp::field<int>, times_t, int>>
 >;
 
 using message_t = typename combo1::node::message_t;

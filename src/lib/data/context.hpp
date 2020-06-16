@@ -39,10 +39,11 @@ namespace data {
  * possibly triggering filtering of old (or less relevant) exports.
  *
  * @param online Whether the number of stored exports should be kept cleaned as exports are inserted.
+ * @param pointer Whether the exports should be stored in pointers or not.
  * @param M Type of the export metrics.
  * @param Ts Types included in the exports.
  */
-template <bool online, typename M, typename... Ts>
+template <bool online, bool pointer, typename M, typename... Ts>
 class context;
 
 
@@ -51,11 +52,11 @@ class context;
  *
  * Specialisation for online cleaning of export as they are inserted.
  */
-template <typename M, typename... Ts>
-class context<true, M, Ts...> {
+template <bool pointer, typename M, typename... Ts>
+class context<true, pointer, M, Ts...> {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not FCPP_EXPORT_PTR> export_type;
+    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not pointer> export_type;
 
     //! @brief The type of the metric on exports.
     typedef M metric_type;
@@ -209,11 +210,11 @@ class context<true, M, Ts...> {
  *
  * Specialisation for cleaning of exports only at round start.
  */
-template <typename M, typename... Ts>
-class context<false, M, Ts...> {
+template <bool pointer, typename M, typename... Ts>
+class context<false, pointer, M, Ts...> {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not FCPP_EXPORT_PTR> export_type;
+    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not pointer> export_type;
 
     //! @brief The type of the metric on exports.
     typedef M metric_type;
@@ -368,20 +369,20 @@ class context<false, M, Ts...> {
 //! @cond INTERNAL
 namespace details {
     // General form.
-    template <bool online, typename M, typename T>
+    template <bool online, bool pointer, typename M, typename T>
     struct context_t;
 
     // Unpacking form.
-    template <bool online, typename M, typename... Ts>
-    struct context_t<online, M, common::type_sequence<Ts...>> {
-        using type = context<online, M, Ts...>;
+    template <bool online, bool pointer, typename M, typename... Ts>
+    struct context_t<online, pointer, M, common::type_sequence<Ts...>> {
+        using type = context<online, pointer, M, Ts...>;
     };
 }
 //! @endcond
 
 //! @brief Context built with a type sequence of types.
-template <bool online, typename M, typename T>
-using context_t = typename details::context_t<online,M,T>::type;
+template <bool online, bool pointer, typename M, typename T>
+using context_t = typename details::context_t<online,pointer,M,T>::type;
 
 
 }

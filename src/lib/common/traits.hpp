@@ -792,6 +792,18 @@ using std::index_sequence;
 //! @cond INTERNAL
 namespace details {
     // Extracts a numeric option (no arguments).
+    template <template<bool> class T, bool d, typename... Ss>
+    struct option_flag : public std::integral_constant<bool, d> {};
+
+    // Extracts a numeric option (option in first place).
+    template <template<bool> class T, bool d, bool b, typename... Ss>
+    struct option_flag<T,d,T<b>,Ss...> : public std::integral_constant<bool, b> {};
+
+    // Extracts a numeric option (option not in first place).
+    template <template<bool> class T, bool d, typename S, typename... Ss>
+    struct option_flag<T,d,S,Ss...> : public option_flag<T,d,Ss...> {};
+
+    // Extracts a numeric option (no arguments).
     template <template<size_t> class T, size_t d, typename... Ss>
     struct option_num : public std::integral_constant<size_t, d> {};
 
@@ -873,10 +885,11 @@ namespace details {
  * @brief Checks whether a flag option is present in a sequence of options.
  *
  * @param T Flag option name.
+ * @param d Default value if the option is missing.
  * @param Ss Sequence of options.
  */
-template <typename T, typename... Ss>
-constexpr bool option_flag = type_count<T, Ss...>;
+template <template<bool> class T, bool d, typename... Ss>
+constexpr bool option_flag = details::option_flag<T,d,Ss...>::value;
 
 /**
  * @brief Extracts a numeric option from a sequence of options.

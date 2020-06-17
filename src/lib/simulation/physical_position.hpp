@@ -32,16 +32,20 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Tag associating to a starting position.
+    //! @brief Declaration tag associating to the dimensionality of the space.
+    template <size_t n>
+    struct dimension {};
+
+    //! @brief Node initialisation tag associating to a starting position.
     struct x {};
 
-    //! @brief Tag associating to a starting velocity.
+    //! @brief Node initialisation tag associating to a starting velocity.
     struct v {};
 
-    //! @brief Tag associating to a starting acceleration.
+    //! @brief Node initialisation tag associating to a starting acceleration.
     struct a {};
 
-    //! @brief Tag associating to a starting friction coefficient.
+    //! @brief Node initialisation tag associating to a starting friction coefficient.
     struct f {};
 }
 
@@ -62,13 +66,24 @@ namespace details {
 /**
  * @brief Component handling physical evolution of a position through time.
  *
- * Initialises `node` with tags `x`, `v`, `a` associating to a starting `std::array<double,n>` position, velocity and acceleration (`x` is required, `v` and `a` default to the null vector), and with tag `f` associating to a `double` friction coefficient (defaults to zero). Position \f$ x \f$ evolves as per the differential equation \f$ x'' = a - f x' \f$ of uniformily accelerated viscous motion.
  * Must be unique in a composition of components.
  *
- * @param n Dimensionality of the space (defaults to 2).
+ * <b>Declaration tags:</b>
+ * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
+ *
+ * <b>Node initialisation tags:</b>
+ * - \ref tags::x associates to a starting position (required).
+ * - \ref tags::v associates to a starting velocity (defaults to the null vector).
+ * - \ref tags::a associates to a starting acceleration (defaults to the null vector).
+ * - \ref tags::f associates to a starting friction coefficient (defaults to zero).
+ *
+ * Vectors are modelled as `std::array<double,n>` objects. Position \f$ x \f$ evolves as per the differential equation \f$ x'' = a - f x' \f$ of uniformily accelerated viscous motion.
  */
-template <size_t n = 2>
+template <class... Ts>
 struct physical_position {
+    //! @brief The dimensionality of the space.
+    constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -83,24 +98,24 @@ struct physical_position {
         //! @brief Marks that a position component is present.
         struct position_tag {};
 
-        //! @brief The dimensionality of the space.
-        const size_t dimension = n;
-
         //! @brief Checks if T has a `position_tag`.
         template <typename T, typename = int>
         struct has_ptag : std::false_type {};
         template <typename T>
         struct has_ptag<T, std::conditional_t<true,int,typename T::position_tag>> : std::true_type {};
-        
+
         //! @brief Asserts that P has no `position_tag`.
         static_assert(not has_ptag<P>::value, "cannot combine multiple position components");
 
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
+            //! @brief Type for representing a position.
+            using position_type = std::array<double, dimension>;
+
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
-            using message_t = typename P::node::message_t::template push_back<position_tag, std::array<double,n>>;
-            
+            using message_t = typename P::node::message_t::template push_back<position_tag, position_type>;
+
             //@{
             /**
              * @brief Main constructor.
@@ -109,17 +124,17 @@ struct physical_position {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& nt, const common::tagged_tuple<S,T>& t) : P::node(nt,t), m_x(common::get<tags::x>(t)), m_v(common::get_or<tags::v>(t, std::array<double, n>{})), m_a(common::get_or<tags::a>(t, std::array<double, n>{})), m_f(common::get_or<tags::f>(t, 0.0)), m_nbr_vec{details::nan_vec<n>()}, m_nbr_dist{std::numeric_limits<double>::infinity()} {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get<tags::x>(t)), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0.0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{std::numeric_limits<double>::infinity()} {
                 m_last = TIME_MIN;
             }
 
             //! @brief Position now (const access).
-            const std::array<double, n>& position() const {
+            const position_type& position() const {
                 return m_x;
             }
 
             //! @brief Position at a given time.
-            std::array<double, n> position(times_t t) const {
+            position_type position(times_t t) const {
                 double dt = t - m_last;
                 if (dt == 0) {
                     return m_x;
@@ -133,19 +148,19 @@ struct physical_position {
                 double k = (1 - exp(-m_f * dt)) / m_f;
                 return m_x + m_v * k + m_a * ((dt-k)/m_f);
             }
-            
+
             //! @brief Velocity now.
-            std::array<double, n>& velocity() {
+            position_type& velocity() {
                 return m_v;
             }
-            
+
             //! @brief Velocity now (const access).
-            const std::array<double, n>& velocity() const {
+            const position_type& velocity() const {
                 return m_v;
             }
-            
+
             //! @brief Velocity at a given time.
-            std::array<double, n> velocity(times_t t) const {
+            position_type velocity(times_t t) const {
                 double dt = t - m_last;
                 if (dt == 0) {
                     return m_v;
@@ -159,19 +174,19 @@ struct physical_position {
                 double k1 = exp(-m_f * dt); // derivative of k
                 return m_v * k1 + m_a * ((1-k1)/m_f);
             }
-            
+
             //! @brief Personal acceleration.
-            std::array<double, n>& propulsion() {
+            position_type& propulsion() {
                 return m_a;
             }
-            
+
             //! @brief Personal acceleration (const access).
-            const std::array<double, n>& propulsion() const {
+            const position_type& propulsion() const {
                 return m_a;
             }
 
             //! @brief Total acceleration now.
-            std::array<double, n> acceleration() const {
+            position_type acceleration() const {
                 if (m_f == 0) {
                     return m_a;
                 }
@@ -180,9 +195,9 @@ struct physical_position {
                 }
                 return m_a - m_f * m_v;
             }
-            
+
             //! @brief Total acceleration at a given time.
-            std::array<double, n> acceleration(times_t t) const {
+            position_type acceleration(times_t t) const {
                 if (m_f == 0) {
                     return m_a;
                 }
@@ -193,7 +208,7 @@ struct physical_position {
                 double k1 = exp(-m_f * dt);
                 return m_a * k1 - m_v * (m_f * k1);
             }
-            
+
             //! @brief Friction coefficient.
             double& friction() {
                 return m_f;
@@ -203,7 +218,7 @@ struct physical_position {
             double friction() const {
                 return m_f;
             }
-            
+
             //! @brief First time after `t` when a value `y` will be reached on a certain coordinate `i`.
             times_t reach_time(size_t i, double y, times_t t) {
                 y -= m_x[i];
@@ -264,11 +279,11 @@ struct physical_position {
             template <typename S, typename T>
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
-                std::array<double, n> v = common::get<position_tag>(m) - position(t);
+                position_type v = common::get<position_tag>(m) - position(t);
                 fcpp::details::self(m_nbr_vec, d) = v;
                 fcpp::details::self(m_nbr_dist, d) = norm(v);
             }
-            
+
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
             template <typename S, typename T>
             common::tagged_tuple<S,T>& send(times_t t, device_t d, common::tagged_tuple<S,T>& m) const {
@@ -276,24 +291,24 @@ struct physical_position {
                 common::get<position_tag>(m) = position(t);
                 return m;
             }
-            
+
             //! @brief Perceived positions of neighbours as difference vectors.
-            const fcpp::field<std::array<double, n>>& nbr_vec() const {
+            const fcpp::field<position_type>& nbr_vec() const {
                 return m_nbr_vec;
             }
-            
+
             //! @brief Perceived distances from neighbours.
             const fcpp::field<double>& nbr_dist() const {
                 return m_nbr_dist;
             }
-            
+
           private: // implementation details
             //! @brief Position at a given time on a given coordinate (viscous general case; relative to round start).
             double position(size_t i, double dt) const {
                 double k = (1 - exp(-m_f * dt)) / m_f;
                 return m_v[i] * k + m_a[i] * ((dt-k)/m_f);
             }
-            
+
             //! @brief Searches for a time when the i-th coordinates becomes `y` (under several assumptions, with coordinates relative to round start), assuming motion is monotonic and viscous general case.
             times_t binary_search(size_t i, times_t start, times_t end, double y) const {
                 double xs = position(i, start);
@@ -314,19 +329,19 @@ struct physical_position {
                 while ((y-position(i, start+dt))*(y-xs) <= 0) dt *= 2;
                 return binary_search(i, start, start+dt, y);
             }
-            
+
             //! @brief Position, velocity and acceleration.
-            std::array<double, n> m_x, m_v, m_a;
-            
+            position_type m_x, m_v, m_a;
+
             //! @brief Friction coefficient.
             double m_f;
-            
+
             //! @brief Perceived positions of neighbours as difference vectors.
-            fcpp::field<std::array<double, n>> m_nbr_vec;
-            
+            fcpp::field<position_type> m_nbr_vec;
+
             //! @brief Perceived distances from neighbours.
             fcpp::field<double> m_nbr_dist;
-            
+
             //! @brief Time of the last round happened.
             times_t m_last;
         };

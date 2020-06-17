@@ -27,7 +27,7 @@ using ever_true = random::constant_distribution<bool, true>;
 using combo1 = component::combine<
     component::spawner<seq_rep,tag,ever_true,gat,seq_per>,
     component::identifier<component::tags::synchronised<false>>,
-    component::storage<tag,bool,gat,int,component::tags::start,times_t>
+    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>
 >;
 
 

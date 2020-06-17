@@ -23,15 +23,27 @@ namespace fcpp {
 namespace component {
 
 
+//! @brief Namespace of tags to be used for initialising components.
+namespace tags {
+    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data.
+    template <typename... Ts>
+    struct tuple_store {};
+}
+
+
 /**
  * @brief Component modelling persistent data.
  *
  * Must be unique in a composition of components.
  *
- * @param Ss The tags and types of the `tagged_tuple` storing the data.
+ * <b>Declaration tags:</b>
+ * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
  */
-template <typename... Ss>
+template <typename... Ts>
 struct storage {
+    //! @brief Sequence of tags and types for storing persistent data.
+    using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;
+
     /**
      * @brief The actual component.
      * 
@@ -59,7 +71,7 @@ struct storage {
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<common::type_sequence<Ss...>>;
+            using tuple_type = common::tagged_tuple_t<tuple_store_type>;
 
             /**
              * @brief Main constructor.

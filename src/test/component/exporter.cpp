@@ -58,12 +58,12 @@ using combo1 = component::combine<
     exposer,
     fakeid,
     component::exporter<component::tags::value_push<true>, component::tags::log_schedule<seq_per>, component::tags::aggregators<gat,aggregator::mean<double>>>,
-    component::storage<tag,bool,gat,int>
+    component::storage<component::tags::tuple_store<tag,bool,gat,int>>
 >;
 using combo2 = component::combine<
     exposer,
     component::exporter<component::tags::value_push<false>, component::tags::log_schedule<seq_per>, component::tags::aggregators<gat,aggregator::mean<double>,tag,aggregator::count<bool>>>,
-    component::storage<tag,bool,gat,int>,
+    component::storage<component::tags::tuple_store<tag,bool,gat,int>>,
     component::identifier<component::tags::synchronised<false>>
 >;
 

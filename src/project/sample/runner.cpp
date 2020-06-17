@@ -37,7 +37,7 @@ using combo = component::combine<
         wmpc_max,   aggregator::max<double>,
         ideal_max,  aggregator::max<double>
     >>,
-    component::storage<
+    component::storage<tuple_store<
         algorithm,  int,
         spc_sum,    double,
         mpc_sum,    double,
@@ -46,7 +46,7 @@ using combo = component::combine<
         spc_max,    double,
         mpc_max,    double,
         wmpc_max,   double,
-        ideal_max,  double>,
+        ideal_max,  double>>,
     component::spawner<spawn_s,
         x,          rectangle_d,
         algorithm,  random::constant_distribution<int, ALGO>>,

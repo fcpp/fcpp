@@ -36,8 +36,8 @@ struct exposer {
 using combo = component::combine<
     exposer,
     component::physical_position<>,
-    component::storage<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>,
-    component::identifier<component::tags::synchronised<true>>,
+    component::storage<tuple_store<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>>,
+    component::identifier<synchronised<true>>,
     component::calculus<program<main>, exports<double>>
 >;
 

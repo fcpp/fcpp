@@ -35,7 +35,7 @@ using combo = component::combine<
         device_t, double, field<double>, std::array<double, 2>,
         tuple<double,device_t>, tuple<double,int>, tuple<double,double>
     >>,
-    component::storage<
+    component::storage<tuple_store<
         algorithm,  int,
         spc_sum,    double,
         mpc_sum,    double,
@@ -44,7 +44,7 @@ using combo = component::combine<
         spc_max,    double,
         mpc_max,    double,
         wmpc_max,   double,
-        ideal_max,  double>,
+        ideal_max,  double>>,
     component::physical_position<>,
     component::timer,
     component::identifier<synchronised<true>>,

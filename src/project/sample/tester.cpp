@@ -46,7 +46,7 @@ using combo = component::combine<
         wmpc_max,   double,
         ideal_max,  double>>,
     component::physical_position<>,
-    component::timer,
+    component::timer<>,
     component::identifier<synchronised<true>>,
     component::randomizer<>
 >;

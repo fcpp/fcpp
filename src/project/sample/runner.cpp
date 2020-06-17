@@ -53,7 +53,7 @@ using combo = component::combine<
 
     component::physical_connector<connector::fixed<100>>,
     component::physical_position<>,
-    component::timer,
+    component::timer<>,
     component::scheduler<round_schedule<round_s>>,
     component::identifier<synchronised<false>>,
     component::randomizer<>

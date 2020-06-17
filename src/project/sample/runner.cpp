@@ -47,10 +47,10 @@ using combo = component::combine<
         mpc_max,    double,
         wmpc_max,   double,
         ideal_max,  double>>,
-    component::spawner<spawn_s,
+    component::spawner<spawn_schedule<spawn_s>, init<
         x,          rectangle_d,
-        algorithm,  random::constant_distribution<int, ALGO>>,
-
+        algorithm,  random::constant_distribution<int, ALGO>
+    >>,
     component::physical_connector<connector::fixed<100>>,
     component::physical_position<>,
     component::timer<>,

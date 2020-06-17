@@ -35,8 +35,8 @@ cc_library(
     deps = [
         "//lib:settings",
         "//lib/common:array",
+        "//lib/common:profiler",
         "//lib/common:tagged_tuple",
-        "//lib/component:base",
         "//lib/data:field",
     ],
     visibility = [
@@ -51,10 +51,10 @@ cc_library(
     deps = [
         "//lib:settings",
         "//lib/common:distribution",
+        "//lib/common:profiler",
+        "//lib/common:sequence",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
-        "//lib/component:base",
-        "//lib/component:timer",
     ],
     visibility = [
         '//visibility:public',

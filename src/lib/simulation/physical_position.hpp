@@ -15,8 +15,8 @@
 
 #include "lib/settings.hpp"
 #include "lib/common/array.hpp"
+#include "lib/common/profiler.hpp"
 #include "lib/common/tagged_tuple.hpp"
-#include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
 
 

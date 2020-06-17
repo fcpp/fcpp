@@ -42,7 +42,6 @@ cc_library(
         "//lib/common:mutex",
         "//lib/common:random_access_map",
         "//lib/common:tagged_tuple",
-        "//lib/component:base",
     ],
     visibility = [
         '//visibility:public',

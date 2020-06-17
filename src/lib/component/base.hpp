@@ -29,10 +29,10 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Tag associating to the unique identifier of an object.
+    //! @brief Node initialisation tag associating to the unique identifier of an object.
     struct uid {};
 
-    //! @brief Tag associating to a factor to be applied to real time.
+    //! @brief Net initialisation tag associating to a factor to be applied to real time.
     struct realtime {};
 }
 

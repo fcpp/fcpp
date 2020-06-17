@@ -13,10 +13,10 @@
 
 #include "lib/settings.hpp"
 #include "lib/common/distribution.hpp"
+#include "lib/common/profiler.hpp"
+#include "lib/common/sequence.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
-#include "lib/component/base.hpp"
-#include "lib/component/timer.hpp"
 
 
 /**
@@ -29,19 +29,42 @@ namespace fcpp {
 namespace component {
 
 
+//! @brief Namespace of tags to be used for initialising components.
+namespace tags {
+    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions.
+    template <typename... Ts>
+    struct init {};
+
+    //! @brief Declaration tag associating to a sequence generator type scheduling spawning of nodes.
+    template <typename T>
+    struct spawn_schedule {};
+
+    //! @brief Node initialisation tag associating to a starting time of execution.
+    struct start;
+}
+
+
 /**
  * @brief Component handling automated generation of nodes.
  *
- * Nodes generated receive all tags produced by generating distributions, and tag `start` associated to the creation time.
  * Multiple instances may coexist in a composition of components.
- * Requires a `identifier` parent component.
- * If a `randomizer` parent component is not found, `crand` is used as random generator.
+ * Requires a \ref identifier parent component.
+ * If a \ref randomizer parent component is not found, \ref random::crand is used as random generator.
  *
- * @param G     A sequence generator type scheduling spawning of nodes.
- * @param Ss    The sequence of tags and corresponding generating distributions (intertwined).
+ * <b>Declaration tags:</b>
+ * - \ref tags::init defines a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
+ * - \ref tags::spawn_schedule defines a sequence generator type scheduling spawning of nodes (defaults to \ref random::sequence_never).
+ *
+ * Nodes generated receive all tags produced by generating distributions, and \ref tags::start associated to the creation time.
  */
-template <typename G, typename... Ss>
+template <class... Ts>
 struct spawner {
+    //! @brief Sequence of node initialisation tags and generating distributions.
+    using init_type = common::option_types<tags::init, Ts...>;
+
+    //! @brief Sequence generator type scheduling spawning of nodes.
+    using schedule_type = common::option_type<tags::spawn_schedule, random::sequence_never, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -78,7 +101,7 @@ struct spawner {
         class net : public P::net {
           public: // visible by node objects and the main program
             //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<common::type_sequence<Ss...>>;
+            using tuple_type = common::tagged_tuple_t<init_type>;
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
@@ -118,9 +141,9 @@ struct spawner {
             }
 
             //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
-            template <typename S, typename T, typename... Ts, typename... Us>
-            tuple_type build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ts...>, common::type_sequence<Us...>) {
-                return common::make_tagged_tuple<Ts...>(Us{get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t}...);
+            template <typename S, typename T, typename... Ss, typename... Us>
+            tuple_type build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
+                return common::make_tagged_tuple<Ss...>(Us{get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t}...);
             }
 
             //! @brief Adds a `start` time to a given tagged tuple.
@@ -133,7 +156,7 @@ struct spawner {
             }
 
             //! @brief The scheduling of spawning events.
-            G m_schedule;
+            schedule_type m_schedule;
 
             //! @brief The generator tuple.
             tuple_type m_distributions;

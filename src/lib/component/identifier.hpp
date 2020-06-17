@@ -17,7 +17,6 @@
 #include "lib/common/mutex.hpp"
 #include "lib/common/random_access_map.hpp"
 #include "lib/common/tagged_tuple.hpp"
-#include "lib/component/base.hpp"
 
 
 /**
@@ -120,6 +119,9 @@ namespace tags {
     //! @brief Declaration flag associating to whether many events are expected to happen at the same time.
     template <bool b>
     struct synchronised {};
+
+    //! @brief Node initialisation tag associating to the unique identifier of an object.
+    struct uid;
 
     //! @brief Net initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
     struct epsilon {};

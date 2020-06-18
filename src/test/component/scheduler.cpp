@@ -25,6 +25,10 @@ using combo2 = component::combine<
     component::randomizer<>
 >;
 using combo3 = component::combine<component::scheduler<round_schedule<seq_mul>>>;
+using combo4 = component::combine<
+    component::scheduler<round_schedule<seq_per,seq_mul>>,
+    component::randomizer<>
+>;
 
 
 TEST(SchedulerTest, Single) {
@@ -49,35 +53,68 @@ TEST(SchedulerTest, Single) {
 }
 
 TEST(SchedulerTest, Multiple) {
-    combo2::net  network{common::make_tagged_tuple<>()};
-    combo2::node device{network, common::make_tagged_tuple<component::tags::uid,devtag>(7,0.0)};
-    double d;
-    d = device.next();
-    device.update();
-    EXPECT_DOUBLE_EQ(1.5, d);
-    d = device.next();
-    device.update();
-    EXPECT_DOUBLE_EQ(3.5, d);
-    d = device.next();
-    EXPECT_DOUBLE_EQ(5.2, d);
-    d = device.next();
-    device.update();
-    EXPECT_DOUBLE_EQ(5.2, d);
-    d = device.next();
-    device.update();
-    EXPECT_DOUBLE_EQ(5.2, d);
-    d = device.next();
-    device.update();
-    EXPECT_DOUBLE_EQ(5.2, d);
-    d = device.next();
-    device.update();
-    EXPECT_DOUBLE_EQ(5.5, d);
-    d = device.next();
-    device.update();
-    EXPECT_EQ(TIME_MAX, d);
-    d = device.next();
-    device.update();
-    EXPECT_EQ(TIME_MAX, d);
+    {
+        combo2::net  network{common::make_tagged_tuple<>()};
+        combo2::node device{network, common::make_tagged_tuple<component::tags::uid,devtag>(7,0.0)};
+        double d;
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(1.5, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(3.5, d);
+        d = device.next();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.5, d);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+    }
+    {
+        combo4::net  network{common::make_tagged_tuple<>()};
+        combo4::node device{network, common::make_tagged_tuple<component::tags::uid,devtag>(7,0.0)};
+        double d;
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(1.5, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(3.5, d);
+        d = device.next();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.2, d);
+        d = device.next();
+        device.update();
+        EXPECT_DOUBLE_EQ(5.5, d);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+    }
 }
 
 TEST(SchedulerTest, NoRandomizer) {

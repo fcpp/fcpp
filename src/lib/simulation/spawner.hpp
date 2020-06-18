@@ -60,10 +60,16 @@ namespace tags {
 template <class... Ts>
 struct spawner {
     //! @brief Sequence of node initialisation tags and generating distributions.
-    using init_type = common::option_types<tags::init, Ts...>;
+    using init_type = common::option_multitypes<tags::init, Ts...>;
+
+    //! @brief Node initialisation tags and generating distributions as tuple of tagged tuples.
+    using tuple_type = common::apply_templates<init_type, std::tuple, common::tagged_tuple_t>;
+
+    //! @brief Node initialisation tags and generating distributions as sequence of tagged tuples.
+    using inert_type = common::apply_templates<init_type, common::type_sequence, common::tagged_tuple_t>;
 
     //! @brief Sequence generator type scheduling spawning of nodes.
-    using schedule_type = common::option_type<tags::spawn_schedule, random::sequence_never, Ts...>;
+    using schedule_type = random::sequence_merge_t<common::option_types<tags::spawn_schedule, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -100,12 +106,9 @@ struct spawner {
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
-            //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<init_type>;
-
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_distributions(build_distributions(t, typename tuple_type::tags(), typename tuple_type::types())) {}
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(has_rtag<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -121,29 +124,36 @@ struct spawner {
                 if (m_schedule.next() < P::net::next()) {
                     PROFILE_COUNT("spawner");
                     times_t t = m_schedule.next();
-                    auto&& gen = get_generator(common::bool_pack<has_rtag<P>::value>(), *this);
-                    m_schedule.step(gen);
-                    P::net::node_emplace(push_time(m_distributions(gen), t));
+                    size_t i = m_schedule.next_sequence();
+                    m_schedule.step(get_generator(has_rtag<P>{}, *this));
+                    call_distribution(i, t, inert_type{});
                 } else P::net::update();
             }
 
           private: // implementation details
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
-            inline auto& get_generator(common::bool_pack<true>, N& n) {
+            inline auto& get_generator(std::true_type, N& n) {
                 return n.generator();
             }
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(common::bool_pack<false>, N&) {
-                return random::crand();
+            inline random::crand get_generator(std::false_type, N&) {
+                return {};
+            }
+
+            //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
+            template <typename S, typename T, typename... Us>
+            tuple_type build_distributions_tuple(const common::tagged_tuple<S,T>& t, common::type_sequence<Us...>) {
+                return {build_distributions(t, typename Us::tags(), typename Us::types())...};
             }
 
             //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
             template <typename S, typename T, typename... Ss, typename... Us>
-            tuple_type build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
-                return common::make_tagged_tuple<Ss...>(Us{get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t}...);
+            common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>
+            build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
+                return {Us{get_generator(has_rtag<P>{}, *this),t}...};
             }
 
             //! @brief Adds a `start` time to a given tagged tuple.
@@ -153,6 +163,28 @@ struct spawner {
                 tt_type tt(tup);
                 common::get<tags::start>(tt) = t;
                 return tt;
+            }
+
+            //! @brief Emplaces a node generated through the j-th distribution.
+            template <size_t i>
+            inline void call_distribution(size_t j, times_t t, std::index_sequence<i>) {
+                assert(i == j);
+                P::net::node_emplace(push_time(std::get<i>(m_distributions)(get_generator(has_rtag<P>{}, *this)), t));
+            }
+
+            //! @brief Emplaces a node generated through the j-th distribution.
+            template <size_t i, size_t... is>
+            inline void call_distribution(size_t j, times_t t, std::index_sequence<i, is...>) {
+                if (i == j)
+                    call_distribution(j, t, std::index_sequence<i>{});
+                else
+                    call_distribution(j, t, std::index_sequence<is...>{});
+            }
+
+            //! @brief Emplaces a node generated through the j-th distribution.
+            template <typename... Us>
+            void call_distribution(size_t j, times_t t, common::type_sequence<Us...>) {
+                return call_distribution(j, t, std::make_index_sequence<sizeof...(Us)>{});
             }
 
             //! @brief The scheduling of spawning events.

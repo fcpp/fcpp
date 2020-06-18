@@ -30,8 +30,8 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence generator type scheduling rounds.
-    template <typename T>
+    //! @brief Declaration tag associating to a list of sequence generator type scheduling rounds.
+    template <typename... Ts>
     struct round_schedule {};
 }
 
@@ -44,12 +44,12 @@ namespace tags {
  * If a \ref randomizer parent component is not found, \ref random::crand is used as random generator.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::round_schedule defines a sequence generator type scheduling rounds (defaults to \ref random::sequence_never).
+ * - \ref tags::round_schedule defines a list of sequence generator type scheduling rounds (defaults to \ref random::sequence_never).
  */
 template <class... Ts>
 struct scheduler {
     //! @brief Sequence generator type scheduling rounds.
-    using schedule_type = common::option_type<tags::round_schedule, random::sequence_never, Ts...>;
+    using schedule_type = random::sequence_merge_t<common::option_types<tags::round_schedule, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -88,7 +88,7 @@ struct scheduler {
              */
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t) {}
-            
+
             /**
              * @brief Returns next event to schedule for the node component.
              * 

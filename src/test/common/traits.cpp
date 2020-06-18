@@ -292,7 +292,7 @@ struct numopt {};
 template <typename T>
 struct onetype {};
 
-template <typename... is>
+template <typename... Ts>
 struct typeopt {};
 
 TEST(TraitsTest, Options) {
@@ -326,4 +326,16 @@ TEST(TraitsTest, Options) {
                 common::type_sequence<int,char>);
     EXPECT_SAME(common::option_types<typeopt,void,typeopt<int,char>,bool,typeopt<>,typeopt<long>>,
                 common::type_sequence<int,char,long>);
+    EXPECT_SAME(common::option_multitypes<typeopt,void,typeopt<int,char>,bool,typeopt<>,typeopt<long>>,
+                common::type_sequence<
+                    common::type_sequence<int,char>,
+                    common::type_sequence<>,
+                    common::type_sequence<long>
+                >);
+    EXPECT_SAME(common::apply_templates<common::type_sequence<bool, char, double>, std::tuple>,
+                std::tuple<bool,char,double>);
+    EXPECT_SAME(common::apply_templates<common::type_sequence<
+                    bool, common::type_sequence<char, int>, double
+                >, std::tuple, typeopt>,
+                std::tuple<bool,typeopt<char,int>,double>);
 }

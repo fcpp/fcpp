@@ -328,6 +328,11 @@ class sequence_merge {
         return m_next;
     }
 
+    //! @brief Returns the index of the subsequence generating the next event.
+    size_t next_sequence() const {
+        return next_sequence(std::make_index_sequence<sizeof...(Ss)>{});
+    }
+
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&& g) {
@@ -367,12 +372,58 @@ class sequence_merge {
         m_next = *std::min_element(v.begin(), v.end());
     }
 
+    //! @brief Returns the index of the subsequence generating the next event.
+    template <size_t i>
+    size_t next_sequence(std::index_sequence<i>) const {
+        assert(std::get<i>(m_generators).next() == m_next);
+        return i;
+    }
+
+    //! @brief Returns the index of the subsequence generating the next event.
+    template <size_t i, size_t... is>
+    size_t next_sequence(std::index_sequence<i, is...>) const {
+        if (std::get<i>(m_generators).next() == m_next)
+            return i;
+        else
+            return next_sequence(std::index_sequence<is...>{});
+    }
+
     //! @brief Tuple of sequence generators.
     std::tuple<Ss...> m_generators;
 
     //! @brief The next event to come.
     times_t m_next;
 };
+
+//! @brief Optimisation for a single sequence.
+template <typename S>
+class sequence_merge<S> : public S {
+  public:
+    using S::S;
+
+    //! @brief Returns the index of the subsequence generating the next event.
+    size_t next_sequence() const {
+        return 0;
+    }
+};
+
+//! @brief Optimisation for no sequences.
+template <>
+class sequence_merge<> : public sequence_never {
+  public:
+    using sequence_never::sequence_never;
+
+    //! @brief Returns the index of the subsequence generating the next event.
+    size_t next_sequence() const {
+        assert(false);
+        return -1;
+    }
+};
+
+
+//! @brief Merges multiple sequences wrapped in a type sequence.
+template <typename T>
+using sequence_merge_t = common::apply_templates<T, sequence_merge>;
 
 
 }

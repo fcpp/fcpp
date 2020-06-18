@@ -791,15 +791,15 @@ using std::index_sequence;
 
 //! @cond INTERNAL
 namespace details {
-    // Extracts a numeric option (no arguments).
+    // Extracts a boolean option (no arguments).
     template <template<bool> class T, bool d, typename... Ss>
     struct option_flag : public std::integral_constant<bool, d> {};
 
-    // Extracts a numeric option (option in first place).
+    // Extracts a boolean option (option in first place).
     template <template<bool> class T, bool d, bool b, typename... Ss>
     struct option_flag<T,d,T<b>,Ss...> : public std::integral_constant<bool, b> {};
 
-    // Extracts a numeric option (option not in first place).
+    // Extracts a boolean option (option not in first place).
     template <template<bool> class T, bool d, typename S, typename... Ss>
     struct option_flag<T,d,S,Ss...> : public option_flag<T,d,Ss...> {};
 
@@ -878,11 +878,41 @@ namespace details {
     struct option_types<T, S, Ss...> {
         using type = typename maybe_typecat<T, S, typename option_types<T, Ss...>::type>::type;
     };
+
+    // Extracts a multitype option (no arguments).
+    template <template<class...> class T, typename... Ss>
+    struct option_multitypes {
+        using type = type_sequence<>;
+    };
+
+    // Extracts a multitype option (ignoring first argument).
+    template <template<class...> class T, typename S, typename... Ss>
+    struct option_multitypes<T, S, Ss...> {
+        using type = typename option_multitypes<T, Ss...>::type;
+    };
+
+    // Extracts a multitype option (processing first argument).
+    template <template<class...> class T, typename... Ts, typename... Ss>
+    struct option_multitypes<T, T<Ts...>, Ss...> {
+        using type = typename option_multitypes<T, Ss...>::type::template push_front<common::type_sequence<Ts...>>;
+    };
+
+    // Applies templates to arguments modelled as type sequences (base case).
+    template <typename S, template<class...> class... T>
+    struct apply_templates {
+        using type = S;
+    };
+
+    // Applies templates to arguments modelled as type sequences (recursive form).
+    template <typename... Ss, template<class...> class T, template<class...> class... Ts>
+    struct apply_templates<type_sequence<Ss...>, T, Ts...> {
+        using type = T<typename apply_templates<Ss, Ts...>::type...>;
+    };
 }
 //! @endcond
 
 /**
- * @brief Checks whether a flag option is present in a sequence of options.
+ * @brief Extracts a boolean option from a sequence of options.
  *
  * @param T Flag option name.
  * @param d Default value if the option is missing.
@@ -902,7 +932,7 @@ template <template<size_t> class T, size_t d, typename... Ss>
 constexpr size_t option_num = details::option_num<T,d,Ss...>::value;
 
 /**
- * @brief Extracts a multi-numeric option from a sequence of options as an index sequence.
+ * @brief Extracts a numeric or multi-numeric option from a sequence of options as an index sequence.
  *
  * @param T Multi-numeric option name.
  * @param Ss Sequence of options.
@@ -921,13 +951,32 @@ template <template<class> class T, typename D, typename... Ss>
 using option_type = typename details::option_type<T,D,Ss...>::type;
 
 /**
- * @brief Extracts a multi-type option from a sequence of options as a type sequence.
+ * @brief Extracts a type or multi-type option from a sequence of options as a type sequence.
  *
  * @param T Multi-type option name.
  * @param Ss Sequence of options.
  */
 template <template<class...> class T, typename... Ss>
 using option_types = typename details::option_types<T, Ss...>::type;
+
+/**
+ * @brief Extracts a multi-type option from a sequence of options as a type sequence of type sequences.
+ *
+ * @param T Multi-type option name.
+ * @param Ss Sequence of options.
+ */
+template <template<class...> class T, typename... Ss>
+using option_multitypes = typename details::option_multitypes<T, Ss...>::type;
+
+
+/**
+ * @brief Instantiates (possibly nested) templates with types wrapped in (possibly nested) type sequences.
+ *
+ * @param S The arguments as (possibly nested) type sequence.
+ * @param Ts Sequence of templates, to be applied in nested levels.
+ */
+template <typename S, template<class...> class... Ts>
+using apply_templates = typename details::apply_templates<S,Ts...>::type;
 
 
 }

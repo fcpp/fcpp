@@ -127,17 +127,17 @@ struct timer {
             }
             
             //! @brief Returns the time of the second most recent round (previous during rounds).
-            times_t previous_time() {
+            times_t previous_time() const {
                 return m_prev;
             }
 
             //! @brief Returns the time of the most recent round (current during rounds).
-            times_t current_time() {
+            times_t current_time() const {
                 return m_cur;
             }
             
             //! @brief Returns the time of the next scheduled round.
-            times_t next_time() {
+            times_t next_time() const {
                 return next();
             }
             
@@ -156,17 +156,17 @@ struct timer {
             }
             
             //! @brief Returns the time stamps of the most recent messages from neighbours.
-            const field<times_t>& message_time() {
+            const field<times_t>& message_time() const {
                 return m_neigh;
             }
             
             //! @brief Returns the time difference with neighbours.
-            field<times_t> nbr_lag() {
+            field<times_t> nbr_lag() const {
                 return m_cur - m_neigh;
             }
 
             //! @brief Returns the warping factor applied to following schedulers.
-            double frequency() {
+            double frequency() const {
                 return m_fact;
             }
             
@@ -216,7 +216,7 @@ struct timer {
             }
             
             //! @brief Returns the warping factor applied to following schedulers.
-            double frequency() {
+            double frequency() const {
                 return m_fact;
             }
             

@@ -36,18 +36,112 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Tag associating to a communication power.
+    //! @brief Declaration tag associating to a connector class.
+    template <typename T>
     struct connector {};
 
-    //! @brief Tag associating to a communication radius.
+    //! @brief Declaration tag associating to a delay generator for sending messages after rounds.
+    template <typename T>
+    struct delay {};
+
+    //! @brief Declaration tag associating to the dimensionality of the space.
+    template <size_t n>
+    struct dimension;
+
+    //! @brief Declaration flag associating to whether parallelism is enabled.
+    template <bool b>
+    struct parallel;
+
+    //! @brief Node initialisation tag associating to communication power.
+    struct connection_data {};
+
+    //! @brief Net initialisation tag associating to communication radius.
     struct radius {};
 }
+
+
+}
+
+
+//! @brief Namespace for connection predicates.
+namespace connect {
+    /**
+     * Connection predicate which is true between any pair of devices.
+     *
+     * @param n   Dimensionality of the space (defaults to 2).
+     */
+    template <size_t n = 2>
+    class clique {
+      public:
+        //! @brief Type for representing a position.
+        using position_type = std::array<double, n>;
+
+        //! @brief The node data type.
+        struct data_type {};
+
+        //! @brief Generator and tagged tuple constructor.
+        template <typename G, typename S, typename T>
+        clique(G&&, const common::tagged_tuple<S,T>&) {}
+
+        //! @brief The maximum radius of connection.
+        double maximum_radius() const {
+            return INF;
+        }
+
+        //! @brief Checks if connection is possible.
+        bool operator()(const data_type&, const position_type&, const data_type&, const position_type&) const {
+            return true;
+        }
+    };
+
+
+    /**
+     * Connection predicate which is true within a fixed radius (can be set through tag `radius`).
+     *
+     * @param num The numerator of the default value for the radius (defaults to 1).
+     * @param den The denominator of the default value for the radius (defaults to 1).
+     * @param n   Dimensionality of the space (defaults to 2).
+     */
+    template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
+    class fixed {
+      public:
+        //! @brief Type for representing a position.
+        using position_type = std::array<double, n>;
+
+        //! @brief The node data type.
+        struct data_type {};
+
+        //! @brief Generator and tagged tuple constructor.
+        template <typename G, typename S, typename T>
+        fixed(G&&, const common::tagged_tuple<S,T>& t) {
+            m_radius = common::get_or<component::tags::radius>(t, ((double)num)/den);
+        }
+
+        //! @brief The maximum radius of connection.
+        double maximum_radius() const {
+            return m_radius;
+        }
+
+        //! @brief Checks if connection is possible.
+        bool operator()(const data_type&, const position_type& position1, const data_type&, const position_type& position2) const {
+            return norm(position1 - position2) <= m_radius;
+        }
+
+      private:
+        //! @brief The connection radius.
+        double m_radius;
+    };
+}
+
+
+//! @brief Namespace for all FCPP components.
+namespace component {
 
 
 //! @cond INTERNAL
 namespace details {
     //! @brief A cell of space, containing nodes and linking to neighbour cells.
-    template <typename N>
+    template <bool parallel, typename N>
     class cell {
       public:
         //! @brief Default constructors.
@@ -56,47 +150,47 @@ namespace details {
         cell(cell&&) = default;
         cell& operator=(const cell&) = default;
         cell& operator=(cell&&) = default;
-        
+
         //! @brief Inserts a node in the cell.
         void insert(N& n) {
-            common::lock_guard<FCPP_PARALLEL> l(m_mutex);
+            common::lock_guard<parallel> l(m_mutex);
             m_contents.insert(&n);
         }
-        
+
         //! @brief Removes a node from the cell.
         void erase(N& n) {
-            common::lock_guard<FCPP_PARALLEL> l(m_mutex);
+            common::lock_guard<parallel> l(m_mutex);
             m_contents.erase(&n);
         }
-        
+
         //! @brief Links a new cell.
         void link(const cell& o) {
-            common::lock_guard<FCPP_PARALLEL> l(m_mutex);
+            common::lock_guard<parallel> l(m_mutex);
             m_linked.push_back(&o);
         }
-        
+
         //! @brief Gives const access to linked cells.
-        std::conditional_t<FCPP_PARALLEL, std::vector<const cell*>, std::vector<const cell*> const&>
+        std::conditional_t<parallel, std::vector<const cell*>, std::vector<const cell*> const&>
         linked() const {
-            common::lock_guard<FCPP_PARALLEL> l(m_mutex);
+            common::lock_guard<parallel> l(m_mutex);
             return m_linked;
         }
 
-        std::conditional_t<FCPP_PARALLEL, std::unordered_set<N*>, std::unordered_set<N*> const&>
+        std::conditional_t<parallel, std::unordered_set<N*>, std::unordered_set<N*> const&>
         content() const {
-            common::lock_guard<FCPP_PARALLEL> l(m_mutex);
+            common::lock_guard<parallel> l(m_mutex);
             return m_contents;
         }
 
       private:
         //! @brief The content of the cell.
         std::unordered_set<N*> m_contents;
-        
+
         //! @brief The linked cells.
         std::vector<const cell*> m_linked;
-        
+
         //! @brief A mutex regulating access to this cell.
-        mutable common::mutex<FCPP_PARALLEL> m_mutex;
+        mutable common::mutex<parallel> m_mutex;
     };
 }
 //! @endcond
@@ -105,25 +199,55 @@ namespace details {
 /**
  * @brief Component handling physical evolution of a position through time.
  *
- * Initialises `node` with tag `connector` associating to a `C::type` data (defaults to `C::type{}`).
  * Must be unique in a composition of components.
- * Requires a `position` parent component.
- * If a `randomizer` parent component is not found, `crand` is used as random generator.
- * Any `connector` component cannot be a parent of a `timer`, otherwise round planning may block message exchange.
- * The connection predicate `C` should be a class with the following members:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * typedef type;
- * template <typename G, typename S, typename T> C(G&& gen, const common::tagged_tuple<S,T>& tup);
- * double maximum_radius() const;
- * bool operator()(const type& data1, const std::array<double, n>& position1, const type& data2, const std::array<double, n>& position2) const;
- * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Requires a \ref physical_position parent component.
+ * If a \ref randomizer parent component is not found, \ref random::crand is used as random generator.
+ * Any \ref physical_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
- * @param C A connection predicate.
- * @param G A generator for delays in sending messages (defaults to zero).
- * @param n Dimensionality of the space (defaults to 2).
+ * <b>Declaration tags:</b>
+ * - \ref tags::connector defines the connector class (defaults to \ref connect::clique "connect::clique<dimension>").
+ * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref random::constant_distribution "random::constant_distribution<times_t, 0>").
+ * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
+ *
+ * <b>Declaration flags:</b>
+ * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
+ *
+ * <b>Node initialisation tags:</b>
+ * - \ref tags::connection_data associates to communication power (defaults to `connector_type::data_type{}`).
+ *
+ * Net initialisation tags (such as \ref tags::radius) are forwarded to connector classes.
+ * Connector classes should have the following members (see \ref connect for a list of available ones):
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * using data_type = // type for connection power data on nodes
+ * using position_type = std::array<double, n>;
+ * template <typename G, typename S, typename T> connector_type(G&& gen, const common::tagged_tuple<S,T>& tup);
+ * double maximum_radius() const;
+ * bool operator()(const data_type& data1, const position_type& position1, const data_type& data2, const position_type& position2) const;
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-template <typename C, typename G = random::constant_distribution<times_t, 0>, size_t n = 2>
+template <class... Ts>
 struct physical_connector {
+    //! @brief Whether parallelism is enabled.
+    constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief The dimensionality of the space.
+    constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
+
+    //! @brief Type for representing a position.
+    using position_type = std::array<double, dimension>;
+
+    //! @brief Type for representing a cell identifier.
+    using cell_id_type = std::array<int, dimension>;
+
+    //! @brief Connector class.
+    using connector_type = common::option_type<tags::connector, connect::clique<dimension>, Ts...>;
+
+    //! @brief The type of settings data regulating connection.
+    using connection_data_type = typename connector_type::data_type;
+
+    //! @brief Delay generator for sending messages after rounds.
+    using delay_type = common::option_type<tags::delay, random::constant_distribution<times_t, 0>, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -138,24 +262,18 @@ struct physical_connector {
         //! @brief Marks that a connector component is present.
         struct connector_tag {};
 
-        //! @brief The dimensionality of the space.
-        const size_t dimension = n;
-        
-        //! @brief The type of settings data regulating connection.
-        using connector_type = typename C::type;
-
         //! @brief Checks if T has a `randomizer_tag`.
         template <typename T, typename = int>
         struct has_rtag : std::false_type {};
         template <typename T>
         struct has_rtag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
-        
+
         //! @brief Checks if T has a `connector_tag`.
         template <typename T, typename = int>
         struct has_ctag : std::false_type {};
         template <typename T>
         struct has_ctag<T, std::conditional_t<true,int,typename T::connector_tag>> : std::true_type {};
-        
+
         //! @brief Asserts that P has no `connector_tag`.
         static_assert(not has_ctag<P>::value, "cannot combine multiple connector components");
 
@@ -164,7 +282,7 @@ struct physical_connector {
         struct has_ptag : std::false_type {};
         template <typename T>
         struct has_ptag<T, std::conditional_t<true,int,typename T::position_tag>> : std::true_type {};
-        
+
         //! @brief Asserts that P has a `position_tag`.
         static_assert(has_ptag<P>::value, "missing position parent for connector component");
 
@@ -179,7 +297,7 @@ struct physical_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& nt, const common::tagged_tuple<S,T>& t) : P::node(nt,t), m_delay(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_data(common::get_or<tags::connector>(t, connector_type{})) {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_rtag<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})) {
                 m_send = m_leave = TIME_MAX;
                 P::node::net.cell_enter(P::node::as_final());
             }
@@ -188,15 +306,30 @@ struct physical_connector {
             ~node() {
                 P::node::net.cell_leave(P::node::as_final());
             }
-            
+
             //! @brief Connector data.
-            connector_type& connector_data() {
+            connection_data_type& connector_data() {
                 return m_data;
             }
-            
+
             //! @brief Connector data (const access).
-            const connector_type& connector_data() const {
+            const connection_data_type& connector_data() const {
                 return m_data;
+            }
+
+            //! @brief Returns the time of the next sending of messages.
+            times_t send_time() const {
+                return m_send;
+            }
+
+            //! @brief Plans the time of the next sending of messages (`TIME_MAX` to prevent sending).
+            void send_time(times_t t) {
+                m_send = t;
+            }
+
+            //! @brief Disable the next sending of messages (shorthand to `send_time(TIME_MAX)`).
+            void disable_send() {
+                m_send = TIME_MAX;
             }
 
             /**
@@ -207,7 +340,7 @@ struct physical_connector {
             times_t next() const {
                 return std::min(std::min(m_send, m_leave), P::node::next());
             }
-            
+
             //! @brief Updates the internal status of node component.
             void update() {
                 if (std::min(m_send, m_leave) < P::node::next()) {
@@ -224,35 +357,40 @@ struct physical_connector {
                     if (t == m_send) {
                         PROFILE_COUNT("connector/send");
                         m_send = TIME_MAX;
-                        for (const details::cell<typename F::node>* c : P::node::net.cell_of(P::node::as_final()).linked())
-                            for (typename F::node* nn : c->content())
-                                if (P::node::net.connection_success(m_data, P::node::position(t), nn->m_data, nn->position(t))) {
+                        for (auto c : P::node::net.cell_of(P::node::as_final()).linked())
+                            for (typename F::node* n : c->content())
+                                if (P::node::net.connection_success(m_data, P::node::position(t), n->m_data, n->position(t))) {
                                     typename F::node::message_t m;
-                                    if (nn != this) {
+                                    if (n != this) {
                                         P::node::mutex.unlock();
-                                        common::lock(P::node::mutex, nn->mutex);
-                                        common::lock_guard<FCPP_PARALLEL> l(nn->mutex, std::adopt_lock);
-                                        nn->receive(t, P::node::uid, P::node::as_final().send(t, nn->uid, m));
-                                    } else nn->receive(t, P::node::uid, P::node::as_final().send(t, nn->uid, m));
+                                        common::lock(P::node::mutex, n->mutex);
+                                        common::lock_guard<parallel> l(n->mutex, std::adopt_lock);
+                                        n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
+                                    } else n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
                                 }
                     }
                 } else P::node::update();
             }
-            
+
+            //! @brief Performs computations at round start with current time `t`.
+            void round_start(times_t t) {
+                m_send = t + m_delay(get_generator(has_rtag<P>{}, *this));
+                P::node::round_start(t);
+            }
+
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
                 P::node::round_end(t);
-                m_send = t + m_delay(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
                 set_leave_time(t);
             }
-            
+
           private: // implementation details
             //! @brief Checks when the node will leave the current cell.
             void set_leave_time(times_t t) {
                 m_leave = TIME_MAX;
-                std::array<double, n> x = P::node::position(t);
+                position_type x = P::node::position(t);
                 double R = P::node::net.connection_radius();
-                for (size_t i=0; i<n; ++i) {
+                for (size_t i=0; i<dimension; ++i) {
                     int c = (int)floor(x[i]/R);
                     m_leave = std::min(m_leave, P::node::reach_time(i,  c   *R, t));
                     m_leave = std::min(m_leave, P::node::reach_time(i, (c+1)*R, t));
@@ -260,185 +398,149 @@ struct physical_connector {
                 m_leave = std::max(m_leave, t);
                 if (m_leave < TIME_MAX) m_leave += FCPP_TIME_EPSILON;
             }
-            
+
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
-            inline auto& get_generator(common::bool_pack<true>, N& nn) {
-                return nn.generator();
+            inline auto& get_generator(std::true_type, N& n) {
+                return n.generator();
             }
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(common::bool_pack<false>, N&) {
-                return random::crand();
+            inline random::crand get_generator(std::false_type, N&) {
+                return {};
             }
 
             //! @brief A generator for delays in sending messages.
-            G m_delay;
-            
+            delay_type m_delay;
+
             //! @brief Time of the next send-message and cell-leave events.
             times_t m_send, m_leave;
 
             //! @brief Data regulating the connection.
-            connector_type m_data;
+            connection_data_type m_data;
         };
 
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
-            
+            //! @brief The type of cells grouping nearby nodes.
+            using cell_type = details::cell<parallel, typename F::node>;
+
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_connector(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t) {}
-            
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_connector(get_generator(has_rtag<P>{}, *this),t) {}
+
             //! @brief Inserts a new node into its cell.
-            void cell_enter(typename F::node& nn) {
-                cell_enter_impl(nn, nn.position());
+            void cell_enter(typename F::node& n) {
+                cell_enter_impl(n, n.position());
             }
-            
+
             //! @brief Removes a node from all cells.
-            void cell_leave(typename F::node& nn) {
+            void cell_leave(typename F::node& n) {
                 if (m_nodes.size() == 0) return;
-                m_nodes.at(nn.uid)->second.erase(nn);
-                common::lock_guard<FCPP_PARALLEL> l(m_mutex);
-                m_nodes.erase(nn.uid);
+                m_nodes.at(n.uid)->second.erase(n);
+                common::lock_guard<parallel> l(m_mutex);
+                m_nodes.erase(n.uid);
             }
-            
+
             //! @brief Moves a node across cells.
-            void cell_move(typename F::node& nn, times_t t) {
-                m_nodes.at(nn.uid)->second.erase(nn);
-                cell_enter_impl(nn, nn.position(t));
+            void cell_move(typename F::node& n, times_t t) {
+                m_nodes.at(n.uid)->second.erase(n);
+                cell_enter_impl(n, n.position(t));
             }
-            
+
             //! @brief Returns the cells in proximity of node `n`.
-            details::cell<typename F::node> const& cell_of(const typename F::node& nn) const {
-                return m_nodes.at(nn.uid)->second;
+            cell_type const& cell_of(const typename F::node& n) const {
+                return m_nodes.at(n.uid)->second;
             }
-            
+
             //! @brief The maximum connection radius.
             inline double connection_radius() const {
                 return m_connector.maximum_radius();
             }
-            
+
             //! @brief Checks whether connection is possible.
-            inline bool connection_success(const connector_type& data1, const std::array<double, n>& position1, const connector_type& data2, const std::array<double, n>& position2) const {
+            inline bool connection_success(const connection_data_type& data1, const position_type& position1, const connection_data_type& data2, const position_type& position2) const {
                 return m_connector(data1, position1, data2, position2);
             }
 
           private: // implementation details
             //! @brief A custom hash for cell identifiers.
             struct cell_hasher {
-                size_t operator()(const std::array<int, n>& c) const {
-                    size_t h = n;
+                size_t operator()(const cell_id_type& c) const {
+                    size_t h = dimension;
                     for (auto& i : c) h ^= i + 0x9e3779b9 + (h << 6) + (h >> 2);
                     return h;
                 }
             };
-            
+
             //! @brief The map type used internally for storing cells.
-            using map_type = std::unordered_map<std::array<int, n>, details::cell<typename F::node>, cell_hasher>;
-            
+            using cell_map_type = std::unordered_map<cell_id_type, cell_type, cell_hasher>;
+
             //! @brief Converts a position into a cell identifier.
-            std::array<int, n> to_cell(const std::array<double, n>& v) {
-                std::array<int, n> c;
-                for (size_t i=0; i<n; ++i) c[i] = (int)floor(v[i]/connection_radius());
+            cell_id_type to_cell(const position_type& v) {
+                cell_id_type c;
+                for (size_t i=0; i<dimension; ++i) c[i] = (int)floor(v[i]/connection_radius());
                 return c;
             }
-            
+
             //! @brief Interts a node in the cell correspoding to a given position.
-            void cell_enter_impl(typename F::node& nn, const std::array<double, n>& p) {
-                std::array<int, n> c = to_cell(p);
+            void cell_enter_impl(typename F::node& n, const position_type& p) {
+                cell_id_type c = to_cell(p);
                 if (m_cells.count(c) == 0) {
-                    common::lock_guard<FCPP_PARALLEL> l(m_mutex);
+                    common::lock_guard<parallel> l(m_mutex);
                     if (m_cells.count(c) == 0) {
                         m_cells[c].link(m_cells[c]); // creates cell
-                        std::array<int, n> d;
-                        for (size_t i=0; i<n; ++i) d[i] = c[i]-1;
+                        cell_id_type d;
+                        for (size_t i=0; i<dimension; ++i) d[i] = c[i]-1;
                         while (true) {
                             if (c != d and m_cells.count(d) > 0) {
                                 m_cells[c].link(m_cells[d]);
                                 m_cells[d].link(m_cells[c]);
                             }
                             size_t i;
-                            for (i = 0; i < n and d[i] == c[i]+1; ++i) d[i] = c[i]-1;
-                            if (i == n) break;
+                            for (i = 0; i < dimension and d[i] == c[i]+1; ++i) d[i] = c[i]-1;
+                            if (i == dimension) break;
                             ++d[i];
                         }
                     }
                 }
-                m_cells[c].insert(nn);
-                if (m_nodes.count(nn.uid) == 0) {
-                    common::lock_guard<FCPP_PARALLEL> l(m_mutex);
-                    m_nodes[nn.uid] = m_cells.find(c);
-                } else m_nodes[nn.uid] = m_cells.find(c);
+                m_cells[c].insert(n);
+                if (m_nodes.count(n.uid) == 0) {
+                    common::lock_guard<parallel> l(m_mutex);
+                    m_nodes[n.uid] = m_cells.find(c);
+                } else m_nodes[n.uid] = m_cells.find(c);
             }
-            
+
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
-            inline auto& get_generator(common::bool_pack<true>, N& nn) {
-                return nn.generator();
+            inline auto& get_generator(std::true_type, N& n) {
+                return n.generator();
             }
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(common::bool_pack<false>, N&) {
-                return random::crand();
+            inline random::crand get_generator(std::false_type, N&) {
+                return {};
             }
 
             //! @brief The map from cell identifiers to cells.
-            map_type m_cells;
-            
+            cell_map_type m_cells;
+
             //! @brief The map associating devices identifiers to their cell.
-            std::unordered_map<device_t, typename map_type::iterator> m_nodes;
-            
+            std::unordered_map<device_t, typename cell_map_type::iterator> m_nodes;
+
             //! @brief The connector predicate.
-            C m_connector;
-            
+            connector_type m_connector;
+
             //! @brief The mutex regulating access to maps.
-            common::mutex<FCPP_PARALLEL> m_mutex;
+            common::mutex<parallel> m_mutex;
         };
     };
 };
 
 
-}
-
-
-//! @brief Namespace for connection predicates.
-namespace connector {
-    /**
-     * Connection predicate which is true within a fixed radius (can be set through tag `radius`).
-     *
-     * @param num The numerator of the default value for the radius.
-     * @param den The denominator of the default value for the radius.
-     * @param n   Dimensionality of the space (defaults to 2).
-     */
-    template <intmax_t num, intmax_t den = 1, size_t n = 2>
-    class fixed {
-      public:
-        //! @brief The data type.
-        struct type {};
-        
-        //! @brief Generator and tagged tuple constructor.
-        template <typename G, typename S, typename T>
-        fixed(G&&, const common::tagged_tuple<S,T>& t) {
-            m_radius = common::get_or<component::tags::radius>(t, ((double)num)/den);
-        }
-        
-        //! @brief The maximum radius of connection.
-        double maximum_radius() const {
-            return m_radius;
-        }
-
-        //! @brief Checks if connection is possible.
-        bool operator()(const type&, const std::array<double, n>& position1, const type&, const std::array<double, n>& position2) const {
-            return norm(position1 - position2) <= m_radius;
-        }
-        
-      private:
-        //! @brief The connection radius.
-        double m_radius;
-    };
 }
 
 

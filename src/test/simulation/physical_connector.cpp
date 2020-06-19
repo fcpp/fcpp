@@ -40,7 +40,7 @@ using seq_per = random::sequence_periodic<random::constant_distribution<times_t,
 using combo1 = component::combine<
     exposer,
     component::scheduler<component::tags::round_schedule<seq_per>>,
-    component::physical_connector<connector::fixed<1>, random::constant_distribution<times_t, 1, 4>>,
+    component::physical_connector<component::tags::connector<connect::fixed<1>>, component::tags::delay<random::constant_distribution<times_t, 1, 4>>>,
     component::physical_position<>
 >;
 
@@ -50,7 +50,7 @@ std::array<double, 2> vec(double x, double y) {
 
 TEST(PhysicalConnectorTest, Cell) {
     int n[4]; // 4 nodes
-    component::details::cell<int> c[4]; // 4 cells
+    component::details::cell<FCPP_PARALLEL, int> c[4]; // 4 cells
     n[0] = n[1] = n[2] = n[3] = 0;
     c[0].insert(n[0]);
     c[1].insert(n[1]);
@@ -97,7 +97,7 @@ TEST(PhysicalConnectorTest, Cell) {
 TEST(PhysicalConnectorTest, Connection) {
     combo1::net network{common::make_tagged_tuple<oth>("foo")};
     EXPECT_EQ(1.0, network.connection_radius());
-    typename connector::fixed<1>::type data;
+    typename connect::fixed<1>::data_type data;
     bool connect;
     connect = network.connection_success(data, vec(0.5,1), data, vec(0.4,0.9));
     EXPECT_TRUE(connect);

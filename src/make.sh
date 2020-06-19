@@ -96,10 +96,9 @@ function finder() {
 function builder() {
     cmd=$1
     shift 1
-    for t in "$@"; do
-        echo -e "\033[4mbazel $cmd $copts $asan //$t\033[0m"
-        reporter bazel $cmd $copts $asan //$t
-    done
+    t=`echo " $@" | sed 's| | //|g'`
+    echo -e "\033[4mbazel $cmd $copts $asan $t\033[0m"
+    reporter bazel $cmd $copts $asan $t
 }
 
 function runner() {
@@ -135,33 +134,36 @@ while [ "$1" != "" ]; do
         shift 1
         parseopt "$@"
         shift $?
+        alltargets=""
         while [ "$1" != "" ]; do
             if [ "$1" == "all" ]; then
-                builder build lib/... project/...
+                alltargets="$alltargets lib/... project/..."
             else
                 finder "project" "$1"
                 finder "lib"    "$1"
                 finder "test"   "$1"
+                alltargets="$alltargets $targets"
                 if [ "$targets" == "" ]; then
                     echo -e "\033[1mtarget \"$1\" not found\033[0m"
                 fi
-                builder build $targets
                 targets=""
             fi
             shift 1
         done
+        builder build $alltargets
         quitter
     elif [ "$1" == "test" ]; then
         shift 1
         parseopt "$@"
         shift $?
+        alltargets=""
         while [ "$1" != "" ]; do
             if [ "$1" == "all" ]; then
-                builder test test/... project/...
+                alltargets="$alltargets test/... project/..."
             else
                 finder "test" "$1"
                 finder "project" "$1"
-                builder test  $targets
+                alltargets="$alltargets $targets"
                 if [ "$targets" == "" ]; then
                     echo -e "\033[1mtarget \"$1\" not found\033[0m"
                 fi
@@ -169,6 +171,7 @@ while [ "$1" != "" ]; do
             fi
             shift 1
         done
+        builder test $alltargets
         quitter
     elif [ "$1" == "run" ]; then
         shift 1

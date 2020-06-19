@@ -84,6 +84,9 @@ struct physical_position {
     //! @brief The dimensionality of the space.
     constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
+    //! @brief Type for representing a position.
+    using position_type = std::array<double, dimension>;
+
     /**
      * @brief The actual component.
      *
@@ -110,9 +113,6 @@ struct physical_position {
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
-            //! @brief Type for representing a position.
-            using position_type = std::array<double, dimension>;
-
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<position_tag, position_type>;
 

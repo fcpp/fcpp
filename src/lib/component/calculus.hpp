@@ -196,7 +196,7 @@ namespace tags {
  * - \ref tags::online_drop defines whether messages are dropped as they arrive (defaults to \ref FCPP_ONLINE_DROP).
  *
  * <b>Node initialisation tags:</b>
- * - \ref tags::hoodsize associates to the maximum number of neighbours allowed (defaults to `std::numeric_limits<device_t>::max()`).
+ * - \ref tags::hoodsize associates to the maximum number of neighbours allowed (defaults to `std::numeric_limits<device_t>::%max()`).
  * - \ref tags::threshold associates to a `T::result_type` threshold (where `T` is the class specified with \ref tags::retain) regulating discarding of old messages (defaults to the result of `T::build()`).
  *
  * Retain classes should (see \ref metric for a list of available ones):

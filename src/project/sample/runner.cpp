@@ -51,7 +51,7 @@ using combo = component::combine<
         x,          rectangle_d,
         algorithm,  random::constant_distribution<int, ALGO>
     >>,
-    component::physical_connector<connector::fixed<100>>,
+    component::physical_connector<connector<connect::fixed<100>>>,
     component::physical_position<>,
     component::timer<>,
     component::scheduler<round_schedule<round_s>>,

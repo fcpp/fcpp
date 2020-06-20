@@ -54,17 +54,19 @@ struct exposer {
 
 using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::uniform_d<times_t, 2, 10, 1, meantag, devtag>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 5>>;
 
-using combo1 = component::combine<
+using combo1 = component::combine_spec<
     exposer,
     fakeid,
     component::exporter<component::tags::value_push<true>, component::tags::log_schedule<seq_per>, component::tags::aggregators<gat,aggregator::mean<double>>>,
-    component::storage<component::tags::tuple_store<tag,bool,gat,int>>
+    component::storage<component::tags::tuple_store<tag,bool,gat,int>>,
+    component::base<>
 >;
-using combo2 = component::combine<
+using combo2 = component::combine_spec<
     exposer,
     component::exporter<component::tags::value_push<false>, component::tags::log_schedule<seq_per>, component::tags::aggregators<gat,aggregator::mean<double>,tag,aggregator::count<bool>>>,
     component::storage<component::tags::tuple_store<tag,bool,gat,int>>,
-    component::identifier<component::tags::synchronised<false>>
+    component::identifier<component::tags::synchronised<false>>,
+    component::base<>
 >;
 
 

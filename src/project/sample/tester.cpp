@@ -29,7 +29,7 @@ struct exposer {
     };
 };
 
-using combo = component::combine<
+using combo = component::combine_spec<
     exposer,
     component::calculus<program<main>, exports<
         device_t, double, field<double>, std::array<double, 2>,
@@ -48,7 +48,8 @@ using combo = component::combine<
     component::physical_position<>,
     component::timer<>,
     component::identifier<synchronised<true>>,
-    component::randomizer<>
+    component::randomizer<>,
+    component::base<>
 >;
 
 using message_t = typename combo::node::message_t;

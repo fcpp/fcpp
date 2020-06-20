@@ -15,9 +15,10 @@ using namespace fcpp;
 
 constexpr int I = std::numeric_limits<int>::max()-1;
 
-using combo1 = component::combine<
-    component::calculus<component::tags::exports<tuple<int,int>, tuple<int,int,int,int>>>
->;
+DECLARE_OPTIONS(options, component::tags::exports<tuple<int,int>, tuple<int,int,int,int>>);
+DECLARE_COMBINE(combo, component::calculus);
+
+using combo1 = combo<options>;
 
 struct testnet {
     testnet() : network{common::make_tagged_tuple<>()},

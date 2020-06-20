@@ -37,10 +37,11 @@ struct exposer {
 
 using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 1>, random::constant_distribution<times_t, 9>>;
 
-using combo1 = component::combine<
+using combo1 = component::combine_spec<
     exposer,
     component::scheduler<component::tags::round_schedule<seq_per>>,
-    component::physical_position<component::tags::dimension<2>>
+    component::physical_position<component::tags::dimension<2>>,
+    component::base<>
 >;
 
 std::array<double, 2> vec(double x, double y) {

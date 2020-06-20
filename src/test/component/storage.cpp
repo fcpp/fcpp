@@ -25,7 +25,11 @@ struct exposer {
     };
 };
 
-using combo1 = component::combine<exposer,component::storage<component::tags::tuple_store<tag,bool,gat,int>>>;
+using combo1 = component::combine_spec<
+    exposer,
+    component::storage<component::tags::tuple_store<tag,bool,gat,int>>,
+    component::base<>
+>;
 
 
 TEST(StorageTest, Storage) {

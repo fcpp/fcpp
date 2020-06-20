@@ -22,12 +22,15 @@ using export_s = random::sequence_periodic<random::constant_distribution<times_t
 
 using rectangle_d = random::array_distribution<random::interval_d<double, 0, MAXX>, random::interval_d<double, 0, MAXY>>;
 
-using combo = component::combine<
-    component::calculus<program<main>, exports<
+DECLARE_OPTIONS(opt,
+    program<main>,
+    round_schedule<round_s>,
+    exports<
         device_t, double, field<double>, std::array<double, 2>,
         tuple<double,device_t>, tuple<double,int>, tuple<double,double>
-    >>,
-    component::exporter<value_push<false>, log_schedule<export_s>, aggregators<
+    >,
+    log_schedule<export_s>,
+    aggregators<
         spc_sum,    aggregator::sum<double>,
         mpc_sum,    aggregator::sum<double>,
         wmpc_sum,   aggregator::sum<double>,
@@ -36,8 +39,8 @@ using combo = component::combine<
         mpc_max,    aggregator::max<double>,
         wmpc_max,   aggregator::max<double>,
         ideal_max,  aggregator::max<double>
-    >>,
-    component::storage<tuple_store<
+    >,
+    tuple_store<
         algorithm,  int,
         spc_sum,    double,
         mpc_sum,    double,
@@ -46,21 +49,17 @@ using combo = component::combine<
         spc_max,    double,
         mpc_max,    double,
         wmpc_max,   double,
-        ideal_max,  double>>,
-    component::spawner<spawn_schedule<spawn_s>, init<
+        ideal_max,  double
+    >,
+    spawn_schedule<spawn_s>,
+    init<
         x,          rectangle_d,
         algorithm,  random::constant_distribution<int, ALGO>
-    >>,
-    component::physical_connector<connector<connect::fixed<100>>>,
-    component::physical_position<>,
-    component::timer<>,
-    component::scheduler<round_schedule<round_s>>,
-    component::identifier<synchronised<false>>,
-    component::randomizer<>
->;
+    >,
+    connector<connect::fixed<100>>
+);
 
 int main() {
-    combo::net network{common::make_tagged_tuple<>()};
-    network.run();
+    batch::run(component::batch_simulator<opt>{});
     return 0;
 }

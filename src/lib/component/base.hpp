@@ -29,7 +29,11 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Node initialisation tag associating to the unique identifier of an object.
+    //! @brief Declaration flag associating to whether parallelism is enabled.
+    template <bool b>
+    struct parallel {};
+
+    //! @brief Node initialisation tag associating to a `device_t` unique identifier.
     struct uid {};
 
     //! @brief Net initialisation tag associating to a factor to be applied to real time.
@@ -40,10 +44,22 @@ namespace tags {
 /**
  * @brief Empty component (base case for component construction).
  *
- * Initialises `node` with tag `id` associating to a `device_t` node identifier (required).
- * Initialises `net` with tag `realtime` associating to a `double` factor to be applied to real time (defaults to `FCPP_REALTIME`).
+ * Must be unique and last in a composition of components.
+ *
+ * <b>Declaration flags:</b>
+ * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
+ *
+ * <b>Node initialisation tags:</b>
+ * - \ref tags::uid associates to a `device_t` unique identifier (required).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::realtime associates to a `double` factor to be applied to real time (defaults to `FCPP_REALTIME`).
  */
+template <class... Ts>
 struct base {
+    //! @brief Whether parallelism is enabled.
+    constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -113,7 +129,7 @@ struct base {
             const device_t uid;
             
             //! @brief A mutex for regulating access to the node.
-            common::mutex<FCPP_PARALLEL> mutex;
+            common::mutex<parallel> mutex;
 
             //! @brief A reference to the corresponding net object.
             typename F::net& net;
@@ -217,28 +233,86 @@ struct base {
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Combines components `Ts` given the final component type `F`.
+    //! @brief Combines components `Ts` given the final component type `F` (the last component must be a `base`).
     template <typename F, typename... Ts>
-    struct combine;
+    struct combine_spec;
 
     //! @brief Inductive case when some components are given.
     template <typename F, typename T, typename... Ts>
-    struct combine<F, T, Ts...> : public T::template component<F, combine<F, Ts...>> {};
+    struct combine_spec<F, T, Ts...> : public T::template component<F, combine_spec<F, Ts...>> {};
 
-    //! @brief Base case when no components are given.
-    template <typename F>
-    struct combine<F> : public base::template component<F> {};
+    //! @brief Base case when only the base component is given.
+    template <typename F, typename T>
+    struct combine_spec<F, T> : public T::template component<F> {};
+
+    template <typename F, template <class...> class... Cs>
+    struct combine;
+
+    template <template <class...> class F, typename... Ts>
+    struct combine<F<Ts...>> : public base<Ts...>::template component<F<Ts...>> {};
+
+    template <template <class...> class F, typename... Ts, template <class...> class C, template <class...> class... Cs>
+    struct combine<F<Ts...>, C, Cs...> : public C<Ts...>::template component<F<Ts...>, combine<F<Ts...>, Cs...>> {};
 }
 //! @endcond
 
 
 /**
- * @brief Combines components into a single object.
+ * @brief Combines components (each instantiated with arguments) into a single object.
  *
- * @param Ts Components to chain together.
+ * @param Ts Instantiated components to chain together (the last must be a `base`).
  */
 template <typename... Ts>
-class combine : public details::combine<combine<Ts...>, Ts...> {};
+struct combine_spec : public details::combine_spec<combine_spec<Ts...>, Ts...> {};
+
+
+/**
+ * @brief Combines components into a single templated object.
+ *
+ * @param Ts Template components to chain together (`base` is implied as last).
+ */
+template <template<class...> class... Cs>
+struct combine {
+    //! @brief Instantiates the combination for given arguments.
+    template<typename... Ts>
+    struct component : public details::combine<component<Ts...>, Cs...> {};
+};
+
+
+/**
+ * @brief Declares a name to be a specific sequence of options (declaration tags and flags).
+ *
+ * Example of intended usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * namespace component {
+ *   DECLARE_COMBINE(mycombo, calculus, exporter, storage, ...);
+ *   DECLARE_OPTIONS(myopt, tags::program<myprogram>, tags::dimension<2>, ...);
+ *   mycombo<myopt>::net network;
+ * }
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * @param name The name of the option sequence.
+ * @param ... The sequence of options.
+ */
+#define DECLARE_OPTIONS(name, ...) struct name : public fcpp::common::type_sequence<__VA_ARGS__> {}
+
+
+/**
+ * @brief Declares a name to be a specific component composition.
+ *
+ * Example of intended usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * namespace component {
+ *   DECLARE_COMBINE(mycombo, calculus, exporter, storage, ...);
+ *   DECLARE_OPTIONS(myopt, tags::program<myprogram>, tags::dimension<2>, ...);
+ *   mycombo<myopt>::net network;
+ * }
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * @param name The name of the composition.
+ * @param ... Template components to chain together.
+ */
+#define DECLARE_COMBINE(name, ...) template <class... Ts> struct name : public fcpp::component::details::combine<name<Ts...>, __VA_ARGS__> {}
 
 
 }

@@ -27,18 +27,18 @@ struct theanswer {
     struct component : public P {
         struct node : public P::node {
             using P::node::node;
-            
+
             int tester() {
                 return 4;
             }
-            
+
             int virtualize() {
                 return P::node::as_final().tester() - 10;
             }
         };
         struct net : public P::net {
             using P::net::net;
-            
+
             int retest() {
                 return 2;
             }
@@ -52,11 +52,11 @@ struct caller {
     struct component : public P {
         struct node : public P::node {
             using P::node::node;
-            
+
             int tester() {
                 return P::node::net.retest() + 1;
             }
-            
+
             int virtualize() {
                 return 7 * P::node::virtualize();
             }
@@ -72,11 +72,11 @@ struct overwriter {
         using node = typename P::node;
         struct net : public P::net {
             using P::net::net;
-            
+
             int retest() {
                 return 11*P::net::retest();
             }
-            
+
             int something() {
                 return 7;
             }
@@ -96,9 +96,32 @@ struct exposer {
     };
 };
 
-using combo1 = component::combine<empty<true,2>, overwriter, empty<>, caller, theanswer, empty<false>>;
+template <class... Ts>
+struct stuffer {
+    template <typename F, typename P>
+    struct component : public P {
+        using node = typename P::node;
+        struct net : public P::net {
+            using P::net::net;
 
-using combo2 = component::combine<exposer, theanswer, caller, overwriter>;
+            void fail() {
+                int* x = nullptr;
+                *x = 10;
+            }
+        };
+    };
+};
+template <class... Ts>
+struct spuffer : public stuffer<Ts...> {};
+template <class... Ts>
+struct scuffer : public stuffer<Ts...> {};
+template <class... Ts>
+struct sbuffer : public stuffer<Ts...> {};
+
+using combo1 = component::combine_spec<empty<true,2>, overwriter, empty<>, caller, theanswer, empty<false>, component::base<>>;
+
+using combo2 = component::combine_spec<exposer, theanswer, caller, overwriter, component::base<>>;
+
 
 // slow computation
 int workhard(int n=15) {

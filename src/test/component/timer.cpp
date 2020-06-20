@@ -73,8 +73,8 @@ struct exposer {
     };
 };
 
-using combo1 = component::combine<exposer<true>,component::timer<>>;
-using combo2 = component::combine<exposer<false>,component::timer<>,scheduler>;
+using combo1 = component::combine_spec<exposer<true>,component::timer<>,component::base<>>;
+using combo2 = component::combine_spec<exposer<false>,component::timer<>,scheduler,component::base<>>;
 
 
 TEST(TimerTest, NodePlanning) {

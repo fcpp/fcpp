@@ -18,16 +18,22 @@ struct devtag {};
 using seq_mul = random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3>;
 using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::uniform_d<times_t, 2, 10, 1, meantag, devtag>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 5>>;
 
-using combo1 = component::combine<component::scheduler<round_schedule<seq_mul>>, component::randomizer<>>;
-using combo2 = component::combine<
+using combo1 = component::combine_spec<
+    component::scheduler<round_schedule<seq_mul>>,
+    component::randomizer<>,
+    component::base<>
+>;
+using combo2 = component::combine_spec<
     component::scheduler<round_schedule<seq_per>>,
     component::scheduler<round_schedule<seq_mul>>,
-    component::randomizer<>
+    component::randomizer<>,
+    component::base<>
 >;
-using combo3 = component::combine<component::scheduler<round_schedule<seq_mul>>>;
-using combo4 = component::combine<
+using combo3 = component::combine_spec<component::scheduler<round_schedule<seq_mul>>,component::base<>>;
+using combo4 = component::combine_spec<
     component::scheduler<round_schedule<seq_per,seq_mul>>,
-    component::randomizer<>
+    component::randomizer<>,
+    component::base<>
 >;
 
 

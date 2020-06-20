@@ -791,6 +791,28 @@ using std::index_sequence;
 
 //! @cond INTERNAL
 namespace details {
+    // Identity function on type sequences.
+    template <typename... Ts>
+    type_sequence<Ts...> type_sequence_identity(type_sequence<Ts...>) {
+        return {};
+    }
+
+    // Decays a type into a type sequence (type not convertible to type sequence).
+    template <typename T, typename = void>
+    struct type_sequence_decay_impl {
+        using type = type_sequence<>;
+    };
+
+    // Decays a type into a type sequence (type is convertible to type sequence).
+    template <typename T>
+    struct type_sequence_decay_impl<T(), decltype(void(type_sequence_identity(std::declval<T>())))> {
+        using type = decltype(type_sequence_identity(std::declval<T>()));
+    };
+
+    // Decays a type into a type sequence.
+    template <typename T>
+    using type_sequence_decay = typename type_sequence_decay_impl<T()>::type;
+
     // Extracts a boolean option (no arguments).
     template <template<bool> class T, bool d, typename... Ss>
     struct option_flag : public std::integral_constant<bool, d> {};
@@ -799,9 +821,13 @@ namespace details {
     template <template<bool> class T, bool d, bool b, typename... Ss>
     struct option_flag<T,d,T<b>,Ss...> : public std::integral_constant<bool, b> {};
 
-    // Extracts a boolean option (option not in first place).
+    // Extracts a boolean option (type sequence in first place).
+    template <template<bool> class T, bool d, typename... Ts, typename... Ss>
+    struct option_flag<T,d,type_sequence<Ts...>,Ss...> : public option_flag<T,d,Ts...,Ss...> {};
+
+    // Extracts a boolean option (something else in first place).
     template <template<bool> class T, bool d, typename S, typename... Ss>
-    struct option_flag<T,d,S,Ss...> : public option_flag<T,d,Ss...> {};
+    struct option_flag<T,d,S,Ss...> : public option_flag<T,d,type_sequence_decay<S>,Ss...> {};
 
     // Extracts a numeric option (no arguments).
     template <template<size_t> class T, size_t d, typename... Ss>
@@ -811,19 +837,21 @@ namespace details {
     template <template<size_t> class T, size_t d, size_t i, typename... Ss>
     struct option_num<T,d,T<i>,Ss...> : public std::integral_constant<size_t, i> {};
 
-    // Extracts a numeric option (option not in first place).
+    // Extracts a numeric option (type sequence in first place).
+    template <template<size_t> class T, size_t d, typename... Ts, typename... Ss>
+    struct option_num<T,d,type_sequence<Ts...>,Ss...> : public option_num<T,d,Ts...,Ss...> {};
+
+    // Extracts a numeric option (something else in first place).
     template <template<size_t> class T, size_t d, typename S, typename... Ss>
-    struct option_num<T,d,S,Ss...> : public option_num<T,d,Ss...> {};
+    struct option_num<T,d,S,Ss...> : public option_num<T,d,type_sequence_decay<S>,Ss...> {};
 
-    // Concatenates arguments of a multinumeric option (S not an instance of T).
-    template <template<size_t...> class T, typename S, typename U>
-    struct maybe_numcat {
-        using type = U;
-    };
+    // Prepends indexes to an index sequence (general form).
+    template <typename T, size_t... is>
+    struct nums_prepend;
 
-    // Concatenates arguments of a multinumeric option (S is an instance of T).
-    template <template<size_t...> class T, size_t... is, size_t... js>
-    struct maybe_numcat<T, T<is...>, index_sequence<js...>> {
+    // Prepends indexes to an index sequence (active form).
+    template <size_t... js, size_t... is>
+    struct nums_prepend<index_sequence<js...>, is...> {
         using type = index_sequence<is..., js...>;
     };
 
@@ -833,11 +861,17 @@ namespace details {
         using type = index_sequence<>;
     };
 
-    // Extracts a multinumeric option (some argument).
+    // Extracts a multinumeric option (option in first place).
+    template <template<size_t...> class T, size_t... is, typename... Ss>
+    struct option_nums<T, T<is...>, Ss...> : public nums_prepend<typename option_nums<T, Ss...>::type, is...> {};
+
+    // Extracts a multinumeric option (type sequence in first place).
+    template <template<size_t...> class T, typename... Ts, typename... Ss>
+    struct option_nums<T, type_sequence<Ts...>, Ss...> : public option_nums<T, Ts..., Ss...> {};
+
+    // Extracts a multinumeric option (something else in first place).
     template <template<size_t...> class T, typename S, typename... Ss>
-    struct option_nums<T, S, Ss...> {
-        using type = typename maybe_numcat<T, S, typename option_nums<T, Ss...>::type>::type;
-    };
+    struct option_nums<T, S, Ss...> : public option_nums<T, type_sequence_decay<S>, Ss...> {};
 
     // Extracts a type option (no arguments).
     template <template<class> class T, typename D, typename... Ss>
@@ -851,21 +885,13 @@ namespace details {
         using type = S;
     };
 
-    // Extracts a type option (option not in first place).
+    // Extracts a type option (type sequence in first place).
+    template <template<class> class T, typename D, typename... Ts, typename... Ss>
+    struct option_type<T,D,type_sequence<Ts...>,Ss...> : public option_type<T,D,Ts...,Ss...> {};
+
+    // Extracts a type option (something else in first place).
     template <template<class> class T, typename D, typename S, typename... Ss>
-    struct option_type<T,D,S,Ss...> : public option_type<T,D,Ss...> {};
-
-    // Concatenates arguments of a multitype option (S not an instance of T).
-    template <template<class...> class T, typename S, typename U>
-    struct maybe_typecat {
-        using type = U;
-    };
-
-    // Concatenates arguments of a multitype option (S is an instance of T).
-    template <template<class...> class T, typename... Ss, typename... Us>
-    struct maybe_typecat<T, T<Ss...>, type_sequence<Us...>> {
-        using type = type_sequence<Ss..., Us...>;
-    };
+    struct option_type<T,D,S,Ss...> : public option_type<T,D,type_sequence_decay<S>,Ss...> {};
 
     // Extracts a multitype option (no arguments).
     template <template<class...> class T, typename... Ss>
@@ -873,11 +899,19 @@ namespace details {
         using type = type_sequence<>;
     };
 
-    // Extracts a multitype option (some argument).
-    template <template<typename...> class T, typename S, typename... Ss>
-    struct option_types<T, S, Ss...> {
-        using type = typename maybe_typecat<T, S, typename option_types<T, Ss...>::type>::type;
+    // Extracts a multitype option (option in first place).
+    template <template<class...> class T, typename... Ts, typename... Ss>
+    struct option_types<T, T<Ts...>, Ss...> {
+        using type = typename option_types<T, Ss...>::type::template push_front<Ts...>;
     };
+
+    // Extracts a multitype option (type sequence in first place).
+    template <template<class...> class T, typename... Ts, typename... Ss>
+    struct option_types<T, type_sequence<Ts...>, Ss...> : public option_types<T, Ts..., Ss...> {};
+
+    // Extracts a multitype option (something else in first place).
+    template <template<class...> class T, typename S, typename... Ss>
+    struct option_types<T, S, Ss...> : public option_types<T, type_sequence_decay<S>, Ss...> {};
 
     // Extracts a multitype option (no arguments).
     template <template<class...> class T, typename... Ss>
@@ -885,17 +919,19 @@ namespace details {
         using type = type_sequence<>;
     };
 
-    // Extracts a multitype option (ignoring first argument).
-    template <template<class...> class T, typename S, typename... Ss>
-    struct option_multitypes<T, S, Ss...> {
-        using type = typename option_multitypes<T, Ss...>::type;
-    };
-
-    // Extracts a multitype option (processing first argument).
+    // Extracts a multitype option (option in first place).
     template <template<class...> class T, typename... Ts, typename... Ss>
     struct option_multitypes<T, T<Ts...>, Ss...> {
         using type = typename option_multitypes<T, Ss...>::type::template push_front<common::type_sequence<Ts...>>;
     };
+
+    // Extracts a multitype option (type sequence in first place).
+    template <template<class...> class T, typename... Ts, typename... Ss>
+    struct option_multitypes<T, type_sequence<Ts...>, Ss...> : public option_multitypes<T, Ts..., Ss...> {};
+
+    // Extracts a multitype option (something else in first place).
+    template <template<class...> class T, typename S, typename... Ss>
+    struct option_multitypes<T, S, Ss...> : public option_multitypes<T, type_sequence_decay<S>, Ss...> {};
 
     // Applies templates to arguments modelled as type sequences (base case).
     template <typename S, template<class...> class... T>

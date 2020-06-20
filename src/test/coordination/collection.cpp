@@ -33,9 +33,10 @@ struct lagdist {
     };
 };
 
-using combo1 = component::combine<
+using combo1 = component::combine_spec<
     lagdist,
-    component::calculus<component::tags::exports<int, double, device_t, field<double>, tuple<int, device_t>>>
+    component::calculus<component::tags::exports<int, double, device_t, field<double>, tuple<int, device_t>>>,
+    component::base<>
 >;
 
 struct testnet {

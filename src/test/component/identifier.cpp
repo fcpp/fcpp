@@ -51,15 +51,17 @@ struct exposer {
 
 using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 5>>;
 
-using combo1 = component::combine<
+using combo1 = component::combine_spec<
     exposer,
-    component::identifier<component::tags::synchronised<false>>
+    component::identifier<component::tags::synchronised<false>>,
+    component::base<>
 >;
-using combo2 = component::combine<
+using combo2 = component::combine_spec<
     exposer,
     worker,
     component::scheduler<component::tags::round_schedule<seq_per>>,
-    component::identifier<component::tags::synchronised<true>>
+    component::identifier<component::tags::synchronised<true>>,
+    component::base<>
 >;
 
 

@@ -53,8 +53,9 @@ struct main {
     void operator()(node_t&, times_t) {}
 };
 
-using combo1 = component::combine<
-    component::calculus<component::tags::exports<fcpp::field<int>, times_t, int>>
+using combo1 = component::combine_spec<
+    component::calculus<component::tags::exports<fcpp::field<int>, times_t, int>>,
+    component::base<>
 >;
 
 using message_t = typename combo1::node::message_t;

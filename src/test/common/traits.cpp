@@ -296,10 +296,18 @@ template <typename... Ts>
 struct typeopt {};
 
 TEST(TraitsTest, Options) {
+    using plainseq = common::type_sequence<onenum<10>, flagopt<false>, numopt<2,3>, onetype<int>, typeopt<int,char>>;
+    struct hideseq : public plainseq {};
+    EXPECT_SAME(common::details::type_sequence_decay<hideseq>, plainseq);
+    EXPECT_SAME(common::details::type_sequence_decay<std::tuple<int,char>>, common::type_sequence<>);
     bool b;
     b = common::option_flag<flagopt, false, int, void, char>;
     EXPECT_FALSE(b);
     b = common::option_flag<flagopt, true, int, flagopt<false>, char, bool, flagopt<true>>;
+    EXPECT_FALSE(b);
+    b = common::option_flag<flagopt, true, common::type_sequence<int, flagopt<false>, char>, bool, flagopt<true>>;
+    EXPECT_FALSE(b);
+    b = common::option_flag<flagopt, true, hideseq, bool, flagopt<true>>;
     EXPECT_FALSE(b);
     b = common::option_flag<flagopt, true, int, void, char>;
     EXPECT_TRUE(b);
@@ -310,15 +318,27 @@ TEST(TraitsTest, Options) {
     EXPECT_EQ(n, 42ULL);
     n = common::option_num<onenum, 42, int, bool, onenum<10>, void, onenum<6>>;
     EXPECT_EQ(n, 10ULL);
+    n = common::option_num<onenum, 42, int, common::type_sequence<bool, onenum<10>, void>, onenum<6>>;
+    EXPECT_EQ(n, 10ULL);
+    n = common::option_num<onenum, 42, int, hideseq, onenum<6>>;
+    EXPECT_EQ(n, 10ULL);
     EXPECT_SAME(common::option_nums<numopt,void>,
                 common::index_sequence<>);
     EXPECT_SAME(common::option_nums<numopt,void,numopt<2,3>,bool>,
                 common::index_sequence<2,3>);
     EXPECT_SAME(common::option_nums<numopt,void,numopt<2,3>,bool,numopt<>,numopt<4>>,
                 common::index_sequence<2,3,4>);
+    EXPECT_SAME(common::option_nums<numopt,void,common::type_sequence<numopt<2,3>,bool,numopt<>>,numopt<4>>,
+                common::index_sequence<2,3,4>);
+    EXPECT_SAME(common::option_nums<numopt,void,hideseq,numopt<>,numopt<4>>,
+                common::index_sequence<2,3,4>);
     EXPECT_SAME(common::option_type<onetype,std::string,void,char>,
                 std::string);
     EXPECT_SAME(common::option_type<onetype,std::string,void,char,onetype<int>,bool,onetype<void>>,
+                int);
+    EXPECT_SAME(common::option_type<onetype,std::string,void,common::type_sequence<char,onetype<int>>,onetype<void>>,
+                int);
+    EXPECT_SAME(common::option_type<onetype,std::string,void,hideseq,onetype<void>>,
                 int);
     EXPECT_SAME(common::option_types<typeopt,void>,
                 common::type_sequence<>);
@@ -326,7 +346,17 @@ TEST(TraitsTest, Options) {
                 common::type_sequence<int,char>);
     EXPECT_SAME(common::option_types<typeopt,void,typeopt<int,char>,bool,typeopt<>,typeopt<long>>,
                 common::type_sequence<int,char,long>);
+    EXPECT_SAME(common::option_types<typeopt,void,common::type_sequence<typeopt<int,char>,bool>,typeopt<long>>,
+                common::type_sequence<int,char,long>);
+    EXPECT_SAME(common::option_types<typeopt,void,hideseq,typeopt<long>>,
+                common::type_sequence<int,char,long>);
     EXPECT_SAME(common::option_multitypes<typeopt,void,typeopt<int,char>,bool,typeopt<>,typeopt<long>>,
+                common::type_sequence<
+                    common::type_sequence<int,char>,
+                    common::type_sequence<>,
+                    common::type_sequence<long>
+                >);
+    EXPECT_SAME(common::option_multitypes<typeopt,void,hideseq,typeopt<>,typeopt<long>>,
                 common::type_sequence<
                     common::type_sequence<int,char>,
                     common::type_sequence<>,

@@ -29,47 +29,80 @@ namespace fcpp {
 namespace batch {
 
 
-//! @brief Namespace of tags to be used for batch description.
-namespace tags {
+//! @cond INTERNAL
+namespace details {
     //! @brief Tag associating to a filtering function.
-    struct filter {};
-}
+    struct filter_tag {};
 
+    //! @brief Tag associating to a injecting constants.
+    struct constant_tag {};
 
-//! @brief Functor generating a list of given values (general case).
-template<typename T, typename... Ts>
-auto list(T const& x, Ts const&... xs) {
-    return [=](auto const&){
-        return std::array<T, sizeof...(Ts)+1>{x, xs...};
+    //! @brief Class wrapping a function with a tag.
+    template <typename S, typename F>
+    class functor {
+      public:
+        functor(F&& f) : m_function(std::move(f)) {}
+
+        template <typename T>
+        inline auto operator()(T const& x) const {
+            return m_function(x);
+        }
+
+      private:
+        F m_function;
     };
+
+    //! @brief Wraps a function object with a tag.
+    template <typename S, typename F>
+    functor<S,F> make_functor(F&& f) {
+        return std::move(f);
+    }
+}
+//! @endcond
+
+
+//! @brief Functor for appending a list of constants.
+template <typename... Ss, typename... Ts>
+auto constant(Ts const&... xs) {
+    return details::make_functor<details::constant_tag>([=](auto const&){
+        return common::make_tagged_tuple<Ss...>(xs...);
+    });
 }
 
-//! @brief Functor generating a list of given values (string case).
-template <typename... Ts>
-auto list(char const* s, Ts const&... xs) {
-    return list(std::string(s), xs...);
+//! @brief Functor generating a list of given values.
+template<typename S, typename T, typename... Ts>
+auto list(T const& x, Ts const&... xs) {
+    return details::make_functor<S>([=](auto const&){
+        return std::array<T, sizeof...(Ts)+1>{x, xs...};
+    });
+}
+
+//! @brief Functor generating a list of given literal values.
+template <typename S, typename... Ts>
+auto literals(char const* s, Ts const&... xs) {
+    return list<S>(std::string(s), xs...);
 }
 
 //! @brief Functor generating a list of values following an arithmetic sequence.
-template <typename T>
+template <typename S, typename T>
 auto arithmetic(T min, T max, T step) {
-    return [=](auto const&){
+    return details::make_functor<S>([=](auto const&){
         std::vector<T> v;
         v.push_back(min);
         while (v.back() + step <= max) v.push_back(v.back() + step);
         return v;
-    };
+    });
 }
 
 //! @brief Functor generating a list of values following a geometric sequence.
-template <typename T>
+template <typename S, typename T>
 auto geometric(T min, T max, T step) {
-    return [=](auto const&){
+    return details::make_functor<S>([=](auto const&){
         std::vector<T> v;
         v.push_back(min);
         while (v.back() * step <= max) v.push_back(v.back() * step);
         return v;
-    };
+    });
 }
 
 //! @brief Class representing an optional value of type `T`.
@@ -78,23 +111,23 @@ class option {
   public:
     //! @brief The underlying type.
     using type = T;
-    
+
     //! @brief Constructor with no value.
     option() : m_val(), m_none(true) {}
-    
+
     //! @brief Constructor with a value.
     option(T v) : m_val(v), m_none(false) {}
-    
+
     //! @brief Value extraction (returns `T{}` if no value is contained)
     operator T() const {
         return m_val;
     }
-    
+
     //! @brief Returns whether a value is present.
     bool none() const {
         return m_none;
     }
-    
+
   private:
     //! @brief The stored value.
     T m_val;
@@ -108,16 +141,16 @@ class option {
  * The recursive definition is given from three arguments:
  * - the list index `i` to be generated;
  * - the value previously generated `prev`;
- * - a @ref tagged_tuple `tup` of parameters.
+ * - a \ref tagged_tuple `tup` of parameters.
  * The recursive definition returns an `option<T>`, so that
  * `return {}` stops the recursion while `return v` provides a new item on the list.
  *
  * @param init A initialising value, to be fed to `f` for generating the first element.
  * @param f A function with signature `option<T>(size_t i, T prev, auto const& tup)`.
  */
-template <typename T, typename F>
+template <typename S, typename T, typename F>
 auto recursive(T init, F&& f) {
-    return [=](auto const& x) {
+    return details::make_functor<S>([=](auto const& x) {
         std::vector<T> v;
         T prev = init;
         for (size_t i = 0; ; ++i) {
@@ -127,22 +160,23 @@ auto recursive(T init, F&& f) {
             v.push_back(r);
         }
         return v;
-    };
+    });
 }
 
 
 //! @brief Functor generating a list comprising a single value according to a given function.
-template <typename F>
+template <typename S, typename F>
 auto formula(F&& f) {
-    return [=](auto const& x) {
+    return details::make_functor<S>([=](auto const& x) {
         using value_t = std::decay_t<decltype(f(x))>;
         return std::array<value_t, 1>{f(x)};
-    };
+    });
 }
 
 //! @brief Functor generating a list comprising a single string value, representing the provided argument.
+template <typename S>
 auto stringify(std::string prefix = "", std::string suffix = "") {
-    return [=](auto const& x) {
+    return details::make_functor<S>([=](auto const& x) {
         std::stringstream s;
         if (prefix != "")
             s << prefix << "_";
@@ -150,23 +184,32 @@ auto stringify(std::string prefix = "", std::string suffix = "") {
         if (suffix != "")
             s << "." << suffix;
         return std::array<std::string,1>{s.str()};
-    };
+    });
+}
+
+//! @brief Functor filtering a list by a given predicate.
+template <typename F>
+auto filter(F&& f) {
+    return details::make_functor<details::filter_tag>(std::move(f));
 }
 
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Enable mutual recursion.
+    template <typename... Ss, typename... Us, typename gen_t, typename... Ts>
+    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&&, details::functor<details::filter_tag, gen_t> const&, Ts const&...);
+    template <typename... Ss, typename... Us, typename gen_t, typename... Ts>
+    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&&, details::functor<details::constant_tag, gen_t> const&, Ts const&...);
+
     //! @brief Base case, forwarding a given tuple sequence.
     template <typename... Ss, typename... Us>
     auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&& v) {
         return v;
     }
-    //! @brief Enable mutual recursion.
-    template <typename... Ss, typename... Us, typename gen_t, typename... Ts>
-    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&&, tags::filter, gen_t&&, Ts&&...);
     //! @brief Inductive case, expanding a tuple sequence with an additional tag and generator.
     template <typename... Ss, typename... Us, typename tag_t, typename gen_t, typename... Ts>
-    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&& v, tag_t, gen_t&& g, Ts&&... xs) {
+    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&& v, details::functor<tag_t, gen_t> const& g, Ts const&... xs) {
         using value_t = std::decay_t<decltype(*g(v[0]).begin())>;
         std::vector<common::tagged_tuple<common::type_sequence<Ss..., tag_t>, common::type_sequence<Us..., value_t>>> w;
         for (size_t i = 0; i < v.size(); ++i) {
@@ -175,13 +218,26 @@ namespace details {
                 common::get<tag_t>(w.back()) = x;
             }
         }
-        return make_tagged_tuple_sequence(std::move(w), std::forward<Ts>(xs)...);
+        return make_tagged_tuple_sequence(std::move(w), xs...);
     }
     //! @brief Inductive case, filtering a tuple sequence according to a given predicate.
     template <typename... Ss, typename... Us, typename gen_t, typename... Ts>
-    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&& v, tags::filter, gen_t&& g, Ts&&... xs) {
-        v.resize(std::remove_if(v.begin(), v.end(), std::forward<gen_t>(g)) - v.begin());
-        return make_tagged_tuple_sequence(std::move(v), std::forward<Ts>(xs)...);
+    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&& v, details::functor<details::filter_tag, gen_t> const& g, Ts const&... xs) {
+        v.resize(std::remove_if(v.begin(), v.end(), g) - v.begin());
+        return make_tagged_tuple_sequence(std::move(v), xs...);
+    }
+    //! @brief Inductive case, adding constants to a tuple sequence.
+    template <typename... Ss, typename... Us, typename gen_t, typename... Ts>
+    auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&& v, details::functor<details::constant_tag, gen_t> const& g, Ts const&... xs) {
+        using value_t = std::decay_t<decltype(g(nullptr))>;
+        using combined_t = common::tagged_tuple_cat<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>, value_t>;
+        std::vector<combined_t> w;
+        value_t t = g(nullptr);
+        for (size_t i = 0; i < v.size(); ++i) {
+            w.emplace_back(v[i]);
+            w.back() = t;
+        }
+        return make_tagged_tuple_sequence(std::move(w), xs...);
     }
 }
 //! @endcond
@@ -194,13 +250,92 @@ namespace details {
  * a generator, returning `true` on elements to be removed (as per `std::remove_if`).
  */
 template <typename... Ts>
-auto make_tagged_tuple_sequence(Ts&&... xs) {
-    return details::make_tagged_tuple_sequence(std::vector<common::tagged_tuple_t<>>{1}, std::forward<Ts>(xs)...);
+auto make_tagged_tuple_sequence(Ts const&... xs) {
+    return details::make_tagged_tuple_sequence(std::vector<common::tagged_tuple_t<>>{1}, xs...);
 }
+
+
+//! @brief Tag identifying alternative options (see \ref option_combine).
+template <typename... Ts>
+struct options {};
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief Converts a type into a type sequence.
+    template <typename T>
+    struct to_type_sequence {
+        using type = common::type_sequence<T>;
+    };
+    template <typename... Ts>
+    struct to_type_sequence<common::type_sequence<Ts...>> {
+        using type = common::type_sequence<Ts...>;
+    };
+    template <typename T>
+    using to_type_sequence_t = typename to_type_sequence<T>::type;
+
+    //! @brief Manages options and non-options types.
+    template <typename T>
+    struct option_decay {
+        using type = common::type_sequence<to_type_sequence_t<T>>;
+    };
+    template <typename... Ts>
+    struct option_decay<options<Ts...>> {
+        using type = common::type_sequence<to_type_sequence_t<Ts>...>;
+    };
+    template <typename T>
+    using option_decay_t = typename option_decay<T>::type;
+
+    //! @brief Maps a template to a sequence of options.
+    template <template <class...> class C, typename T>
+    struct map_template;
+    template <template <class...> class C, typename... Ts>
+    struct map_template<C, common::type_sequence<Ts...>> {
+        using type = common::type_sequence<common::apply_templates<Ts, C>...>;
+    };
+    template <template <class...> class C, typename T>
+    using map_template_t = typename map_template<C,T>::type;
+}
+//! @endcond
+
+/**
+ * @brief Instantiates a template for every possible combination from a given sequence of options.
+ *
+ * Alternative options have to be defined through the \ref options tag class.
+ * Non-alternative options can be also added as parameters.
+ */
+template <template <class...> class C, typename... Ts>
+using option_combine = details::map_template_t<C, common::type_product<details::option_decay_t<Ts>...>>;
 
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Converts a tagged tuple into a type sequence of type pairs.
+    //! @{
+    template <typename T>
+    struct tt_paired;
+    template <typename... Ss, typename... Ts>
+    struct tt_paired<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Ts...>>> {
+        using type = common::type_sequence<common::type_sequence<Ss,Ts>...>;
+    };
+    template <typename T>
+    using tt_paired_t = typename tt_paired<std::decay_t<T>>::type;
+    //! @}
+
+    //! @brief Checks whether two tagged tuples have the same tags and types (possibly reordered).
+    template <typename T, typename U>
+    constexpr bool same_tuple = std::is_same<
+        common::type_intersect<tt_paired_t<T>, tt_paired_t<U>>,
+        tt_paired_t<T>
+    >::value and std::is_same<
+        common::type_intersect<tt_paired_t<U>, tt_paired_t<T>>,
+        tt_paired_t<U>
+    >::value;
+
+    //! @brief Base case with no vectors.
+    std::vector<common::tagged_tuple_t<>> join_vectors() {
+        return std::vector<common::tagged_tuple_t<>>{1};
+    }
+
     //! @brief Base case, forwarding a single vector.
     template <typename T>
     std::vector<T> join_vectors(std::vector<T> v) {
@@ -210,6 +345,7 @@ namespace details {
     template <typename T, typename... Ts>
     std::vector<T> join_vectors(std::vector<T> v, std::vector<Ts>... vs) {
         auto w = join_vectors(vs...);
+        static_assert(same_tuple<decltype(w[0]),T>, "tagged tuple sequences of different types in the same batch run");
         v.insert(v.end(), w.begin(), w.end());
         return v;
     }
@@ -220,16 +356,67 @@ namespace details {
  * @brief Runs a series of experiments.
  *
  * @param T The combination of components to be tested.
- * @param e An execution policy (see @ref sequential_execution, @ref parallel_execution, @ref general_execution, @ref dynamic_execution).
+ * @param e An execution policy (see \ref sequential_execution, \ref parallel_execution, \ref general_execution, \ref dynamic_execution).
  * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
  */
 template <typename T, typename exec_t, typename... S, typename... U>
-void run(exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
+common::ifn_class_template<std::vector, exec_t>
+run(T, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     auto v = details::join_vectors(vs...);
     common::parallel_for(e, v.size(), [&](size_t i, size_t){
         typename T::net network{v[i]};
         network.run();
     });
+}
+
+//! @brief Runs no experiments (base case for varying declaration tags).
+template <typename exec_t, typename... S, typename... U>
+void run(common::type_sequence<>, exec_t, std::vector<common::tagged_tuple<S,U>> const&...) {}
+
+/**
+ * @brief Runs a series of experiments.
+ *
+ * @param T The combination of components to be tested.
+ * @param e An execution policy (see \ref sequential_execution, \ref parallel_execution, \ref general_execution, \ref dynamic_execution).
+ * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
+ */
+template <typename T, typename... Ts, typename exec_t, typename... S, typename... U>
+common::ifn_class_template<std::vector, exec_t>
+run(common::type_sequence<T, Ts...>, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
+    run(T{}, e, vs...);
+    run(common::type_sequence<Ts...>{}, e, vs...);
+}
+
+/**
+ * @brief Runs a series of experiments (assuming dynamic execution policy).
+ *
+ * @param T The combination of components to be tested.
+ * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
+ */
+template <typename T, typename... S, typename... U>
+void run(T x, std::vector<common::tagged_tuple<S,U>> const&... vs) {
+    using exec_t = std::conditional_t<
+        sizeof...(vs) >= 1,
+        common::tags::dynamic_execution,
+        common::tags::sequential_execution
+    >;
+    run(x, exec_t{}, vs...);
+}
+
+/**
+ * @brief Runs a series of experiments (assuming dynamic execution policy).
+ *
+ * @param T The combination of components to be tested.
+ * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
+ */
+template <typename T, typename... Ts, typename... S, typename... U>
+void run(common::type_sequence<T, Ts...> x, std::vector<common::tagged_tuple<S,U>> const&... vs) {
+    using exec_t = std::conditional_t<
+        sizeof...(vs) >= 1,
+        common::tags::dynamic_execution,
+        common::tags::sequential_execution
+    >;
+    run(x, exec_t{}, vs...);
 }
 
 

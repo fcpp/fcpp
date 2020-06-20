@@ -243,7 +243,7 @@ void parallel_for(tags::parallel_execution e, size_t len, F&& f) {
     }
     std::vector<std::thread> pool;
     pool.reserve(e.num);
-    for (size_t t=0; t<e.num; ++t)
+    for (size_t t=0; t<std::min(e.num,len); ++t)
         pool.emplace_back([=,&f] () {
             for (size_t i=t; i<len; i+=e.num) f(i,t);
         });
@@ -289,7 +289,7 @@ void parallel_for(tags::dynamic_execution e, size_t len, F&& f) {
     pool.reserve(e.num);
     std::mutex m;
     size_t i=0;
-    for (size_t t=0; t<e.num; ++t)
+    for (size_t t=0; t<std::min(e.num,len); ++t)
         pool.emplace_back([=,&i,&f,&m] () {
             size_t j;
             while (true) {

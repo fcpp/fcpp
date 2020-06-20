@@ -33,12 +33,13 @@ struct exposer {
     };
 };
 
-using combo = component::combine<
+using combo = component::combine_spec<
     exposer,
     component::physical_position<>,
     component::storage<tuple_store<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>>,
     component::identifier<synchronised<true>>,
-    component::calculus<program<main>, exports<double>>
+    component::calculus<program<main>, exports<double>>,
+    component::base<>
 >;
 
 using message_t = typename combo::node::message_t;

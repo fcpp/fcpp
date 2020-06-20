@@ -33,16 +33,26 @@ namespace common {
 /**
  * @brief Class for handling heterogeneous indexed data.
  *
+ * \ref insert "Inserting" elements of types outside `Ts...` produces a compile-time error. Other kinds of access are supported on any types, where maps on unsupported types are assumed to be always empty (since it is not allowed to insert in them).
+ *
  * @param T Key type.
- * @param Ts Admissible value types (must avoid repetitions).
+ * @param Ts Admissible value types.
  */
 template <typename T, typename... Ts>
 class multitype_map {
-    static_assert(type_repeated<Ts...>::size == 0, "cannot instantiate multitype_map with repeated types");
+    //! @brief Checks whether a type is supported by the map.
+    template <typename A>
+    constexpr static bool type_supported = type_count<std::remove_reference_t<A>, Ts...> != 0;
 
   public:
     //! @brief The type of the keys.
     typedef T key_type;
+
+    //! @brief List of admissible types (without repetitions).
+    using value_types = type_uniq<Ts...>;
+
+    //! @brief List of map types (without repetitions).
+    using map_types = type_uniq<std::unordered_map<T, Ts>...>;
 
     //! @name constructors
     //@{
@@ -52,39 +62,43 @@ class multitype_map {
     multitype_map() = default;
 
     //! @brief Copy constructor.
-    multitype_map(const multitype_map<T, Ts...>&) = default;
+    multitype_map(multitype_map const&) = default;
 
     //! @brief Move constructor.
-    multitype_map(multitype_map<T, Ts...>&&) = default;
+    multitype_map(multitype_map&&) = default;
     //@}
 
     //! @name assignment operators
     //@{
     //! @brief Copy assignment.
-    multitype_map<T, Ts...>& operator=(const multitype_map<T, Ts...>&) = default;
+    multitype_map& operator=(multitype_map const&) = default;
 
     //! @brief Move assignment.
-    multitype_map<T, Ts...>& operator=(multitype_map<T, Ts...>&&) = default;
+    multitype_map& operator=(multitype_map&&) = default;
     //@}
 
     //! @brief Equality operator.
-    bool operator==(const multitype_map<T, Ts...>& o) const {
-        return m_keys == o.m_keys and maps_compare(m_data, o.m_data, type_sequence<Ts...>{});
+    bool operator==(multitype_map const& o) const {
+        return m_keys == o.m_keys and maps_compare(m_data, o.m_data, value_types{});
     }
+
+    #define MISSING_TYPE_MESSAGE "\033[1m\033[4munsupported type access (add type A to exports type list)\033[0m"
 
     //! @brief Inserts value at corresponding key.
     template<typename A>
     void insert(T key, const A& value) {
-        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        get<std::remove_reference_t<A>>(m_data)[key] = value;
+        get_map<A>(bool_pack<type_supported<A>>{})[key] = value;
+        static_assert(type_supported<A>, MISSING_TYPE_MESSAGE);
     }
 
     //! @brief Inserts value at corresponding key by moving.
     template<typename A>
     void insert(T key, A&& value) {
-        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        get<std::remove_reference_t<A>>(m_data)[key] = value;
+        get_map<A>(bool_pack<type_supported<A>>{})[key] = std::move(value);
+        static_assert(type_supported<A>, MISSING_TYPE_MESSAGE);
     }
+
+    #undef MISSING_TYPE_MESSAGE
 
     //! @brief Inserts void value at corresponding key.
     void insert(T key) {
@@ -94,8 +108,7 @@ class multitype_map {
     //! @brief Deletes value at corresponding key.
     template<typename A>
     void erase(T key) {
-        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        get<std::remove_reference_t<A>>(m_data).erase(key);
+        get_map<A>(bool_pack<type_supported<A>>{}).erase(key);
     }
 
     //! @brief Deletes void value at corresponding key.
@@ -106,22 +119,19 @@ class multitype_map {
     //! @brief Immutable reference to the value of a certain type at a given key.
     template<typename A>
     const A& at(T key) const {
-        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        return get<std::remove_reference_t<A>>(m_data).at(key);
+        return get_map<A>(bool_pack<type_supported<A>>{}).at(key);
     }
 
     //! @brief Mutable reference to the value of a certain type at a given key.
     template<typename A>
     A& at(T key) {
-        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        return get<std::remove_reference_t<A>>(m_data).at(key);
+        return get_map<A>(bool_pack<type_supported<A>>{}).at(key);
     }
 
     //! @brief Whether the key is present in the value map or not for a certain type.
     template<typename A>
     bool count(T key) const {
-        static_assert(type_count<typename std::remove_reference<A>::type, Ts...> != 0, "non-supported type access");
-        return get<std::remove_reference_t<A>>(m_data).count(key);
+        return get_map<A>(bool_pack<type_supported<A>>{}).count(key);
     }
 
     //! @brief Whether the key is present in the value map or not for the void type.
@@ -136,6 +146,24 @@ class multitype_map {
     }
 
   private:
+    //! @brief Access to the map corresponding to a type.
+    template <typename A>
+    std::unordered_map<T, std::remove_reference_t<A>>& get_map(bool_pack<true>) {
+        return get<std::remove_reference_t<A>>(m_data);
+    }
+
+    //! @brief Const access to the map corresponding to a type.
+    template <typename A>
+    std::unordered_map<T, std::remove_reference_t<A>> const& get_map(bool_pack<true>) const {
+        return get<std::remove_reference_t<A>>(m_data);
+    }
+
+    //! @brief Access to a map corresponding to a missing type.
+    template <typename A>
+    std::unordered_map<T, std::remove_reference_t<A>> get_map(bool_pack<false>) const {
+        return {};
+    }
+
     //! @brief Compares unordered maps, even in case `decltype(U == U)` is not implicitly convertible to bool.
     template <typename U>
     bool map_compare(std::unordered_map<T, U> const& x, std::unordered_map<T, U> const& y) const {
@@ -161,7 +189,7 @@ class multitype_map {
     }
 
     //! @brief Map associating keys to data.
-    tagged_tuple<type_sequence<Ts...>, type_sequence<std::unordered_map<T, Ts>...>> m_data;
+    tagged_tuple<value_types, map_types> m_data;
     //! @brief Set of keys (for void data).
     std::unordered_set<T> m_keys;
 };

@@ -25,18 +25,20 @@ using seq_per = random::sequence_periodic<random::constant_distribution<times_t,
 using ever_true = random::constant_distribution<bool, true>;
 using ever_false = random::constant_distribution<bool, false>;
 
-using combo1 = component::combine<
+using combo1 = component::combine_spec<
     component::spawner<component::tags::spawn_schedule<seq_rep>,component::tags::init<tag,ever_true,gat,seq_per>>,
     component::identifier<component::tags::synchronised<false>>,
-    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>
+    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>,
+    component::base<>
 >;
-using combo2 = component::combine<
+using combo2 = component::combine_spec<
     component::spawner<component::tags::spawn_schedule<seq_rep>,component::tags::init<tag,ever_true,gat,seq_per>>,
     component::spawner<component::tags::spawn_schedule<seq_per>,component::tags::init<tag,ever_false,gat,seq_per>>,
     component::identifier<component::tags::synchronised<false>>,
-    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>
+    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>,
+    component::base<>
 >;
-using combo3 = component::combine<
+using combo3 = component::combine_spec<
     component::spawner<
         component::tags::spawn_schedule<seq_rep>,
         component::tags::init<tag,ever_true,gat,seq_per>,
@@ -44,7 +46,8 @@ using combo3 = component::combine<
         component::tags::init<tag,ever_false,gat,seq_per>
     >,
     component::identifier<component::tags::synchronised<false>>,
-    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>
+    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>,
+    component::base<>
 >;
 
 

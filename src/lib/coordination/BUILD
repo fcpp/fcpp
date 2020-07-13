@@ -53,7 +53,7 @@ cc_library(
     srcs = ['utils.cpp'],
     deps = [
         "//lib/data:field",
-        "//lib/data:trace",
+        "//lib/internal:trace",
     ],
     visibility = [
         '//visibility:public',

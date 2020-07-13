@@ -14,7 +14,7 @@
 #include <limits>
 
 #include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
+#include "lib/internal/trace.hpp"
 
 
 /**

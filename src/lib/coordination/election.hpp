@@ -12,8 +12,6 @@
 #include <limits>
 
 #include "lib/coordination/utils.hpp"
-#include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
 
 
 /**
@@ -29,7 +27,7 @@ namespace coordination {
 //! @brief Finds the minimum value, knowing an upper bound to the network diameter.
 template <typename node_t, typename T>
 T diameter_election(node_t& node, trace_t call_point, const T& value, int diameter) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
     
     return get<0>(nbr(node, 0, make_tuple(value, 0), [&](field<tuple<T,int>> x){
         tuple<T,int> best = fold_hood(node, 0, [&](tuple<T,int> const& a, tuple<T,int> const& b){
@@ -50,7 +48,7 @@ device_t diameter_election(node_t& node, trace_t call_point, int diameter) {
 //! @brief Finds the minimum value, without any additional knowledge, and following a given expansion function.
 template <typename node_t, typename T, typename G, typename = common::if_signature<G, int(int)>>
 T wave_election(node_t& node, trace_t call_point, const T& value, G&& expansion) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return get<0>(nbr(node, 0, make_tuple(value, 0, -expansion(0), 0), [&](field<tuple<T,int,int,int>> x){
         tuple<T,int,int,int> next = fold_hood(node, 0, [](tuple<T,int,int,int> const& a, tuple<T,int,int,int> const& b){

@@ -27,23 +27,23 @@ TEST(StreamTest, FCPP) {
     STREAM_EQ("[4, 2, 0]", vec<3>{4,2,0});
     STREAM_EQ("(false; 'a'; fcpp::common::type_sequence<void>)",
               tuple<bool,char,common::type_sequence<void>>{false,'a',{}});
-    STREAM_EQ("2", common::flat_ptr<int,true>{2});
-    STREAM_EQ("true", common::flat_ptr<bool,false>{true});
+    STREAM_EQ("2", internal::flat_ptr<int,true>{2});
+    STREAM_EQ("true", internal::flat_ptr<bool,false>{true});
     common::multitype_map<trace_t,bool,char> m;
     m.insert(42, 'x');
     m.insert(10, false);
     STREAM_EQ("(bool => {10:false}; char => {42:'x'})", m);
     STREAM_EQ("{42:\"hello world\"}", common::random_access_map<int, std::string>{{42, "hello world"}});
     STREAM_EQ("(void => 3; int& => x)", common::make_tagged_tuple<void,int&>(3, 'x'));
-    STREAM_EQ("(2)", common::twin<int,true>{2});
-    STREAM_EQ("(2; 2)", common::twin<int,false>{2});
+    STREAM_EQ("(2)", internal::twin<int,true>{2});
+    STREAM_EQ("(2; 2)", internal::twin<int,false>{2});
     {
-        data::context<true, true, int, bool, char> c;
+        internal::context<true, true, int, bool, char> c;
         c.insert(42, m, 0, 10, 10);
         STREAM_EQ("(42:(bool => {10:false}; char => {42:'x'})@0)", c);
     }
     {
-        data::context<false, false, int, bool, char> c;
+        internal::context<false, false, int, bool, char> c;
         c.insert(42, m, 0, 10, 10);
         STREAM_EQ("(42:(bool => {10:false}; char => {42:'x'})@0)", c);
     }

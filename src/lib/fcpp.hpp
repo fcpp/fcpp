@@ -12,6 +12,7 @@
 #include "lib/component.hpp"
 #include "lib/coordination.hpp"
 #include "lib/data.hpp"
+#include "lib/internal.hpp"
 #include "lib/settings.hpp"
 #include "lib/simulation.hpp"
 

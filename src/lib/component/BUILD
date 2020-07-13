@@ -22,10 +22,10 @@ cc_library(
         "//lib/common:multitype_map",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
-        "//lib/common:twin",
-        "//lib/data:context",
         "//lib/data:field",
-        "//lib/data:trace",
+        "//lib/internal:context",
+        "//lib/internal:trace",
+        "//lib/internal:twin",
     ],
     visibility = [
         '//visibility:public',

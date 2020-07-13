@@ -15,14 +15,14 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lib/common/flat_ptr.hpp"
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/random_access_map.hpp"
 #include "lib/common/tagged_tuple.hpp"
-#include "lib/common/twin.hpp"
-#include "lib/data/context.hpp"
 #include "lib/data/tuple.hpp"
 #include "lib/data/vec.hpp"
+#include "lib/internal/context.hpp"
+#include "lib/internal/flat_ptr.hpp"
+#include "lib/internal/twin.hpp"
 
 
 //! @cond INTERNAL
@@ -196,12 +196,6 @@ namespace fcpp {
 
     //! @brief Namespace containing objects of common use.
     namespace common {
-        //! @brief Printing content of flat pointers.
-        template <typename T, bool is_flat>
-        std::ostream& operator<<(std::ostream& o, const flat_ptr<T, is_flat>& p) {
-            return o << fcpp::details::escape(*p);
-        }
-
         //! @brief Printing multitype maps in arrowhead format.
         template <typename T, typename... Ts>
         std::ostream& operator<<(std::ostream& o, const multitype_map<T, Ts...>& m) {
@@ -219,6 +213,21 @@ namespace fcpp {
         std::ostream& operator<<(std::ostream& o, const tagged_tuple<S,T>& t) {
             return fcpp::details::printable_print(o, "()", t, arrowhead_tuple);
         }
+    }
+
+    //! @brief Namespace containing objects of internal use.
+    namespace internal {
+        //! @brief Printing calculus contexts.
+        template <bool b, bool d, typename... Ts>
+        std::ostream& operator<<(std::ostream& o, const context<b, d, Ts...>& c) {
+            return fcpp::details::printable_print(o, "()", c);
+        }
+
+        //! @brief Printing content of flat pointers.
+        template <typename T, bool is_flat>
+        std::ostream& operator<<(std::ostream& o, const flat_ptr<T, is_flat>& p) {
+            return o << fcpp::details::escape(*p);
+        }
 
         //! @brief Printing identical twin objects.
         template <typename T>
@@ -230,15 +239,6 @@ namespace fcpp {
         template <typename T>
         std::ostream& operator<<(std::ostream& o, const twin<T,false>& t) {
             return o << "(" << fcpp::details::escape(t.first()) << "; " << fcpp::details::escape(t.second()) << ")";
-        }
-    }
-
-    //! @brief Namespace containing specific objects for the FCPP library.
-    namespace data {
-        //! @brief Printing calculus contexts.
-        template <bool b, bool d, typename... Ts>
-        std::ostream& operator<<(std::ostream& o, const context<b, d, Ts...>& c) {
-            return fcpp::details::printable_print(o, "()", c);
         }
     }
 }

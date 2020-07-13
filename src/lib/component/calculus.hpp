@@ -17,10 +17,10 @@
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/common/traits.hpp"
-#include "lib/common/twin.hpp"
-#include "lib/data/context.hpp"
 #include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
+#include "lib/internal/context.hpp"
+#include "lib/internal/trace.hpp"
+#include "lib/internal/twin.hpp"
 
 
 /**
@@ -290,7 +290,7 @@ struct calculus {
             using metric_type = typename retain_type::result_type;
 
             //! @brief The type of the context of exports from other devices.
-            using context_type = data::context_t<online_drop, export_pointer, metric_type, exports_type>;
+            using context_type = internal::context_t<online_drop, export_pointer, metric_type, exports_type>;
 
             //! @brief The type of the exports of the current device.
             using export_type = typename context_type::export_type;
@@ -352,14 +352,14 @@ struct calculus {
             }
 
             //! @brief Stack trace maintained during aggregate function execution.
-            data::trace stack_trace;
+            internal::trace stack_trace;
 
           private: // implementation details
             //! @brief Map associating devices to their exports (`first` for local device, `second` for others).
-            common::twin<context_type, not export_split> m_context;
+            internal::twin<context_type, not export_split> m_context;
 
             //! @brief Exports of the current device (`first` for local device, `second` for others).
-            common::twin<export_type, not export_split> m_export;
+            internal::twin<export_type, not export_split> m_export;
 
             //! @brief The callable class representing the main round.
             program_type m_callback;

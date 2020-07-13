@@ -5,8 +5,8 @@
  * @brief Implementation of the `trace` class for identifying code points.
  */
 
-#ifndef FCPP_DATA_TRACE_H_
-#define FCPP_DATA_TRACE_H_
+#ifndef FCPP_INTERNAL_TRACE_H_
+#define FCPP_INTERNAL_TRACE_H_
 
 //! @brief Macro for uniquely identifying source code locations.
 #define ___ __COUNTER__
@@ -64,10 +64,8 @@ constexpr trace_t k_hash_mod = (trace_t(1)<<k_hash_len)-1;
 constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_TRACE - k_hash_len);
 
 
-/**
- * @brief Namespace containing specific objects for the FCPP library.
- */
-namespace data {
+//! @brief Namespace containing objects of internal use.
+namespace internal {
 
 
 //! @cond INTERNAL
@@ -245,4 +243,4 @@ struct trace_cycle {
 
 }
 
-#endif // FCPP_DATA_TRACE_H_
+#endif // FCPP_INTERNAL_TRACE_H_

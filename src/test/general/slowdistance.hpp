@@ -24,7 +24,7 @@ namespace coordination {
 //! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
 template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
 double slow_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return old(node, 0, std::numeric_limits<double>::infinity(), [&] (double d) {
         double r = min_hood(node, 1, nbr(node, 2, d) + metric());
@@ -53,7 +53,7 @@ namespace tags {
 
 template <typename node_t>
 void distance_compare(node_t& node, trace_t call_point) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
     
     bool source = node.uid == 0;
     auto metric = [&](){

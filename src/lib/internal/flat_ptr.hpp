@@ -5,8 +5,8 @@
  * @brief Implementation of the `flat_ptr` class for handling either a `shared_ptr` or a flat data.
  */
 
-#ifndef FCPP_COMMON_FLAT_PTR_H_
-#define FCPP_COMMON_FLAT_PTR_H_
+#ifndef FCPP_INTERNAL_FLAT_PTR_H_
+#define FCPP_INTERNAL_FLAT_PTR_H_
 
 #include <memory>
 
@@ -17,10 +17,8 @@
 namespace fcpp {
 
 
-/**
- * @brief Namespace containing objects of common use.
- */
-namespace common {
+//! @brief Namespace containing objects of internal use.
+namespace internal {
 
 
 //! @cond INTERNAL
@@ -196,4 +194,4 @@ class flat_ptr<T, true> {
 
 }
 
-#endif // FCPP_COMMON_FLAT_PTR_H_
+#endif // FCPP_INTERNAL_FLAT_PTR_H_

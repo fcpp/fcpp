@@ -16,7 +16,6 @@ cc_library(
         "//lib/common:aggregator",
         "//lib/common:algorithm",
         "//lib/common:distribution",
-        "//lib/common:flat_ptr",
         "//lib/common:multitype_map",
         "//lib/common:mutex",
         "//lib/common:ostream",
@@ -25,7 +24,6 @@ cc_library(
         "//lib/common:sequence",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
-        "//lib/common:twin",
     ],
     visibility = [
         '//visibility:public',
@@ -72,11 +70,9 @@ cc_library(
     hdrs = ['data.hpp'],
     srcs = ['data.cpp'],
     deps = [
-        "//lib/data:context",
         "//lib/data:field",
-        "//lib/data:position",
-        "//lib/data:trace",
         "//lib/data:tuple",
+        "//lib/data:vec",
     ],
     visibility = [
         '//visibility:public',
@@ -93,8 +89,24 @@ cc_library(
         "//lib:component",
         "//lib:coordination",
         "//lib:data",
+        "//lib:internal",
         "//lib:settings",
         "//lib:simulation",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'internal',
+    hdrs = ['internal.hpp'],
+    srcs = ['internal.cpp'],
+    deps = [
+        "//lib/internal:context",
+        "//lib/internal:flat_ptr",
+        "//lib/internal:trace",
+        "//lib/internal:twin",
     ],
     visibility = [
         '//visibility:public',

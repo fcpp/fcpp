@@ -5,8 +5,8 @@
  * @brief Implementation of the `context<M, Ts...>` class template for grouping message data from different neighbours.
  */
 
-#ifndef FCPP_DATA_CONTEXT_H_
-#define FCPP_DATA_CONTEXT_H_
+#ifndef FCPP_INTERNAL_CONTEXT_H_
+#define FCPP_INTERNAL_CONTEXT_H_
 
 #include <algorithm>
 #include <ostream>
@@ -15,11 +15,11 @@
 #include <utility>
 #include <vector>
 
-#include "lib/common/flat_ptr.hpp"
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/traits.hpp"
 #include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
+#include "lib/internal/flat_ptr.hpp"
+#include "lib/internal/trace.hpp"
 
 
 /**
@@ -28,8 +28,8 @@
 namespace fcpp {
 
 
-//! @brief Namespace containing specific objects for the FCPP library.
-namespace data {
+//! @brief Namespace containing objects of internal use.
+namespace internal {
 
 
 /**
@@ -56,7 +56,7 @@ template <bool pointer, typename M, typename... Ts>
 class context<true, pointer, M, Ts...> {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not pointer> export_type;
+    typedef internal::flat_ptr<common::multitype_map<trace_t, Ts...>, not pointer> export_type;
 
     //! @brief The type of the metric on exports.
     typedef M metric_type;
@@ -214,7 +214,7 @@ template <bool pointer, typename M, typename... Ts>
 class context<false, pointer, M, Ts...> {
   public:
     //! @brief The type of the exports contained in the context.
-    typedef common::flat_ptr<common::multitype_map<trace_t, Ts...>, not pointer> export_type;
+    typedef internal::flat_ptr<common::multitype_map<trace_t, Ts...>, not pointer> export_type;
 
     //! @brief The type of the metric on exports.
     typedef M metric_type;
@@ -390,4 +390,4 @@ using context_t = typename details::context_t<online,pointer,M,T>::type;
 
 }
 
-#endif // FCPP_DATA_CONTEXT_H_
+#endif // FCPP_INTERNAL_CONTEXT_H_

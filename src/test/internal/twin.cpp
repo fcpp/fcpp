@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/twin.hpp"
+#include "lib/internal/twin.hpp"
 
 using namespace fcpp;
 
@@ -12,13 +12,13 @@ class TwinTest : public ::testing::Test {
     virtual void SetUp() {
     }
     
-    common::twin<int, true> mirrored;
-    common::twin<int, false> separate;
+    internal::twin<int, true> mirrored;
+    internal::twin<int, false> separate;
 };
 
 
 TEST_F(TwinTest, TrueOperators) {
-    common::twin<int, true> x(mirrored), y, z;
+    internal::twin<int, true> x(mirrored), y, z;
     z = y;
     y = x;
     z = std::move(y);
@@ -26,7 +26,7 @@ TEST_F(TwinTest, TrueOperators) {
 }
 
 TEST_F(TwinTest, FalseOperators) {
-    common::twin<int, false> x(separate), y, z;
+    internal::twin<int, false> x(separate), y, z;
     z = y;
     y = x;
     z = std::move(y);

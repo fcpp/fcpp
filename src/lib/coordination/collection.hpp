@@ -12,8 +12,6 @@
 #include <limits>
 
 #include "lib/coordination/utils.hpp"
-#include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
 
 
 /**
@@ -29,7 +27,7 @@ namespace coordination {
 //! @brief Collects distributed data with a single-path strategy.
 template <typename node_t, typename P, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
 T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const T& null, G&& accumulate) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
     
     return nbr(node, 0, null, [&](field<T> x){
         device_t parent = get<1>(min_hood( node, 0, nbr(node, 1, make_tuple(distance, node.uid)) ));
@@ -40,7 +38,7 @@ T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& va
 //! @brief Collects distributed data with a multi-path strategy.
 template <typename node_t, typename P, typename T, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,size_t)>>
 T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const T& null, G&& accumulate, F&& divide) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, null, null, [&](field<T> x){
         field<P> nbrdist = nbr(node, 1, distance);
@@ -53,7 +51,7 @@ T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& va
 //! @brief Collects distributed data with a weighted multi-path strategy.
 template <typename node_t, typename T, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,double)>>
 T wmp_collection(node_t& node, trace_t call_point, double distance, double radius, const T& value, G&& accumulate, F&& multiply) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     field<double> nbrdist = nbr(node, 0, distance);
     field<double> d = max(radius - node.nbr_dist(), field<double>{0});

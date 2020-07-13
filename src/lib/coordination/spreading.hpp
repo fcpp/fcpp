@@ -14,8 +14,6 @@
 #include <limits>
 
 #include "lib/coordination/utils.hpp"
-#include "lib/data/field.hpp"
-#include "lib/data/trace.hpp"
 
 
 /**
@@ -41,7 +39,7 @@ double damper(double old_v, double new_v, double delta, double factor) {
 //! @brief Computes the hop-count distance from a source through adaptive bellmann-ford.
 template <typename node_t>
 int abf_hops(node_t& node, trace_t call_point, bool source) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, std::numeric_limits<int>::max()-1, [&] (field<int> d) {
         return min_hood(node, 0, d + 1, source ? 0 : std::numeric_limits<int>::max()-1);
@@ -59,7 +57,7 @@ double abf_distance(node_t& node, trace_t call_point, bool source) {
 //! @brief Computes the distance from a source with a custom metric through adaptive bellmann-ford.
 template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
 double abf_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, INF, [&] (field<double> d) {
         return min_hood(node, 0, d + metric(), source ? 0.0 : INF);
@@ -70,7 +68,7 @@ double abf_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
 //! @brief Computes the distance from a source through bounded information speeds.
 template <typename node_t>
 double bis_distance(node_t& node, trace_t call_point, bool source, double period, double speed) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     tuple<double,double> loc = source ? make_tuple(0.0, 0.0) : make_tuple(INF, INF);
     return get<0>(nbr(node, 0, loc, [&] (field<tuple<double,double>> x) {
@@ -83,7 +81,7 @@ double bis_distance(node_t& node, trace_t call_point, bool source, double period
 //! @brief Computes the distance from a source with a custom metric through bounded information speeds.
 template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
 double bis_distance(node_t& node, trace_t call_point, bool source, double period, double speed, G&& metric) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     tuple<double,double> loc = source ? make_tuple(0.0, 0.0) : make_tuple(INF, INF);
     return get<0>(nbr(node, 0, loc, [&] (field<tuple<double,double>> x) {
@@ -105,7 +103,7 @@ inline double flex_distance(node_t& node, trace_t call_point, bool source, doubl
 //! @brief Computes the distance from a source with a custom metric through flexible gradients.
 template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
 double flex_distance(node_t& node, trace_t call_point, bool source, double epsilon, double radius, double distortion, int frequency, G&& metric) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     double loc = source ? 0.0 : INF;
     return get<0>(nbr(node, 0, make_tuple(loc, 0), [&] (field<tuple<double,int>> x) {
@@ -129,7 +127,7 @@ double flex_distance(node_t& node, trace_t call_point, bool source, double epsil
 //! @brief Broadcasts a value following given distances from sources.
 template <typename node_t, typename P, typename T>
 T broadcast(node_t& node, trace_t call_point, const P& distance, const T& value) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, value, [&] (field<T> x) {
         return get<1>(min_hood(node, 0, make_tuple(nbr(node, 1, distance), x), make_tuple(distance, value)));

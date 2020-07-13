@@ -32,7 +32,7 @@ int counter(node_t& node, trace_t call_point) {
 
 template <typename node_t>
 int sharing(node_t& node, trace_t call_point, int x) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
     return fold_hood(node, 0, [](int x, int y) {
         return x+y;
     }, nbr(node, 1, x));
@@ -40,7 +40,7 @@ int sharing(node_t& node, trace_t call_point, int x) {
 
 template <typename node_t>
 int gossip(node_t& node, trace_t call_point, int x) {
-    data::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_call trace_caller(node.stack_trace, call_point);
     return nbr(node, 0, x, [&](fcpp::field<int> n) {
         return std::max(fold_hood(node, 1, [](int x, int y) {
             return std::max(x,y);

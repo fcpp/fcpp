@@ -5,8 +5,8 @@
  * @brief Implementation of the `twin` class for handling two variables, possibly identical.
  */
 
-#ifndef FCPP_COMMON_TWIN_H_
-#define FCPP_COMMON_TWIN_H_
+#ifndef FCPP_INTERNAL_TWIN_H_
+#define FCPP_INTERNAL_TWIN_H_
 
 #include <type_traits>
 #include <utility>
@@ -18,10 +18,8 @@
 namespace fcpp {
 
 
-/**
- * @brief Namespace containing objects of common use.
- */
-namespace common {
+//! @brief Namespace containing objects of internal use.
+namespace internal {
 
 
 //! @cond INTERNAL
@@ -163,4 +161,4 @@ class twin<T, false> {
 
 }
 
-#endif // FCPP_COMMON_TWIN_H_
+#endif // FCPP_INTERNAL_TWIN_H_

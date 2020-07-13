@@ -36,16 +36,6 @@ cc_library(
 )
 
 cc_library(
-    name = 'flat_ptr',
-    hdrs = ['flat_ptr.hpp'],
-    srcs = ['flat_ptr.cpp'],
-    deps = [ ],
-    visibility = [
-        '//visibility:public',
-    ],
-)
-
-cc_library(
     name = 'multitype_map',
     hdrs = ['multitype_map.hpp'],
     srcs = ['multitype_map.cpp'],
@@ -73,14 +63,14 @@ cc_library(
     hdrs = ['ostream.hpp'],
     srcs = ['ostream.cpp'],
     deps = [
-        "//lib/common:flat_ptr",
         "//lib/common:multitype_map",
         "//lib/common:random_access_map",
         "//lib/common:tagged_tuple",
-        "//lib/common:twin",
-        "//lib/data:context",
         "//lib/data:tuple",
         "//lib/data:vec",
+        "//lib/internal:context",
+        "//lib/internal:flat_ptr",
+        "//lib/internal:twin",
     ],
     visibility = [
         '//visibility:public',
@@ -138,16 +128,6 @@ cc_library(
     name = 'traits',
     hdrs = ['traits.hpp'],
     srcs = ['traits.cpp'],
-    visibility = [
-        '//visibility:public',
-    ],
-)
-
-cc_library(
-    name = 'twin',
-    hdrs = ['twin.hpp'],
-    srcs = ['twin.cpp'],
-    deps = [ ],
     visibility = [
         '//visibility:public',
     ],

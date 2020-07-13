@@ -23,10 +23,17 @@ vagrant halt
 
 ### Docker
 
-Type the following commands in a terminal, starting from the `src` folder of the repository:
+Starting from the `src` folder of the repository, download the Docker container from GitHub by typing the following command in a terminal:
 ```
-docker build -t fcpp .
-docker run -it --volume $PWD:/fcpp --workdir /fcpp fcpp bash
+docker pull docker.pkg.github.com/fcpp/fcpp/container:1.0
+```
+Alternatively, you can build the container yourself with the following command:
+```
+docker build -t docker.pkg.github.com/fcpp/fcpp/container:1.0 .
+```
+Once you have the Docker container locally available, type the following commands:
+```
+docker run -it --volume $PWD:/fcpp --workdir /fcpp docker.pkg.github.com/fcpp/fcpp/container:1.0 bash
 ./make.sh all
 ```
 Then you should get output about building and testing the whole library (in the Docker container). After that you can exit and stop the container through:

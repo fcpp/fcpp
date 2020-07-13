@@ -49,9 +49,9 @@ cc_library(
 )
 
 cc_library(
-    name = 'exporter',
-    hdrs = ['exporter.hpp'],
-    srcs = ['exporter.cpp'],
+    name = 'logger',
+    hdrs = ['logger.hpp'],
+    srcs = ['logger.cpp'],
     deps = [
         "//lib:settings",
         "//lib/common:algorithm",

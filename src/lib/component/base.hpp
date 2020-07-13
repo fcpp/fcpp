@@ -75,6 +75,8 @@ struct base {
           public: // visible by net objects and the main program
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = common::tagged_tuple_t<>;
+
+            #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::uid node initialisation tag\033[0m"
             
             //! @name constructors
             //@{
@@ -85,7 +87,11 @@ struct base {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : uid(common::get<tags::uid>(t)), net(n) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : uid(common::get_or<tags::uid>(t, 0)), net(n) {
+                static_assert(common::tagged_tuple<S,T>::tags::template count<tags::uid> >= 1, MISSING_TAG_MESSAGE);
+            }
+
+            #undef MISSING_TAG_MESSAGE
 
             //! @brief Deleted copy constructor.
             node(const node&) = delete;

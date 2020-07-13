@@ -123,7 +123,7 @@ namespace tags {
     //! @brief Node initialisation tag associating to the unique identifier of an object.
     struct uid;
 
-    //! @brief Net initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
+    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
     struct epsilon {};
 
     //! @brief Net initialisation tag associating to the number of threads that can be created.

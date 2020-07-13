@@ -10,6 +10,8 @@
 
 #include "lib/data/context.hpp"
 #include "lib/data/field.hpp"
+#include "lib/data/position.hpp"
 #include "lib/data/trace.hpp"
+#include "lib/data/tuple.hpp"
 
 #endif // FCPP_DATA_H_

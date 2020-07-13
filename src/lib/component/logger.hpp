@@ -1,12 +1,12 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
- * @file exporter.hpp
- * @brief Implementation of the `exporter` component logging summarisations of nodes.
+ * @file logger.hpp
+ * @brief Implementation of the `logger` component logging summarisations of nodes.
  */
 
-#ifndef FCPP_COMPONENT_EXPORTER_H_
-#define FCPP_COMPONENT_EXPORTER_H_
+#ifndef FCPP_COMPONENT_LOGGER_H_
+#define FCPP_COMPONENT_LOGGER_H_
 
 #include <cassert>
 #include <cstddef>
@@ -131,7 +131,7 @@ namespace details {
  * - a directory name ending in `/` or `\`, to which a generated file name will be appended (starting with \ref tags::name followed by a representation of the whole initialisation parameters of the net instance).
  */
 template <class... Ts>
-struct exporter {
+struct logger {
     //! @brief Sequence of storage tags and corresponding aggregator types.
     using aggregators_type = common::option_types<tags::aggregators, Ts...>;
 
@@ -155,17 +155,17 @@ struct exporter {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that an exporter component is present.
-        struct exporter_tag {};
+        //! @brief Marks that a logger component is present.
+        struct logger_tag {};
 
-        //! @brief Checks if T has a `exporter_tag`.
+        //! @brief Checks if T has a `logger_tag`.
         template <typename T, typename = int>
         struct has_etag : std::false_type {};
         template <typename T>
-        struct has_etag<T, std::conditional_t<true,int,typename T::exporter_tag>> : std::true_type {};
+        struct has_etag<T, std::conditional_t<true,int,typename T::logger_tag>> : std::true_type {};
 
-        //! @brief Asserts that P has no `exporter_tag`.
-        static_assert(not has_etag<P>::value, "cannot combine multiple exporter components");
+        //! @brief Asserts that P has no `logger_tag`.
+        static_assert(not has_etag<P>::value, "cannot combine multiple logger components");
 
         //! @brief Checks if T has a `storage_tag`.
         template <typename T, typename = int>
@@ -174,7 +174,7 @@ struct exporter {
         struct has_stag<T, std::conditional_t<true,int,typename T::storage_tag>> : std::true_type {};
 
         //! @brief Asserts that P has a `storage_tag`.
-        static_assert(has_stag<P>::value, "missing storage parent for exporter component");
+        static_assert(has_stag<P>::value, "missing storage parent for logger component");
 
         //! @brief Checks if T has a `randomizer_tag`.
         template <typename T, typename = int>
@@ -189,7 +189,7 @@ struct exporter {
         struct has_itag<T, std::conditional_t<true,int,typename T::identifier_tag>> : std::true_type {};
 
         //! @brief Asserts that P has a `identifier_tag`.
-        static_assert(value_push or has_itag<P>::value, "missing identifier parent for exporter component");
+        static_assert(value_push or has_itag<P>::value, "missing identifier parent for logger component");
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -267,7 +267,7 @@ struct exporter {
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_schedule.next() < P::net::next()) {
-                    PROFILE_COUNT("exporter");
+                    PROFILE_COUNT("logger");
                     *m_stream << m_schedule.next() << " ";
                     m_schedule.step(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
                     data_puller(common::bool_pack<not value_push>(), *this);
@@ -280,7 +280,7 @@ struct exporter {
             //! @brief Erases data from the aggregators.
             template <typename S, typename T>
             void aggregator_erase(const common::tagged_tuple<S,T>& t) {
-                assert(value_push); // disabled for pull-based exporters
+                assert(value_push); // disabled for pull-based loggers
                 common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
                 aggregator_erase_impl(m_aggregators, t, t_tags());
             }
@@ -288,7 +288,7 @@ struct exporter {
             //! @brief Inserts data into the aggregators.
             template <typename S, typename T>
             void aggregator_insert(const common::tagged_tuple<S,T>& t) {
-                assert(value_push); // disabled for pull-based exporters
+                assert(value_push); // disabled for pull-based loggers
                 common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
                 aggregator_insert_impl(m_aggregators, t, t_tags());
             }
@@ -389,4 +389,4 @@ struct exporter {
 
 }
 
-#endif // FCPP_COMPONENT_EXPORTER_H_
+#endif // FCPP_COMPONENT_LOGGER_H_

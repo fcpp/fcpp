@@ -154,7 +154,7 @@ namespace details {
     // Extracts elements from a tagged tuple as a tuple.
     template <class T, class... Ss, class... Ts>
     auto tt_capture(T&& t, type_sequence<Ss...>, type_sequence<Ts...>) {
-        return capture_as_tuple(get_or<Ss>(std::forward<T>(t), Ts{})...);
+        return details::capture_as_tuple(get_or<Ss>(std::forward<T>(t), Ts{})...);
     }
 
     // Assignment of elements of type Us.

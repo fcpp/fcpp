@@ -27,6 +27,22 @@ cc_test(
 )
 
 cc_test(
+    name = "geometry",
+    srcs = ["geometry.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/component:base",
+        "//lib/component:calculus",
+        "//lib/component:randomizer",
+        "//lib/coordination:geometry",
+        "//lib/simulation:physical_position",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "spreading",
     srcs = ["spreading.cpp"],
     deps = [

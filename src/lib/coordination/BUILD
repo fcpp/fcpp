@@ -27,8 +27,8 @@ cc_library(
     hdrs = ['geometry.hpp'],
     srcs = ['geometry.cpp'],
     deps = [
-        "//lib/common:array",
         "//lib/coordination:utils",
+        "//lib/data:vec",
     ],
     visibility = [
         '//visibility:public',

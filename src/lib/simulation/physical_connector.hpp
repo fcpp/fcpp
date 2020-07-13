@@ -10,18 +10,17 @@
 
 #include <cmath>
 
-#include <array>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "lib/settings.hpp"
-#include "lib/common/array.hpp"
 #include "lib/common/distribution.hpp"
 #include "lib/common/mutex.hpp"
+#include "lib/common/profiler.hpp"
 #include "lib/common/tagged_tuple.hpp"
-#include "lib/component/base.hpp"
+#include "lib/data/vec.hpp"
 
 
 /**
@@ -55,6 +54,9 @@ namespace tags {
     //! @brief Node initialisation tag associating to communication power.
     struct connection_data {};
 
+    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
+    struct epsilon;
+
     //! @brief Net initialisation tag associating to communication radius.
     struct radius {};
 }
@@ -74,7 +76,7 @@ namespace connect {
     class clique {
       public:
         //! @brief Type for representing a position.
-        using position_type = std::array<double, n>;
+        using position_type = vec<2>;
 
         //! @brief The node data type.
         struct data_type {};
@@ -106,7 +108,7 @@ namespace connect {
     class fixed {
       public:
         //! @brief Type for representing a position.
-        using position_type = std::array<double, n>;
+        using position_type = vec<2>;
 
         //! @brief The node data type.
         struct data_type {};
@@ -214,12 +216,13 @@ namespace details {
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::connection_data associates to communication power (defaults to `connector_type::data_type{}`).
+ * - \ref tags::epsilon associates to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
  *
  * Net initialisation tags (such as \ref tags::radius) are forwarded to connector classes.
  * Connector classes should have the following members (see \ref connect for a list of available ones):
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * using data_type = // type for connection power data on nodes
- * using position_type = std::array<double, n>;
+ * using position_type = vec<n>;
  * template <typename G, typename S, typename T> connector_type(G&& gen, const common::tagged_tuple<S,T>& tup);
  * double maximum_radius() const;
  * bool operator()(const data_type& data1, const position_type& position1, const data_type& data2, const position_type& position2) const;
@@ -234,7 +237,7 @@ struct physical_connector {
     constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
     //! @brief Type for representing a position.
-    using position_type = std::array<double, dimension>;
+    using position_type = vec<dimension>;
 
     //! @brief Type for representing a cell identifier.
     using cell_id_type = std::array<int, dimension>;
@@ -299,6 +302,7 @@ struct physical_connector {
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_rtag<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})) {
                 m_send = m_leave = TIME_MAX;
+                m_epsilon = common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON);
                 P::node::net.cell_enter(P::node::as_final());
             }
 
@@ -396,7 +400,7 @@ struct physical_connector {
                     m_leave = std::min(m_leave, P::node::reach_time(i, (c+1)*R, t));
                 }
                 m_leave = std::max(m_leave, t);
-                if (m_leave < TIME_MAX) m_leave += FCPP_TIME_EPSILON;
+                if (m_leave < TIME_MAX) m_leave += m_epsilon;
             }
 
             //! @brief Returns the `randomizer` generator if available.
@@ -414,8 +418,8 @@ struct physical_connector {
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;
 
-            //! @brief Time of the next send-message and cell-leave events.
-            times_t m_send, m_leave;
+            //! @brief Time of the next send-message and cell-leave events (and epsilon time).
+            times_t m_send, m_leave, m_epsilon;
 
             //! @brief Data regulating the connection.
             connection_data_type m_data;

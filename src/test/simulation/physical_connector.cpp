@@ -1,18 +1,14 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <algorithm>
-#include <array>
 #include <vector>
 
 #include "gtest/gtest.h"
 
-#include "lib/common/array.hpp"
 #include "lib/common/distribution.hpp"
 #include "lib/common/sequence.hpp"
-#include "lib/common/tagged_tuple.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/scheduler.hpp"
-#include "lib/data/field.hpp"
 #include "lib/simulation/physical_connector.hpp"
 #include "lib/simulation/physical_position.hpp"
 
@@ -44,10 +40,6 @@ using combo1 = component::combine_spec<
     component::physical_position<>,
     component::base<>
 >;
-
-std::array<double, 2> vec(double x, double y) {
-    return {x,y};
-}
 
 TEST(PhysicalConnectorTest, Cell) {
     int n[4]; // 4 nodes
@@ -100,23 +92,23 @@ TEST(PhysicalConnectorTest, Connection) {
     EXPECT_EQ(1.0, network.connection_radius());
     typename connect::fixed<1>::data_type data;
     bool connect;
-    connect = network.connection_success(data, vec(0.5,1), data, vec(0.4,0.9));
+    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(0.4,0.9));
     EXPECT_TRUE(connect);
-    connect = network.connection_success(data, vec(0.5,1), data, vec(7,10));
+    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(7,10));
     EXPECT_FALSE(connect);
-    connect = network.connection_success(data, vec(0.5,1), data, vec(0.5,0));
+    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(0.5,0));
     EXPECT_TRUE(connect);
-    connect = network.connection_success(data, vec(0.5,1), data, vec(0.51,0));
+    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(0.51,0));
     EXPECT_FALSE(connect);
 }
 
 TEST(PhysicalConnectorTest, EnterLeave) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
-    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(0, vec(0.5,0.5))};
-    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, vec(0.0,0.0))};
-    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, vec(1.5,0.5))};
-    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(3, vec(1.5,1.5))};
-    combo1::node d4{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(4, vec(9.0,9.0))};
+    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(0, make_vec(0.5,0.5))};
+    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, make_vec(0.0,0.0))};
+    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, make_vec(1.5,0.5))};
+    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(3, make_vec(1.5,1.5))};
+    combo1::node d4{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(4, make_vec(9.0,9.0))};
     network.cell_enter(d0);
     network.cell_enter(d1);
     network.cell_enter(d2);
@@ -139,17 +131,17 @@ void update(node_t& node) {
 
 TEST(PhysicalConnectorTest, Messages) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
-    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(0, vec(0.25,0.25))};
-    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, vec(0.0,0.0))};
-    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, vec(1.5,0.5))};
-    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(3, vec(1.5,1.5))};
-    combo1::node d4{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(4, vec(9.0,9.0))};
+    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(0, make_vec(0.25,0.25))};
+    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, make_vec(0.0,0.0))};
+    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, make_vec(1.5,0.5))};
+    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(3, make_vec(1.5,1.5))};
+    combo1::node d4{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(4, make_vec(9.0,9.0))};
     EXPECT_EQ(2.0, d0.next());
     EXPECT_EQ(2.0, d1.next());
     EXPECT_EQ(2.0, d2.next());
     EXPECT_EQ(2.0, d3.next());
     EXPECT_EQ(2.0, d4.next());
-    d0.velocity() = vec(1,1);
+    d0.velocity() = make_vec(1,1);
     update(d0);
     update(d1);
     update(d2);

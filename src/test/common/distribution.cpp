@@ -4,7 +4,6 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/array.hpp"
 #include "lib/common/distribution.hpp"
 
 using namespace fcpp;
@@ -268,10 +267,10 @@ TEST(DistributionTest, Combined) {
     EXPECT_NEAR(50000.0, d, 300.0);
 }
 
-TEST(DistributionTest, Array) {
+TEST(DistributionTest, Vec) {
     std::mt19937 rnd(42);
-    random::array_distribution<random::uniform_d<double, 5, 1>, random::uniform_d<double, 1, 5>> distr{rnd};
-    std::array<double, 2> res;
+    random::vec_distribution<random::uniform_d<double, 5, 1>, random::uniform_d<double, 1, 5>> distr{rnd};
+    vec<2> res;
     for (int i=0; i<10000; ++i)
         res += distr(rnd);
     EXPECT_NEAR(50000, res[0], 300);

@@ -49,3 +49,15 @@ cc_test(
     args = ['--gtest_color=yes'],
     timeout = 'short',
 )
+
+cc_test(
+    name = "vec",
+    srcs = ["vec.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/data:vec",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)

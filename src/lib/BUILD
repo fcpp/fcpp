@@ -15,12 +15,12 @@ cc_library(
     deps = [
         "//lib/common:aggregator",
         "//lib/common:algorithm",
-        "//lib/common:array",
         "//lib/common:distribution",
         "//lib/common:flat_ptr",
         "//lib/common:multitype_map",
         "//lib/common:mutex",
         "//lib/common:ostream",
+        "//lib/common:profiler",
         "//lib/common:random_access_map",
         "//lib/common:sequence",
         "//lib/common:tagged_tuple",
@@ -39,8 +39,8 @@ cc_library(
     deps = [
         "//lib/component:base",
         "//lib/component:calculus",
-        "//lib/component:exporter",
         "//lib/component:identifier",
+        "//lib/component:logger",
         "//lib/component:randomizer",
         "//lib/component:scheduler",
         "//lib/component:storage",
@@ -57,6 +57,7 @@ cc_library(
     srcs = ['coordination.cpp'],
     deps = [
         "//lib/coordination:collection",
+        "//lib/coordination:election",
         "//lib/coordination:geometry",
         "//lib/coordination:spreading",
         "//lib/coordination:utils",
@@ -73,7 +74,9 @@ cc_library(
     deps = [
         "//lib/data:context",
         "//lib/data:field",
+        "//lib/data:position",
         "//lib/data:trace",
+        "//lib/data:tuple",
     ],
     visibility = [
         '//visibility:public',
@@ -85,6 +88,7 @@ cc_library(
     hdrs = ['fcpp.hpp'],
     srcs = ['fcpp.cpp'],
     deps = [
+        "//lib:beautify",
         "//lib:common",
         "//lib:component",
         "//lib:coordination",

@@ -17,11 +17,11 @@ cc_library(
     srcs = ['physical_connector.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:array",
         "//lib/common:distribution",
         "//lib/common:mutex",
+        "//lib/common:profiler",
         "//lib/common:tagged_tuple",
-        "//lib/component:base",
+        "//lib/data:vec",
     ],
     visibility = [
         '//visibility:public',
@@ -34,10 +34,10 @@ cc_library(
     srcs = ['physical_position.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:array",
         "//lib/common:profiler",
         "//lib/common:tagged_tuple",
         "//lib/data:field",
+        "//lib/data:vec",
     ],
     visibility = [
         '//visibility:public',

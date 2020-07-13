@@ -26,24 +26,6 @@ cc_test(
 )
 
 cc_test(
-    name = "exporter",
-    srcs = ["exporter.cpp"],
-    deps = [
-        "@gtest//:main",
-        "//lib/common:aggregator",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
-        "//lib/component:base",
-        "//lib/component:exporter",
-        "//lib/component:identifier",
-        "//lib/component:storage",
-    ],
-    copts = ['-Iexternal/gtest/googletest/include/'],
-    args = ['--gtest_color=yes'],
-    timeout = 'short',
-)
-
-cc_test(
     name = "identifier",
     srcs = ["identifier.cpp"],
     deps = [
@@ -54,6 +36,24 @@ cc_test(
         "//lib/component:base",
         "//lib/component:identifier",
         "//lib/component:scheduler",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
+    name = "logger",
+    srcs = ["logger.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:aggregator",
+        "//lib/common:distribution",
+        "//lib/common:sequence",
+        "//lib/component:base",
+        "//lib/component:logger",
+        "//lib/component:identifier",
+        "//lib/component:storage",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

@@ -86,9 +86,9 @@ void checker(combo::net& network, device_t uid, double ideal, double fastd, doub
 TEST(SlowdistanceTest, Synchronous) {
     double inf = 1.0/0.0;
     combo::net network{common::make_tagged_tuple<>()};
-    network.node_emplace(common::make_tagged_tuple<x>(std::make_array(0.0, 0.0)));
-    network.node_emplace(common::make_tagged_tuple<x>(std::make_array(1.0, 0.0)));
-    network.node_emplace(common::make_tagged_tuple<x>(std::make_array(1.5, 0.0)));
+    network.node_emplace(common::make_tagged_tuple<x>(make_vec(0.0, 0.0)));
+    network.node_emplace(common::make_tagged_tuple<x>(make_vec(1.0, 0.0)));
+    network.node_emplace(common::make_tagged_tuple<x>(make_vec(1.5, 0.0)));
     fullround( 0.0, network);
     checker(network, 0, 0.0, 0.0, 0.0);
     checker(network, 1, 1.0, inf, inf);

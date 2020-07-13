@@ -15,7 +15,7 @@
 #include <utility>
 
 #include "lib/common/tagged_tuple.hpp"
-#include "lib/common/traits.hpp"
+#include "lib/data/vec.hpp"
 
 
 /**
@@ -417,27 +417,26 @@ struct make_positive : public D {
 
 
 /**
- * @brief Combines multiple distributions into a single distribution generating arrays.
+ * @brief Combines multiple distributions into a single distribution generating vectors.
  *
- * The reference type is `D::type`, and all `Ds::type` must be convertible to it.
+ * All `Ds::type` must be convertible to `double`.
  *
- * @param D  The first distribution.
- * @param Ds More distributions.
+ * @param Ds The distributions.
  */
-template <typename D, typename... Ds>
-class array_distribution {
+template <typename... Ds>
+class vec_distribution {
   public:
-    using type = std::array<typename D::type, sizeof...(Ds)+1>;
+    using type = vec<sizeof...(Ds)>;
     
     template <typename G>
-    array_distribution(G&& g) : m_distributions{D{g}, Ds{g}...} {}
+    vec_distribution(G&& g) : m_distributions{Ds{g}...} {}
     
     template <typename G, typename S, typename T>
-    array_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_distributions{D{g,t}, Ds{g,t}...} {}
+    vec_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_distributions{Ds{g,t}...} {}
     
     template <typename G>
     type operator()(G&& g) {
-        return call_impl(g, std::make_index_sequence<sizeof...(Ds)+1>{});
+        return call_impl(g, std::make_index_sequence<sizeof...(Ds)>{});
     }
     
   private:
@@ -446,7 +445,7 @@ class array_distribution {
         return {std::get<i>(m_distributions)(g)...};
     }
     
-    std::tuple<D, Ds...> m_distributions;
+    std::tuple<Ds...> m_distributions;
 };
 
 

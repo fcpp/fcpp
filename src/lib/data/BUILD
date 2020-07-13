@@ -51,3 +51,14 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'vec',
+    hdrs = ['vec.hpp'],
+    srcs = ['vec.cpp'],
+    deps = [
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)

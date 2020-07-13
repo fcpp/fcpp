@@ -10,14 +10,13 @@
 
 #include <cmath>
 
-#include <array>
 #include <type_traits>
 
 #include "lib/settings.hpp"
-#include "lib/common/array.hpp"
 #include "lib/common/profiler.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/data/field.hpp"
+#include "lib/data/vec.hpp"
 
 
 /**
@@ -54,8 +53,8 @@ namespace tags {
 namespace details {
     //! @brief Returns a vector of NaNs.
     template <size_t n>
-    std::array<double, n> nan_vec() {
-        std::array<double, n> v;
+    vec<n> nan_vec() {
+        vec<n> v;
         for (size_t i=0; i<n; ++i) v[i] = std::numeric_limits<double>::quiet_NaN();
         return v;
     }
@@ -77,7 +76,7 @@ namespace details {
  * - \ref tags::a associates to a starting acceleration (defaults to the null vector).
  * - \ref tags::f associates to a starting friction coefficient (defaults to zero).
  *
- * Vectors are modelled as `std::array<double,n>` objects. Position \f$ x \f$ evolves as per the differential equation \f$ x'' = a - f x' \f$ of uniformily accelerated viscous motion.
+ * Vectors are modelled as \ref position objects. Position \f$ x \f$ evolves as per the differential equation \f$ x'' = a - f x' \f$ of uniformily accelerated viscous motion.
  */
 template <class... Ts>
 struct physical_position {
@@ -85,7 +84,7 @@ struct physical_position {
     constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
     //! @brief Type for representing a position.
-    using position_type = std::array<double, dimension>;
+    using position_type = vec<dimension>;
 
     /**
      * @brief The actual component.
@@ -116,6 +115,8 @@ struct physical_position {
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<position_tag, position_type>;
 
+            #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::x node initialisation tag\033[0m"
+
             //@{
             /**
              * @brief Main constructor.
@@ -124,9 +125,12 @@ struct physical_position {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get<tags::x>(t)), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0.0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{std::numeric_limits<double>::infinity()} {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get_or<tags::x>(t, position_type{})), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0.0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{std::numeric_limits<double>::infinity()} {
+                static_assert(common::tagged_tuple<S,T>::tags::template count<tags::x> >= 1, MISSING_TAG_MESSAGE);
                 m_last = TIME_MIN;
             }
+
+            #undef MISSING_TAG_MESSAGE
 
             //! @brief Position now (const access).
             const position_type& position() const {

@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/distribution.hpp"
+#include "lib/option/distribution.hpp"
 
 using namespace fcpp;
 
@@ -27,26 +27,26 @@ double tester(D distr, G& gen) {
 TEST(DistributionTest, Maker) {
     std::mt19937 rnd(42);
     double d;
-    d = tester(random::make_distribution<std::uniform_real_distribution>(5.0, 1.0), rnd);
+    d = tester(distribution::make<std::uniform_real_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(random::make_distribution<std::normal_distribution>(5.0, 1.0), rnd);
+    d = tester(distribution::make<std::normal_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(random::make_distribution<std::exponential_distribution>(5.0, 5.0), rnd);
+    d = tester(distribution::make<std::exponential_distribution>(5.0, 5.0), rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    d = tester(random::make_distribution<std::weibull_distribution>(5.0, 1.0), rnd);
+    d = tester(distribution::make<std::weibull_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
 }
 
 TEST(DistributionTest, CRand) {
-    random::crand rnd(42);
+    crand rnd(42);
     double d;
-    d = tester(random::make_distribution<std::uniform_real_distribution>(5.0, 1.0), rnd);
+    d = tester(distribution::make<std::uniform_real_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(random::make_distribution<std::normal_distribution>(5.0, 1.0), rnd);
+    d = tester(distribution::make<std::normal_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    d = tester(random::make_distribution<std::exponential_distribution>(5.0, 5.0), rnd);
+    d = tester(distribution::make<std::exponential_distribution>(5.0, 5.0), rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    d = tester(random::make_distribution<std::weibull_distribution>(5.0, 1.0), rnd);
+    d = tester(distribution::make<std::weibull_distribution>(5.0, 1.0), rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
 }
 
@@ -58,13 +58,13 @@ TEST(DistributionTest, Constant) {
     EXPECT_DOUBLE_EQ(5.0, d);
     d = distr(rnd);
     EXPECT_DOUBLE_EQ(5.0, d);
-    random::constant_distribution<int, 4> dint(rnd);
+    distribution::constant<int, 4> dint(rnd);
     int i;
     i = dint(rnd);
     EXPECT_EQ(4, i);
     i = dint(rnd);
     EXPECT_EQ(4, i);
-    random::constant_distribution<double, 52, 10> ddouble(rnd);
+    distribution::constant<double, 52, 10> ddouble(rnd);
     d = ddouble(rnd);
     EXPECT_DOUBLE_EQ(5.2, d);
     d = ddouble(rnd);
@@ -73,7 +73,7 @@ TEST(DistributionTest, Constant) {
 
 TEST(DistributionTest, Uniform) {
     std::mt19937 rnd(42);
-    random::uniform_distribution<d5, d1> distr(rnd);
+    distribution::uniform<d5, d1> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
@@ -85,7 +85,7 @@ TEST(DistributionTest, Uniform) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::uniform_d<double, 5, 1> dratio(rnd);
+    distribution::uniform_t<double, 5, 1> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     d = dratio(rnd);
@@ -96,7 +96,7 @@ TEST(DistributionTest, Uniform) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::uniform_distribution<d1, d5, meantag, devtag> dtup(rnd, common::make_tagged_tuple<meantag,devtag>(5.0,1.0));
+    distribution::uniform<d1, d5, meantag, devtag> dtup(rnd, common::make_tagged_tuple<meantag,devtag>(5.0,1.0));
     d = dtup(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     d = dtup(rnd);
@@ -111,7 +111,7 @@ TEST(DistributionTest, Uniform) {
 
 TEST(DistributionTest, Interval) {
     std::mt19937 rnd(42);
-    random::interval_d<double, 1, 5> distr{rnd};
+    distribution::interval_t<double, 1, 5> distr{rnd};
     double d, acc;
     for (int i=0; i<10000; ++i) {
         d = distr(rnd);
@@ -123,7 +123,7 @@ TEST(DistributionTest, Interval) {
 
 TEST(DistributionTest, Normal) {
     std::mt19937 rnd(42);
-    random::normal_distribution<d5, d1> distr(rnd);
+    distribution::normal<d5, d1> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 3.0);
@@ -135,7 +135,7 @@ TEST(DistributionTest, Normal) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::normal_d<double, 5, 1> dratio(rnd);
+    distribution::normal_t<double, 5, 1> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(5.0, d, 3.0);
     d = dratio(rnd);
@@ -146,7 +146,7 @@ TEST(DistributionTest, Normal) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::normal_d<double, 5, 3, 1, meantag, devtag> dtup(rnd, common::make_tagged_tuple<devtag>(1.0));
+    distribution::normal_t<double, 5, 3, 1, meantag, devtag> dtup(rnd, common::make_tagged_tuple<devtag>(1.0));
     d = dtup(rnd);
     EXPECT_NEAR(5.0, d, 3.0);
     d = dtup(rnd);
@@ -161,7 +161,7 @@ TEST(DistributionTest, Normal) {
 
 TEST(DistributionTest, Exponential) {
     std::mt19937 rnd(42);
-    random::exponential_distribution<d5, d5> distr(rnd);
+    distribution::exponential<d5, d5> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(10.0, d, 10.0);
@@ -173,7 +173,7 @@ TEST(DistributionTest, Exponential) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    random::exponential_d<double, 5, 5> dratio(rnd);
+    distribution::exponential_t<double, 5, 5> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(10.0, d, 10.0);
     d = dratio(rnd);
@@ -184,7 +184,7 @@ TEST(DistributionTest, Exponential) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 1500.0);
-    random::exponential_distribution<d1, d1, meantag> dtup(rnd, common::make_tagged_tuple<meantag>(5.0));
+    distribution::exponential<d1, d1, meantag> dtup(rnd, common::make_tagged_tuple<meantag>(5.0));
     d = dtup(rnd);
     EXPECT_NEAR(10.0, d, 10.0);
     d = dtup(rnd);
@@ -199,7 +199,7 @@ TEST(DistributionTest, Exponential) {
 
 TEST(DistributionTest, Weibull) {
     std::mt19937 rnd(42);
-    random::weibull_distribution<d5, d1> distr(rnd);
+    distribution::weibull<d5, d1> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
@@ -211,7 +211,7 @@ TEST(DistributionTest, Weibull) {
     for (int i=0; i<10000; ++i)
         d += distr(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::weibull_d<double, 5, 1> dratio(rnd);
+    distribution::weibull_t<double, 5, 1> dratio(rnd);
     d = dratio(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
     d = dratio(rnd);
@@ -222,7 +222,7 @@ TEST(DistributionTest, Weibull) {
     for (int i=0; i<10000; ++i)
         d += dratio(rnd);
     EXPECT_NEAR(50000.0, d, 300.0);
-    random::weibull_d<double, 3, 1, 1, meantag> dtag(rnd, common::make_tagged_tuple<meantag,double>(5.0,'a'));
+    distribution::weibull_t<double, 3, 1, 1, meantag> dtag(rnd, common::make_tagged_tuple<meantag,double>(5.0,'a'));
     d = dtag(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
     d = dtag(rnd);
@@ -237,7 +237,7 @@ TEST(DistributionTest, Weibull) {
 
 TEST(DistributionTest, Positive) {
     std::mt19937 rnd(42);
-    random::make_positive<random::uniform_distribution<d1, d5>> distr(rnd);
+    distribution::positive<distribution::uniform<d1, d5>> distr(rnd);
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
@@ -253,7 +253,7 @@ TEST(DistributionTest, Positive) {
 
 TEST(DistributionTest, Combined) {
     std::mt19937 rnd(42);
-    random::weibull_distribution<random::uniform_distribution<d5, d5, void, devtag>, random::uniform_distribution<d1, d5, void, devtag2>> distr(rnd, common::make_tagged_tuple<devtag,devtag2>(0.0,0.0));
+    distribution::weibull<distribution::uniform<d5, d5, void, devtag>, distribution::uniform<d1, d5, void, devtag2>> distr(rnd, common::make_tagged_tuple<devtag,devtag2>(0.0,0.0));
     double d;
     d = distr(rnd);
     EXPECT_NEAR(5.0, d, 5.0);
@@ -269,7 +269,7 @@ TEST(DistributionTest, Combined) {
 
 TEST(DistributionTest, Vec) {
     std::mt19937 rnd(42);
-    random::vec_distribution<random::uniform_d<double, 5, 1>, random::uniform_d<double, 1, 5>> distr{rnd};
+    distribution::vec<distribution::uniform_t<double, 5, 1>, distribution::uniform_t<double, 1, 5>> distr{rnd};
     vec<2> res;
     for (int i=0; i<10000; ++i)
         res += distr(rnd);

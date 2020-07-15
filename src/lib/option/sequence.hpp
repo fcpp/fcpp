@@ -5,8 +5,8 @@
  * @brief Collection of generators of increasing sequences. Contrary to random distributions, sequence generators are stateful, that is, the generation of the next element depend on the previous elements generated (and are generated in increasing order).
  */
 
-#ifndef FCPP_COMMON_SEQUENCE_H_
-#define FCPP_COMMON_SEQUENCE_H_
+#ifndef FCPP_OPTION_SEQUENCE_H_
+#define FCPP_OPTION_SEQUENCE_H_
 
 #include <algorithm>
 #include <array>
@@ -14,9 +14,7 @@
 #include <type_traits>
 
 #include "lib/settings.hpp"
-#include "lib/common/distribution.hpp"
-#include "lib/common/tagged_tuple.hpp"
-#include "lib/common/traits.hpp"
+#include "lib/option/distribution.hpp"
 
 
 /**
@@ -25,24 +23,29 @@
 namespace fcpp {
 
 
-/**
- * @brief Namespace containing classes for random data generation.
- */
-namespace random {
+//! @brief Namespace containing classes for random sequence generation.
+namespace sequence {
+
+
+//! @cond INTERNAL
+namespace details {
+    using distribution::details::call_distr;
+}
+//! @endcond
 
 
 //! @brief Empty generator for a sequence of no events.
-struct sequence_never {
+struct never {
     //! @brief The type of results generated.
     using type = times_t;
 
     //! @brief Default constructor.
     template <typename G>
-    sequence_never(G&&) {}
+    never(G&&) {}
 
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_never(G&&, const common::tagged_tuple<S,T>&) {}
+    never(G&&, const common::tagged_tuple<S,T>&) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -70,11 +73,11 @@ struct sequence_never {
 //! @{
 //! @brief General form.
 template <typename D, size_t n, bool same = true>
-class sequence_multiple;
+class multiple;
 
 //! @brief Case for identical events.
 template <typename D, size_t n>
-class sequence_multiple<D, n, true> {
+class multiple<D, n, true> {
     static_assert(std::is_same<typename D::type, times_t>::value, "the distribution D must generate a times_t value");
 
   public:
@@ -83,11 +86,11 @@ class sequence_multiple<D, n, true> {
 
     //! @brief Default constructor.
     template <typename G>
-    sequence_multiple(G&& g) : t(details::call_distr<D>(g)) {}
+    multiple(G&& g) : t(details::call_distr<D>(g)) {}
 
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
+    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -118,7 +121,7 @@ class sequence_multiple<D, n, true> {
 
 //! @brief Case for possibly different events.
 template <typename D, size_t n>
-class sequence_multiple<D, n, false> {
+class multiple<D, n, false> {
     static_assert(std::is_same<typename D::type, times_t>::value, "the distribution D must generate a times_t value");
 
   public:
@@ -127,11 +130,11 @@ class sequence_multiple<D, n, false> {
 
     //! @brief Default constructor.
     template <typename G>
-    sequence_multiple(G&& g) : sequence_multiple(g, D{g}) {}
+    multiple(G&& g) : multiple(g, D{g}) {}
 
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_multiple(G&& g, const common::tagged_tuple<S,T>& tup) : sequence_multiple(g, D{g,tup}) {}
+    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : multiple(g, D{g,tup}) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -161,7 +164,7 @@ class sequence_multiple<D, n, false> {
 
     //! @brief Auxiliary constructor.
     template <typename G>
-    sequence_multiple(G&& g, D&& distr) {
+    multiple(G&& g, D&& distr) {
         for (size_t j=0; j<n; ++j) pending[j] = distr(g);
         std::sort(pending.begin(), pending.end());
     }
@@ -174,7 +177,7 @@ class sequence_multiple<D, n, false> {
  * @param Ds Distributions generating the time of the events.
  */
 template <typename... Ds>
-class sequence_list {
+class list {
     static_assert(common::all_true<std::is_same<typename Ds::type, times_t>::value...>, "the distributions Ds must generate a times_t value");
 
   public:
@@ -183,13 +186,13 @@ class sequence_list {
 
     //! @brief Default constructor.
     template <typename G>
-    sequence_list(G&& g) : pending({details::call_distr<Ds>(g)...}) {
+    list(G&& g) : pending({details::call_distr<Ds>(g)...}) {
         std::sort(pending.begin(), pending.end());
     }
 
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_list(G&& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
+    list(G&& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
         std::sort(pending.begin(), pending.end());
     }
 
@@ -229,8 +232,8 @@ class sequence_list {
  * @param E Distribution for the last event.
  * @param N Distribution for the number of events to be generated.
  */
-template <typename S, typename P = S, typename E = sequence_never, typename N = constant_distribution<size_t, std::numeric_limits<intmax_t>::max()>>
-class sequence_periodic {
+template <typename S, typename P = S, typename E = never, typename N = distribution::constant<size_t, std::numeric_limits<intmax_t>::max()>>
+class periodic {
     static_assert(std::is_same<typename S::type, times_t>::value, "the distribution S must generate a times_t value");
     static_assert(std::is_same<typename P::type, times_t>::value, "the distribution P must generate a times_t value");
     static_assert(std::is_same<typename E::type, times_t>::value, "the distribution E must generate a times_t value");
@@ -242,7 +245,7 @@ class sequence_periodic {
 
     //! @brief Default constructor.
     template <typename G>
-    sequence_periodic(G&& g) : dp(g) {
+    periodic(G&& g) : dp(g) {
         n  = details::call_distr<N>(g);
         te = details::call_distr<E>(g);
         t  = details::call_distr<S>(g);
@@ -250,7 +253,7 @@ class sequence_periodic {
 
     //! @brief Default constructor.
     template <typename G, typename U, typename T>
-    sequence_periodic(G&& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
+    periodic(G&& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
         n  = details::call_distr<N>(g,tup);
         te = details::call_distr<E>(g,tup);
         t  = details::call_distr<S>(g,tup);
@@ -304,7 +307,7 @@ namespace details {
  * @param Ss Generators of event sequences.
  */
 template <typename... Ss>
-class sequence_merge {
+class merge {
     static_assert(common::all_true<std::is_same<typename Ss::type, times_t>::value...>, "the generators Ss must generate a times_t value");
 
   public:
@@ -313,13 +316,13 @@ class sequence_merge {
 
     //! @brief Default constructor.
     template <typename G>
-    sequence_merge(G&& g) : m_generators{details::arg_expander<Ss>(g)...} {
+    merge(G&& g) : m_generators{details::arg_expander<Ss>(g)...} {
         set_next(std::make_index_sequence<sizeof...(Ss)>{});
     }
 
     //! @brief Default constructor.
     template <typename G, typename S, typename T>
-    sequence_merge(G&& g, const common::tagged_tuple<S,T>& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
+    merge(G&& g, const common::tagged_tuple<S,T>& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
         set_next(std::make_index_sequence<sizeof...(Ss)>{});
     }
 
@@ -397,7 +400,7 @@ class sequence_merge {
 
 //! @brief Optimisation for a single sequence.
 template <typename S>
-class sequence_merge<S> : public S {
+class merge<S> : public S {
   public:
     using S::S;
 
@@ -409,9 +412,9 @@ class sequence_merge<S> : public S {
 
 //! @brief Optimisation for no sequences.
 template <>
-class sequence_merge<> : public sequence_never {
+class merge<> : public never {
   public:
-    using sequence_never::sequence_never;
+    using never::never;
 
     //! @brief Returns the index of the subsequence generating the next event.
     size_t next_sequence() const {
@@ -423,7 +426,7 @@ class sequence_merge<> : public sequence_never {
 
 //! @brief Merges multiple sequences wrapped in a type sequence.
 template <typename T>
-using sequence_merge_t = common::apply_templates<T, sequence_merge>;
+using merge_t = common::apply_templates<T, merge>;
 
 
 }
@@ -431,4 +434,4 @@ using sequence_merge_t = common::apply_templates<T, sequence_merge>;
 
 }
 
-#endif // FCPP_COMMON_SEQUENCE_H_
+#endif // FCPP_OPTION_SEQUENCE_H_

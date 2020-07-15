@@ -15,10 +15,8 @@ cc_test(
     srcs = ["calculus.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:tagged_tuple",
         "//lib/component:base",
         "//lib/component:calculus",
-        "//lib/data:field",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -30,9 +28,6 @@ cc_test(
     srcs = ["identifier.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
-        "//lib/common:tagged_tuple",
         "//lib/component:base",
         "//lib/component:identifier",
         "//lib/component:scheduler",
@@ -47,9 +42,6 @@ cc_test(
     srcs = ["logger.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:aggregator",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
         "//lib/component:base",
         "//lib/component:logger",
         "//lib/component:identifier",
@@ -78,8 +70,6 @@ cc_test(
     srcs = ["scheduler.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
         "//lib/component:base",
         "//lib/component:randomizer",
         "//lib/component:scheduler",

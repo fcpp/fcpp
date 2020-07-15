@@ -5,8 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/distribution.hpp"
-#include "lib/common/sequence.hpp"
+#include "lib/option/sequence.hpp"
 
 using namespace fcpp;
 
@@ -14,7 +13,7 @@ using namespace fcpp;
 TEST(SequenceTest, Never) {
     std::mt19937 rnd(42);
     double d;
-    random::sequence_never e(rnd);
+    sequence::never e(rnd);
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
     d = e(rnd);
@@ -24,7 +23,7 @@ TEST(SequenceTest, Never) {
 TEST(SequenceTest, MultipleSame) {
     std::mt19937 rnd(42);
     double d;
-    random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3> e(rnd);
+    sequence::multiple<distribution::constant<times_t, 52, 10>, 3> e(rnd);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(5.2, d);
     d = e.next();
@@ -40,7 +39,7 @@ TEST(SequenceTest, MultipleSame) {
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
     double f;
-    random::sequence_multiple<random::uniform_d<times_t, 50, 10, 10>, 2> ee(rnd);
+    sequence::multiple<distribution::uniform_t<times_t, 50, 10, 10>, 2> ee(rnd);
     d = ee(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     f = ee.next();
@@ -54,7 +53,7 @@ TEST(SequenceTest, MultipleSame) {
 TEST(SequenceTest, MultipleDiff) {
     std::mt19937 rnd(42);
     double d;
-    random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3, false> e(rnd);
+    sequence::multiple<distribution::constant<times_t, 52, 10>, 3, false> e(rnd);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(5.2, d);
     d = e.next();
@@ -68,7 +67,7 @@ TEST(SequenceTest, MultipleDiff) {
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
     double f;
-    random::sequence_multiple<random::uniform_d<times_t, 50, 10, 10>, 2, false> ee(rnd);
+    sequence::multiple<distribution::uniform_t<times_t, 50, 10, 10>, 2, false> ee(rnd);
     d = ee(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
     f = ee(rnd);
@@ -80,7 +79,7 @@ TEST(SequenceTest, MultipleDiff) {
 TEST(SequenceTest, List) {
     std::mt19937 rnd(42);
     double d;
-    random::sequence_list<random::constant_distribution<times_t, 33, 10>, random::constant_distribution<times_t, 52, 10>, random::constant_distribution<times_t, 15, 10>> e(rnd);
+    sequence::list<distribution::constant<times_t, 33, 10>, distribution::constant<times_t, 52, 10>, distribution::constant<times_t, 15, 10>> e(rnd);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(1.5, d);
     d = e.next();
@@ -100,7 +99,7 @@ TEST(SequenceTest, List) {
 TEST(SequenceTest, Periodic) {
     std::mt19937 rnd(42);
     double d;
-    random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 5>> e(rnd);
+    sequence::periodic<distribution::constant<times_t, 15, 10>, distribution::constant<times_t, 2>, distribution::constant<times_t, 62, 10>, distribution::constant<size_t, 5>> e(rnd);
     d = e(rnd);
     EXPECT_DOUBLE_EQ(1.5, d);
     d = e(rnd);
@@ -114,7 +113,7 @@ TEST(SequenceTest, Periodic) {
     d = e.next();
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
-    random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::constant_distribution<times_t, 1>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 3>> ee(rnd);
+    sequence::periodic<distribution::constant<times_t, 15, 10>, distribution::constant<times_t, 1>, distribution::constant<times_t, 62, 10>, distribution::constant<size_t, 3>> ee(rnd);
     d = ee.next();
     EXPECT_DOUBLE_EQ(1.5, d);
     d = ee(rnd);
@@ -127,7 +126,7 @@ TEST(SequenceTest, Periodic) {
     EXPECT_EQ(TIME_MAX, d);
     d = ee(rnd);
     EXPECT_EQ(TIME_MAX, d);
-    random::sequence_periodic<random::constant_distribution<times_t, 15, 10>> ei(rnd);
+    sequence::periodic<distribution::constant<times_t, 15, 10>> ei(rnd);
     d = ei(rnd);
     EXPECT_DOUBLE_EQ(1.5, d);
     d = ei(rnd);
@@ -143,10 +142,10 @@ TEST(SequenceTest, Periodic) {
 TEST(SequenceTest, Merge) {
     std::mt19937 rnd(42);
     {
-        random::sequence_merge<
-            random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3>,
-            random::sequence_never,
-            random::sequence_list<random::constant_distribution<times_t, 73, 10>, random::constant_distribution<times_t, 52, 10>, random::constant_distribution<times_t, 15, 10>>
+        sequence::merge<
+            sequence::multiple<distribution::constant<times_t, 52, 10>, 3>,
+            sequence::never,
+            sequence::list<distribution::constant<times_t, 73, 10>, distribution::constant<times_t, 52, 10>, distribution::constant<times_t, 15, 10>>
         > e(rnd, common::make_tagged_tuple<void>(10));
         EXPECT_DOUBLE_EQ(1.5, e(rnd));
         EXPECT_DOUBLE_EQ(5.2, e(rnd));
@@ -157,14 +156,14 @@ TEST(SequenceTest, Merge) {
         EXPECT_DOUBLE_EQ(TIME_MAX, e(rnd));
     }
     {
-        random::sequence_merge<random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3>> e(rnd);
+        sequence::merge<sequence::multiple<distribution::constant<times_t, 52, 10>, 3>> e(rnd);
         EXPECT_DOUBLE_EQ(5.2, e(rnd));
         EXPECT_DOUBLE_EQ(5.2, e(rnd));
         EXPECT_DOUBLE_EQ(5.2, e(rnd));
         EXPECT_DOUBLE_EQ(TIME_MAX, e(rnd));
     }
     {
-        random::sequence_merge<> e(rnd);
+        sequence::merge<> e(rnd);
         EXPECT_DOUBLE_EQ(TIME_MAX, e(rnd));
     }
 }

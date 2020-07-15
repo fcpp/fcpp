@@ -12,8 +12,8 @@
 #include <random>
 #include <type_traits>
 
-#include "lib/common/distribution.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/option/distribution.hpp"
 
 
 /**
@@ -126,7 +126,7 @@ struct randomizer {
             //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
             template <template<typename> class D>
             double random_error(double v, double r, double a = 0) {
-                D<double> dist = random::make_distribution<D>(v, r*v+a);
+                D<double> dist = distribution::make<D>(v, r*v+a);
                 return dist(m_generator);
             }
             
@@ -173,7 +173,7 @@ struct randomizer {
             //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
             template <template<typename> class D>
             double random_error(double v, double r, double a = 0) {
-                D<double> dist = random::make_distribution<D>(v, r*v+a);
+                D<double> dist = distribution::make<D>(v, r*v+a);
                 return dist(m_generator);
             }
             

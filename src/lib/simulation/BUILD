@@ -17,11 +17,11 @@ cc_library(
     srcs = ['physical_connector.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:distribution",
         "//lib/common:mutex",
         "//lib/common:profiler",
-        "//lib/common:tagged_tuple",
         "//lib/data:vec",
+        "//lib/option:connect",
+        "//lib/option:distribution",
     ],
     visibility = [
         '//visibility:public',
@@ -50,11 +50,8 @@ cc_library(
     srcs = ['spawner.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:distribution",
         "//lib/common:profiler",
-        "//lib/common:sequence",
-        "//lib/common:tagged_tuple",
-        "//lib/common:traits",
+        "//lib/option:sequence",
     ],
     visibility = [
         '//visibility:public',

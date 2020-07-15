@@ -4,7 +4,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/aggregator.hpp"
+#include "lib/option/aggregator.hpp"
 
 using namespace fcpp;
 

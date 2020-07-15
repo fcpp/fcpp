@@ -5,8 +5,6 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/distribution.hpp"
-#include "lib/common/sequence.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/scheduler.hpp"
 #include "lib/simulation/physical_connector.hpp"
@@ -31,12 +29,12 @@ struct exposer {
     };
 };
 
-using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 1>, random::constant_distribution<times_t, 9>>;
+using seq_per = sequence::periodic<distribution::constant<times_t, 2>, distribution::constant<times_t, 1>, distribution::constant<times_t, 9>>;
 
 using combo1 = component::combine_spec<
     exposer,
     component::scheduler<component::tags::round_schedule<seq_per>>,
-    component::physical_connector<component::tags::connector<connect::fixed<1>>, component::tags::delay<random::constant_distribution<times_t, 1, 4>>>,
+    component::physical_connector<component::tags::connector<connect::fixed<1>>, component::tags::delay<distribution::constant<times_t, 1, 4>>>,
     component::physical_position<>,
     component::base<>
 >;

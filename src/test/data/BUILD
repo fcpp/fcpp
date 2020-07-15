@@ -4,7 +4,6 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/data:field",
-        "//lib/data:tuple",
         "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

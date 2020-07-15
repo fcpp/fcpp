@@ -2,8 +2,6 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/distribution.hpp"
-#include "lib/common/sequence.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/randomizer.hpp"
 #include "lib/component/scheduler.hpp"
@@ -15,8 +13,8 @@ using namespace fcpp::component::tags;
 struct meantag {};
 struct devtag {};
 
-using seq_mul = random::sequence_multiple<random::constant_distribution<times_t, 52, 10>, 3>;
-using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::uniform_d<times_t, 2, 10, 1, meantag, devtag>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 5>>;
+using seq_mul = sequence::multiple<distribution::constant<times_t, 52, 10>, 3>;
+using seq_per = sequence::periodic<distribution::constant<times_t, 15, 10>, distribution::uniform_t<times_t, 2, 10, 1, meantag, devtag>, distribution::constant<times_t, 62, 10>, distribution::constant<size_t, 5>>;
 
 using combo1 = component::combine_spec<
     component::scheduler<round_schedule<seq_mul>>,

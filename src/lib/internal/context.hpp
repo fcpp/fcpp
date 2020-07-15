@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "lib/common/multitype_map.hpp"
-#include "lib/common/traits.hpp"
 #include "lib/data/field.hpp"
 #include "lib/internal/flat_ptr.hpp"
 #include "lib/internal/trace.hpp"

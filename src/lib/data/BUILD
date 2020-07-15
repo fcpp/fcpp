@@ -4,7 +4,6 @@ cc_library(
     srcs = ['field.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:traits",
         "//lib/data:tuple",
     ],
     visibility = [
@@ -28,8 +27,6 @@ cc_library(
     name = 'vec',
     hdrs = ['vec.hpp'],
     srcs = ['vec.cpp'],
-    deps = [
-    ],
     visibility = [
         '//visibility:public',
     ],

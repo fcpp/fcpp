@@ -31,7 +31,7 @@ using combo1 = component::combine_spec<exposer,component::randomizer<>,component
 
 using combo2 = component::combine_spec<
     exposer,
-    component::randomizer<component::tags::generator<random::crand>>,
+    component::randomizer<component::tags::generator<crand>>,
     component::base<>
 >;
 

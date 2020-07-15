@@ -12,11 +12,8 @@
 #include <utility>
 
 #include "lib/settings.hpp"
-#include "lib/common/distribution.hpp"
 #include "lib/common/profiler.hpp"
-#include "lib/common/sequence.hpp"
-#include "lib/common/tagged_tuple.hpp"
-#include "lib/common/traits.hpp"
+#include "lib/option/sequence.hpp"
 
 
 /**
@@ -49,11 +46,11 @@ namespace tags {
  *
  * Multiple instances may coexist in a composition of components.
  * Requires a \ref identifier parent component.
- * If a \ref randomizer parent component is not found, \ref random::crand is used as random generator.
+ * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::init defines a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
- * - \ref tags::spawn_schedule defines a sequence generator type scheduling spawning of nodes (defaults to \ref random::sequence_never).
+ * - \ref tags::spawn_schedule defines a sequence generator type scheduling spawning of nodes (defaults to \ref sequence::never).
  *
  * Nodes generated receive all tags produced by generating distributions, and \ref tags::start associated to the creation time.
  */
@@ -69,7 +66,7 @@ struct spawner {
     using inert_type = common::apply_templates<init_type, common::type_sequence, common::tagged_tuple_t>;
 
     //! @brief Sequence generator type scheduling spawning of nodes.
-    using schedule_type = random::sequence_merge_t<common::option_types<tags::spawn_schedule, Ts...>>;
+    using schedule_type = sequence::merge_t<common::option_types<tags::spawn_schedule, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -139,7 +136,7 @@ struct spawner {
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(std::false_type, N&) {
+            inline crand get_generator(std::false_type, N&) {
                 return {};
             }
 

@@ -12,10 +12,7 @@
 #include <type_traits>
 
 #include "lib/settings.hpp"
-#include "lib/common/distribution.hpp"
-#include "lib/common/sequence.hpp"
-#include "lib/common/tagged_tuple.hpp"
-#include "lib/common/traits.hpp"
+#include "lib/option/sequence.hpp"
 
 
 /**
@@ -41,15 +38,15 @@ namespace tags {
  *
  * Multiple instances may coexist in a composition of components.
  * The \ref timer component cannot be a parent of a \ref scheduler otherwise round planning may not work.
- * If a \ref randomizer parent component is not found, \ref random::crand is used as random generator.
+ * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::round_schedule defines a list of sequence generator type scheduling rounds (defaults to \ref random::sequence_never).
+ * - \ref tags::round_schedule defines a list of sequence generator type scheduling rounds (defaults to \ref sequence::never).
  */
 template <class... Ts>
 struct scheduler {
     //! @brief Sequence generator type scheduling rounds.
-    using schedule_type = random::sequence_merge_t<common::option_types<tags::round_schedule, Ts...>>;
+    using schedule_type = sequence::merge_t<common::option_types<tags::round_schedule, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -116,8 +113,8 @@ struct scheduler {
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(common::bool_pack<false>, N&) {
-                return random::crand();
+            inline crand get_generator(common::bool_pack<false>, N&) {
+                return {};
             }
             
             //! @brief The sequence generator.

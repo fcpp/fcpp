@@ -23,13 +23,10 @@
 #include <vector>
 
 #include "lib/settings.hpp"
-#include "lib/common/algorithm.hpp"
-#include "lib/common/distribution.hpp"
 #include "lib/common/mutex.hpp"
 #include "lib/common/profiler.hpp"
-#include "lib/common/sequence.hpp"
-#include "lib/common/tagged_tuple.hpp"
-#include "lib/common/traits.hpp"
+#include "lib/option/aggregator.hpp"
+#include "lib/option/sequence.hpp"
 
 
 /**
@@ -106,11 +103,11 @@ namespace details {
  *
  * Must be unique in a composition of components.
  * Requires a \ref storage parent component, and also an \ref identifier parent component if \ref tags::value_push is false.
- * If a \ref randomizer parent component is not found, \ref random::crand is passed to the \ref tags::log_schedule object.
+ * If a \ref randomizer parent component is not found, \ref crand is passed to the \ref tags::log_schedule object.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::aggregators defines a sequence of storage tags and corresponding aggregator types (defaults to the empty sequence).
- * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref random::sequence_never).
+ * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
@@ -136,7 +133,7 @@ struct logger {
     using aggregators_type = common::option_types<tags::aggregators, Ts...>;
 
     //! @brief Sequence generator type scheduling writing of data.
-    using schedule_type = common::option_type<tags::log_schedule, random::sequence_never, Ts...>;
+    using schedule_type = common::option_type<tags::log_schedule, sequence::never, Ts...>;
 
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
@@ -339,8 +336,8 @@ struct logger {
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(common::bool_pack<false>, N&) {
-                return random::crand();
+            inline crand get_generator(common::bool_pack<false>, N&) {
+                return {};
             }
 
             //! @brief Collects data actively from nodes if `identifier` is available.

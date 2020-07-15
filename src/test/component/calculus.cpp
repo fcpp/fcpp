@@ -6,10 +6,8 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/tagged_tuple.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/calculus.hpp"
-#include "lib/data/field.hpp"
 
 using namespace fcpp;
 

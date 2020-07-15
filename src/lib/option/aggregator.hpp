@@ -5,8 +5,8 @@
  * @brief Data structures printing aggregations of data to standard output.
  */
 
-#ifndef FCPP_COMMON_AGGREGATOR_H_
-#define FCPP_COMMON_AGGREGATOR_H_
+#ifndef FCPP_OPTION_AGGREGATOR_H_
+#define FCPP_OPTION_AGGREGATOR_H_
 
 #include <cassert>
 #include <cmath>
@@ -22,7 +22,6 @@
 
 #include "lib/common/algorithm.hpp"
 #include "lib/common/tagged_tuple.hpp"
-#include "lib/common/traits.hpp"
 
 
 /**
@@ -777,4 +776,4 @@ class combine : public Ts... {
 
 }
 
-#endif // FCPP_COMMON_AGGREGATOR_H_
+#endif // FCPP_OPTION_AGGREGATOR_H_

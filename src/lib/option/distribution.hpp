@@ -5,8 +5,8 @@
  * @brief Collection of random distributions. Similar to distributions in `<random>`, but with distribution parameters as template arguments, which are also made uniform (mean and deviation) whenever possible.
  */
 
-#ifndef FCPP_COMMON_DISTRIBUTION_H_
-#define FCPP_COMMON_DISTRIBUTION_H_
+#ifndef FCPP_OPTION_DISTRIBUTION_H_
+#define FCPP_OPTION_DISTRIBUTION_H_
 
 #include <cassert>
 #include <cmath>
@@ -22,12 +22,6 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-
-
-/**
- * @brief Namespace containing classes for random data generation.
- */
-namespace random {
 
 
 //! @brief Lightweight interface for C random generators to C++ distributions.
@@ -70,26 +64,31 @@ struct crand {
 };
 
 
-//! @cond INTERNATL
+
+//! @brief Namespace containing classes for random data generation.
+namespace distribution {
+
+
+//! @cond INTERNAL
 namespace details {
     template <typename T>
-    std::uniform_real_distribution<T> make_distribution(common::type_sequence<std::uniform_real_distribution<T>>, T mean, T dev) {
+    std::uniform_real_distribution<T> make(common::type_sequence<std::uniform_real_distribution<T>>, T mean, T dev) {
         return std::uniform_real_distribution<T>(mean - 1.7320508075688772*dev, mean + 1.7320508075688772*dev);
     }
 
     template <typename T>
-    std::normal_distribution<T> make_distribution(common::type_sequence<std::normal_distribution<T>>, T mean, T dev) {
+    std::normal_distribution<T> make(common::type_sequence<std::normal_distribution<T>>, T mean, T dev) {
         return std::normal_distribution<T>(mean, dev);
     }
 
     template <typename T>
-    std::exponential_distribution<T> make_distribution(common::type_sequence<std::exponential_distribution<T>>, T mean, T dev) {
+    std::exponential_distribution<T> make(common::type_sequence<std::exponential_distribution<T>>, T mean, T dev) {
         assert(mean == dev);
         return std::exponential_distribution<T>(1/mean);
     }
 
     template <typename T>
-    std::weibull_distribution<T> make_distribution(common::type_sequence<std::weibull_distribution<T>>, T mean, T dev) {
+    std::weibull_distribution<T> make(common::type_sequence<std::weibull_distribution<T>>, T mean, T dev) {
         T t = log((dev * dev) / (mean * mean) + 1);
         T kmin = 0, kmax = 1;
         while (lgamma(1 + 2 * kmax) - 2 * lgamma(1 + kmax) < t) {
@@ -121,8 +120,8 @@ namespace details {
  * @param dev  The standard deviation of the distribution.
  */
 template <template<typename> class D, typename T>
-D<T> make_distribution(T mean, T dev) {
-    return details::make_distribution(common::type_sequence<D<T>>(), mean, dev);
+D<T> make(T mean, T dev) {
+    return details::make(common::type_sequence<D<T>>(), mean, dev);
 }
 
 
@@ -155,14 +154,14 @@ struct name {                                       \
  * @param den The (optional, integral) denominator of the value.
  */
 template <typename R, intmax_t num, intmax_t den = 1>
-struct constant_distribution {
+struct constant {
     using type = R;
     
     template <typename G>
-    constant_distribution(G&&) {}
+    constant(G&&) {}
     
     template <typename G, typename S, typename T>
-    constant_distribution(G&&, const common::tagged_tuple<S,T>&) {}
+    constant(G&&, const common::tagged_tuple<S,T>&) {}
     
     template <typename G>
     type operator()(G&&) {
@@ -189,25 +188,26 @@ namespace details {
 
 
 //! @brief Uniform real distribution.
-//{@
+//! @{
 /**
+ * @brief With mean and deviation as distributions.
  * @param mean     The mean of the distribution (as distribution).
  * @param dev      The standard deviation of the distribution (as distribution).
  * @param mean_tag The tag corresponding to the mean in initialisation values.
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
-class uniform_distribution {
+class uniform {
     static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
     
   public:
     using type = typename mean::type;
     
     template <typename G>
-    uniform_distribution(G&& g) : m_d(make_distribution<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
+    uniform(G&& g) : m_d(make<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    uniform_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::uniform_real_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    uniform(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make<std::uniform_real_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
     type operator()(G&& g) {
@@ -218,6 +218,7 @@ class uniform_distribution {
     std::uniform_real_distribution<type> m_d;
 };
 /**
+ * @brief With mean and deviation as numeric template parameters.
  * @param T        The type returned by the distribution.
  * @param mean     The (integral) mean of the distribution.
  * @param dev      The (integral) standard deviation of the distribution.
@@ -226,27 +227,39 @@ class uniform_distribution {
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
-using uniform_d = uniform_distribution<constant_distribution<T, mean, scale>, constant_distribution<T, dev, scale>, mean_tag, dev_tag>;
+using uniform_t = uniform<constant<T, mean, scale>, constant<T, dev, scale>, mean_tag, dev_tag>;
 /**
- * Uniform distribution set up through extremes instead of mean and deviation.
- *
+ * @brief With mean and deviation as initialisation values.
+ * @param T        The type returned by the distribution.
+ * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ */
+template <typename T, typename mean_tag, typename dev_tag>
+using uniform_i = uniform<constant<T, 0>, constant<T, 0>, mean_tag, dev_tag>;
+//! @}
+
+
+//! @brief Uniform real distribution set up through extremes instead of mean and deviation.
+//! @{
+/**
+ * @brief With mean and deviation as distributions.
  * @param min     The minimum of the distribution (as distribution).
  * @param max     The maximum of the distribution (as distribution).
  * @param min_tag The tag corresponding to the minimum in initialisation values.
  * @param max_tag The tag corresponding to the maximum in initialisation values.
  */
 template <typename min, typename max, typename min_tag = void, typename max_tag = void>
-class interval_distribution {
+class interval {
     static_assert(std::is_same<typename min::type, typename max::type>::value, "min and max of different type");
     
   public:
     using type = typename min::type;
     
     template <typename G>
-    interval_distribution(G&& g) : m_d{details::call_distr<min>(g), details::call_distr<max>(g)} {}
+    interval(G&& g) : m_d{details::call_distr<min>(g), details::call_distr<max>(g)} {}
     
     template <typename G, typename S, typename T>
-    interval_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d{common::get_or<min_tag>(t,details::call_distr<min>(g, t)), common::get_or<max_tag>(t,details::call_distr<max>(g, t))} {}
+    interval(G&& g, const common::tagged_tuple<S,T>& t) : m_d{common::get_or<min_tag>(t,details::call_distr<min>(g, t)), common::get_or<max_tag>(t,details::call_distr<max>(g, t))} {}
     
     template <typename G>
     type operator()(G&& g) {
@@ -257,6 +270,7 @@ class interval_distribution {
     std::uniform_real_distribution<type> m_d;
 };
 /**
+ * @brief With mean and deviation as numeric template parameters.
  * @param T       The type returned by the distribution.
  * @param min     The (integral) minimum of the distribution.
  * @param max     The (integral) maximum of the distribution.
@@ -265,20 +279,29 @@ class interval_distribution {
  * @param max_tag The tag corresponding to the maximum in initialisation values.
  */
 template <typename T, intmax_t min, intmax_t max, intmax_t scale = 1, typename min_tag = void, typename max_tag = void>
-using interval_d = interval_distribution<constant_distribution<T, min, scale>, constant_distribution<T, max, scale>, min_tag, max_tag>;
-//@}
+using interval_t = interval<constant<T, min, scale>, constant<T, max, scale>, min_tag, max_tag>;
+/**
+ * @brief With mean and deviation as initialisation values.
+ * @param T       The type returned by the distribution.
+ * @param min_tag The tag corresponding to the minimum in initialisation values.
+ * @param max_tag The tag corresponding to the maximum in initialisation values.
+ */
+template <typename T, typename min_tag, typename max_tag>
+using interval_i = interval<constant<T, 0>, constant<T, 0>, min_tag, max_tag>;
+//! @}
 
 
 //! @brief Normal real distribution.
-//{@
+//! @{
 /**
+ * @brief With mean and deviation as distributions.
  * @param mean     The mean of the distribution (as distribution).
  * @param dev      The standard deviation of the distribution (as distribution).
  * @param mean_tag The tag corresponding to the mean in initialisation values.
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
-class normal_distribution {
+class normal {
     static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
     
   public:
@@ -286,10 +309,10 @@ class normal_distribution {
     
   public:
     template <typename G>
-    normal_distribution(G&& g) : m_d(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
+    normal(G&& g) : m_d(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
     
     template <typename G, typename S, typename T>
-    normal_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
+    normal(G&& g, const common::tagged_tuple<S,T>& t) : m_d(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
     
     template <typename G>
     type operator()(G&& g) {
@@ -300,6 +323,7 @@ class normal_distribution {
     std::normal_distribution<type> m_d;
 };
 /**
+ * @brief With mean and deviation as numeric template parameters.
  * @param T        The type returned by the distribution.
  * @param mean     The (integral) mean of the distribution.
  * @param dev      The (integral) standard deviation of the distribution.
@@ -308,30 +332,39 @@ class normal_distribution {
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
-using normal_d = normal_distribution<constant_distribution<T, mean, scale>, constant_distribution<T, dev, scale>, mean_tag, dev_tag>;
-//@}
+using normal_t = normal<constant<T, mean, scale>, constant<T, dev, scale>, mean_tag, dev_tag>;
+/**
+ * @brief With mean and deviation as initialisation values.
+ * @param T        The type returned by the distribution.
+ * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ */
+template <typename T, typename mean_tag, typename dev_tag>
+using normal_i = normal<constant<T, 0>, constant<T, 0>, mean_tag, dev_tag>;
+//! @}
 
 
 //! @brief Exponential real distribution.
-//{@
+//! @{
 /**
+ * @brief With mean and deviation as distributions.
  * @param mean     The mean of the distribution (as distribution).
  * @param dev      The standard deviation of the distribution (as distribution).
  * @param mean_tag The tag corresponding to the mean in initialisation values.
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
-class exponential_distribution {
+class exponential {
     static_assert(std::is_same<mean, dev>::value, "deviation must be equal to mean in exponential distributions");
     
   public:
     using type = typename mean::type;
 
     template <typename G>
-    exponential_distribution(G&& g) : m_d(1/details::call_distr<mean>(g)) {}
+    exponential(G&& g) : m_d(1/details::call_distr<mean>(g)) {}
     
     template <typename G, typename S, typename T>
-    exponential_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(1/common::get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
+    exponential(G&& g, const common::tagged_tuple<S,T>& t) : m_d(1/common::get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
     
     template <typename G>
     type operator()(G&& g) {
@@ -342,6 +375,7 @@ class exponential_distribution {
     std::exponential_distribution<type> m_d;
 };
 /**
+ * @brief With mean and deviation as numeric template parameters.
  * @param T        The type returned by the distribution.
  * @param mean     The (integral) mean of the distribution.
  * @param dev      The (integral) standard deviation of the distribution.
@@ -350,30 +384,39 @@ class exponential_distribution {
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
-using exponential_d = exponential_distribution<constant_distribution<T, mean, scale>, constant_distribution<T, dev, scale>, mean_tag, dev_tag>;
-//@}
+using exponential_t = exponential<constant<T, mean, scale>, constant<T, dev, scale>, mean_tag, dev_tag>;
+/**
+ * @brief With mean and deviation as initialisation values.
+ * @param T        The type returned by the distribution.
+ * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ */
+template <typename T, typename mean_tag, typename dev_tag>
+using exponential_i = exponential<constant<T, 0>, constant<T, 0>, mean_tag, dev_tag>;
+//! @}
 
 
 //! @brief Weibull real distribution.
-//{@
+//! @{
 /**
+ * @brief With mean and deviation as distributions.
  * @param mean     The mean of the distribution (as distribution).
  * @param dev      The standard deviation of the distribution (as distribution).
  * @param mean_tag The tag corresponding to the mean in initialisation values.
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
-class weibull_distribution {
+class weibull {
     static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
 
   public:
     using type = typename mean::type;
     
     template <typename G>
-    weibull_distribution(G&& g) : m_d(make_distribution<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
+    weibull(G&& g) : m_d(make<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
     
     template <typename G, typename S, typename T>
-    weibull_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make_distribution<std::weibull_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    weibull(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make<std::weibull_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
     
     template <typename G>
     type operator()(G&& g) {
@@ -384,6 +427,7 @@ class weibull_distribution {
     std::weibull_distribution<type> m_d;
 };
 /**
+ * @brief With mean and deviation as numeric template parameters.
  * @param T        The type returned by the distribution.
  * @param mean     The (integral) mean of the distribution.
  * @param dev      The (integral) standard deviation of the distribution.
@@ -392,18 +436,27 @@ class weibull_distribution {
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
-using weibull_d = weibull_distribution<constant_distribution<T, mean, scale>, constant_distribution<T, dev, scale>, mean_tag, dev_tag>;
-//@}
+using weibull_t = weibull<constant<T, mean, scale>, constant<T, dev, scale>, mean_tag, dev_tag>;
+/**
+ * @brief With mean and deviation as initialisation values.
+ * @param T        The type returned by the distribution.
+ * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ */
+template <typename T, typename mean_tag, typename dev_tag>
+using weibull_i = weibull<constant<T, 0>, constant<T, 0>, mean_tag, dev_tag>;
+//! @}
 
 
 /**
  * @brief Modifies a real distribution to be positive.
+ *
  * Assumes that the probability of generating positive numbers is high.
  *
  * @param D A real distribution.
  */
 template <typename D>
-struct make_positive : public D {
+struct positive : public D {
     using type = typename D::type;
     
     using D::D;
@@ -424,15 +477,15 @@ struct make_positive : public D {
  * @param Ds The distributions.
  */
 template <typename... Ds>
-class vec_distribution {
+class vec {
   public:
-    using type = vec<sizeof...(Ds)>;
+    using type = fcpp::vec<sizeof...(Ds)>;
     
     template <typename G>
-    vec_distribution(G&& g) : m_distributions{Ds{g}...} {}
+    vec(G&& g) : m_distributions{Ds{g}...} {}
     
     template <typename G, typename S, typename T>
-    vec_distribution(G&& g, const common::tagged_tuple<S,T>& t) : m_distributions{Ds{g,t}...} {}
+    vec(G&& g, const common::tagged_tuple<S,T>& t) : m_distributions{Ds{g,t}...} {}
     
     template <typename G>
     type operator()(G&& g) {
@@ -454,4 +507,4 @@ class vec_distribution {
 
 }
 
-#endif // FCPP_COMMON_DISTRIBUTION_H_
+#endif // FCPP_OPTION_DISTRIBUTION_H_

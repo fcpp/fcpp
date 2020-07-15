@@ -2,7 +2,6 @@ cc_library(
     name = 'beautify',
     hdrs = ['beautify.hpp'],
     srcs = ['beautify.cpp'],
-    deps = [],
     visibility = [
         '//visibility:public',
     ],
@@ -13,15 +12,12 @@ cc_library(
     hdrs = ['common.hpp'],
     srcs = ['common.cpp'],
     deps = [
-        "//lib/common:aggregator",
         "//lib/common:algorithm",
-        "//lib/common:distribution",
         "//lib/common:multitype_map",
         "//lib/common:mutex",
         "//lib/common:ostream",
         "//lib/common:profiler",
         "//lib/common:random_access_map",
-        "//lib/common:sequence",
         "//lib/common:tagged_tuple",
         "//lib/common:traits",
     ],
@@ -90,6 +86,7 @@ cc_library(
         "//lib:coordination",
         "//lib:data",
         "//lib:internal",
+        "//lib:option",
         "//lib:settings",
         "//lib:simulation",
     ],
@@ -107,6 +104,22 @@ cc_library(
         "//lib/internal:flat_ptr",
         "//lib/internal:trace",
         "//lib/internal:twin",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'option',
+    hdrs = ['option.hpp'],
+    srcs = ['option.cpp'],
+    deps = [
+        "//lib/option:aggregator",
+        "//lib/option:connect",
+        "//lib/option:distribution",
+        "//lib/option:metric",
+        "//lib/option:sequence",
     ],
     visibility = [
         '//visibility:public',

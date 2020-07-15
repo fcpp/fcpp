@@ -2,9 +2,6 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/common/distribution.hpp"
-#include "lib/common/sequence.hpp"
-#include "lib/common/tagged_tuple.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/identifier.hpp"
 #include "lib/component/scheduler.hpp"
@@ -49,7 +46,7 @@ struct exposer {
     };
 };
 
-using seq_per = random::sequence_periodic<random::constant_distribution<times_t, 15, 10>, random::constant_distribution<times_t, 2>, random::constant_distribution<times_t, 62, 10>, random::constant_distribution<size_t, 5>>;
+using seq_per = sequence::periodic<distribution::constant<times_t, 15, 10>, distribution::constant<times_t, 2>, distribution::constant<times_t, 62, 10>, distribution::constant<size_t, 5>>;
 
 using combo1 = component::combine_spec<
     exposer,

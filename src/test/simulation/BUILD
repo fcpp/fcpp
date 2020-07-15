@@ -17,8 +17,6 @@ cc_test(
     srcs = ["physical_connector.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
         "//lib/component:base",
         "//lib/component:scheduler",
         "//lib/simulation:physical_connector",
@@ -34,8 +32,6 @@ cc_test(
     srcs = ["physical_position.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
         "//lib/component:base",
         "//lib/component:scheduler",
         "//lib/simulation:physical_position",
@@ -50,8 +46,6 @@ cc_test(
     srcs = ["spawner.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
         "//lib/common:tagged_tuple",
         "//lib/component:base",
         "//lib/component:identifier",

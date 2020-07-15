@@ -1,35 +1,7 @@
 cc_library(
-    name = 'aggregator',
-    hdrs = ['aggregator.hpp'],
-    srcs = ['aggregator.cpp'],
-    deps = [
-        "//lib/common:algorithm",
-        "//lib/common:tagged_tuple",
-        "//lib/common:traits",
-    ],
-    visibility = [
-        '//visibility:public',
-    ],
-)
-
-cc_library(
     name = 'algorithm',
     hdrs = ['algorithm.hpp'],
     srcs = ['algorithm.cpp'],
-    deps = [ ],
-    visibility = [
-        '//visibility:public',
-    ],
-)
-
-cc_library(
-    name = 'distribution',
-    hdrs = ['distribution.hpp'],
-    srcs = ['distribution.cpp'],
-    deps = [
-        "//lib/common:tagged_tuple",
-        "//lib/data:vec",
-    ],
     visibility = [
         '//visibility:public',
     ],
@@ -52,7 +24,6 @@ cc_library(
     name = 'mutex',
     hdrs = ['mutex.hpp'],
     srcs = ['mutex.cpp'],
-    deps = [ ],
     visibility = [
         '//visibility:public',
     ],
@@ -81,7 +52,6 @@ cc_library(
     name = 'profiler',
     hdrs = ['profiler.hpp'],
     srcs = ['profiler.cpp'],
-    deps = [],
     visibility = [
         '//visibility:public',
     ],
@@ -91,22 +61,6 @@ cc_library(
     name = 'random_access_map',
     hdrs = ['random_access_map.hpp'],
     srcs = ['random_access_map.cpp'],
-    deps = [ ],
-    visibility = [
-        '//visibility:public',
-    ],
-)
-
-cc_library(
-    name = 'sequence',
-    hdrs = ['sequence.hpp'],
-    srcs = ['sequence.cpp'],
-    deps = [
-        "//lib:settings",
-        "//lib/common:distribution",
-        "//lib/common:tagged_tuple",
-        "//lib/common:traits",
-    ],
     visibility = [
         '//visibility:public',
     ],

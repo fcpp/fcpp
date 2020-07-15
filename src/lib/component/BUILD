@@ -18,14 +18,10 @@ cc_library(
     hdrs = ['calculus.hpp'],
     srcs = ['calculus.cpp'],
     deps = [
-        "//lib:settings",
-        "//lib/common:multitype_map",
-        "//lib/common:tagged_tuple",
-        "//lib/common:traits",
-        "//lib/data:field",
         "//lib/internal:context",
         "//lib/internal:trace",
         "//lib/internal:twin",
+        "//lib/option:metric",
     ],
     visibility = [
         '//visibility:public',
@@ -54,13 +50,10 @@ cc_library(
     srcs = ['logger.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:algorithm",
-        "//lib/common:distribution",
         "//lib/common:mutex",
         "//lib/common:profiler",
-        "//lib/common:sequence",
-        "//lib/common:tagged_tuple",
-        "//lib/common:traits",
+        "//lib/option:aggregator",
+        "//lib/option:sequence",
     ],
     visibility = [
         '//visibility:public',
@@ -72,8 +65,8 @@ cc_library(
     hdrs = ['randomizer.hpp'],
     srcs = ['randomizer.cpp'],
     deps = [
-        "//lib/common:distribution",
         "//lib/common:tagged_tuple",
+        "//lib/option:distribution",
     ],
     visibility = [
         '//visibility:public',
@@ -86,10 +79,7 @@ cc_library(
     srcs = ['scheduler.cpp'],
     deps = [
         "//lib:settings",
-        "//lib/common:distribution",
-        "//lib/common:sequence",
-        "//lib/common:tagged_tuple",
-        "//lib/common:traits",
+        "//lib/option:sequence",
     ],
     visibility = [
         '//visibility:public',

@@ -16,11 +16,11 @@
 #include <vector>
 
 #include "lib/settings.hpp"
-#include "lib/common/distribution.hpp"
 #include "lib/common/mutex.hpp"
 #include "lib/common/profiler.hpp"
-#include "lib/common/tagged_tuple.hpp"
 #include "lib/data/vec.hpp"
+#include "lib/option/connect.hpp"
+#include "lib/option/distribution.hpp"
 
 
 /**
@@ -60,84 +60,6 @@ namespace tags {
     //! @brief Net initialisation tag associating to communication radius.
     struct radius {};
 }
-
-
-}
-
-
-//! @brief Namespace for connection predicates.
-namespace connect {
-    /**
-     * Connection predicate which is true between any pair of devices.
-     *
-     * @param n   Dimensionality of the space (defaults to 2).
-     */
-    template <size_t n = 2>
-    class clique {
-      public:
-        //! @brief Type for representing a position.
-        using position_type = vec<2>;
-
-        //! @brief The node data type.
-        struct data_type {};
-
-        //! @brief Generator and tagged tuple constructor.
-        template <typename G, typename S, typename T>
-        clique(G&&, const common::tagged_tuple<S,T>&) {}
-
-        //! @brief The maximum radius of connection.
-        double maximum_radius() const {
-            return INF;
-        }
-
-        //! @brief Checks if connection is possible.
-        bool operator()(const data_type&, const position_type&, const data_type&, const position_type&) const {
-            return true;
-        }
-    };
-
-
-    /**
-     * Connection predicate which is true within a fixed radius (can be set through tag `radius`).
-     *
-     * @param num The numerator of the default value for the radius (defaults to 1).
-     * @param den The denominator of the default value for the radius (defaults to 1).
-     * @param n   Dimensionality of the space (defaults to 2).
-     */
-    template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
-    class fixed {
-      public:
-        //! @brief Type for representing a position.
-        using position_type = vec<2>;
-
-        //! @brief The node data type.
-        struct data_type {};
-
-        //! @brief Generator and tagged tuple constructor.
-        template <typename G, typename S, typename T>
-        fixed(G&&, const common::tagged_tuple<S,T>& t) {
-            m_radius = common::get_or<component::tags::radius>(t, ((double)num)/den);
-        }
-
-        //! @brief The maximum radius of connection.
-        double maximum_radius() const {
-            return m_radius;
-        }
-
-        //! @brief Checks if connection is possible.
-        bool operator()(const data_type&, const position_type& position1, const data_type&, const position_type& position2) const {
-            return norm(position1 - position2) <= m_radius;
-        }
-
-      private:
-        //! @brief The connection radius.
-        double m_radius;
-    };
-}
-
-
-//! @brief Namespace for all FCPP components.
-namespace component {
 
 
 //! @cond INTERNAL
@@ -203,12 +125,12 @@ namespace details {
  *
  * Must be unique in a composition of components.
  * Requires a \ref physical_position parent component.
- * If a \ref randomizer parent component is not found, \ref random::crand is used as random generator.
+ * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  * Any \ref physical_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::connector defines the connector class (defaults to \ref connect::clique "connect::clique<dimension>").
- * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref random::constant_distribution "random::constant_distribution<times_t, 0>").
+ * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant "distribution::constant<times_t, 0>").
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *
  * <b>Declaration flags:</b>
@@ -249,7 +171,7 @@ struct physical_connector {
     using connection_data_type = typename connector_type::data_type;
 
     //! @brief Delay generator for sending messages after rounds.
-    using delay_type = common::option_type<tags::delay, random::constant_distribution<times_t, 0>, Ts...>;
+    using delay_type = common::option_type<tags::delay, distribution::constant<times_t, 0>, Ts...>;
 
     /**
      * @brief The actual component.
@@ -411,7 +333,7 @@ struct physical_connector {
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(std::false_type, N&) {
+            inline crand get_generator(std::false_type, N&) {
                 return {};
             }
 
@@ -525,7 +447,7 @@ struct physical_connector {
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline random::crand get_generator(std::false_type, N&) {
+            inline crand get_generator(std::false_type, N&) {
                 return {};
             }
 

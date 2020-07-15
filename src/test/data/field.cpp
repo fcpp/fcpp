@@ -3,7 +3,6 @@
 #include "test/helper.hpp"
 
 #include "lib/data/field.hpp"
-#include "lib/data/tuple.hpp"
 
 #define FIELD_EQ(a, b)  EXPECT_EQ(a, b); EXPECT_EQ(joined_domain(a), joined_domain(b))
 

@@ -232,12 +232,6 @@ while [ "$1" != "" ]; do
             alltargets="$alltargets $folder/..."
         done
         builder test $alltargets
-        if [ "$copts" == "" ]; then
-            for o in `powerset FCPP_EXPORT_NUM=2 FCPP_EXPORT_PTR=false FCPP_ONLINE_DROP=true FCPP_PARALLEL=true`; do
-                copts=`echo "$o" | sed "s|#| --copt=-D|g"`
-                builder test $alltargets
-            done
-        fi
         quitter
     else
         usage

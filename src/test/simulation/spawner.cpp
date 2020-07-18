@@ -11,7 +11,10 @@
 #include "lib/component/timer.hpp"
 #include "lib/simulation/spawner.hpp"
 
+#include "test/helper.hpp"
+
 using namespace fcpp;
+using namespace component::tags;
 
 
 struct tag {};
@@ -23,60 +26,72 @@ using seq_per = sequence::periodic<distribution::constant<times_t, 2>, distribut
 using ever_true = distribution::constant<bool, true>;
 using ever_false = distribution::constant<bool, false>;
 
+template <int O>
 using combo1 = component::combine_spec<
-    component::spawner<component::tags::spawn_schedule<seq_rep>,component::tags::init<tag,ever_true,gat,seq_per>>,
-    component::identifier<component::tags::synchronised<false>>,
-    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>,
-    component::base<>
+    component::spawner<spawn_schedule<seq_rep>, init<tag,ever_true,gat,seq_per>>,
+    component::identifier<
+        parallel<(O & 1) == 1>,
+        synchronised<(O & 2) == 2>
+    >,
+    component::storage<tuple_store<tag,bool,gat,int,start,times_t>>,
+    component::base<parallel<(O & 1) == 1>>
 >;
+template <int O>
 using combo2 = component::combine_spec<
-    component::spawner<component::tags::spawn_schedule<seq_rep>,component::tags::init<tag,ever_true,gat,seq_per>>,
-    component::spawner<component::tags::spawn_schedule<seq_per>,component::tags::init<tag,ever_false,gat,seq_per>>,
-    component::identifier<component::tags::synchronised<false>>,
-    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>,
-    component::base<>
+    component::spawner<spawn_schedule<seq_rep>,init<tag,ever_true,gat,seq_per>>,
+    component::spawner<spawn_schedule<seq_per>,init<tag,ever_false,gat,seq_per>>,
+    component::identifier<
+        parallel<(O & 1) == 1>,
+        synchronised<(O & 2) == 2>
+    >,
+    component::storage<tuple_store<tag,bool,gat,int,start,times_t>>,
+    component::base<parallel<(O & 1) == 1>>
 >;
+template <int O>
 using combo3 = component::combine_spec<
     component::spawner<
-        component::tags::spawn_schedule<seq_rep>,
-        component::tags::init<tag,ever_true,gat,seq_per>,
-        component::tags::spawn_schedule<seq_per>,
-        component::tags::init<tag,ever_false,gat,seq_per>
+        spawn_schedule<seq_rep>,
+        init<tag,ever_true,gat,seq_per>,
+        spawn_schedule<seq_per>,
+        init<tag,ever_false,gat,seq_per>
     >,
-    component::identifier<component::tags::synchronised<false>>,
-    component::storage<component::tags::tuple_store<tag,bool,gat,int,component::tags::start,times_t>>,
-    component::base<>
+    component::identifier<
+        parallel<(O & 1) == 1>,
+        synchronised<(O & 2) == 2>
+    >,
+    component::storage<tuple_store<tag,bool,gat,int,start,times_t>>,
+    component::base<parallel<(O & 1) == 1>>
 >;
 
 
-TEST(SpawnerTest, Sequence) {
-    combo1::net network{common::make_tagged_tuple<oth>("foo")};
+MULTI_TEST(SpawnerTest, Sequence, O, 2) {
+    typename combo1<O>::net network{common::make_tagged_tuple<oth>("foo")};
     EXPECT_EQ(0, (int)network.node_size());
     EXPECT_EQ(1.0, network.next());
     network.update();
     EXPECT_EQ(1, (int)network.node_size());
     EXPECT_TRUE(common::get<tag>(network.node_at(0).storage_tuple()));
     EXPECT_EQ(2, common::get<gat>(network.node_at(0).storage_tuple()));
-    EXPECT_EQ(1.0, common::get<component::tags::start>(network.node_at(0).storage_tuple()));
+    EXPECT_EQ(1.0, common::get<start>(network.node_at(0).storage_tuple()));
     EXPECT_EQ(1.0, network.next());
     network.update();
     EXPECT_EQ(2, (int)network.node_size());
     EXPECT_TRUE(common::get<tag>(network.node_at(1).storage_tuple()));
     EXPECT_EQ(3, common::get<gat>(network.node_at(1).storage_tuple()));
-    EXPECT_EQ(1.0, common::get<component::tags::start>(network.node_at(1).storage_tuple()));
+    EXPECT_EQ(1.0, common::get<start>(network.node_at(1).storage_tuple()));
     EXPECT_EQ(1.0, network.next());
     network.update();
     EXPECT_EQ(3, (int)network.node_size());
     EXPECT_TRUE(common::get<tag>(network.node_at(2).storage_tuple()));
     EXPECT_EQ(4, common::get<gat>(network.node_at(2).storage_tuple()));
-    EXPECT_EQ(1.0, common::get<component::tags::start>(network.node_at(2).storage_tuple()));
+    EXPECT_EQ(1.0, common::get<start>(network.node_at(2).storage_tuple()));
     EXPECT_EQ(TIME_MAX, network.next());
     network.update();
     EXPECT_EQ(3, (int)network.node_size());
 }
 
-TEST(SpawnerTest, MultiSpawn) {
-    combo2::net network{common::make_tagged_tuple<oth>("foo")};
+MULTI_TEST(SpawnerTest, MultiSpawn, O, 2) {
+    typename combo2<O>::net network{common::make_tagged_tuple<oth>("foo")};
     EXPECT_EQ(0, (int)network.node_size());
     EXPECT_EQ(1.0, network.next());
     network.update();
@@ -109,8 +124,8 @@ TEST(SpawnerTest, MultiSpawn) {
     EXPECT_EQ(TIME_MAX, network.next());
 }
 
-TEST(SpawnerTest, ComboSpawn) {
-    combo3::net network{common::make_tagged_tuple<oth>("foo")};
+MULTI_TEST(SpawnerTest, ComboSpawn, O, 2) {
+    typename combo3<O>::net network{common::make_tagged_tuple<oth>("foo")};
     EXPECT_EQ(0, (int)network.node_size());
     EXPECT_EQ(1.0, network.next());
     network.update();

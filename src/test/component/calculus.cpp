@@ -1,15 +1,29 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <algorithm>
-#include <unordered_set>
-#include <utility>
 
 #include "gtest/gtest.h"
 
 #include "lib/component/base.hpp"
 #include "lib/component/calculus.hpp"
 
+#include "test/helper.hpp"
+
 using namespace fcpp;
+using namespace component::tags;
+
+
+template <int O>
+using combo = component::combine_spec<
+    component::calculus<
+        exports<field<int>, times_t, int>,
+        export_pointer<(O & 1) == 1>,
+        export_split<(O & 2) == 2>,
+        online_drop<(O & 4) == 4>
+    >,
+    component::base<>
+>;
+
 
 template <typename node_t>
 times_t delayed(node_t& node, trace_t call_point, times_t t) {
@@ -39,42 +53,34 @@ int sharing(node_t& node, trace_t call_point, int x) {
 template <typename node_t>
 int gossip(node_t& node, trace_t call_point, int x) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
-    return nbr(node, 0, x, [&](fcpp::field<int> n) {
+    return nbr(node, 0, x, [&](field<int> n) {
         return std::max(fold_hood(node, 1, [](int x, int y) {
             return std::max(x,y);
         }, n), x);
     });
 }
 
-struct main {
-    template <typename node_t>
-    void operator()(node_t&, times_t) {}
-};
 
-using combo1 = component::combine_spec<
-    component::calculus<component::tags::exports<fcpp::field<int>, times_t, int>>,
-    component::base<>
->;
-
-using message_t = typename combo1::node::message_t;
-
-void sendto(const combo1::node& source, combo1::node& dest) {
-    message_t m;
+template <typename T>
+void sendto(const T& source, T& dest) {
+    typename T::message_t m;
     dest.receive(0.0, source.uid, source.send(0.0, dest.uid, m));
 }
 
-void rounder(combo1::node& node) {
+template <typename T>
+void rounder(T& node) {
     node.round_end(0.0);
     node.round_start(0.0);
 }
 
-TEST(CalculusTest, Size) {
-    combo1::net  network{common::make_tagged_tuple<>()};
-    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid, component::tags::hoodsize>(0, device_t(3))};
-    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid>(1)};
-    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid>(2)};
-    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid>(3)};
-    combo1::node d4{network, common::make_tagged_tuple<component::tags::uid>(4)};
+
+MULTI_TEST(CalculusTest, Size, O, 3) {
+    typename combo<O>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid, hoodsize>(0, device_t(3))};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
+    typename combo<O>::node d3{network, common::make_tagged_tuple<uid>(3)};
+    typename combo<O>::node d4{network, common::make_tagged_tuple<uid>(4)};
     d0.round_start(0.0);
     EXPECT_EQ(1, (int)d0.size());
     d0.round_end(0.0);
@@ -120,9 +126,9 @@ TEST(CalculusTest, Size) {
     d0.round_end(0.0);
 }
 
-TEST(CalculusTest, Old) {
-    combo1::net  network{common::make_tagged_tuple<>()};
-    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid>(0)};
+MULTI_TEST(CalculusTest, Old, O, 3) {
+    typename combo<O>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
     double d;
     d = delayed(d0, 0, 2.0);
     EXPECT_EQ(2.0, d);
@@ -159,11 +165,11 @@ TEST(CalculusTest, Old) {
     EXPECT_EQ(3, d);
 }
 
-TEST(CalculusTest, Nbr) {
-    combo1::net  network{common::make_tagged_tuple<>()};
-    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid>(0)};
-    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid>(1)};
-    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid>(2)};
+MULTI_TEST(CalculusTest, Nbr, O, 3) {
+    typename combo<O>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
     int d;
     d = sharing(d0, 0, 3);
     EXPECT_EQ(3, d);

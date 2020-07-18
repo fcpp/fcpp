@@ -1,12 +1,12 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
- * @file slowdistance.hpp
- * @brief Implementation of the `slowdistance` case study.
+ * @file slow_distance.hpp
+ * @brief Implementation of the case study comparing "share" to "rep+nbr" for AFB distances.
  */
 
-#ifndef SLOWDISTANCE_H_
-#define SLOWDISTANCE_H_
+#ifndef FCPP_SLOW_DISTANCE_H_
+#define FCPP_SLOW_DISTANCE_H_
 
 #include "lib/coordination/spreading.hpp"
 
@@ -83,4 +83,4 @@ struct main {
 
 }
 
-#endif // SLOWDISTANCE_H_
+#endif // FCPP_SLOW_DISTANCE_H_

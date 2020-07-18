@@ -6,7 +6,10 @@
 #include "lib/component/identifier.hpp"
 #include "lib/component/scheduler.hpp"
 
+#include "test/helper.hpp"
+
 using namespace fcpp;
+using namespace component::tags;
 
 
 // Component losing time during rounds.
@@ -48,22 +51,31 @@ struct exposer {
 
 using seq_per = sequence::periodic<distribution::constant<times_t, 15, 10>, distribution::constant<times_t, 2>, distribution::constant<times_t, 62, 10>, distribution::constant<size_t, 5>>;
 
+template <int O>
 using combo1 = component::combine_spec<
     exposer,
-    component::identifier<component::tags::synchronised<false>>,
-    component::base<>
+    component::identifier<
+        parallel<(O & 1) == 1>,
+        synchronised<(O & 2) == 2>
+    >,
+    component::base<parallel<(O & 1) == 1>>
 >;
+
+template <int O>
 using combo2 = component::combine_spec<
     exposer,
     worker,
-    component::scheduler<component::tags::round_schedule<seq_per>>,
-    component::identifier<component::tags::synchronised<true>>,
-    component::base<>
+    component::scheduler<round_schedule<seq_per>>,
+    component::identifier<
+        parallel<(O & 1) == 1>,
+        synchronised<(O & 2) == 2>
+    >,
+    component::base<parallel<(O & 1) == 1>>
 >;
 
 
-TEST(IdentifierTest, Sequential) {
-    combo1::net network{common::make_tagged_tuple<>()};
+MULTI_TEST(IdentifierTest, Sequential, O, 2) {
+    typename combo1<O>::net network{common::make_tagged_tuple<>()};
     EXPECT_EQ(0, (int)network.node_size());
     EXPECT_EQ(0, (int)network.node_count(0));
     EXPECT_EQ(network.node_begin(), network.node_end());
@@ -88,8 +100,8 @@ TEST(IdentifierTest, Sequential) {
     EXPECT_EQ(1, (int)network.node_at(1).uid);
 }
 
-TEST(IdentifierTest, Parallel) {
-    combo2::net network{common::make_tagged_tuple<>()};
+MULTI_TEST(IdentifierTest, Parallel, O, 2) {
+    typename combo2<O>::net network{common::make_tagged_tuple<>()};
     EXPECT_EQ(0, (int)network.node_size());
     EXPECT_EQ(0, (int)network.node_count(0));
     EXPECT_EQ(network.node_begin(), network.node_end());

@@ -1,8 +1,9 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include "test/helper.hpp"
-
+#include "lib/common/ostream.hpp"
 #include "lib/data/field.hpp"
+
+#include "test/helper.hpp"
 
 #define FIELD_EQ(a, b)  EXPECT_EQ(a, b); EXPECT_EQ(joined_domain(a), joined_domain(b))
 

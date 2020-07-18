@@ -176,7 +176,7 @@ class random_access_map {
   private:
     //! @brief The internal unordered map type.
     using map_t = std::unordered_map<K,T,H,P,A>;
-    //! @brief The internal unordered map type.
+    //! @brief The map type from key to indices in the iterator vector.
     using idx_t = std::unordered_map<K,size_t,H,P>;
     //! @brief The internal vector type for random access.
     using vec_t = std::vector<typename map_t::iterator>;

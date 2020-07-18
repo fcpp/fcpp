@@ -7,7 +7,7 @@
 #include "lib/component/scheduler.hpp"
 
 using namespace fcpp;
-using namespace fcpp::component::tags;
+using namespace component::tags;
 
 
 struct meantag {};
@@ -37,7 +37,7 @@ using combo4 = component::combine_spec<
 
 TEST(SchedulerTest, Single) {
     combo1::net  network{common::make_tagged_tuple<>()};
-    combo1::node device{network, common::make_tagged_tuple<component::tags::uid,seq_mul>(7,'b')};
+    combo1::node device{network, common::make_tagged_tuple<uid,seq_mul>(7,'b')};
     double d;
     d = device.next();
     device.update();
@@ -59,7 +59,7 @@ TEST(SchedulerTest, Single) {
 TEST(SchedulerTest, Multiple) {
     {
         combo2::net  network{common::make_tagged_tuple<>()};
-        combo2::node device{network, common::make_tagged_tuple<component::tags::uid,devtag>(7,0.0)};
+        combo2::node device{network, common::make_tagged_tuple<uid,devtag>(7,0.0)};
         double d;
         d = device.next();
         device.update();
@@ -90,7 +90,7 @@ TEST(SchedulerTest, Multiple) {
     }
     {
         combo4::net  network{common::make_tagged_tuple<>()};
-        combo4::node device{network, common::make_tagged_tuple<component::tags::uid,devtag>(7,0.0)};
+        combo4::node device{network, common::make_tagged_tuple<uid,devtag>(7,0.0)};
         double d;
         d = device.next();
         device.update();
@@ -123,7 +123,7 @@ TEST(SchedulerTest, Multiple) {
 
 TEST(SchedulerTest, NoRandomizer) {
     combo1::net  network{common::make_tagged_tuple<>()};
-    combo1::node device{network, common::make_tagged_tuple<component::tags::uid,seq_mul>(7,'b')};
+    combo1::node device{network, common::make_tagged_tuple<uid,seq_mul>(7,'b')};
     double d;
     d = device.next();
     device.update();

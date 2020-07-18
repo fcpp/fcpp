@@ -1,10 +1,5 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include <algorithm>
-#include <unordered_set>
-#include <utility>
-#include <vector>
-
 #include "gtest/gtest.h"
 
 #include "lib/component/base.hpp"
@@ -13,58 +8,29 @@
 #include "lib/coordination/geometry.hpp"
 #include "lib/simulation/physical_position.hpp"
 
+#include "test/test_net.hpp"
+
 using namespace fcpp;
+using namespace component::tags;
 
-constexpr int I = std::numeric_limits<int>::max()-1;
 
-DECLARE_OPTIONS(options, component::tags::exports<vec<2>>);
-DECLARE_COMBINE(combo, component::calculus, component::physical_position, component::randomizer);
+template <int O>
+DECLARE_OPTIONS(options,
+    exports<vec<2>>,
+    export_pointer<(O & 1) == 1>,
+    export_split<(O & 2) == 2>,
+    online_drop<(O & 4) == 4>
+);
 
-using combo1 = combo<options>;
+DECLARE_COMBINE(calc_pos, component::calculus, component::physical_position, component::randomizer);
 
-struct testnet {
-    testnet() : network{common::make_tagged_tuple<>()},
-        d0{network, common::make_tagged_tuple<component::tags::uid,component::tags::x>(0, make_vec(0,0))},
-        d1{network, common::make_tagged_tuple<component::tags::uid,component::tags::x>(1, make_vec(1,0))},
-        d2{network, common::make_tagged_tuple<component::tags::uid,component::tags::x>(2, make_vec(1,1))} {
-        topology.push_back({0, 1});
-        topology.push_back({0, 1, 2});
-        topology.push_back({1, 2});
-        for (int i = 0; i < 3; ++i) d(i).round_start(0.0);
-        count = 0;
-    }
-
-    combo1::node& d(int id) {
-        if (id == 0) return d0;
-        if (id == 1) return d1;
-        if (id == 2) return d2;
-        return d0;
-    }
-
-    void newround() {
-        for (int i = 0; i < 3; ++i) d(i).round_end(count);
-        for (int source = 0; source < 3; ++source)
-            for (int dest : topology[source]) {
-                typename combo1::node::message_t m;
-                d(dest).receive(count + 0.5, source, d(source).send(count + 0.5, dest, m));
-            }
-        ++count;
-        for (int i = 0; i < 3; ++i) d(i).round_start(count);
-    }
-    
-    combo1::net  network;
-    combo1::node d0, d1, d2;
-    std::vector<std::vector<int>> topology;
-    int count;
-};
-
-#define EXPECT_ROUND(a, x)          \
-        EXPECT_EQ(round(0,a), x);   \
-        n.newround()
+template <int O>
+using combo = calc_pos<options<O>>;
 
 
 TEST(GeometryTest, Target) {
-    testnet n;
+    test_net<combo<0>> n;
+    n.d(2).position() = make_vec(1,1);
     vec<2> p{0,0};
     for (int i=0; i<10000; ++i) {
         vec<2> q = coordination::random_rectangle_target(n.d(0), 0, make_vec(1,2), make_vec(3,8));
@@ -85,30 +51,35 @@ TEST(GeometryTest, Target) {
     EXPECT_LT(distance(p, make_vec(2,2.5)), 0.1);
 }
 
-TEST(GeometryTest, Follow) {
-    testnet n;
-    auto round = [&](int node, vec<2> value){
-        return coordination::follow_target(n.d(node), 0, value, 3, 1);
+MULTI_TEST(GeometryTest, Follow, O, 3) {
+    test_net<combo<O>, std::tuple<double>(double), 1> n{
+        [&](auto& node, double val){
+            return std::make_tuple(
+                coordination::follow_target(node, 0, make_vec(val, 0), 3, 1)
+            );
+        }
     };
-    EXPECT_ROUND(make_vec(10, 0), 10);
-    EXPECT_ROUND(make_vec(10, 0), 7);
-    EXPECT_ROUND(make_vec(10, 0), 4);
-    EXPECT_ROUND(make_vec(10, 0), 1);
-    EXPECT_ROUND(make_vec(10, 0), 0);
-    EXPECT_ROUND(make_vec(10, 0), 0);
+    EXPECT_ROUND(n, {10}, {10});
+    EXPECT_ROUND(n, {10}, {7});
+    EXPECT_ROUND(n, {10}, {4});
+    EXPECT_ROUND(n, {10}, {1});
+    EXPECT_ROUND(n, {10}, {0});
+    EXPECT_ROUND(n, {10}, {0});
 }
 
-TEST(GeometryTest, Walk) {
-    testnet n;
-    vec<2> p;
-    for (int i=0; i<10000; ++i) {
-        p = coordination::rectangle_walk(n.d(0), 0, make_vec(0,0), make_vec(3,3), 1, 0.5, 1);
-        EXPECT_TRUE(0 <= p[0] and p[0] <= 3 and 0 <= p[1] and p[1] <= 3);
-        p = n.d(0).position();
-        EXPECT_TRUE(0 <= p[0] and p[0] <= 3 and 0 <= p[1] and p[1] <= 3);
-        EXPECT_LE(norm(n.d(0).velocity()), 0.5000001);
-        EXPECT_EQ(n.d(0).propulsion(), make_vec(0,0));
-        EXPECT_EQ(n.d(0).friction(), 0.0);
-        n.newround();
-    }
+MULTI_TEST(GeometryTest, Walk, O, 3) {
+    test_net<combo<O>, std::tuple<bool, bool, bool, bool>(), 1> n{
+        [&](auto& node){
+            vec<2> t = coordination::rectangle_walk(node, 0, make_vec(0,0), make_vec(3,3), 1, 0.5, 1);
+            vec<2> p = node.position();
+            return std::make_tuple(
+                0 <= t[0] and t[0] <= 3 and 0 <= t[1] and t[1] <= 3,
+                0 <= p[0] and p[0] <= 3 and 0 <= p[1] and p[1] <= 3,
+                norm(node.velocity()) <= 0.5000001,
+                node.propulsion() == make_vec(0,0) and node.friction() == 0.0
+            );
+        }
+    };
+    for (int i=0; i<10000; ++i)
+        EXPECT_ROUND(n, {true}, {true}, {true}, {true});
 }

@@ -6,6 +6,7 @@
 #include "lib/component/randomizer.hpp"
 
 using namespace fcpp;
+using namespace component::tags;
 
 
 // Component exposing the storage interface.
@@ -31,14 +32,14 @@ using combo1 = component::combine_spec<exposer,component::randomizer<>,component
 
 using combo2 = component::combine_spec<
     exposer,
-    component::randomizer<component::tags::generator<crand>>,
+    component::randomizer<generator<crand>>,
     component::base<>
 >;
 
 
 TEST(RandomizerTest, Twister) {
     combo1::net  network{common::make_tagged_tuple<>()};
-    combo1::node device{network, common::make_tagged_tuple<component::tags::uid>(42)};
+    combo1::node device{network, common::make_tagged_tuple<uid>(42)};
     for (int i=0; i<1000; ++i) {
         EXPECT_LE(0, device.next_int());
         EXPECT_LE(0, device.next_int(9));
@@ -56,7 +57,7 @@ TEST(RandomizerTest, Twister) {
 
 TEST(RandomizerTest, Crand) {
     combo2::net  network{common::make_tagged_tuple<>()};
-    combo2::node device{network, common::make_tagged_tuple<component::tags::uid,component::tags::seed>(42,2)};
+    combo2::node device{network, common::make_tagged_tuple<uid,seed>(42,2)};
     for (int i=0; i<1000; ++i) {
         EXPECT_LE(0, device.next_int());
         EXPECT_LE(0, device.next_int(9));
@@ -73,7 +74,7 @@ TEST(RandomizerTest, Crand) {
 }
 
 TEST(RandomizerTest, Net) {
-    combo1::net  network{common::make_tagged_tuple<component::tags::seed>(20)};
+    combo1::net  network{common::make_tagged_tuple<seed>(20)};
     for (int i=0; i<1000; ++i) {
         EXPECT_LE(0, network.next_int());
         EXPECT_LE(0, network.next_int(9));
@@ -90,7 +91,7 @@ TEST(RandomizerTest, Net) {
 }
 
 TEST(RandomizerTest, Error) {
-    combo1::net  network{common::make_tagged_tuple<component::tags::seed>(20)};
+    combo1::net  network{common::make_tagged_tuple<seed>(20)};
     double d;
     d = 0;
     for (int i=0; i<10000; ++i)

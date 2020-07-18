@@ -4,6 +4,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:mutex",
+        "//lib/common:ostream",
         "//lib/simulation:batch",
         "//test:helper",
     ],
@@ -21,6 +22,7 @@ cc_test(
         "//lib/component:scheduler",
         "//lib/simulation:physical_connector",
         "//lib/simulation:physical_position",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -52,6 +54,7 @@ cc_test(
         "//lib/component:storage",
         "//lib/component:timer",
         "//lib/simulation:spawner",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/common/mutex.hpp"
+#include "lib/common/ostream.hpp"
 #include "lib/simulation/batch.hpp"
 
 #include "test/helper.hpp"

@@ -132,6 +132,11 @@ struct physical_position {
 
             #undef MISSING_TAG_MESSAGE
 
+            //! @brief Position now.
+            position_type& position() {
+                return m_x;
+            }
+
             //! @brief Position now (const access).
             const position_type& position() const {
                 return m_x;

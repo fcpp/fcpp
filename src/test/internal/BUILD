@@ -5,6 +5,7 @@ cc_test(
         "@gtest//:main",
         "//lib/common:multitype_map",
         "//lib/internal:context",
+        "//test:test_net",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

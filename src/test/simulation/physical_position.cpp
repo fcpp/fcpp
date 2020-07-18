@@ -9,6 +9,7 @@
 #include "lib/simulation/physical_position.hpp"
 
 using namespace fcpp;
+using namespace component::tags;
 
 
 struct tag {};
@@ -32,14 +33,14 @@ using seq_per = sequence::periodic<distribution::constant<times_t, 2>, distribut
 
 using combo1 = component::combine_spec<
     exposer,
-    component::scheduler<component::tags::round_schedule<seq_per>>,
-    component::physical_position<component::tags::dimension<2>>,
+    component::scheduler<round_schedule<seq_per>>,
+    component::physical_position<dimension<2>>,
     component::base<>
 >;
 
 TEST(PhysicalPositionTest, NoFriction) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
-    combo1::node device{network, common::make_tagged_tuple<component::tags::uid, component::tags::x, component::tags::a>(0, make_vec(1.0,2.0), make_vec(-1.0,0.0))};
+    combo1::node device{network, common::make_tagged_tuple<uid, x, a>(0, make_vec(1.0,2.0), make_vec(-1.0,0.0))};
     EXPECT_EQ(2.0, device.next());
     device.update();
     vec<2> v;
@@ -90,9 +91,9 @@ TEST(PhysicalPositionTest, YesFriction) {
 
 TEST(PhysicalPositionTest, NbrVec) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
-    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, make_vec(0.0,0.0))};
-    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, make_vec(1.0,0.0))};
-    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(3, make_vec(0.0,1.0))};
+    combo1::node d1{network, common::make_tagged_tuple<uid, x>(1, make_vec(0.0,0.0))};
+    combo1::node d2{network, common::make_tagged_tuple<uid, x>(2, make_vec(1.0,0.0))};
+    combo1::node d3{network, common::make_tagged_tuple<uid, x>(3, make_vec(0.0,1.0))};
     combo1::node::message_t m;
     EXPECT_EQ(2.0, d1.next());
     EXPECT_EQ(2.0, d2.next());

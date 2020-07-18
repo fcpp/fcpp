@@ -10,7 +10,10 @@
 #include "lib/simulation/physical_connector.hpp"
 #include "lib/simulation/physical_position.hpp"
 
+#include "test/helper.hpp"
+
 using namespace fcpp;
+using namespace component::tags;
 
 
 struct tag {};
@@ -31,17 +34,19 @@ struct exposer {
 
 using seq_per = sequence::periodic<distribution::constant<times_t, 2>, distribution::constant<times_t, 1>, distribution::constant<times_t, 9>>;
 
-using combo1 = component::combine_spec<
+template <int O>
+using combo = component::combine_spec<
     exposer,
-    component::scheduler<component::tags::round_schedule<seq_per>>,
-    component::physical_connector<component::tags::connector<connect::fixed<1>>, component::tags::delay<distribution::constant<times_t, 1, 4>>>,
+    component::scheduler<round_schedule<seq_per>>,
+    component::physical_connector<parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant<times_t, 1, 4>>>,
     component::physical_position<>,
-    component::base<>
+    component::base<parallel<(O & 1) == 1>>
 >;
 
-TEST(PhysicalConnectorTest, Cell) {
+
+MULTI_TEST(PhysicalConnectorTest, Cell, O, 1) {
     int n[4]; // 4 nodes
-    component::details::cell<FCPP_PARALLEL, int> c[4]; // 4 cells
+    component::details::cell<(O & 1) == 1, int> c[4]; // 4 cells
     n[0] = n[1] = n[2] = n[3] = 0;
     c[0].insert(n[0]);
     c[1].insert(n[1]);
@@ -85,8 +90,8 @@ TEST(PhysicalConnectorTest, Cell) {
     EXPECT_EQ(3, n[3]);
 }
 
-TEST(PhysicalConnectorTest, Connection) {
-    combo1::net network{common::make_tagged_tuple<oth>("foo")};
+MULTI_TEST(PhysicalConnectorTest, Connection, O, 1) {
+    typename combo<O>::net network{common::make_tagged_tuple<oth>("foo")};
     EXPECT_EQ(1.0, network.connection_radius());
     typename connect::fixed<1>::data_type data;
     bool connect;
@@ -100,13 +105,13 @@ TEST(PhysicalConnectorTest, Connection) {
     EXPECT_FALSE(connect);
 }
 
-TEST(PhysicalConnectorTest, EnterLeave) {
-    combo1::net  network{common::make_tagged_tuple<oth>("foo")};
-    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(0, make_vec(0.5,0.5))};
-    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, make_vec(0.0,0.0))};
-    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, make_vec(1.5,0.5))};
-    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(3, make_vec(1.5,1.5))};
-    combo1::node d4{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(4, make_vec(9.0,9.0))};
+MULTI_TEST(PhysicalConnectorTest, EnterLeave, O, 1) {
+    typename combo<O>::net  network{common::make_tagged_tuple<oth>("foo")};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid, x>(0, make_vec(0.5,0.5))};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid, x>(1, make_vec(0.0,0.0))};
+    typename combo<O>::node d2{network, common::make_tagged_tuple<uid, x>(2, make_vec(1.5,0.5))};
+    typename combo<O>::node d3{network, common::make_tagged_tuple<uid, x>(3, make_vec(1.5,1.5))};
+    typename combo<O>::node d4{network, common::make_tagged_tuple<uid, x>(4, make_vec(9.0,9.0))};
     network.cell_enter(d0);
     network.cell_enter(d1);
     network.cell_enter(d2);
@@ -121,19 +126,17 @@ TEST(PhysicalConnectorTest, EnterLeave) {
     EXPECT_EQ(target, close);
 }
 
-template <typename node_t>
-void update(node_t& node) {
-    common::lock_guard<FCPP_PARALLEL> l(node.mutex);
-    node.update();
-}
-
-TEST(PhysicalConnectorTest, Messages) {
-    combo1::net  network{common::make_tagged_tuple<oth>("foo")};
-    combo1::node d0{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(0, make_vec(0.25,0.25))};
-    combo1::node d1{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(1, make_vec(0.0,0.0))};
-    combo1::node d2{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(2, make_vec(1.5,0.5))};
-    combo1::node d3{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(3, make_vec(1.5,1.5))};
-    combo1::node d4{network, common::make_tagged_tuple<component::tags::uid, component::tags::x>(4, make_vec(9.0,9.0))};
+MULTI_TEST(PhysicalConnectorTest, Messages, O, 1) {
+    auto update = [](auto& node) {
+        common::lock_guard<(O & 1) == 1> l(node.mutex);
+        node.update();
+    };
+    typename combo<O>::net  network{common::make_tagged_tuple<oth>("foo")};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid, x>(0, make_vec(0.25,0.25))};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid, x>(1, make_vec(0.0,0.0))};
+    typename combo<O>::node d2{network, common::make_tagged_tuple<uid, x>(2, make_vec(1.5,0.5))};
+    typename combo<O>::node d3{network, common::make_tagged_tuple<uid, x>(3, make_vec(1.5,1.5))};
+    typename combo<O>::node d4{network, common::make_tagged_tuple<uid, x>(4, make_vec(9.0,9.0))};
     EXPECT_EQ(2.0, d0.next());
     EXPECT_EQ(2.0, d1.next());
     EXPECT_EQ(2.0, d2.next());

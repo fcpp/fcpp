@@ -27,6 +27,35 @@ namespace fcpp {
 namespace coordination {
 
 
+//! @brief Pointwise check for infinite values.
+field<bool> isinf(const field<double>& f) {
+    return details::map_hood([](double x){
+        return std::isinf(x);
+    }, f);
+}
+
+//! @brief Pointwise check for not-a-number values.
+field<bool> isnan(const field<double>& f) {
+    return details::map_hood([](double x){
+        return std::isnan(x);
+    }, f);
+}
+
+//! @brief Pointwise check for finite values.
+field<bool> isfinite(const field<double>& f) {
+    return details::map_hood([](double x){
+        return std::isfinite(x);
+    }, f);
+}
+
+//! @brief Pointwise check for normal values (finite, non-zero and not sub-normal).
+field<bool> isnormal(const field<double>& f) {
+    return details::map_hood([](double x){
+        return std::isnormal(x);
+    }, f);
+}
+
+
 //! @brief Reduces a field to a single value by minimum.
 template <typename node_t, typename A>
 inline to_local<A> min_hood(node_t& node, trace_t call_point, const A& a) {
@@ -78,18 +107,6 @@ inline to_local<A> sum_hood(node_t& node, trace_t call_point, const A& a, const 
 }
 
 
-//! @brief A counter increasing by one at every round.
-template <typename node_t>
-inline int counter(node_t& node, trace_t call_point) {
-    return counter(node, call_point, 1, 0);
-}
-
-//! @brief A counter increasing by a given amount at every round.
-template <typename node_t, typename A>
-inline A counter(node_t& node, trace_t call_point, A&& a) {
-    return counter(node, call_point, a, A{});
-}
-
 //! @brief A counter increasing by a given amount at every round, starting from a given amount.
 template <typename node_t, typename A, typename B>
 inline auto counter(node_t& node, trace_t call_point, A&& a, B&& b) {
@@ -98,33 +115,16 @@ inline auto counter(node_t& node, trace_t call_point, A&& a, B&& b) {
     });
 }
 
-
-//! @brief Pointwise check for infinite values.
-field<bool> isinf(const field<double>& f) {
-    return details::map_hood([](double x){
-        return std::isinf(x);
-    }, f);
+//! @brief A counter increasing by a given amount at every round.
+template <typename node_t, typename A>
+inline A counter(node_t& node, trace_t call_point, A&& a) {
+    return counter(node, call_point, a, A{});
 }
 
-//! @brief Pointwise check for not-a-number values.
-field<bool> isnan(const field<double>& f) {
-    return details::map_hood([](double x){
-        return std::isnan(x);
-    }, f);
-}
-
-//! @brief Pointwise check for finite values.
-field<bool> isfinite(const field<double>& f) {
-    return details::map_hood([](double x){
-        return std::isfinite(x);
-    }, f);
-}
-
-//! @brief Pointwise check for normal values (finite, non-zero and not sub-normal).
-field<bool> isnormal(const field<double>& f) {
-    return details::map_hood([](double x){
-        return std::isnormal(x);
-    }, f);
+//! @brief A counter increasing by one at every round.
+template <typename node_t>
+inline int counter(node_t& node, trace_t call_point) {
+    return counter(node, call_point, 1, 0);
 }
 
 

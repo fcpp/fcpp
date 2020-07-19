@@ -5,6 +5,8 @@ function usage() {
     echo -e "    \033[1mclean\033[0m:                           cleans all built files (can be chained)"
     echo -e "    \033[1mhere\033[0m:                            sets the working directory here (can be chained)"
     echo -e "    \033[1mgcc\033[0m:                             sets the compiler to gcc (can be chained)"
+    echo -e "    \033[1mgrep\033[0m:                            searches for a pattern in the library"
+    echo -e "       <pattern>"
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation (can be chained)"
     echo -e "    \033[1mbuild\033[0m:                           builds binaries for given targets, skipping tests"
     echo -e "       <copts...> <targets...>"

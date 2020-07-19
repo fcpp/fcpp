@@ -4,7 +4,6 @@ cc_library(
     srcs = ['helper.cpp'],
     deps = [
         "@gtest//:main",
-        "//lib:beautify",
         "//lib/common:ostream",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

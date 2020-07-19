@@ -32,7 +32,7 @@
 #define __TYPE_ARG__(T) typename T
 
 //! @brief Macro defining the type arguments of a function.
-#define FUN(...)        template <MACRO_MAPPER(__TYPE_ARG__, node_t, ##__VA_ARGS__)>
+#define FUN(...)        template <MACRO_MAPPER(__TYPE_ARG__, node_t __VA_OPT__(,) __VA_ARGS__)>
 
 //! @brief Macro inserting the default arguments.
 #define ARGS            node_t& node, trace_t call_point
@@ -41,21 +41,22 @@
 #define CALL            node, __COUNTER__
 
 //! @brief Macro inserting the default code at function start.
-#define CODE            data::trace_call trace_caller(node.stack_trace, call_point);
+#define CODE            internal::trace_call trace_caller(node.stack_trace, call_point);
 
 /**
  * @brief Macro for defining a main class to be used in the calculus component.
  *
- * The function to be called by the main class is given as the first argument `f`;
- * and further arguments to be provided to `f` follow  (may be constants or the
- * variable `t` holding the `times_t` time of function call).
+ * The function to be called by the main class is given as the first argument `f`.
+ * The second argument `t` is a variable name for the `times_t` time of function call
+ * (leave empty if not used).
+ * Further arguments to be provided to `f` follow (possibly using `t`).
  *
  */
-#define MAIN(f, ...)                            \
+#define MAIN(f, t, ...)                         \
 struct main {                                   \
     template <typename node_t>                  \
     void operator()(node_t& node, times_t t) {  \
-        f(node, 0, ##__VA_ARGS__);              \
+        f(node, 0 __VA_OPT__(,) __VA_ARGS__);   \
     }                                           \
 }
 

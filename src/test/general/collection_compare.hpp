@@ -8,6 +8,7 @@
 #ifndef FCPP_COLLECTION_COMPARE_H_
 #define FCPP_COLLECTION_COMPARE_H_
 
+#include "lib/beautify.hpp"
 #include "lib/coordination/collection.hpp"
 #include "lib/coordination/geometry.hpp"
 #include "lib/coordination/spreading.hpp"
@@ -42,21 +43,15 @@ namespace tags {
 
 
 //! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
-template <typename node_t>
-double generic_distance(node_t& node, trace_t call_point, int algorithm, bool source) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-    
-    if (algorithm == 0) return abf_distance(node, 0, source);
-    if (algorithm == 1) return bis_distance(node, 1, source, 1.0, 50.0);
-    if (algorithm == 2) return flex_distance(node, 2, source, 0.2, 100.0, 0.1, 10);
+FUN() double generic_distance(ARGS, int algorithm, bool source) { CODE
+    if (algorithm == 0) return abf_distance(CALL, source);
+    if (algorithm == 1) return bis_distance(CALL, source, 1.0, 50.0);
+    if (algorithm == 2) return flex_distance(CALL, source, 0.2, 100.0, 0.1, 10);
     return 0;
 }
 
 //! @brief Device counting case study.
-template <typename node_t>
-void device_counting(node_t& node, trace_t call_point, bool is_source, double dist) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-    
+FUN() void device_counting(ARGS, bool is_source, double dist) { CODE
     auto adder = [](double x, double y) {
         return x+y;
     };
@@ -66,9 +61,9 @@ void device_counting(node_t& node, trace_t call_point, bool is_source, double di
     auto multiplier = [](double x, double f) {
         return x*f;
     };
-    double spc = sp_collection(node, 0, dist, 1.0, 0.0, adder);
-    double mpc = mp_collection(node, 1, dist, 1.0, 0.0, adder, divider);
-    double wmpc = wmp_collection(node, 2, dist, 100.0, 1.0, adder, multiplier);
+    double spc = sp_collection(CALL, dist, 1.0, 0.0, adder);
+    double mpc = mp_collection(CALL, dist, 1.0, 0.0, adder, divider);
+    double wmpc = wmp_collection(CALL, dist, 100.0, 1.0, adder, multiplier);
     node.storage(tags::spc_sum{}) = is_source ? spc : 0;
     node.storage(tags::mpc_sum{}) = is_source ? mpc : 0;
     node.storage(tags::wmpc_sum{}) = is_source ? wmpc : 0;
@@ -76,12 +71,9 @@ void device_counting(node_t& node, trace_t call_point, bool is_source, double di
 }
 
 //! @brief Progress tracking case study.
-template <typename node_t>
-void progress_tracking(node_t& node, trace_t call_point, bool is_source, device_t source_id, double dist) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-    
+FUN() void progress_tracking(ARGS, bool is_source, device_t source_id, double dist) { CODE
     double value = distance(node.net.node_at(source_id).position(), node.position()) + (500 - node.current_time());
-    double threshold = 3.5 / count_hood(node, 0);
+    double threshold = 3.5 / count_hood(CALL);
     
     auto adder = [](double x, double y) {
         return max(x,y);
@@ -92,9 +84,9 @@ void progress_tracking(node_t& node, trace_t call_point, bool is_source, device_
     auto multiplier = [&](double x, double f) {
         return f > threshold ? x : 0;
     };
-    double spc = sp_collection(node, 0, dist, value, 0.0, adder);
-    double mpc = mp_collection(node, 1, dist, value, 0.0, adder, divider);
-    double wmpc = wmp_collection(node, 2, dist, 100.0, value, adder, multiplier);
+    double spc = sp_collection(CALL, dist, value, 0.0, adder);
+    double mpc = mp_collection(CALL, dist, value, 0.0, adder, divider);
+    double wmpc = wmp_collection(CALL, dist, 100.0, value, adder, multiplier);
     node.storage(tags::spc_max{}) = is_source ? spc : 0;
     node.storage(tags::mpc_max{}) = is_source ? mpc : 0;
     node.storage(tags::wmpc_max{}) = is_source ? wmpc : 0;
@@ -102,19 +94,16 @@ void progress_tracking(node_t& node, trace_t call_point, bool is_source, device_
 }
 
 //! @brief Main function.
-template <typename node_t>
-void collection_compare(node_t& node, trace_t call_point) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-    
-    rectangle_walk(node, 0, make_vec(0,0), make_vec(2000,200), 30.5, 1);
+FUN() void collection_compare(ARGS) { CODE
+    rectangle_walk(CALL, make_vec(0,0), make_vec(2000,200), 30.5, 1);
     
     device_t source_id = node.current_time() < 250 ? 0 : 1;
     bool is_source = node.uid == source_id;
     int dist_algo = node.storage(tags::algorithm{});
-    double dist = generic_distance(node, 1, dist_algo, is_source);
+    double dist = generic_distance(CALL, dist_algo, is_source);
     
-    device_counting(node, 2, is_source, dist);
-    progress_tracking(node, 3, is_source, source_id, dist);
+    device_counting(CALL, is_source, dist);
+    progress_tracking(CALL, is_source, source_id, dist);
 }
 
 
@@ -122,12 +111,7 @@ void collection_compare(node_t& node, trace_t call_point) {
 
 
 //! @brief Main struct calling `collection_compare`.
-struct main {
-    template <typename node_t>
-    void operator()(node_t& node, times_t) {
-        coordination::collection_compare(node, 0);
-    }
-};
+MAIN(coordination::collection_compare,);
 
 
 }

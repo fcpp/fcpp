@@ -61,7 +61,7 @@ T wmp_collection(node_t& node, trace_t call_point, double distance, double radiu
     if (factor == 0) factor = 1;
     field<double> in_w = nbr(node, 1, out_w / factor);
     return nbr(node, 2, value, [&](field<T> x){
-        return fold_hood(node, 2, accumulate, map_hood(node, 2, multiply, x, in_w), value);
+        return fold_hood(node, 2, accumulate, map_hood(multiply, x, in_w), value);
     });
 }
 

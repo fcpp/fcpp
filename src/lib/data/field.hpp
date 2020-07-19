@@ -59,6 +59,9 @@ using field_result = field<local_result<F, A...>>;
 //! @cond INTERNAL
 //! @brief Forward declarations for enabling friendships.
 namespace details {
+    template <typename T, typename>
+    class field_iterator;
+
     template <bool b, typename T>
     struct field_base {};
 
@@ -180,6 +183,16 @@ class field : public details::field_base<std::is_same<T, bool>::value, T> {
     //! @brief Implicit conversion move constructor.
     template <typename A, typename = std::enable_if_t<std::is_convertible<A,T>::value>>
     field(field<A>&& f) : m_ids(std::move(f.m_ids)), m_vals{make_move_iterator(f.m_vals.begin()), make_move_iterator(f.m_vals.end())} {}
+
+    //! @brief Implicit conversion copy constructor from field-like structures.
+    template <typename A, typename = std::enable_if_t<std::is_convertible<to_local<A>,T>::value and (not common::is_class_template<fcpp::field,A>) and not std::is_convertible<A,T>::value>>
+    field(const A& f) {
+        m_vals.push_back(details::other(f));
+        for (details::field_iterator<A const, void> it(f); not it.end(); ++it) {
+            m_ids.push_back(it.id());
+            m_vals.push_back(it.value());
+        }
+    }
     //! @}
 
     //! @name assignment operators
@@ -873,141 +886,6 @@ namespace details {
     //! @}
 
     /**
-     * @name map_hood
-     *
-     * Applies an operator pointwise on a sequence of fields.
-     */
-    //! @{
-    //! @brief General case with some field argument.
-    template <typename F, typename... A, typename = if_field<tuple<A...>>>
-    field_result<F,A...> map_hood(F&& op, A const&... a) {
-        field_result<F,A...> r(op(other(a)...));
-        for (field_iterator<tuple<A...> const> it(a...); not it.end(); ++it) {
-            get_ids(r).push_back(it.id());
-            get_vals(r).push_back(it.apply(op));
-        }
-        return r;
-    }
-    //! @brief Optimisation for all local arguments.
-    template <typename F, typename... L, typename = if_local<tuple<L...>>>
-    field_result<F,L...> map_hood(F&& op, L&&... l) {
-        return op(std::forward<L>(l)...);
-    }
-    //! @brief Optimisation for a single movable field argument in first position.
-    template <typename F, typename T, typename... L, typename = if_local<tuple<L...>>>
-    field_result<F,field<T>,L...> map_hood(F&& op, field<T>&& f, L&&... l) {
-        field_result<F,field<T>,L...> r;
-        get_ids(r) = get_ids(std::move(f));
-        get_vals(r).resize(get_vals(f).size());
-        for (size_t i = 0; i < get_vals(f).size(); ++i)
-                get_vals(r)[i] = op(get_vals(std::move(f))[i], l...);
-        return r;
-    }
-    //! @brief Optimisation for a single immutable field argument in first position.
-    template <typename F, typename T, typename... L, typename = if_local<tuple<L...>>>
-    field_result<F,field<T>,L...> map_hood(F&& op, field<T> const& f, L&&... l) {
-        field_result<F,field<T>,L...> r;
-        get_ids(r) = get_ids(f);
-        get_vals(r).resize(get_vals(f).size());
-        for (size_t i = 0; i < get_vals(f).size(); ++i)
-                get_vals(r)[i] = op(get_vals(f)[i], l...);
-        return r;
-    }
-    //! @brief Optimisation for a single movable field argument in second position.
-    template <typename F, typename A, typename T, typename... L, typename = if_local<tuple<A,L...>>>
-    field_result<F,A,field<T>,L...> map_hood(F&& op, A&& a, field<T>&& f, L&&... l) {
-        field_result<F,A,field<T>,L...> r;
-        get_ids(r) = get_ids(std::move(f));
-        get_vals(r).resize(get_vals(f).size());
-        for (size_t i = 0; i < get_vals(f).size(); ++i)
-                get_vals(r)[i] = op(a, get_vals(std::move(f))[i], l...);
-        return r;
-    }
-    //! @brief Optimisation for a single immutable field argument in second position.
-    template <typename F, typename A, typename T, typename... L, typename = if_local<tuple<A,L...>>>
-    field_result<F,A,field<T>,L...> map_hood(F&& op, A&& a, field<T> const& f, L&&... l) {
-        field_result<F,A,field<T>,L...> r;
-        get_ids(r) = get_ids(f);
-        get_vals(r).resize(get_vals(f).size());
-        for (size_t i = 0; i < get_vals(f).size(); ++i)
-                get_vals(r)[i] = op(a, get_vals(f)[i], l...);
-        return r;
-    }
-    //! @brief Optimisation for a single movable field argument in third position.
-    template <typename F, typename A, typename B, typename T, typename... L, typename = if_local<tuple<A,B,L...>>>
-    field_result<F,A,B,field<T>,L...> map_hood(F&& op, A&& a, B&& b, field<T>&& f, L&&... l) {
-        field_result<F,A,B,field<T>,L...> r;
-        get_ids(r) = get_ids(std::move(f));
-        get_vals(r).resize(get_vals(f).size());
-        for (size_t i = 0; i < get_vals(f).size(); ++i)
-                get_vals(r)[i] = op(a, b, get_vals(std::move(f))[i], l...);
-        return r;
-    }
-    //! @brief Optimisation for a single immutable field argument in third position.
-    template <typename F, typename A, typename B, typename T, typename... L, typename = if_local<tuple<A,B,L...>>>
-    field_result<F,A,B,field<T>,L...> map_hood(F&& op, A&& a, B&& b, field<T> const& f, L&&... l) {
-        field_result<F,A,B,field<T>,L...> r;
-        get_ids(r) = get_ids(f);
-        get_vals(r).resize(get_vals(f).size());
-        for (size_t i = 0; i < get_vals(f).size(); ++i)
-                get_vals(r)[i] = op(a, b, get_vals(f)[i], l...);
-        return r;
-    }
-    //! @brief Optimisation for two field arguments in starting position.
-    template <typename F, typename T, typename U, typename... L, typename = if_local<tuple<L...>>>
-    field_result<F,field<T>,field<U>,L...> map_hood(F&& op, field<T> const& f, field<U> const& g, L&&... l) {
-        field_result<F,field<T>,field<U>,L...> r;
-        get_ids(r).reserve(get_ids(f).size() + get_ids(g).size());
-        get_vals(r).reserve(get_ids(f).size() + get_ids(g).size() + 1);
-        get_vals(r).push_back(op(get_vals(f)[0], get_vals(g)[0], l...));
-        size_t i = 0, j = 0;
-        while (i < get_ids(f).size() or j < get_ids(g).size()) {
-            if (i == get_ids(f).size()) {
-                get_ids(r).push_back(get_ids(g)[j]);
-                get_vals(r).push_back(op(get_vals(f)[0], get_vals(g)[++j], l...));
-            } else if (j == get_ids(g).size() or get_ids(f)[i] < get_ids(g)[j]) {
-                get_ids(r).push_back(get_ids(f)[i]);
-                get_vals(r).push_back(op(get_vals(f)[++i], get_vals(g)[0], l...));
-            } else if (get_ids(f)[i] > get_ids(g)[j]) {
-                get_ids(r).push_back(get_ids(g)[j]);
-                get_vals(r).push_back(op(get_vals(f)[0], get_vals(g)[++j], l...));
-            } else {
-                get_ids(r).push_back(get_ids(f)[i]);
-                get_vals(r).push_back(op(get_vals(f)[++i], get_vals(g)[++j], l...));
-            }
-        }
-        return r;
-    }
-    //! @}
-
-    /**
-     * @name mod_hood
-     *
-     * Modifies a field in-place, by applying an operator pointwise (with a sequence of parameters).
-     */
-    //! @{
-    //! @brief General case with some field argument.
-    template <typename F, typename A, typename... L>
-    if_field<tuple<A,L...>, A&> mod_hood(F&& op, A& a, L const&... l) {
-        for (field_iterator<tuple<A,L const...>> it(a,l...); not it.end(); ++it)
-            get<0>(it).emplace(it.id(), it.apply(op));
-        other(a) = op(other(a), other(l)...);
-        return a;
-    }
-    //! @brief Optimisation for all local arguments.
-    template <typename F, typename A, typename... L>
-    if_local<tuple<A,L...>, A&> mod_hood(F&& op, A& a, L&&... l) {
-        return a = op(a, std::forward<L>(l)...);
-    }
-    //! @brief Optimisation for a single field argument in first position.
-    template <typename F, typename A, typename... L>
-    if_local<tuple<L...>, field<A>&> mod_hood(F&& op, field<A>& a, L const&... l) {
-        for (typename std::vector<A>::reference x : get_vals(a)) x = op(x, l...);
-        return a;
-    }
-    //! @}
-
-    /**
      * @name fold_hood
      *
      * Reduces the values in a part of a field (determined by domain) to a single value through a binary operation.
@@ -1065,88 +943,139 @@ namespace details {
 
 
 /**
- * @name mux
+ * @name map_hood
  *
- * Multiplexer operator, choosing between its arguments based on the value of the first
- * (always evaluating both arguments).
+ * Applies an operator pointwise on a sequence of fields.
  */
 //! @{
-//! @brief local guard
-template <typename A>
-const A& mux(bool b, const A& x, const A& y) {
-    return b ? x : y;
+//! @brief General case with some field argument.
+template <typename F, typename... A, typename = if_field<tuple<A...>>>
+field_result<F,A...> map_hood(F&& op, A const&... a) {
+    field_result<F,A...> r(op(details::other(a)...));
+    for (details::field_iterator<tuple<A...> const> it(a...); not it.end(); ++it) {
+        details::get_ids(r).push_back(it.id());
+        details::get_vals(r).push_back(it.apply(op));
+    }
+    return r;
 }
-//! @brief local guard, moving arguments
-template <typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
-A mux(bool b, A&& x, A&& y) {
-    return b ? std::move(x) : std::move(y);
+//! @brief Optimisation for all local arguments.
+template <typename F, typename... L, typename = if_local<tuple<L...>>>
+field_result<F,L...> map_hood(F&& op, L&&... l) {
+    return op(std::forward<L>(l)...);
 }
-//! @brief field guard
-template <typename A>
-to_field<A> mux(field<bool> b, const A& x, const A& y) {
-    return map_hood([] (bool b, to_local<const A&> x, to_local<const A&> y) -> to_local<A> {
-        return b ? std::move(x) : std::move(y);
-    }, b, x, y);
+//! @brief Optimisation for a single movable field argument in first position.
+template <typename F, typename T, typename... L, typename = if_local<tuple<L...>>>
+field_result<F,field<T>,L...> map_hood(F&& op, field<T>&& f, L&&... l) {
+    field_result<F,field<T>,L...> r;
+    details::get_ids(r) = details::get_ids(std::move(f));
+    details::get_vals(r).resize(details::get_vals(f).size());
+    for (size_t i = 0; i < details::get_vals(f).size(); ++i)
+            details::get_vals(r)[i] = op(details::get_vals(std::move(f))[i], l...);
+    return r;
 }
-//! @brief field guard, moving arguments
-template <typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
-to_field<A> mux(field<bool> b, A&& x, A&& y) {
-    return mux(b, x, y);
+//! @brief Optimisation for a single immutable field argument in first position.
+template <typename F, typename T, typename... L, typename = if_local<tuple<L...>>>
+field_result<F,field<T>,L...> map_hood(F&& op, field<T> const& f, L&&... l) {
+    field_result<F,field<T>,L...> r;
+    details::get_ids(r) = details::get_ids(f);
+    details::get_vals(r).resize(details::get_vals(f).size());
+    for (size_t i = 0; i < details::get_vals(f).size(); ++i)
+            details::get_vals(r)[i] = op(details::get_vals(f)[i], l...);
+    return r;
+}
+//! @brief Optimisation for a single movable field argument in second position.
+template <typename F, typename A, typename T, typename... L, typename = if_local<tuple<A,L...>>>
+field_result<F,A,field<T>,L...> map_hood(F&& op, A&& a, field<T>&& f, L&&... l) {
+    field_result<F,A,field<T>,L...> r;
+    details::get_ids(r) = details::get_ids(std::move(f));
+    details::get_vals(r).resize(details::get_vals(f).size());
+    for (size_t i = 0; i < details::get_vals(f).size(); ++i)
+            details::get_vals(r)[i] = op(a, details::get_vals(std::move(f))[i], l...);
+    return r;
+}
+//! @brief Optimisation for a single immutable field argument in second position.
+template <typename F, typename A, typename T, typename... L, typename = if_local<tuple<A,L...>>>
+field_result<F,A,field<T>,L...> map_hood(F&& op, A&& a, field<T> const& f, L&&... l) {
+    field_result<F,A,field<T>,L...> r;
+    details::get_ids(r) = details::get_ids(f);
+    details::get_vals(r).resize(details::get_vals(f).size());
+    for (size_t i = 0; i < details::get_vals(f).size(); ++i)
+            details::get_vals(r)[i] = op(a, details::get_vals(f)[i], l...);
+    return r;
+}
+//! @brief Optimisation for a single movable field argument in third position.
+template <typename F, typename A, typename B, typename T, typename... L, typename = if_local<tuple<A,B,L...>>>
+field_result<F,A,B,field<T>,L...> map_hood(F&& op, A&& a, B&& b, field<T>&& f, L&&... l) {
+    field_result<F,A,B,field<T>,L...> r;
+    details::get_ids(r) = details::get_ids(std::move(f));
+    details::get_vals(r).resize(details::get_vals(f).size());
+    for (size_t i = 0; i < details::get_vals(f).size(); ++i)
+            details::get_vals(r)[i] = op(a, b, details::get_vals(std::move(f))[i], l...);
+    return r;
+}
+//! @brief Optimisation for a single immutable field argument in third position.
+template <typename F, typename A, typename B, typename T, typename... L, typename = if_local<tuple<A,B,L...>>>
+field_result<F,A,B,field<T>,L...> map_hood(F&& op, A&& a, B&& b, field<T> const& f, L&&... l) {
+    field_result<F,A,B,field<T>,L...> r;
+    details::get_ids(r) = details::get_ids(f);
+    details::get_vals(r).resize(details::get_vals(f).size());
+    for (size_t i = 0; i < details::get_vals(f).size(); ++i)
+            details::get_vals(r)[i] = op(a, b, details::get_vals(f)[i], l...);
+    return r;
+}
+//! @brief Optimisation for two field arguments in starting position.
+template <typename F, typename T, typename U, typename... L, typename = if_local<tuple<L...>>>
+field_result<F,field<T>,field<U>,L...> map_hood(F&& op, field<T> const& f, field<U> const& g, L&&... l) {
+    field_result<F,field<T>,field<U>,L...> r;
+    details::get_ids(r).reserve(details::get_ids(f).size() + details::get_ids(g).size());
+    details::get_vals(r).reserve(details::get_ids(f).size() + details::get_ids(g).size() + 1);
+    details::get_vals(r).push_back(op(details::get_vals(f)[0], details::get_vals(g)[0], l...));
+    size_t i = 0, j = 0;
+    while (i < details::get_ids(f).size() or j < details::get_ids(g).size()) {
+        if (i == details::get_ids(f).size()) {
+            details::get_ids(r).push_back(details::get_ids(g)[j]);
+            details::get_vals(r).push_back(op(details::get_vals(f)[0], details::get_vals(g)[++j], l...));
+        } else if (j == details::get_ids(g).size() or details::get_ids(f)[i] < details::get_ids(g)[j]) {
+            details::get_ids(r).push_back(details::get_ids(f)[i]);
+            details::get_vals(r).push_back(op(details::get_vals(f)[++i], details::get_vals(g)[0], l...));
+        } else if (details::get_ids(f)[i] > details::get_ids(g)[j]) {
+            details::get_ids(r).push_back(details::get_ids(g)[j]);
+            details::get_vals(r).push_back(op(details::get_vals(f)[0], details::get_vals(g)[++j], l...));
+        } else {
+            details::get_ids(r).push_back(details::get_ids(f)[i]);
+            details::get_vals(r).push_back(op(details::get_vals(f)[++i], details::get_vals(g)[++j], l...));
+        }
+    }
+    return r;
 }
 //! @}
-
 
 /**
- * @name max
+ * @name mod_hood
  *
- * Maximum between two values.
+ * Modifies a field in-place, by applying an operator pointwise (with a sequence of parameters).
  */
 //! @{
-//! @brief max between locals.
-template <typename A, typename = if_local<A>>
-const A& max(const A& x, const A& y) {
-    return std::max(x, y);
+//! @brief General case with some field argument.
+template <typename F, typename A, typename... L>
+if_field<tuple<A,L...>, A&> mod_hood(F&& op, A& a, L const&... l) {
+    for (details::field_iterator<tuple<A,L const...>> it(a,l...); not it.end(); ++it)
+        get<0>(it).emplace(it.id(), it.apply(op));
+    details::other(a) = op(details::other(a), details::other(l)...);
+    return a;
 }
-
-//! @brief max between fields.
-template <typename A, typename = if_field<A>>
-to_field<A> max(const A& x, const A& y) {
-    return map_hood([] (to_local<const A&> x, to_local<const A&> y) -> to_local<A> {
-        return std::max(std::move(x), std::move(y));
-    }, x, y);
+//! @brief Optimisation for all local arguments.
+template <typename F, typename A, typename... L>
+if_local<tuple<A,L...>, A&> mod_hood(F&& op, A& a, L&&... l) {
+    return a = op(a, std::forward<L>(l)...);
 }
-//! @}
-
-
-/**
- * @name min
- *
- * Minimum between two values.
- */
-//! @{
-//! @brief min between locals.
-template <typename A, typename = if_local<A>>
-const A& min(const A& x, const A& y) {
-    return std::min(x, y);
-}
-
-//! @brief min between fields.
-template <typename A, typename = if_field<A>>
-to_field<A> min(const A& x, const A& y) {
-    return map_hood([] (to_local<const A&> x, to_local<const A&> y) -> to_local<A> {
-        return std::min(std::move(x), std::move(y));
-    }, x, y);
+//! @brief Optimisation for a single field argument in first position.
+template <typename F, typename A, typename... L>
+if_local<tuple<L...>, field<A>&> mod_hood(F&& op, field<A>& a, L const&... l) {
+    for (typename std::vector<A>::reference x : details::get_vals(a)) x = op(x, l...);
+    return a;
 }
 //! @}
-
-
-//! @brief Extracts a component from a field of tuple-like structures.
-template <size_t n, typename A>
-auto get(const field<A>& f) {
-    return map_hood([] (const A& x) {
-        return get<n>(x);
-    }, f);
-}
 
 
 //! @cond INTERNAL
@@ -1163,11 +1092,11 @@ field<decltype(std::declval<to_local<A>>() op std::declval<to_local<B>>())>
 #define _DEF_UOP(op)                                                                \
 template <typename A>                                                               \
 field<A> operator op(const field<A>& x) {                                           \
-    return details::map_hood([] (const A& a) {return op a;}, x);                    \
+    return map_hood([] (const A& a) {return op a;}, x);                             \
 }                                                                                   \
 template <typename A>                                                               \
 field<A> operator op(field<A>&& x) {                                                \
-    details::mod_hood([] (const A& a) {return op std::move(a);}, x);                \
+    mod_hood([] (const A& a) {return op std::move(a);}, x);                         \
     return x;                                                                       \
 }
 
@@ -1180,16 +1109,16 @@ field<A> operator op(field<A>&& x) {                                            
 #define _DEF_BOP(op)                                                                                    \
 template <typename A, typename B>                                                                       \
 _BOP_TYPE(field<A>,op,B) operator op(const field<A>& x, const B& y) {                                   \
-    return details::map_hood([](const A& a, const to_local<B>& b) { return a op b; }, x, y);            \
+    return map_hood([](const A& a, const to_local<B>& b) { return a op b; }, x, y);                     \
 }                                                                                                       \
 template <typename A, typename B>                                                                       \
 _BOP_TYPE(field<A>,op,B) operator op(field<A>&& x, const B& y) {                                        \
-    return details::mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) op b; }, x, y); \
+    return mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) op b; }, x, y);          \
 }                                                                                                       \
 template <typename A, typename B>                                                                       \
 common::ifn_class_template<field, A, _BOP_TYPE(A,op,field<B>)>                                          \
 operator op(const A& x, const field<B>& y) {                                                            \
-    return details::map_hood([](const to_local<A>& a, const B& b) { return a op b; }, x, y);            \
+    return map_hood([](const to_local<A>& a, const B& b) { return a op b; }, x, y);                     \
 }                                                                                                       \
 
 /**
@@ -1201,7 +1130,7 @@ operator op(const A& x, const field<B>& y) {                                    
 #define _DEF_IOP(op)                                                                                    \
 template <typename A, typename B>                                                                       \
 field<A>& operator op##=(field<A>& x, const B& y) {                                                     \
-    return details::mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) op b; }, x, y); \
+    return mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) op b; }, x, y);          \
 }
 
 
@@ -1239,13 +1168,14 @@ _DEF_IOP(|)
 _DEF_IOP(>>)
 _DEF_IOP(<<)
 
+//! @cond INTERNAL
 template <typename A, typename B>
 _BOP_TYPE(field<A>,<<,B) operator<<(const field<A>& x, const B& y) {
-    return details::map_hood([](const A& a, const to_local<B>& b) { return a << b; }, x, y);
+    return map_hood([](const A& a, const to_local<B>& b) { return a << b; }, x, y);
 }
 template <typename A, typename B>
 _BOP_TYPE(field<A>,<<,B) operator<<(field<A>&& x, const B& y) {
-    return details::mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) << b; }, x, y);
+    return mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) << b; }, x, y);
 }
 template <typename A, typename B>
 std::enable_if_t<
@@ -1253,8 +1183,9 @@ std::enable_if_t<
     _BOP_TYPE(A,<<,field<B>)
 >
 operator<<(const A& x, const field<B>& y) {
-    return details::map_hood([](const to_local<A>& a, const B& b) { return a << b; }, x, y);
+    return map_hood([](const to_local<A>& a, const B& b) { return a << b; }, x, y);
 }
+//! @endcond
 
 #undef _BOP_TYPE
 #undef _DEF_UOP

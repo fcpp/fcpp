@@ -258,11 +258,11 @@ TEST_F(FieldTest, ModSelf) {
 
 TEST_F(FieldTest, MapReduce) {
     field<bool> eq;
-    field<int> x = details::map_hood([] (int i) {return i%2;}, fi2);
-    eq = details::map_hood([] (int i, int j) {return i==j;}, x, build_field(1, {{1,0},{2,1}}));
+    field<int> x = map_hood([] (int i) {return i%2;}, fi2);
+    eq = map_hood([] (int i, int j) {return i==j;}, x, build_field(1, {{1,0},{2,1}}));
     EXPECT_TRUE(eq);
-    details::mod_hood([] (int i, int j) {return i+j;}, x, fi1);
-    eq = details::map_hood([] (int i, int j) {return i==j;}, x, build_field(3, {{1,1},{2,3},{3,0}}));
+    mod_hood([] (int i, int j) {return i+j;}, x, fi1);
+    eq = map_hood([] (int i, int j) {return i==j;}, x, build_field(3, {{1,1},{2,3},{3,0}}));
     EXPECT_TRUE(eq);
     double sum = details::fold_hood([] (double i, double j) {return i+j;}, fd, {0,1,2});
     EXPECT_DOUBLE_EQ(4.25, sum);
@@ -276,7 +276,7 @@ TEST_F(FieldTest, MapReduce) {
     field<tuple<int,int>> z{{3,4}};
     details::self(z, 1) = make_tuple(7,8);
     details::self(z, 2) = make_tuple(9,0);
-    field<tuple<int,int>> w = details::map_hood([] (tuple<int,int> a, tuple<int,int> b, tuple<int,int> c) {
+    field<tuple<int,int>> w = map_hood([] (tuple<int,int> a, tuple<int,int> b, tuple<int,int> c) {
         return b * c - a;
     }, y, z, y);
     EXPECT_EQ(std::vector<device_t>({0,1,2}), joined_domain(w));
@@ -295,7 +295,7 @@ TEST_F(FieldTest, MapReduce) {
     EXPECT_EQ(ex, res);
     tuple<field<int>, field<int>> f{{1}, {2}};
     details::self(f, 1) = make_tuple(3,4);
-    details::mod_hood([] (tuple<int,int> a, tuple<int,int> b, tuple<int,int> c) {
+    mod_hood([] (tuple<int,int> a, tuple<int,int> b, tuple<int,int> c) {
         return a + b + c;
     }, f, z, y);
     EXPECT_EQ(std::vector<device_t>({0,1,2}), joined_domain(f));
@@ -313,58 +313,18 @@ TEST_F(FieldTest, MapReduce) {
     EXPECT_EQ(make_tuple(5,8), g);
 }
 
-TEST_F(FieldTest, BasicFunctions) {
-    field<int> x;
-    x = mux(true, fi1, fi2);
-    EXPECT_EQ(x, fi1);
-    x = mux(false, field<int>(fi1), field<int>(fi2));
-    EXPECT_EQ(x, fi2);
-    x = mux(fb1, fi1, fi2);
-    field<int> y = build_field(2, {{1,1}, {2,3}, {3,-1}});
-    EXPECT_EQ(x, y);
-    tuple<field<int>, int> a{fi1, 1};
-    tuple<field<int>, int> b{fi2, 2};
-    field<tuple<int,int>> c = mux(fb2, a, b);
-    field<tuple<int,int>> d = build_field(make_tuple(1, 2), {
-        {1, make_tuple(1, 1)},
-        {2, make_tuple(2, 1)},
-        {3, make_tuple(1, 2)}
-    });
-    EXPECT_EQ(c, d);
-    c = max(a, b);
-    d = build_field(make_tuple(2, 1), {
-        {1, make_tuple(4, 2)},
-        {2, make_tuple(3, 2)},
-        {3, make_tuple(1, 2)}
-    });
-    EXPECT_EQ(c, d);
-    c = min(a, b);
-    d = build_field(make_tuple(1, 2), {
-        {1, make_tuple( 1, 1)},
-        {2, make_tuple( 2, 1)},
-        {3, make_tuple(-1, 1)}
-    });
-    EXPECT_EQ(c, d);
-    x = get<0>(d);
-    y = build_field(1, {{1,1}, {2,2}, {3,-1}});
-    EXPECT_EQ(x,y);
-    x = get<1>(d);
-    y = build_field(2, {{1,1}, {2,1}, {3,1}});
-    EXPECT_EQ(x,y);
-}
-
 TEST_F(FieldTest, UnaryOperators) {
     field<bool> eq = !fb1;
     EXPECT_FALSE(details::other(eq));
     EXPECT_FALSE(details::self(eq,1));
     EXPECT_TRUE(details::self(eq,2));
     EXPECT_FALSE(details::self(eq,3));
-    eq = details::map_hood([] (int i, int j) {return i==j;}, fi1, +fi1);
+    eq = map_hood([] (int i, int j) {return i==j;}, fi1, +fi1);
     EXPECT_TRUE(eq);
-    eq = details::map_hood([] (int i, int j) {return i==j;}, -fi1, build_field(-2, {{1,-1},{3,1}}));
+    eq = map_hood([] (int i, int j) {return i==j;}, -fi1, build_field(-2, {{1,-1},{3,1}}));
     EXPECT_TRUE(eq);
     field<char> fc = build_field<char>(15, {{1,22}});
-    eq = details::map_hood([] (int i, int j) {return i==j;}, ~fc, build_field<char>(-16, {{1,-23}}));
+    eq = map_hood([] (int i, int j) {return i==j;}, ~fc, build_field<char>(-16, {{1,-23}}));
     EXPECT_TRUE(eq);
     tuple<field<bool>, bool> x{{true}, false};
     details::self(get<0>(x), 2) = false;

@@ -5,7 +5,7 @@ cc_library(
     deps = [
         "@gtest//:main",
         "//lib:beautify",
-        "//lib/common:traits",
+        "//lib/common:ostream",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     visibility = [

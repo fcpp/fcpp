@@ -13,7 +13,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/beautify.hpp"
-#include "lib/common/traits.hpp"
+#include "lib/common/ostream.hpp"
 
 
 /**

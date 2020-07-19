@@ -26,11 +26,56 @@ template <int O>
 using combo = calc_only<options<O>>;
 
 
+TEST(UtilsTest, BasicFunctions) {
+    field<int> fi1 = details::make_field<int>({1,3},{2,1,-1});
+    field<int> fi2 = details::make_field<int>({1,2},{1,4,3});
+    field<bool> fb1 = details::make_field<bool>({2,3},{true,false,true});
+    field<bool> fb2 = details::make_field<bool>({1,2},{false,true,true});
+    field<int> x;
+    x = mux(true, fi1, fi2);
+    EXPECT_EQ(x, fi1);
+    x = mux(false, field<int>(fi1), field<int>(fi2));
+    EXPECT_EQ(x, fi2);
+    x = mux(fb1, fi1, fi2);
+    field<int> y = details::make_field<int>({1,2,3},{2,1,3,-1});
+    EXPECT_EQ(x, y);
+    tuple<field<int>, int> a{fi1, 1};
+    tuple<field<int>, int> b{fi2, 2};
+    field<tuple<int,int>> c = mux(fb2, a, b);
+    field<tuple<int,int>> d = details::make_field<tuple<int,int>>({1,2,3},
+        {make_tuple(1, 2), make_tuple(1, 1), make_tuple(2, 1), make_tuple(1, 2)});
+    EXPECT_EQ(c, d);
+    c = max(a, b);
+    d = details::make_field<tuple<int,int>>({1,2,3},
+        {make_tuple(2, 1), make_tuple(4, 2), make_tuple(3, 2), make_tuple(1, 2)});
+    EXPECT_EQ(c, d);
+    c = max(a, c);
+    EXPECT_EQ(c, d);
+    c = max(a, make_tuple(1, 2));
+    d = details::make_field<tuple<int,int>>({1,3},
+        {make_tuple(2, 1), make_tuple(1, 2), make_tuple(1, 2)});
+    EXPECT_EQ(c, d);
+    c = mux(true, a, make_tuple(1,2));
+    d = details::make_field<tuple<int,int>>({1,3},
+        {make_tuple(2, 1), make_tuple(1, 1), make_tuple(-1, 1)});
+    EXPECT_EQ(c, d);
+    c = min(a, b);
+    d = details::make_field<tuple<int,int>>({1,2,3},
+        {make_tuple(1, 2), make_tuple( 1, 1), make_tuple( 2, 1), make_tuple(-1, 1)});
+    EXPECT_EQ(c, d);
+    x = get<0>(d);
+    y = details::make_field<int>({1,2,3}, {1,1,2,-1});
+    EXPECT_EQ(x,y);
+    x = get<1>(d);
+    y = details::make_field<int>({1,2,3}, {2,1,1,1});
+    EXPECT_EQ(x,y);
+}
+
 MULTI_TEST(UtilsTest, IsInf, O, 3) {
     test_net<combo<O>, std::tuple<bool>(double)> n{
         [&](auto& node, double value){
             return std::make_tuple(
-                coordination::max_hood(node, 0, coordination::isinf(nbr(node, 0, value)))
+                coordination::max_hood(node, 0, isinf(nbr(node, 0, value)))
             );
         }
     };

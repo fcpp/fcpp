@@ -351,18 +351,6 @@ to_field<std::decay_t<A>> mod_other(const node_t& node, trace_t call_point, A co
     return details::mod_other(x, y, details::get_context(node).second().align(t, node.uid));
 }
 
-//! @brief Applies an operator pointwise on a sequence of field arguments.
-template <typename node_t, typename O, typename... A>
-field_result<O,A...> map_hood(const node_t&, trace_t, O&& op, A&&... a) {
-    return details::map_hood(std::forward<O>(op), std::forward<A>(a)...);
-}
-
-//! @brief Modifies a field in-place, by applying an operator pointwise (with a sequence of parameters).
-template <typename node_t, typename O, typename A, typename... B>
-A& mod_hood(const node_t&, trace_t, O&& op, A& a, B&&... b) {
-    return details::mod_hood(std::forward<O>(op), a, std::forward<B>(b)...);
-}
-
 //! @brief Reduces a field to a single value by a binary operation.
 template <typename node_t, typename O, typename A>
 local_result<O,A,A> fold_hood(node_t& node, trace_t call_point, O&& op, const A& a) {

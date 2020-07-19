@@ -3,7 +3,6 @@ cc_test(
     srcs = ["field.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:ostream",
         "//lib/data:field",
         "//test:helper",
     ],

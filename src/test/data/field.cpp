@@ -1,6 +1,7 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include "lib/common/ostream.hpp"
+#include <unordered_map>
+
 #include "lib/data/field.hpp"
 
 #include "test/helper.hpp"

@@ -15,43 +15,49 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lib/common/multitype_map.hpp"
-#include "lib/common/random_access_map.hpp"
-#include "lib/common/tagged_tuple.hpp"
-#include "lib/data/tuple.hpp"
-#include "lib/data/vec.hpp"
-#include "lib/internal/context.hpp"
-#include "lib/internal/flat_ptr.hpp"
-#include "lib/internal/twin.hpp"
+#include "lib/settings.hpp"
+#include "lib/common/traits.hpp"
 
 
 //! @cond INTERNAL
 namespace fcpp {
-namespace details {
-    //! @brief Escapes a value for clear printing.
-    //! @{
-    std::string escape(bool x) {
-        return x ? "true" : "false";
-    }
-    std::string escape(char x) {
-        return std::string("'") + x + "'";
-    }
-    std::string escape(std::string x) {
-        return '"' + x + '"';
-    }
-    std::string escape(const char* x) {
-        return '"' + std::string(x) + '"';
-    }
-    template <typename T, typename = std::enable_if_t<std::is_empty<T>::value>>
-    std::string escape(T) {
-        return fcpp::common::type_name<T>();
-    }
-    template <typename T, typename = std::enable_if_t<fcpp::common::type_count<bool, char, std::string, const char*> >= 0 and not std::is_empty<T>::value>>
-    T const& escape(T const& x) {
-        return x;
-    }
-    //! @}
 
+template <typename T>
+class field;
+template <typename... Ts>
+class tuple;
+template <size_t n>
+struct vec;
+
+template <size_t n, typename... Ts>
+typename std::tuple_element<n, std::tuple<Ts...>>::type const& get(const tuple<Ts...>&) noexcept;
+
+namespace details {
+    template <typename T>
+    std::vector<device_t> const& get_ids(field<T> const&);
+    template <typename T>
+    std::vector<T> const& get_vals(field<T> const&);
+}
+
+namespace common {
+    template <typename T, typename... Ts>
+    class multitype_map;
+    template <typename K, typename T, typename H, typename P, typename A>
+    class random_access_map;
+    template<typename S, typename T>
+    struct tagged_tuple;
+}
+
+namespace internal {
+    template <bool online, bool pointer, typename M, typename... Ts>
+    class context;
+    template <typename T, bool is_flat>
+    class flat_ptr;
+    template <typename T, bool is_twin>
+    class twin;
+}
+
+namespace details {
     //! @brief Prints an iterable container.
     template <typename T>
     std::ostream& iterable_print(std::ostream& o, const char* delim, T const& c) {
@@ -60,7 +66,7 @@ namespace details {
         for (auto const& x : c) {
             if (first) first = false;
             else o << ", ";
-            o << escape(x);
+            o << common::escape(x);
         }
         return o << delim[1];
     }
@@ -73,7 +79,7 @@ namespace details {
         for (auto const& x : c) {
             if (first) first = false;
             else o << ", ";
-            o << escape(x.first) << ":" << escape(x.second);
+            o << common::escape(x.first) << ":" << common::escape(x.second);
         }
         return o << delim[1];
     }
@@ -107,7 +113,7 @@ namespace details {
     template <typename T, size_t... is, typename tag>
     std::ostream& indexed_print(std::ostream& o, const char* delim, const T& x, std::index_sequence<is...>, tag) {
         o << delim[0];
-        indexed_print(o, escape(get<is>(x, tag{}))...);
+        indexed_print(o, common::escape(get<is>(x, tag{}))...);
         return o << delim[1];
     }
     //! @}
@@ -182,10 +188,14 @@ namespace std {
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-    //! @brief Printing vectors.
-    template <size_t n>
-    std::ostream& operator<<(std::ostream& o, const vec<n>& p) {
-        return fcpp::details::iterable_print(o, "[]", p);
+    //! @brief Printing fields.
+    template <typename T>
+    std::ostream& operator<<(std::ostream& o, const field<T>& x) {
+        o << "{";
+        for (size_t i = 0; i < details::get_ids(x).size(); ++i) {
+            o << details::get_ids(x)[i] << ":" << common::escape(details::get_vals(x)[i+1]) << ", ";
+        }
+        return o << "*:" << common::escape(details::get_vals(x)[0]) << "}";
     }
 
     //! @brief Printing tuples.
@@ -194,24 +204,30 @@ namespace fcpp {
         return fcpp::details::indexed_print(o, "()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::fcpp_tag{});
     }
 
+    //! @brief Printing vectors.
+    template <size_t n>
+    std::ostream& operator<<(std::ostream& o, const vec<n>& p) {
+        return fcpp::details::iterable_print(o, "[]", p);
+    }
+
     //! @brief Namespace containing objects of common use.
     namespace common {
         //! @brief Printing multitype maps in arrowhead format.
         template <typename T, typename... Ts>
         std::ostream& operator<<(std::ostream& o, const multitype_map<T, Ts...>& m) {
-            return fcpp::details::printable_print(o, "()", m, arrowhead_tuple);
+            return fcpp::details::printable_print(o, "()", m);
         }
 
         //! @brief Printing random access maps.
-        template <typename K, typename V>
-        std::ostream& operator<<(std::ostream& o, const random_access_map<K,V>& m) {
+        template <typename K, typename T, typename H, typename P, typename A>
+        std::ostream& operator<<(std::ostream& o, const random_access_map<K,T,H,P,A>& m) {
             return fcpp::details::pair_iterable_print(o, "{}", m);
         }
 
         //! @brief Printing tagged tuples in arrowhead format.
         template <typename S, typename T>
         std::ostream& operator<<(std::ostream& o, const tagged_tuple<S,T>& t) {
-            return fcpp::details::printable_print(o, "()", t, arrowhead_tuple);
+            return fcpp::details::printable_print(o, "()", t);
         }
     }
 
@@ -226,19 +242,19 @@ namespace fcpp {
         //! @brief Printing content of flat pointers.
         template <typename T, bool is_flat>
         std::ostream& operator<<(std::ostream& o, const flat_ptr<T, is_flat>& p) {
-            return o << fcpp::details::escape(*p);
+            return o << common::escape(*p);
         }
 
         //! @brief Printing identical twin objects.
         template <typename T>
         std::ostream& operator<<(std::ostream& o, const twin<T,true>& t) {
-            return o << "(" << fcpp::details::escape(t.first()) << ")";
+            return o << "(" << common::escape(t.first()) << ")";
         }
 
         //! @brief Printing different twin objects.
         template <typename T>
         std::ostream& operator<<(std::ostream& o, const twin<T,false>& t) {
-            return o << "(" << fcpp::details::escape(t.first()) << "; " << fcpp::details::escape(t.second()) << ")";
+            return o << "(" << common::escape(t.first()) << "; " << common::escape(t.second()) << ")";
         }
     }
 }

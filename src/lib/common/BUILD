@@ -34,14 +34,8 @@ cc_library(
     hdrs = ['ostream.hpp'],
     srcs = ['ostream.cpp'],
     deps = [
-        "//lib/common:multitype_map",
-        "//lib/common:random_access_map",
-        "//lib/common:tagged_tuple",
-        "//lib/data:tuple",
-        "//lib/data:vec",
-        "//lib/internal:context",
-        "//lib/internal:flat_ptr",
-        "//lib/internal:twin",
+        "//lib:settings",
+        "//lib/common:traits",
     ],
     visibility = [
         '//visibility:public',

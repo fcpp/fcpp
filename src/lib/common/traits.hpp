@@ -38,78 +38,6 @@ namespace fcpp {
 namespace common {
 
 
-//! @cond INTERNAL
-namespace details {
-    //! @brief Representation of constness and value type of a type.
-    //! @{
-    //! @brief base case.
-    template <typename T>
-    struct reference_string {
-        inline static std::string mangled() {
-            return "";
-        }
-        inline static std::string demangled() {
-            return "";
-        }
-    };
-    //! @brief const case.
-    template <typename T>
-    struct reference_string<const T> {
-        inline static std::string mangled() {
-            return "K";
-        }
-        inline static std::string demangled() {
-            return " const";
-        }
-    };
-    //! @brief lvalue reference case.
-    template <typename T>
-    struct reference_string<T&> {
-        inline static std::string mangled() {
-            return "R" + reference_string<T>::mangled();
-        }
-        inline static std::string demangled() {
-            return reference_string<T>::demangled() + "&";
-        }
-    };
-    //! @brief rvalue reference case.
-    template <typename T>
-    struct reference_string<T&&> {
-        inline static std::string mangled() {
-            return "O" + reference_string<T>::mangled();
-        }
-        inline static std::string demangled() {
-            return reference_string<T>::demangled() + "&&";
-        }
-    };
-    //! @}
-}
-//! @endcond
-
-#ifdef NABI
-//! @brief Returns the string representation of a type `T`.
-template <typename T>
-std::string type_name() {
-    return details::reference_string<T>::mangled() + typeid(T).name();
-}
-#else
-//! @brief Returns the string representation of a type `T`.
-template <typename T>
-std::string type_name() {
-    int status = 42;
-    const char* name = typeid(T).name();
-    std::unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
-    return (status==0) ? res.get() + details::reference_string<T>::demangled() : details::reference_string<T>::mangled() + name;
-}
-#endif
-
-//! @brief Returns the string representation of the type of the argument.
-template <typename T>
-std::string type_name(T&&) {
-    return type_name<T>();
-}
-
-
 /**
  * @name type_sequence
  *
@@ -1011,6 +939,103 @@ using option_multitypes = typename details::option_multitypes<T, Ss...>::type;
  */
 template <typename S, template<class...> class... Ts>
 using apply_templates = typename details::apply_templates<S,Ts...>::type;
+
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief Representation of constness and value type of a type.
+    //! @{
+    //! @brief base case.
+    template <typename T>
+    struct reference_string {
+        inline static std::string mangled() {
+            return "";
+        }
+        inline static std::string demangled() {
+            return "";
+        }
+    };
+    //! @brief const case.
+    template <typename T>
+    struct reference_string<const T> {
+        inline static std::string mangled() {
+            return "K";
+        }
+        inline static std::string demangled() {
+            return " const";
+        }
+    };
+    //! @brief lvalue reference case.
+    template <typename T>
+    struct reference_string<T&> {
+        inline static std::string mangled() {
+            return "R" + reference_string<T>::mangled();
+        }
+        inline static std::string demangled() {
+            return reference_string<T>::demangled() + "&";
+        }
+    };
+    //! @brief rvalue reference case.
+    template <typename T>
+    struct reference_string<T&&> {
+        inline static std::string mangled() {
+            return "O" + reference_string<T>::mangled();
+        }
+        inline static std::string demangled() {
+            return reference_string<T>::demangled() + "&&";
+        }
+    };
+    //! @}
+}
+//! @endcond
+
+#ifdef NABI
+//! @brief Returns the string representation of a type `T`.
+template <typename T>
+std::string type_name() {
+    return details::reference_string<T>::mangled() + typeid(T).name();
+}
+#else
+//! @brief Returns the string representation of a type `T`.
+template <typename T>
+std::string type_name() {
+    int status = 42;
+    const char* name = typeid(T).name();
+    std::unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
+    return (status==0) ? res.get() + details::reference_string<T>::demangled() : details::reference_string<T>::mangled() + name;
+}
+#endif
+
+//! @brief Returns the string representation of the type of the argument.
+template <typename T>
+std::string type_name(T&&) {
+    return type_name<T>();
+}
+
+
+//! @brief Escapes a value for clear printing.
+//! @{
+std::string escape(bool x) {
+    return x ? "true" : "false";
+}
+std::string escape(char x) {
+    return std::string("'") + x + "'";
+}
+std::string escape(std::string x) {
+    return '"' + x + '"';
+}
+std::string escape(const char* x) {
+    return '"' + std::string(x) + '"';
+}
+template <typename T, typename = std::enable_if_t<std::is_empty<T>::value>>
+std::string escape(T) {
+    return type_name<T>();
+}
+template <typename T, typename = std::enable_if_t<type_count<bool, char, std::string, const char*> >= 0 and not std::is_empty<T>::value>>
+T const& escape(T const& x) {
+    return x;
+}
+//! @}
 
 
 }

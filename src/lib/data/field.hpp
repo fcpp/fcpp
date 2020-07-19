@@ -25,7 +25,7 @@ namespace fcpp {
 
 
 //! @cond INTERNAL
-template<typename T> class field;
+template <typename T> class field;
 //! @endcond
 
 
@@ -1064,17 +1064,6 @@ namespace details {
 //! @endcond
 
 
-//! @brief Prints a field in dictionary-like format.
-template <typename A>
-std::ostream& operator<<(std::ostream& o, const field<A>& x) {
-    o << "{";
-    for (size_t i = 0; i < details::get_ids(x).size(); ++i) {
-        o << get_ids(x)[i] << ":" << get_vals(x)[i+1] << ", ";
-    }
-    return o << "*:" << details::get_vals(x)[0] << "}";
-}
-
-
 /**
  * @name mux
  *
@@ -1237,7 +1226,6 @@ _DEF_BOP(==)
 _DEF_BOP(!=)
 _DEF_BOP(&&)
 _DEF_BOP(||)
-_DEF_BOP(<<)
 _DEF_BOP(>>)
 
 _DEF_IOP(+)
@@ -1250,6 +1238,23 @@ _DEF_IOP(&)
 _DEF_IOP(|)
 _DEF_IOP(>>)
 _DEF_IOP(<<)
+
+template <typename A, typename B>
+_BOP_TYPE(field<A>,<<,B) operator<<(const field<A>& x, const B& y) {
+    return details::map_hood([](const A& a, const to_local<B>& b) { return a << b; }, x, y);
+}
+template <typename A, typename B>
+_BOP_TYPE(field<A>,<<,B) operator<<(field<A>&& x, const B& y) {
+    return details::mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) << b; }, x, y);
+}
+template <typename A, typename B>
+std::enable_if_t<
+    not common::is_class_template<field, A> and not std::is_base_of<std::ostream, A>::value,
+    _BOP_TYPE(A,<<,field<B>)
+>
+operator<<(const A& x, const field<B>& y) {
+    return details::map_hood([](const to_local<A>& a, const B& b) { return a << b; }, x, y);
+}
 
 #undef _BOP_TYPE
 #undef _DEF_UOP

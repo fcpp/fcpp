@@ -211,14 +211,19 @@ namespace details {
         return s;
     }
 
-    //! @brief Prints a boolean value as a `"true"` or `"false"` string.
-    void tt_val_print(std::ostream& o, bool x) {
-        o << (x ? "true" : "false");
+    //! @brief Escapes a boolean value for underscore tuple printing.
+    inline std::string tt_val_print(bool x, tags::underscore_tuple) {
+        return escape(x);
     }
-    //! @brief Prints a non-boolean value using default printing.
+    //! @brief Forwards other values for underscore tuple printing.
     template <typename T, typename = std::enable_if_t<not std::is_same<T,bool>::value>>
-    void tt_val_print(std::ostream& o, const T& x) {
-        o << x;
+    inline const T& tt_val_print(const T& x, tags::underscore_tuple) {
+        return x;
+    }
+    //! @brief Escapes a value for other tuple printing.
+    template <typename T, typename S, typename = std::enable_if_t<not std::is_same<S,tags::underscore_tuple>::value>>
+    inline auto tt_val_print(const T& x, S) {
+        return escape(x);
     }
 
     //! @brief Prints no tags from a tagged tuple.
@@ -228,8 +233,7 @@ namespace details {
     //! @brief Prints one tag from a tagged tuple.
     template<typename S, typename T, typename F, typename S1>
     void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F, type_sequence<S1>) {
-        o << strip_namespaces(type_name<S1>()) << tag_val_sep<F>;
-        tt_val_print(o, get<S1>(t));
+        o << strip_namespaces(type_name<S1>()) << tag_val_sep<F> << tt_val_print(get<S1>(t), F{});
     }
 
     //! @brief Prints multiple tags from a tagged tuple.
@@ -322,7 +326,7 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
     
     //! @brief Prints the content of the tagged tuple in dictionary format.
     void print(std::ostream& o) const {
-        print(o, dictionary_tuple);
+        print(o, arrowhead_tuple);
     }
 };
 

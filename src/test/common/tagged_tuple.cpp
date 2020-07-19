@@ -126,7 +126,10 @@ TEST_F(TagTupleTest, Types) {
 TEST_F(TagTupleTest, Print) {
     std::stringstream s;
     t.print(s);
-    EXPECT_EQ("tag:2, gat:true", s.str());
+    EXPECT_EQ("tag => 2; gat => true", s.str());
+    s.str("");
+    t.print(s, common::arrowhead_tuple);
+    EXPECT_EQ("tag => 2; gat => true", s.str());
     s.str("");
     t.print(s, common::assignment_tuple);
     EXPECT_EQ("tag = 2, gat = true", s.str());
@@ -139,18 +142,18 @@ TEST_F(TagTupleTest, Print) {
     common::tagged_tuple_t<oth,bool,tags::stuffer,char,void,double> t1{false,'z',4.5};
     s.str("");
     t1.print(s, common::assignment_tuple);
-    EXPECT_EQ("oth = false, stuffer = z, void = 4.5", s.str());
+    EXPECT_EQ("oth = false, stuffer = 'z', void = 4.5", s.str());
     common::tagged_tuple_t<tags::main,std::string,tags::stuffer,const char*> t2{"tester","foo"};
     s.str("");
     t2.print(s, common::assignment_tuple);
-    EXPECT_EQ("main = tester, stuffer = foo", s.str());
+    EXPECT_EQ("main = \"tester\", stuffer = \"foo\"", s.str());
     s.str("");
     t2.print(s, common::underscore_tuple, common::skip_tags<tags::main>);
     EXPECT_EQ("stuffer-foo", s.str());
     common::tagged_tuple_t<tags::main,int,double,bool,tags::nest::other,char> t3{42,false,'w'};
     s.str("");
     t3.print(s, common::assignment_tuple);
-    EXPECT_EQ("main = 42, double = false, other = w", s.str());
+    EXPECT_EQ("main = 42, double = false, other = 'w'", s.str());
     s.str("");
     t3.print(s, common::assignment_tuple, common::skip_tags<double,tags::main,tags::nest::other>);
     EXPECT_EQ("", s.str());

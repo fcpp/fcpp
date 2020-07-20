@@ -52,19 +52,35 @@ TEST(GeometryTest, Target) {
 }
 
 MULTI_TEST(GeometryTest, Follow, O, 3) {
-    test_net<combo<O>, std::tuple<double>(double), 1> n{
-        [&](auto& node, double val){
+    {
+        test_net<combo<O>, std::tuple<double>(double), 1> n{
+            [&](auto& node, double val){
+                return std::make_tuple(
+                    coordination::follow_target(node, 0, make_vec(val, 0), 3, 1)
+                );
+            }
+        };
+        EXPECT_ROUND(n, {10}, {10});
+        EXPECT_ROUND(n, {10}, {7});
+        EXPECT_ROUND(n, {10}, {4});
+        EXPECT_ROUND(n, {10}, {1});
+        EXPECT_ROUND(n, {10}, {0});
+        EXPECT_ROUND(n, {10}, {0});
+    }
+    vec<2> target;
+    test_net<combo<O>, std::tuple<double>(), 1> n{
+        [&](auto& node){
             return std::make_tuple(
-                coordination::follow_target(node, 0, make_vec(val, 0), 3, 1)
+                coordination::follow_target(node, 0, target, 3, 1, 1)
             );
         }
     };
-    EXPECT_ROUND(n, {10}, {10});
-    EXPECT_ROUND(n, {10}, {7});
-    EXPECT_ROUND(n, {10}, {4});
-    EXPECT_ROUND(n, {10}, {1});
-    EXPECT_ROUND(n, {10}, {0});
-    EXPECT_ROUND(n, {10}, {0});
+    for (int i=0; i<1000; ++i) {
+        target = coordination::random_rectangle_target(n.d(0), 0, -make_vec(4,3), make_vec(4,3));
+        int c = 0;
+        for (double d = INF; d > 1; d = get<0>(n.full_round({}))[0]) ++c;
+        EXPECT_LT(c, 16);
+    }
 }
 
 MULTI_TEST(GeometryTest, Walk, O, 3) {

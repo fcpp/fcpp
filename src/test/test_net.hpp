@@ -63,7 +63,9 @@ namespace details {
     struct round_type<T, std::tuple<Os...>(Is...), N> {
         static constexpr size_t in_size = sizeof...(Is);
         static constexpr size_t out_size = sizeof...(Os);
-        using type = std::tuple<std::array<Is, N>..., std::array<Os, N>...>;
+        using in_type = std::tuple<std::array<Is, N>...>;
+        using out_type = std::tuple<std::array<Os, N>...>;
+        using full_type = std::tuple<std::array<Is, N>..., std::array<Os, N>...>;
         using fun_type = std::function<std::tuple<Os...>(T&, Is...)>;
     };
     //! @}
@@ -111,8 +113,12 @@ struct test_net {
     using node_type = typename C::node;
     //! @brief The net type.
     using net_type = details::expose_identifier<C>;
+    //! @brief The type of input parameters for rounds.
+    using in_type = typename details::round_type<node_type, F>::in_type;
+    //! @brief The type of output results for rounds.
+    using out_type = typename details::round_type<node_type, F>::out_type;
     //! @brief The type of parameters for rounds.
-    using round_type = typename details::round_type<node_type, F>::type;
+    using round_type = typename details::round_type<node_type, F>::full_type;
     //! @brief The type of functions to be executed in each round.
     using fun_type = typename details::round_type<node_type, F>::fun_type;
     //! @brief The type of the network topology description.
@@ -153,18 +159,19 @@ struct test_net {
         round_start();
     }
 
-    //! @brief Performs a full round of executions given inputs, and returning outputs.
-    round_type full_round(round_type x) {
-        round_type r = caller(x, std::make_index_sequence<in_size>{}, std::make_index_sequence<out_size>{});
-        round_end();
-        for (int source = 0; source < N; ++source)
-            for (int dest : m_topology[source]) {
-                typename node_type::message_t m;
-                d(dest).receive(m_count + 0.5, source, d(source).send(m_count + 0.5, dest, m));
-            }
-        ++m_count;
-        round_start();
+    //! @brief Performs a full round of executions given inputs and expected outputs, and returning inputs with actual  outputs.
+    round_type full_round_expect(round_type r) {
+        caller<in_size>(r, std::make_index_sequence<in_size>{}, r, std::make_index_sequence<out_size>{});
+        round();
         return r;
+    }
+
+    //! @brief Performs a full round of executions given inputs, and returning outputs.
+    out_type full_round(in_type x) {
+        out_type y;
+        caller<0>(x, std::make_index_sequence<in_size>{}, y, std::make_index_sequence<out_size>{});
+        round();
+        return y;
     }
 
     //! @brief Accesses a node in the network.
@@ -182,13 +189,12 @@ struct test_net {
     static constexpr bool parallel = details::bool_parameter<decltype(std::declval<node_type>().mutex)>::value;
 
     //! @brief Helper function calling the round function.
-    template <size_t... is, size_t... os>
-    round_type caller(round_type x, std::index_sequence<is...>, std::index_sequence<os...>) {
+    template <size_t offset, typename I, typename O, size_t... is, size_t... os>
+    void caller(I const& x, std::index_sequence<is...>, O& y, std::index_sequence<os...>) {
         for (int i = 0; i < N; ++i) {
-            auto y = m_func(d(i), std::get<is>(x)[i]...);
-            common::details::ignore((std::get<os+in_size>(x)[i] = std::get<os>(y))...);
+            auto z = m_func(d(i), std::get<is>(x)[i]...);
+            common::details::ignore((std::get<os+offset>(y)[i] = std::get<os>(z))...);
         }
-        return x;
     }
 
     //! @brief Performs round starts across the network.
@@ -199,6 +205,18 @@ struct test_net {
     //! @brief Performs round ends across the network.
     inline void round_end() {
         for (int i = 0; i < N; ++i) d(i).round_end(m_count);
+    }
+
+    //! @brief Ends a round, exchanges messages and starts a new one.
+    void round() {
+        round_end();
+        for (int source = 0; source < N; ++source)
+            for (int dest : m_topology[source]) {
+                typename node_type::message_t m;
+                d(dest).receive(m_count + 0.5, source, d(source).send(m_count + 0.5, dest, m));
+            }
+        ++m_count;
+        round_start();
     }
 
     //! @brief The round number.
@@ -219,7 +237,7 @@ struct test_net {
 //! @brief Performs a full round on all devices given inputs and expected outputs.
 #define EXPECT_ROUND(n, ...) {                          \
     typename decltype(n)::round_type r{__VA_ARGS__};    \
-    EXPECT_EQ(n.full_round(r), r);                      \
+    EXPECT_EQ(n.full_round_expect(r), r);               \
 }
 
 #endif // FCPP_TEST_NET_H_

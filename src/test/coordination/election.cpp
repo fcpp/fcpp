@@ -14,7 +14,7 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<tuple<int,int>, tuple<int,int,int,int>>,
+    exports<tuple<int,int>, tuple<int,int,int,int>, tuple<bool,int,int,unsigned int>>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -88,4 +88,30 @@ MULTI_TEST(ElectionTest, Wave, O, 3) {
                     {9, 2, 2});
     EXPECT_ROUND(n, {9, 8, 2},
                     {2, 2, 2});
+}
+
+MULTI_TEST(ElectionTest, Color, O, 3) {
+    test_net<combo<O>, std::tuple<int>(int)> n{
+        [&](auto& node, int value){
+            return std::make_tuple(
+                coordination::color_election(node, 0, value)
+            );
+        }
+    };
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 1, 2});
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 1, 2});
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 0, 1});
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 0, 2});
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 0, 2});
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 0, 0});
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 0, 0});
+    EXPECT_ROUND(n, {0, 1, 2},
+                    {0, 0, 0});
 }

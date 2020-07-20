@@ -893,47 +893,74 @@ namespace details {
     //! @{
     //! @brief Inclusive folding (optimization for locals).
     template <typename F, typename A>
-    if_local<A, local_result<F,A,A>>
+    if_local<A, local_result<F,A const&,A const&>>
     fold_hood(F&& op, const A& x, std::vector<device_t> const& dom) {
         assert(dom.size() > 0);
         size_t n = dom.size();
-        local_result<F,A,A> res = x;
+        local_result<F,A const&,A const&> res = x;
         for (--n; n>0; --n) res = op(x, res);
         return res;
     }
     //! @brief Inclusive folding.
     template <typename F, typename A>
-    if_field<A, local_result<F,A,A>>
+    if_field<A, local_result<F,A const&,A const&>>
     fold_hood(F&& op, A const& f, std::vector<device_t> const& dom) {
         assert(dom.size() > 0);
         field_iterator<A const> it(f);
         while (it.id() < dom[0]) ++it;
-        local_result<F,A,A> res = it.value(dom[0]);
+        local_result<F,A const&,A const&> res = it.value(dom[0]);
         for (size_t k=1; k<dom.size(); ++k) {
             while (it.id() < dom[k]) ++it;
             res = op(it.value(dom[k]), res);
         }
         return res;
     }
+    //! @brief Inclusive folding with ids.
+    template <typename F, typename A>
+    if_field<A, local_result<F,device_t,A const&,A const&>>
+    fold_hood(F&& op, A const& f, std::vector<device_t> const& dom) {
+        assert(dom.size() > 0);
+        field_iterator<A const> it(f);
+        while (it.id() < dom[0]) ++it;
+        local_result<F,device_t,A const&,A const&> res = it.value(dom[0]);
+        for (size_t k=1; k<dom.size(); ++k) {
+            while (it.id() < dom[k]) ++it;
+            res = op(dom[k], it.value(dom[k]), res);
+        }
+        return res;
+    }
     //! @brief Exclusive folding (optimization for locals).
     template <typename F, typename A, typename B>
-    if_local<A, local_result<F,A,B>>
+    if_local<A, local_result<F,A const&,B const&>>
     fold_hood(F&& op, const A& x, const B& b, std::vector<device_t> const& dom, device_t i) {
         assert(std::binary_search(dom.begin(), dom.end(), i));
-        local_result<F,A,B> res = details::self(b, i);
+        local_result<F,A const&,B const&> res = details::self(b, i);
         for (size_t n = dom.size(); n>1; --n) res = op(x, res);
         return res;
      }
     //! @brief Exclusive folding.
     template <typename F, typename A, typename B>
-    if_field<A, local_result<F,A,B>>
+    if_field<A, local_result<F,A const&,B const&>>
     fold_hood(F&& op, A const& f, B const& b, std::vector<device_t> const& dom, device_t i) {
         assert(std::binary_search(dom.begin(), dom.end(), i));
-        local_result<F,A,B> res = self(b, i);
+        local_result<F,A const&,B const&> res = self(b, i);
         field_iterator<A const> it(f);
         for (size_t k=0; k<dom.size(); ++k) if (dom[k] != i) {
             while (it.id() < dom[k]) ++it;
             res = op(it.value(dom[k]), res);
+        }
+        return res;
+    }
+    //! @brief Exclusive folding with ids.
+    template <typename F, typename A, typename B>
+    if_field<A, local_result<F,device_t,A const&,B const&>>
+    fold_hood(F&& op, A const& f, B const& b, std::vector<device_t> const& dom, device_t i) {
+        assert(std::binary_search(dom.begin(), dom.end(), i));
+        local_result<F,device_t,A const&,B const&> res = self(b, i);
+        field_iterator<A const> it(f);
+        for (size_t k=0; k<dom.size(); ++k) if (dom[k] != i) {
+            while (it.id() < dom[k]) ++it;
+            res = op(dom[k], it.value(dom[k]), res);
         }
         return res;
     }

@@ -249,6 +249,8 @@ TEST(TraitsTest, ExtractTemplate) {
                 common::extract_template<proxy, std::tuple<proxy<double>,char>>);
     EXPECT_SAME(std::tuple<double&,const char&>,
                 common::extract_template<proxy, std::tuple<proxy<double>,char>&>);
+    EXPECT_SAME(std::tuple<const double&,const char&>,
+                common::extract_template<proxy, std::tuple<proxy<double>,char> const&>);
     EXPECT_SAME(std::tuple<double,char>,
                 common::extract_template<proxy, proxy<std::tuple<double,char>>&&>);
     EXPECT_SAME(const array<std::tuple<array<double,3>,char>,4>&,

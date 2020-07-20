@@ -150,6 +150,20 @@ vec<n> operator-(double x, vec<n> y) {
 //! @}
 
 
+//! @brief Unary sign application.
+//! @{
+template <size_t n>
+inline vec<n> const& operator+(vec<n> const& x) {
+    return x;
+}
+template <size_t n>
+vec<n> operator-(vec<n> x) {
+    for (size_t i=0; i<n; ++i) x[i] = -x[i];
+    return x;
+}
+//! @}
+
+
 //! @brief Multiplication and division by a scalar.
 //! @{
 template <size_t n>

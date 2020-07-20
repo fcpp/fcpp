@@ -41,8 +41,9 @@ template <typename node_t>
 int abf_hops(node_t& node, trace_t call_point, bool source) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, std::numeric_limits<int>::max()-1, [&] (field<int> d) {
-        return min_hood(node, 0, d + 1, source ? 0 : std::numeric_limits<int>::max()-1);
+    return nbr(node, 0, std::numeric_limits<int>::max(), [&] (field<int> d) {
+        double nd = min_hood(node, 0, d, std::numeric_limits<int>::max()-1) + 1;
+        return source ? 0 : nd;
     });
 }
 

@@ -708,8 +708,8 @@ using template_args = typename details::template_args<A>::type;
  *
  * Enables template resolution if a callable class @param G complies to a given signature @param F.
  */
-template <typename G, typename F>
-using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value>;
+template <typename G, typename F, typename T = void>
+using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value, T>;
 
 
 //! @brief Wraps a sequence of `size_t` values.

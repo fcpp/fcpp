@@ -12,7 +12,7 @@ using namespace fcpp;
 using namespace component::tags;
 
 
-constexpr int X = std::numeric_limits<int>::max()-1;
+constexpr int X = std::numeric_limits<int>::max();
 
 template <int O>
 DECLARE_OPTIONS(options,

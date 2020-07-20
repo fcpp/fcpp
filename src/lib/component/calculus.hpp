@@ -311,6 +311,18 @@ to_local<A&&> self(const node_t& node, trace_t, A&& x) {
     return details::self(std::move(x), node.uid);
 }
 
+//! @brief Accesses a given value of a field.
+template <typename node_t, typename A>
+to_local<A const&> self(const node_t&, trace_t, A const& x, device_t uid) {
+    return details::self(x, uid);
+}
+
+//! @brief Accesses a given value of a field (moving).
+template <typename node_t, typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
+to_local<A&&> self(const node_t&, trace_t, A&& x, device_t uid) {
+    return details::self(std::move(x), uid);
+}
+
 //! @brief Returns the local value of a field (modifiable).
 template <typename node_t, typename A>
 to_local<A&> mod_self(const node_t& node, trace_t, A& x) {
@@ -353,7 +365,7 @@ to_field<std::decay_t<A>> mod_other(const node_t& node, trace_t call_point, A co
 
 //! @brief Reduces a field to a single value by a binary operation.
 template <typename node_t, typename O, typename A>
-local_result<O,A,A> fold_hood(node_t& node, trace_t call_point, O&& op, const A& a) {
+auto fold_hood(node_t& node, trace_t call_point, O&& op, const A& a) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
     return details::fold_hood(op, a, details::get_context(node).second().align(t, node.uid));
@@ -361,7 +373,7 @@ local_result<O,A,A> fold_hood(node_t& node, trace_t call_point, O&& op, const A&
 
 //! @brief Reduces a field to a single value by a binary operation with a default value for self.
 template <typename node_t, typename O, typename A, typename B>
-local_result<O,A,B> fold_hood(node_t& node, trace_t call_point, O&& op, const A& a, const B& b) {
+auto fold_hood(node_t& node, trace_t call_point, O&& op, const A& a, const B& b) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
     return details::fold_hood(op, a, b, details::get_context(node).second().align(t, node.uid), node.uid);

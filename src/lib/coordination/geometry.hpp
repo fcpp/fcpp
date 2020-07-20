@@ -33,6 +33,16 @@ double follow_target(node_t& node, trace_t, const vec<n>& target, double max_v, 
     return dist;
 }
 
+//! @brief Follows a target with a fixed acceleration and maximum speed, returning the distance from it.
+template <typename node_t, size_t n>
+double follow_target(node_t& node, trace_t, const vec<n>& target, double max_v, double max_a, double period) {
+    node.friction() = max_a / max_v; // max_v is limit speed
+    vec<n> delta = target - node.position();
+    node.propulsion() = delta/period - node.velocity(); // best acceleration if no friction
+    node.propulsion() *= std::min(max_a/norm(node.propulsion()), 2/period);
+    return norm(delta);
+}
+
 
 //! @cond INTERNAL
 //! @brief Generates a random target in a rectangle, given a sequence of indices.

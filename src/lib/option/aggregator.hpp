@@ -118,7 +118,7 @@ class distinct {
 
     //! @brief Combines aggregated values.
     distinct& operator+=(const distinct& o) {
-        for (auto const& x : o)
+        for (auto const& x : o.m_counts)
             m_counts[x.first] += x.second;
         return *this;
     }

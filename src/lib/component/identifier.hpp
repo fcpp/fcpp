@@ -210,7 +210,11 @@ struct identifier {
                             n.update();
                         }
                     });
-                    for (device_t uid : nv) if (m_nodes.count(uid) > 0) m_queue.push(m_nodes.at(uid).next(), uid);
+                    for (device_t uid : nv) if (m_nodes.count(uid) > 0) {
+                        times_t nxt = m_nodes.at(uid).next();
+                        if (nxt < TIME_MAX) m_queue.push(nxt, uid);
+                        else node_erase(uid);
+                    }
                 } else P::net::update();
             }
             

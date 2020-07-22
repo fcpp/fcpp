@@ -38,9 +38,9 @@ def experiment_name(files):
 
 # makes header pretty-printable
 def prettify(header):
-    header = re.sub('[@[].*',    '',    header)
-    header = re.sub('-([^-]*)$', r'@\1',header)
-    header = re.sub('_',         ' ',   header)
+    header = re.sub('[@[].*',      '',    header)
+    header = re.sub('__([^-]*)$', r'@\1', header)
+    header = re.sub('_',           ' ',   header)
     return header
 
 # shorten name
@@ -138,7 +138,9 @@ class DB:
             rows = f.readlines()
             if len(rows) < 9:
                 return
-            vars = [v.split(' = ') for v in rows[3][1:].strip().split(', ')]
+            vars = rows[3][1:].strip()
+            vars = vars.split(', ') if len(vars) else []
+            vars = [v.split(' = ') for v in vars]
             vars, vals = [v[0] for v in vars], [0.0 if v[1]=="false" else 1.0 if v[1]=="true" else float(v[1]) for v in vars]
             hdr = rows[6][1:].strip().split(' ')
             kind = [int(h[-11:] == "@every_node") for h in hdr]

@@ -32,6 +32,32 @@ errored=( )
 exitcodes=( )
 folders=( `ls */BUILD | sed 's|/BUILD||'` )
 
+function ramformat {
+	n=$1
+	l=${#n}
+	l=$[4-l]
+	for ((x=0; x<l; ++x)); do
+		n=" $n"
+	done
+	echo -n "$n MB"
+}
+
+function addzero {
+        n=$1
+        if [ $n -lt 10 ]; then
+                n=0$n
+        fi
+        echo -n $n
+}
+
+function timeformat {
+        mins=`echo $1 | sed 's|:.*||'`
+        hour=$[mins/60]
+        mins=$[mins%60]
+        secs=`echo $1 | sed 's|^[0-9]*:||'`
+        echo -n `addzero $hour`:`addzero $mins`:$secs
+}
+
 function reporter() {
     "$@"
     code=$?
@@ -257,18 +283,49 @@ while [ "$1" != "" ]; do
                 plots=( "${plots[@]}" "$1" )
                 shift 1
             done
-            mkdir -p output/raw
             name=`echo $targets | sed 's|.*:||'`
             file="output/raw/$name.txt"
-            echo -e "\033[4mbazel run $copts $asan -- //$targets "$@"\033[0m"
-            reporter bazel run $copts $asan -- //$targets "$@" | tee $file
+            built=`echo bazel-bin/$targets | tr ':' '/'`
+            builder build $targets
+            if [ ${#exitcodes[@]} -gt 0 ]; then
+                quitter
+            fi
+            mkdir -p output/raw
+            $built "$@" > $file & pid=$!
+            trap ctrl_c INT
+            function ctrl_c() {
+                echo -e "\n\033[J"
+                kill -9 $pid 2>&1
+                exit 1
+            }
+            echo -e "\033[4mRUNNING: CPU TIME     RAM (NOW)   (AVG)   (MAX)   FILES   LINES\033[0m"
+            num=0
+            max=0
+            sum=0
+            while true; do
+                tim=`ps x -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
+                m=`ps x -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
+                if [ "$m" == "" ]; then break; else mem=$m; fi
+                num=$[num+1]
+                sum=$[sum+mem]
+                mem=$[(mem+511)/1024]
+                max=$[max > mem ? max : mem]
+                avg=$[((sum+511)/1024 + num/2)/ num]
+                fil=`ls output/raw/$name*.txt | wc -l`
+                row=`cat output/raw/$name*.txt | grep -v "^#" | wc -l`
+                echo -e "         `timeformat $tim`s `ramformat $mem` `ramformat $avg` `ramformat $max` $fil $row\n"
+                ( cat $file | tail -n 10; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 10
+                echo -en "\033[12A"
+                sleep 1
+            done
+            echo -e "\n\033[J"
             if [ `cat $file | wc -c` -eq 0 ]; then
                 rm $file
             fi
             if [ "${#plots[@]}" -gt 0 ]; then
                 v=`ls output/$name-*.asy | sed "s|^output/$name-||;s|.asy$||" | sort -n | tail -n 1`
                 v=$[v+1]
-                plotter/plot_builder.py "output/raw/$name*.txt" "${plots[@]}" > output/$name-$v.asy
+                plotter/plot_builder.py output/raw/$name*.txt "${plots[@]}" > output/$name-$v.asy
                 cp plotter/plot.asy output/
                 cd output
                 asy $name-$v.asy -f pdf

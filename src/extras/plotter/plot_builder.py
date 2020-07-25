@@ -38,9 +38,10 @@ def experiment_name(files):
 
 # makes header pretty-printable
 def prettify(header):
-    header = re.sub('[@[].*',      '',    header)
-    header = re.sub('__([^-]*)$', r'@\1', header)
-    header = re.sub('_',           ' ',   header)
+    header = re.sub('[^(]*\((.*)\)$', r'\1',  header)
+    header = re.sub('[@[].*',          '',    header)
+    header = re.sub('-([^-]*)$',      r'@\1', re.sub('__', '-', header))
+    header = re.sub('_',               ' ',   header)
     return header
 
 # shorten name

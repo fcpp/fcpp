@@ -13,8 +13,8 @@ using namespace component::tags;
 struct meantag {};
 struct devtag {};
 
-using seq_mul = sequence::multiple<distribution::constant<times_t, 52, 10>, 3>;
-using seq_per = sequence::periodic<distribution::constant<times_t, 15, 10>, distribution::uniform_t<times_t, 2, 10, 1, meantag, devtag>, distribution::constant<times_t, 62, 10>, distribution::constant<size_t, 5>>;
+using seq_mul = sequence::multiple_n<3, 52, 10>;
+using seq_per = sequence::periodic<distribution::constant_n<times_t, 15, 10>, distribution::uniform_n<times_t, 2, 10, 1, meantag, devtag>, distribution::constant_n<times_t, 62, 10>, distribution::constant_n<size_t, 5>>;
 
 using combo1 = component::combine_spec<
     component::scheduler<round_schedule<seq_mul>>,

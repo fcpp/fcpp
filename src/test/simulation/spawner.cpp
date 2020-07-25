@@ -21,10 +21,10 @@ struct tag {};
 struct gat {};
 struct oth {};
 
-using seq_rep = sequence::multiple<distribution::constant<times_t, 1>, 3>;
-using seq_per = sequence::periodic<distribution::constant<times_t, 2>, distribution::constant<times_t, 1>, distribution::constant<times_t, 5>>;
-using ever_true = distribution::constant<bool, true>;
-using ever_false = distribution::constant<bool, false>;
+using seq_rep = sequence::multiple_n<3, 1>;
+using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distribution::constant_n<times_t, 1>, distribution::constant_n<times_t, 5>>;
+using ever_true = distribution::constant_n<bool, true>;
+using ever_false = distribution::constant_n<bool, false>;
 
 template <int O>
 using combo1 = component::combine_spec<

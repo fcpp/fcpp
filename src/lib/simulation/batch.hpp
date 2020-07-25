@@ -355,10 +355,12 @@ namespace details {
 /**
  * @brief Runs a series of experiments.
  *
- * @param T The combination of components to be tested.
+ * @param T The combination(s) of components to be tested.
  * @param e An execution policy (see \ref sequential_execution, \ref parallel_execution, \ref general_execution, \ref dynamic_execution).
  * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
  */
+//! @{
+//! @brief Running a single component combination.
 template <typename T, typename exec_t, typename... S, typename... U>
 common::ifn_class_template<std::vector, exec_t>
 run(T, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
@@ -369,17 +371,11 @@ run(T, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     });
 }
 
-//! @brief Runs no experiments (base case for varying declaration tags).
+//! @brief No running, given an empty sequence of component combinations.
 template <typename exec_t, typename... S, typename... U>
 void run(common::type_sequence<>, exec_t, std::vector<common::tagged_tuple<S,U>> const&...) {}
 
-/**
- * @brief Runs a series of experiments.
- *
- * @param T The combination of components to be tested.
- * @param e An execution policy (see \ref sequential_execution, \ref parallel_execution, \ref general_execution, \ref dynamic_execution).
- * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
- */
+//! @brief Running a non-empty sequence of component combinations.
 template <typename T, typename... Ts, typename exec_t, typename... S, typename... U>
 common::ifn_class_template<std::vector, exec_t>
 run(common::type_sequence<T, Ts...>, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
@@ -387,12 +383,7 @@ run(common::type_sequence<T, Ts...>, exec_t e, std::vector<common::tagged_tuple<
     run(common::type_sequence<Ts...>{}, e, vs...);
 }
 
-/**
- * @brief Runs a series of experiments (assuming dynamic execution policy).
- *
- * @param T The combination of components to be tested.
- * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
- */
+//! @brief Running a single component combination (assuming dynamic execution policy).
 template <typename T, typename... S, typename... U>
 void run(T x, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     using exec_t = std::conditional_t<
@@ -403,12 +394,7 @@ void run(T x, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     run(x, exec_t{}, vs...);
 }
 
-/**
- * @brief Runs a series of experiments (assuming dynamic execution policy).
- *
- * @param T The combination of components to be tested.
- * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
- */
+//! @brief Running a non-empty sequence of component combinations (assuming dynamic execution policy).
 template <typename T, typename... Ts, typename... S, typename... U>
 void run(common::type_sequence<T, Ts...> x, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     using exec_t = std::conditional_t<
@@ -418,6 +404,7 @@ void run(common::type_sequence<T, Ts...> x, std::vector<common::tagged_tuple<S,U
     >;
     run(x, exec_t{}, vs...);
 }
+//! @}
 
 
 }

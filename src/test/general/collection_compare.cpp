@@ -15,8 +15,8 @@ using namespace component::tags;
 template <int O>
 DECLARE_OPTIONS(options,
     program<main>,
-    round_schedule<sequence::list<distribution::constant<times_t, 100>>>,
-    log_schedule<sequence::list<distribution::constant<times_t, 100>>>,
+    round_schedule<sequence::list<distribution::constant_n<times_t, 100>>>,
+    log_schedule<sequence::list<distribution::constant_n<times_t, 100>>>,
     exports<
         device_t, double, field<double>, vec<2>,
         tuple<double,device_t>, tuple<double,int>, tuple<double,double>

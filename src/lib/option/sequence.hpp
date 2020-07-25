@@ -10,8 +10,10 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <limits>
 #include <type_traits>
+#include <vector>
 
 #include "lib/settings.hpp"
 #include "lib/option/distribution.hpp"
@@ -43,7 +45,7 @@ struct never {
     template <typename G>
     never(G&&) {}
 
-    //! @brief Default constructor.
+    //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     never(G&&, const common::tagged_tuple<S,T>&) {}
 
@@ -64,21 +66,21 @@ struct never {
 };
 
 
-/**
- * @brief Generator of a series of contemporary events.
- * @param D Distribution generating the time of the events.
- * @param n Number of events.
- * @param same Whether the same event should be produced (defaults to true).
- */
+//! @brief Generator of a series of contemporary events.
 //! @{
-//! @brief General form.
-template <typename D, size_t n, bool same = true>
+/**
+ * @brief With parameters as distributions (general form).
+ * @param N The number of events (as distribution).
+ * @param E The time of the events (as distribution).
+ * @param contemporary Whether independent or contemporary events should be produced (defaults to true).
+ */
+template <typename N, typename E, bool contemporary = true>
 class multiple;
-
-//! @brief Case for identical events.
-template <typename D, size_t n>
-class multiple<D, n, true> {
-    static_assert(std::is_same<typename D::type, times_t>::value, "the distribution D must generate a times_t value");
+//! @brief With parameters as distributions (contemporary events).
+template <typename N, typename E>
+class multiple<N, E, true> {
+    static_assert(std::is_same<typename E::type, times_t>::value, "the distribution E must generate a times_t value");
+    static_assert(std::is_same<typename N::type,  size_t>::value, "the distribution N must generate a size_t value");
 
   public:
     //! @brief The type of results generated.
@@ -86,28 +88,28 @@ class multiple<D, n, true> {
 
     //! @brief Default constructor.
     template <typename G>
-    multiple(G&& g) : t(details::call_distr<D>(g)) {}
+    multiple(G&& g) : t(details::call_distr<E>(g)), i(details::call_distr<N>(g)) {}
 
-    //! @brief Default constructor.
+    //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<D>(g,tup)) {}
+    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<E>(g,tup)), i(details::call_distr<N>(g,tup)) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
-        return (i < n) ? t : TIME_MAX;
+        return (i > 0) ? t : TIME_MAX;
     }
 
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&&) {
-        ++i;
+        if (i > 0) --i;
     }
 
     //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G&&) {
         times_t nt = next();
-        ++i;
+        step(nullptr);
         return nt;
     }
 
@@ -115,14 +117,14 @@ class multiple<D, n, true> {
     //! @brief The time of the events.
     times_t t;
 
-    //! @brief Number of calls to next so far.
-    size_t i = 0;
+    //! @brief Number of calls to next remaining.
+    size_t i;
 };
-
-//! @brief Case for possibly different events.
-template <typename D, size_t n>
-class multiple<D, n, false> {
-    static_assert(std::is_same<typename D::type, times_t>::value, "the distribution D must generate a times_t value");
+//! @brief With parameters as distributions (independent events).
+template <typename N, typename E>
+class multiple<N, E, false> {
+    static_assert(std::is_same<typename E::type, times_t>::value, "the distribution E must generate a times_t value");
+    static_assert(std::is_same<typename N::type,  size_t>::value, "the distribution N must generate a size_t value");
 
   public:
     //! @brief The type of results generated.
@@ -130,51 +132,68 @@ class multiple<D, n, false> {
 
     //! @brief Default constructor.
     template <typename G>
-    multiple(G&& g) : multiple(g, D{g}) {}
+    multiple(G&& g) : multiple(g, E{g}, N{g}) {}
 
-    //! @brief Default constructor.
+    //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : multiple(g, D{g,tup}) {}
+    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : multiple(g, E{g,tup}, N{g,tup}) {}
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
-        return (i < n) ? pending[i] : TIME_MAX;
+        return pending.empty() ? TIME_MAX : pending.back();
     }
 
     //! @brief Steps over to next event, without returning.
     template <typename G>
     void step(G&&) {
-        ++i;
+        if (not pending.empty()) pending.pop_back();
     }
 
     //! @brief Returns next event, stepping over.
     template <typename G>
     times_t operator()(G&&) {
         times_t nt = next();
-        ++i;
+        step(nullptr);
         return nt;
     }
 
   private:
     //! @brief The time of the events.
-    std::array<times_t, n> pending;
-
-    //! @brief Number of calls to next so far.
-    size_t i = 0;
+    std::vector<times_t> pending;
 
     //! @brief Auxiliary constructor.
     template <typename G>
-    multiple(G&& g, D&& distr) {
-        for (size_t j=0; j<n; ++j) pending[j] = distr(g);
-        std::sort(pending.begin(), pending.end());
+    multiple(G&& g, E&& distr, N&& n) {
+        size_t num = n(g);
+        pending.reserve(num);
+        for (size_t j=0; j<num; ++j) pending.push_back(distr(g));
+        std::sort(pending.begin(), pending.end(), std::greater<int>{});
     }
 };
 //! @}
-
-
 /**
- * @brief Generator of a series of events at given times.
- * @param Ds Distributions generating the time of the events.
+ * @brief With parameters as numeric template parameters.
+ * @param n The number of events.
+ * @param t The (integral) time of the events.
+ * @param scale A scale factor by which the times are divided.
+ */
+template <size_t n, intmax_t t, intmax_t scale = 1>
+using multiple_n = multiple<distribution::constant_n<size_t, n>, distribution::constant_n<times_t, t, scale>>;
+/**
+ * @brief With parameters as initialisation values.
+ * @param n_tag The tag corresponding to number of events in initialisation values.
+ * @param t_tag The tag corresponding to the time of events in initialisation values.
+ */
+template <typename n_tag, typename t_tag>
+using multiple_i = multiple<distribution::constant_i<size_t, n_tag>, distribution::constant_i<times_t, t_tag>>;
+//! @}
+
+
+//! @brief Generator of a series of events at given times.
+//! @{
+/**
+ * @brief With times as distributions.
+ * @param Ds The times of the events (as distributions).
  */
 template <typename... Ds>
 class list {
@@ -190,7 +209,7 @@ class list {
         std::sort(pending.begin(), pending.end());
     }
 
-    //! @brief Default constructor.
+    //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     list(G&& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
         std::sort(pending.begin(), pending.end());
@@ -222,17 +241,32 @@ class list {
     //! @brief Number of calls to next so far.
     size_t i = 0;
 };
-
-
 /**
- * @brief Generator of a series of events at given times.
- * The sooner terminating condition between E and N is selected.
- * @param S Distribution for the first event.
- * @param P Distribution regulating the period.
- * @param E Distribution for the last event.
- * @param N Distribution for the number of events to be generated.
+ * @brief With times as numeric template parameters.
+ * @param scale A scale factor by which the times are divided.
+ * @param x     The (integral) times of the events.
  */
-template <typename S, typename P = S, typename E = never, typename N = distribution::constant<size_t, std::numeric_limits<intmax_t>::max()>>
+template <intmax_t scale, intmax_t... x>
+using list_n = list<distribution::constant_n<times_t,x,scale>...>;
+/**
+ * @brief With times as initialisation values.
+ * @param x_tag The tags corresponding to times in initialisation values.
+ */
+template <typename... x_tag>
+using list_i = list<distribution::constant_i<times_t,x_tag>...>;
+//! @}
+
+
+//! @brief Generator of a series of events at given times.
+//! @{
+/**
+ * @brief With parameters as distributions.
+ * @param S The first event (as distribution).
+ * @param P The period (as distribution).
+ * @param E The maximum admissible time (as distribution).
+ * @param N The maximum number of events (as distribution).
+ */
+template <typename S, typename P = S, typename E = never, typename N = distribution::constant_n<size_t, -1>>
 class periodic {
     static_assert(std::is_same<typename S::type, times_t>::value, "the distribution S must generate a times_t value");
     static_assert(std::is_same<typename P::type, times_t>::value, "the distribution P must generate a times_t value");
@@ -251,7 +285,7 @@ class periodic {
         t  = details::call_distr<S>(g);
     }
 
-    //! @brief Default constructor.
+    //! @brief Tagged tuple constructor.
     template <typename G, typename U, typename T>
     periodic(G&& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
         n  = details::call_distr<N>(g,tup);
@@ -290,6 +324,36 @@ class periodic {
     //! @brief Number of calls to next so far.
     size_t n, i = 0;
 };
+/**
+ * @brief With parameters as numeric template parameters.
+ * @param scale A scale factor by which the `s`, `p` and `e` parameters are divided.
+ * @param s The (integral) first event.
+ * @param p The (integral) period.
+ * @param e The (integral) maximum admissible time.
+ * @param n The maximum number of events.
+ */
+template <intmax_t scale, intmax_t s, intmax_t p = s, intmax_t e = std::numeric_limits<intmax_t>::max(), intmax_t n = -1>
+using periodic_n = periodic<
+    distribution::constant_n<times_t, s, scale>,
+    distribution::constant_n<times_t, p, scale>,
+    distribution::constant_n<times_t, e, e == std::numeric_limits<intmax_t>::max() ? 0 : scale>,
+    distribution::constant_n<size_t,  n>
+>;
+/**
+ * @brief With parameters as initialisation values.
+ * @param s_tag The tag corresponding to the first event in initialisation values.
+ * @param p_tag The tag corresponding to the period in initialisation values.
+ * @param e_tag The tag corresponding to the maximum admissible time in initialisation values.
+ * @param n_tag The tag corresponding to the maximum number of events in initialisation values.
+ */
+template <typename s_tag, typename p_tag = s_tag, typename e_tag = void, typename n_tag = void>
+using periodic_i = periodic<
+    distribution::constant_i<times_t, s_tag>,
+    distribution::constant_i<times_t, p_tag>,
+    distribution::constant_n<times_t, +1, 0, e_tag>,
+    distribution::constant_n<size_t,  -1, 1, n_tag>
+>;
+//! @}
 
 
 //! @cond INTERNAL
@@ -320,7 +384,7 @@ class merge {
         set_next(std::make_index_sequence<sizeof...(Ss)>{});
     }
 
-    //! @brief Default constructor.
+    //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     merge(G&& g, const common::tagged_tuple<S,T>& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
         set_next(std::make_index_sequence<sizeof...(Ss)>{});

@@ -49,7 +49,7 @@ struct exposer {
     };
 };
 
-using seq_per = sequence::periodic<distribution::constant<times_t, 15, 10>, distribution::constant<times_t, 2>, distribution::constant<times_t, 62, 10>, distribution::constant<size_t, 5>>;
+using seq_per = sequence::periodic<distribution::constant_n<times_t, 15, 10>, distribution::constant_n<times_t, 2>, distribution::constant_n<times_t, 62, 10>, distribution::constant_n<size_t, 5>>;
 
 template <int O>
 using combo1 = component::combine_spec<

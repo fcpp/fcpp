@@ -32,13 +32,13 @@ struct exposer {
     };
 };
 
-using seq_per = sequence::periodic<distribution::constant<times_t, 2>, distribution::constant<times_t, 1>, distribution::constant<times_t, 9>>;
+using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distribution::constant_n<times_t, 1>, distribution::constant_n<times_t, 9>>;
 
 template <int O>
 using combo = component::combine_spec<
     exposer,
     component::scheduler<round_schedule<seq_per>>,
-    component::physical_connector<parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant<times_t, 1, 4>>>,
+    component::physical_connector<parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::physical_position<>,
     component::base<parallel<(O & 1) == 1>>
 >;

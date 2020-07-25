@@ -66,14 +66,16 @@ TEST(SequenceTest, MultipleDiff) {
     d = e.next();
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
-    double f;
-    sequence::multiple<distribution::constant_n<size_t, 2>, distribution::uniform_n<times_t, 50, 10, 10>, false> ee(rnd);
-    d = ee(rnd);
-    EXPECT_NEAR(5.0, d, 1.74);
-    f = ee(rnd);
-    EXPECT_NE(d, f);
-    f = ee(rnd);
-    EXPECT_EQ(TIME_MAX, f);
+    sequence::multiple<distribution::constant_n<size_t, 10>, distribution::interval_n<times_t, 0, 1>, false> ee(rnd);
+    std::vector<times_t> v;
+    v.push_back(ee(rnd));
+    EXPECT_LT(0, v[0]);
+    while (ee.next() < TIME_MAX) {
+        v.push_back(ee(rnd));
+        EXPECT_LT(v[v.size()-2], v[v.size()-1]);
+    }
+    EXPECT_LT(v.back(), 1);
+    EXPECT_EQ(v.size(), 10ULL);
 }
 
 TEST(SequenceTest, List) {

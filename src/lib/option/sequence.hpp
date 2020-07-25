@@ -167,7 +167,7 @@ class multiple<N, E, false> {
         size_t num = n(g);
         pending.reserve(num);
         for (size_t j=0; j<num; ++j) pending.push_back(distr(g));
-        std::sort(pending.begin(), pending.end(), std::greater<int>{});
+        std::sort(pending.begin(), pending.end(), std::greater<times_t>{});
     }
 };
 //! @}

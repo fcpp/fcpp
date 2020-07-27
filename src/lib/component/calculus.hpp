@@ -357,7 +357,7 @@ to_local<A&> mod_other(node_t& node, trace_t call_point, A& x) {
 
 //! @brief Modifies the local value of a field (ensuring alignment).
 template <typename node_t, typename A, typename B>
-to_field<std::decay_t<A>> mod_other(const node_t& node, trace_t call_point, A const& x, B const& y) {
+to_field<std::decay_t<A>> mod_other(node_t& node, trace_t call_point, A const& x, B const& y) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
     return details::mod_other(x, y, details::get_context(node).second().align(t, node.uid));

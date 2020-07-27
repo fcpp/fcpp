@@ -1,5 +1,10 @@
 #!/bin/bash
 
+plot_builder="plotter/plot_builder.py"
+if ! [ -f $plot_builder ]; then
+    plot_builder="extras/$plot_builder"
+fi
+
 function usage() {
     echo -e "\033[4mcommands and parameters:\033[0m"
     echo -e "    \033[1mclean\033[0m:                           cleans all built files (can be chained)"
@@ -17,7 +22,7 @@ function usage() {
     echo -e "    \033[1mall\033[0m:                             builds all possible targets and documentation"
     echo -e "       <copts...>"
     echo -e "Targets can be substrings demanding builds for all possible expansions. Syntax for plots is:"
-    plotter/plot_builder.py | tail -n +6 | head -n 10
+    $plot_builder | tail -n +6 | head -n 10
     exit 1
 }
 
@@ -325,7 +330,7 @@ while [ "$1" != "" ]; do
             if [ "${#plots[@]}" -gt 0 ]; then
                 v=`ls output/$name-*.asy | sed "s|^output/$name-||;s|.asy$||" | sort -n | tail -n 1`
                 v=$[v+1]
-                plotter/plot_builder.py output/raw/$name*.txt "${plots[@]}" > output/$name-$v.asy
+                $plot_builder output/raw/$name*.txt "${plots[@]}" > output/$name-$v.asy
                 cp plotter/plot.asy output/
                 cd output
                 asy $name-$v.asy -f pdf

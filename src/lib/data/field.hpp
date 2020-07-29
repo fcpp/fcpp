@@ -97,7 +97,7 @@ namespace details {
     to_local<A&&> self(A&&, device_t);
 
     template <typename A, typename = if_local<A>>
-    A&& align(A&&, std::vector<device_t> const&);
+    inline A align(A&&, std::vector<device_t> const&);
     template <typename A>
     field<A>& align(field<A>&, std::vector<device_t> const&);
     template <typename A>
@@ -378,8 +378,8 @@ namespace details {
     //! @{
     //! @brief align of locals.
     template <typename A, typename = if_local<A>>
-    A&& align(A&& x, std::vector<device_t> const&) {
-        return std::forward<A>(x);
+    inline A align(A&& x, std::vector<device_t> const&) {
+        return x;
     }
 
     //! @brief align of fields.

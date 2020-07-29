@@ -49,7 +49,7 @@ In order to get started on your machine you need the following installed:
 - [GCC](https://gcc.gnu.org) (tested with version 9.2.0)
 - [Doxygen](http://www.doxygen.nl)
 
-In the `src` folder, you should be able to run `./make.sh all`, getting output about building and testing the whole library.
+In the `src` folder, you should be able to run `./make.sh gcc all`, getting output about building and testing the whole library.
 
 ## Developers: Contribute
 

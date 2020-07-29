@@ -111,9 +111,13 @@ function filter() {
     rule="$1"
     shift 1
     while read -r target; do
-        build=`echo $target | sed 's|/[^/]*.cpp$|/BUILD|'`
-        name=`basename $target .cpp`
-        if [ -f $build -a `cat $build | tr -s ' \n' ' ' | grep "$rule( name = \"$name\"" | wc -l` -gt 0 ]; then
+        build=`echo $target | sed 's|/[^/]*.cpp$|/|'`BUILD
+        if [ "${target: -4}" == ".cpp" ]; then
+            name="\"`basename $target .cpp`\""
+        else
+            name=""
+        fi
+        if [ -f $build -a `cat $build | tr -s ' \n' ' ' | grep "$rule( name = $name" | wc -l` -gt 0 ]; then
             echo -n "$target "
         fi
     done

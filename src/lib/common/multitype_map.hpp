@@ -92,7 +92,7 @@ class multitype_map {
     }
 
     //! @brief Inserts value at corresponding key by moving.
-    template<typename A>
+    template<typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
     void insert(T key, A&& value) {
         get_map<A>(bool_pack<type_supported<A>>{})[key] = std::move(value);
         static_assert(type_supported<A>, MISSING_TYPE_MESSAGE);

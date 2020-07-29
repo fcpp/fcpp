@@ -32,6 +32,15 @@ double slow_distance(node_t& node, trace_t call_point, bool source, G&& metric) 
     });
 }
 
+//! @brief Counts the number of communications with each neighbour.
+template <typename node_t>
+field<int> connection(node_t& node, trace_t call_point) {
+    return nbr(node, call_point, field<int>{0}, [&](field<int> n) {
+        return n + mod_other(node, call_point, 1, 0);
+    });
+}
+
+
 
 namespace tags {
     //! @brief Ideal distance values.

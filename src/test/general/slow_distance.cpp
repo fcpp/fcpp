@@ -21,7 +21,7 @@ using combo = component::combine_spec<
     component::physical_position<>,
     component::storage<tuple_store<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>>,
     component::identifier<parallel<(O & 8) == 8>, synchronised<(O & 16) == 16>>,
-    component::calculus<program<main>, exports<double>,
+    component::calculus<program<main>, exports<double, field<int>>,
         export_pointer<(O & 1) == 1>,
         export_split<(O & 2) == 2>,
         online_drop<(O & 4) == 4>
@@ -66,4 +66,19 @@ MULTI_TEST(SlowdistanceTest, ShortLine, O, 5) {
         {0.0, 1.0, 1.5},
         {0.0, 1.0, 1.5},
     );
+}
+
+TEST(SlowdistanceTest, Connection) {
+    test_net<combo<0>, std::tuple<int>()> n{
+        [&](auto& node){
+            return std::make_tuple(
+                coordination::sum_hood(node, 0, coordination::connection(node, 0))
+            );
+        }
+    };
+    EXPECT_ROUND(n, {1, 1,  1});
+    EXPECT_ROUND(n, {3, 4,  3});
+    EXPECT_ROUND(n, {5, 7,  5});
+    EXPECT_ROUND(n, {7, 10, 7});
+    EXPECT_ROUND(n, {9, 13, 9});
 }

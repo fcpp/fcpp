@@ -287,16 +287,36 @@ struct calculus {
 //! @{
 //! @brief Computes the restriction of a local to the current domain.
 template <typename node_t, typename A, typename = if_local<A>>
-A align(const node_t&, trace_t, A&& x) {
-    return std::forward<A>(x);
+inline A align(const node_t&, trace_t, A&& x) {
+    return x;
 }
 
 //! @brief Computes the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
-decltype(auto) align(node_t& node, trace_t call_point, A&& x) {
+A align(node_t& node, trace_t call_point, A const& x) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
-    return details::align(std::forward<A>(x), details::get_context(node).second().align(t, node.uid));
+    return details::align(x, details::get_context(node).second().align(t, node.uid));
+}
+
+//! @brief Computes the restriction of a field to the current domain.
+template <typename node_t, typename A, typename = if_field<A>, typename = std::enable_if_t<not std::is_reference<A>::value>>
+A align(node_t& node, trace_t call_point, A&& x) {
+    trace_t t = node.stack_trace.hash(call_point);
+    details::get_export(node).second()->insert(t);
+    return details::align(std::move(x), details::get_context(node).second().align(t, node.uid));
+}
+
+//! @brief Computes in-place the restriction of a field to the current domain.
+template <typename node_t, typename A, typename = if_local<A>>
+void align_inplace(const node_t&, trace_t, A&) {}
+
+//! @brief Computes in-place the restriction of a field to the current domain.
+template <typename node_t, typename A, typename = if_field<A>>
+void align_inplace(node_t& node, trace_t call_point, A& x) {
+    trace_t t = node.stack_trace.hash(call_point);
+    details::get_export(node).second()->insert(t);
+    details::align(x, details::get_context(node).second().align(t, node.uid));
 }
 
 //! @brief Accesses the local value of a field.
@@ -389,67 +409,69 @@ size_t count_hood(node_t& node, trace_t call_point) {
 //! @}
 
 
+//! @cond INTERNAL
+namespace details {
+    template <typename A, typename B>
+    inline B&& maybe_first(common::type_sequence<A>, tuple<B,A>& t) {
+        return std::move(get<0>(t));
+    }
+    template <typename A, typename B>
+    inline A&& maybe_second(common::type_sequence<A>, tuple<B,A>& t) {
+        return std::move(get<1>(t));
+    }
+    template <typename A>
+    inline A&& maybe_first(common::type_sequence<A>, A& x) {
+        return std::move(x);
+    }
+    template <typename A>
+    inline A& maybe_second(common::type_sequence<A>, A& x) {
+        return x;
+    }
+}
+//! @endcond
+
+
 //! @name old-based coordination operators
 //! @{
 /**
- * @brief The previous-round value of the argument.
+ * @brief The previous-round value (defaults to first argument), modified through the second argument.
  *
- * Equivalent to `old(f, f)`.
+ * Corresponds to the `rep` construct of the field calculus.
+ * The \p op argument may return a `A` or a `tuple<B,A>`. In the latter case,
+ * the first element of the returned pair is returned by the function, while
+ * the second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A>
-const A& old(node_t& node, trace_t call_point, const A& f) {
+template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A)>>
+auto old(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).first()->insert(t, align(node, call_point, f));
-    return details::get_context(node).first().old(t, f, node.uid);
+    auto f = op(align(node, call_point, details::get_context(node).first().old(t, f0, node.uid)));
+    details::get_export(node).first()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
+    return details::maybe_first(common::type_sequence<A>{}, f);
 }
 /**
  * @brief The previous-round value of the second argument, defaulting to the first argument if no previous value.
  *
  * Equivalent to:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * old(f0, [](const A& fo){
- *     return std::make_pair(fo, f);
+ * old(f0, [](A fo){
+ *     return make_tuple(fo, f);
  * })
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <typename node_t, typename A>
-const A& old(node_t& node, trace_t call_point, const A& f0, const A& f) {
+A old(node_t& node, trace_t call_point, const A& f0, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).first()->insert(t, align(node, call_point, f));
-    return details::get_context(node).first().old(t, f0, node.uid);
+    details::get_export(node).first()->insert(t, f);
+    return align(node, call_point, details::get_context(node).first().old(t, f0, node.uid));
 }
 /**
- * @brief The previous-round value of the result (defaults to first argument), modified through the second argument.
+ * @brief The previous-round value of the argument.
  *
- * Applies if the \p op argument has return type `A`.
- * Corresponds to the `rep` construct of the field calculus. Equivalent to:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * old(f0, [](const A& fo){
- *     A f = op(fo);
- *     return std::make_pair(f, f);
- * })
- * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Equivalent to `old(f, f)`.
  */
-template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(const A&)>>
-A old(node_t& node, trace_t call_point, const A& f0, G&& op) {
-    trace_t t = node.stack_trace.hash(call_point);
-    A f = op(details::get_context(node).first().old(t, f0, node.uid));
-    details::get_export(node).first()->insert(t, align(node, call_point, f));
-    return f;
-}
-/**
- * @brief The previous-round value (defaults to first argument), modified through the second argument.
- *
- * Applies if the \p op argument has return type `std::pair<B,A>`.
- * The first element of the returned pair is returned by the function.
- * The second element of the returned pair is written in the exports.
- */
-template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&)>>
-B old(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
-    trace_t t = node.stack_trace.hash(call_point);
-    std::pair<B,A> f = op(details::get_context(node).first().old(t, f0, node.uid));
-    details::get_export(node).first()->insert(t, align(node, call_point, std::move(f.second)));
-    return f.first;
+template <typename node_t, typename A>
+inline A old(node_t& node, trace_t call_point, const A& f) {
+    return old(node, call_point, f, f);
 }
 //! @}
 
@@ -457,15 +479,19 @@ B old(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
 //! @name nbr-based coordination operators
 //! @{
 /**
- * @brief The neighbours' value of the argument.
+ * @brief The neighbours' value of the result (defaults to first argument), modified through the second argument.
  *
- * Equivalent to `nbr(f, f)`.
+ * Corresponds to the `share` construct of the field calculus.
+ * The \p op argument may return a `A` or a `tuple<B,A>`. In the latter case,
+ * the first element of the returned pair is returned by the function, while
+ * the second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A>
-to_field<A> nbr(node_t& node, trace_t call_point, const A& f) {
+template <typename node_t, typename A, typename G, typename = std::result_of_t<G(to_field<A>)>>
+auto nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t, align(node, call_point, f));
-    return details::get_context(node).second().nbr(t, f, node.uid);
+    auto f = op(details::get_context(node).second().nbr(t, f0, node.uid));
+    details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
+    return details::maybe_first(common::type_sequence<A>{}, f);
 }
 /**
  * @brief The neighbours' value of the second argument, defaulting to the first argument.
@@ -480,41 +506,17 @@ to_field<A> nbr(node_t& node, trace_t call_point, const A& f) {
 template <typename node_t, typename A>
 to_field<A> nbr(node_t& node, trace_t call_point, const A& f0, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t, align(node, call_point, f));
+    details::get_export(node).second()->insert(t, f);
     return details::get_context(node).second().nbr(t, f0, node.uid);
 }
 /**
- * @brief The neighbours' value of the result (defaults to first argument), modified through the second argument.
+ * @brief The neighbours' value of the argument.
  *
- * Applies if the \p op argument has return type `A`.
- * Equivalent to:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * nbr(f0, [](to_field<A> fn){
- *     A f = op(fn);
- *     return std::make_pair(f, f);
- * })
- * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Equivalent to `nbr(f, f)`.
  */
-template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(to_field<A>)>>
-A nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
-    trace_t t = node.stack_trace.hash(call_point);
-    A f = op(details::get_context(node).second().nbr(t, f0, node.uid));
-    details::get_export(node).second()->insert(t, align(node, call_point, f));
-    return f;
-}
-/**
- * @brief The neighbours' value (defaults to first argument), modified through the second argument.
- *
- * Applies if the \p op argument has return type `std::pair<B,A>`.
- * The first element of the returned pair is returned by the function.
- * The second element of the returned pair is written in the exports.
- */
-template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(to_field<A>)>>
-B nbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
-    trace_t t = node.stack_trace.hash(call_point);
-    std::pair<B,A> f = op(details::get_context(node).second().nbr(t, f0, node.uid));
-    details::get_export(node).second()->insert(t, align(node, call_point, std::move(f.second)));
-    return f.first;
+template <typename node_t, typename A>
+inline to_field<A> nbr(node_t& node, trace_t call_point, const A& f) {
+    return nbr(node, call_point, f, f);
 }
 //! @}
 
@@ -524,35 +526,16 @@ B nbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
 /**
  * @brief The result of the second argument given info from neighbours' and self.
  *
- * Applies if the \p op argument has return type `A`.
- * Equivalent to:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * oldnbr(f0, [](const A& fo, to_field<A> fn){
- *     A f = op(fo, fn);
- *     return std::make_pair(f, f);
- * })
- * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ * The \p op argument may return a `A` or a `tuple<B,A>`. In the latter case,
+ * the first element of the returned pair is returned by the function, while
+ * the second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A, typename G, typename = common::if_signature<G, A(const A&, to_field<A>)>>
+template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A, to_field<A>)>>
 A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
-    A f = op(details::get_context(node).second().old(t, f0, node.uid), details::get_context(node).second().nbr(t, f0, node.uid));
-    details::get_export(node).second()->insert(t, align(node, call_point, f));
-    return f;
-}
-/**
- * @brief The result of the second argument given info from neighbours' and self.
- *
- * Applies if the \p op argument has return type `std::pair<B,A>`.
- * The first element of the returned pair is returned by the function.
- * The second element of the returned pair is written in the exports.
- */
-template <typename node_t, typename A, typename B, typename G, typename = common::if_signature<G, std::pair<B,A>(const A&, to_field<A>)>>
-B oldnbr(node_t& node, trace_t call_point, const A& f0, const B&, G&& op) {
-    trace_t t = node.stack_trace.hash(call_point);
-    std::pair<B,A> f = op(details::get_context(node).second().old(t, f0, node.uid), details::get_context(node).second().nbr(t, f0, node.uid));
-    details::get_export(node).second()->insert(t, align(node, call_point, std::move(f.second)));
-    return f.first;
+    auto f = op(align(node, call_point, details::get_context(node).second().old(t, f0, node.uid)), details::get_context(node).second().nbr(t, f0, node.uid));
+    details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
+    return details::maybe_first(common::type_sequence<A>{}, f);
 }
 //! @}
 

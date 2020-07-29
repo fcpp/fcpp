@@ -40,11 +40,11 @@ template <typename node_t, typename P, typename T, typename G, typename F, typen
 T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const T& null, G&& accumulate, F&& divide) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, null, null, [&](field<T> x){
+    return nbr(node, 0, null, [&](field<T> x){
         field<P> nbrdist = nbr(node, 1, distance);
         T v = fold_hood(node, 1, accumulate, mux(nbrdist > distance, x, field<T>{null}), value);
         int n = sum_hood(node, 1, mux(nbrdist < distance, 1, 0), 0);
-        return std::make_pair(divide(v, max(n, 1)), v);
+        return make_tuple(divide(v, max(n, 1)), v);
     });
 }
 

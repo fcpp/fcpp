@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "lib/settings.hpp"
+#include "lib/common/serialize.hpp"
 #include "lib/data/tuple.hpp"
 
 
@@ -228,7 +229,58 @@ class field : public details::field_base<std::is_same<T, bool>::value, T> {
         swap(m_vals, f.m_vals);
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        serialize_size(s);
+        for (size_t i = 0; i < m_ids.size(); ++i)
+            s & m_ids[i];
+        serialize_vals(s, std::is_same<T, bool>{});
+        return s;
+    }
+
   private:
+    //! @brief Serialises the size from a given input stream.
+    void serialize_size(common::isstream& s) {
+        device_t size = 0;
+        s.read(size);
+        m_ids.resize(size);
+        m_vals.resize(size+1);
+    }
+
+    //! @brief Serialises the size to a given output stream.
+    void serialize_size(common::osstream& s) {
+        s.write((device_t)m_ids.size());
+    }
+
+    //! @brief Serialises vals if `T` is not `bool`.
+    template <typename S>
+    void serialize_vals(S& s, std::false_type) {
+        for (size_t i = 0; i < m_vals.size(); ++i) s & m_vals[i];
+    }
+
+    //! @brief Serialises vals from an input stream if `T` is `bool`.
+    void serialize_vals(common::isstream& s, std::true_type) {
+        char c;
+        for (size_t i = 0; i < m_vals.size(); ++i) {
+            if (i%8 == 0) s >> c;
+            m_vals[i] = (c>>(i%8))&1;
+        }
+    }
+
+    //! @brief Serialises vals to an output stream if `T` is `bool`.
+    void serialize_vals(common::osstream& s, std::true_type) {
+        char c = 0;
+        for (size_t i = 0; i < m_vals.size(); ++i) {
+            c += m_vals[i] << (i%8);
+            if (i%8 == 7) {
+                s << c;
+                c = 0;
+            }
+        }
+        if (m_vals.size() % 8 != 0) s << c;
+    }
+
     //! @brief Ordered IDs of exceptions.
     std::vector<device_t> m_ids;
 

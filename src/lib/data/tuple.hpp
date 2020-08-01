@@ -77,6 +77,12 @@ class tuple {
     void swap(tuple& t) {
         m_tuple.swap(t.m_tuple);
     }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_tuple;
+    }
     
   private:
     std::tuple<Ts...> m_tuple;

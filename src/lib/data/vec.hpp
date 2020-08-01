@@ -70,6 +70,12 @@ struct vec {
         for (size_t i=0; i<n; ++i) if (data[i] != o.data[i]) return true;
         return false;
     }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & data;
+    }
     
     //! @brief The internal data as C array.
     double data[n];

@@ -4,6 +4,7 @@ cc_library(
     srcs = ['field.cpp'],
     deps = [
         "//lib:settings",
+        "//lib/common:serialize",
         "//lib/data:tuple",
     ],
     visibility = [

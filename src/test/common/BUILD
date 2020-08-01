@@ -80,6 +80,23 @@ cc_test(
 )
 
 cc_test(
+    name = "serialize",
+    srcs = ["serialize.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:multitype_map",
+        "//lib/common:serialize",
+        "//lib/common:tagged_tuple",
+        "//lib/data:field",
+        "//lib/data:vec",
+        "//lib/internal:flat_ptr",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "tagged_tuple",
     srcs = ["tagged_tuple.cpp"],
     deps = [

@@ -108,6 +108,12 @@ class flat_ptr<T, false> {
     const T* operator->() const {
         return m_data.get();
     }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & *m_data.get();
+    }
 };
 
 
@@ -185,6 +191,12 @@ class flat_ptr<T, true> {
     //! @brief Const arrow access to the content.
     const T* operator->() const {
         return &m_data;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_data;
     }
 };
 

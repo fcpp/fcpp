@@ -61,6 +61,18 @@ cc_library(
 )
 
 cc_library(
+    name = 'serialize',
+    hdrs = ['serialize.hpp'],
+    srcs = ['serialize.cpp'],
+    deps = [
+        "//lib/internal:trace",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'tagged_tuple',
     hdrs = ['tagged_tuple.hpp'],
     srcs = ['tagged_tuple.cpp'],

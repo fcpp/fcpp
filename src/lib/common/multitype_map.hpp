@@ -145,6 +145,12 @@ class multitype_map {
         m_data.print(o, xs...);
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_data & m_keys;
+    }
+
   private:
     //! @brief Access to the map corresponding to a type.
     template <typename A>

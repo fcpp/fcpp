@@ -113,7 +113,7 @@ function filter() {
     while read -r target; do
         build=`echo $target | sed 's|/[^/]*.cpp$|/|'`BUILD
         if [ "${target: -4}" == ".cpp" ]; then
-            name="\"`basename $target .cpp`\""
+            name="['\"]`basename $target .cpp`['\"]"
         else
             name=""
         fi

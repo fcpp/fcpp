@@ -10,7 +10,7 @@
 
 #include <type_traits>
 
-#include "lib/common/tagged_tuple.hpp"
+#include "lib/component/base.hpp"
 
 
 /**
@@ -55,17 +55,7 @@ struct storage {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that a storage component is present.
-        struct storage_tag {};
-
-        //! @brief Checks if T has a `storage_tag`.
-        template <typename T, typename = int>
-        struct has_tag : std::false_type {};
-        template <typename T>
-        struct has_tag<T, std::conditional_t<true,int,typename T::storage_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has no `storage_tag`.
-        static_assert(not has_tag<P>::value, "cannot combine multiple storage components");
+        DECLARE_COMPONENT(storage);
 
         //! @brief The local part of the component.
         class node : public P::node {

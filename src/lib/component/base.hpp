@@ -41,6 +41,35 @@ namespace tags {
 }
 
 
+//! @brief Defines a predicate `has_name<T>` checking whether a given component is present in `T`.
+#define CHECK_COMPONENT(name)                       \
+        template <typename T, typename = void>      \
+        struct has_##name : std::false_type {};     \
+        template <typename T>                       \
+        struct has_##name<T, std::conditional_t<true,void,typename T::name##_tag>> : std::true_type {}
+
+//! @brief Declares a component, checking that there are no duplicates among parents.
+#define DECLARE_COMPONENT(name)                     \
+        struct name##_tag {};                       \
+        CHECK_COMPONENT(name);                      \
+        static_assert(not has_##name<P>::value, "cannot combine multiple " #name " components")
+
+//! @brief Requires that a given component is present among parents.
+#define REQUIRE_COMPONENT(name,parent)              \
+        CHECK_COMPONENT(parent);                    \
+        static_assert(has_##parent<P>::value, "missing " #parent " parent for " #name " component")
+
+//! @brief Requires that a given component is present among parents, if a condition is met.
+#define REQUIRE_COMPONENT_IF(name,parent,cond)      \
+        CHECK_COMPONENT(parent);                    \
+        static_assert(not cond or has_##parent<P>::value, "missing " #parent " parent for " #name " component with " #cond)
+
+//! @brief Requires that a given component is absent among parents.
+#define AVOID_COMPONENT(name,parent)                \
+        CHECK_COMPONENT(parent);                    \
+        static_assert(not has_##parent<P>::value, #parent " cannot be parent of " #name " component")
+
+
 /**
  * @brief Empty component (base case for component construction).
  *

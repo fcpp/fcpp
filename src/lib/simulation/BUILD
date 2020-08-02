@@ -16,9 +16,7 @@ cc_library(
     hdrs = ['physical_connector.hpp'],
     srcs = ['physical_connector.cpp'],
     deps = [
-        "//lib:settings",
-        "//lib/common:mutex",
-        "//lib/common:profiler",
+        "//lib/component:base",
         "//lib/data:vec",
         "//lib/option:connect",
         "//lib/option:distribution",
@@ -33,9 +31,7 @@ cc_library(
     hdrs = ['physical_position.hpp'],
     srcs = ['physical_position.cpp'],
     deps = [
-        "//lib:settings",
-        "//lib/common:profiler",
-        "//lib/common:tagged_tuple",
+        "//lib/component:base",
         "//lib/data:field",
         "//lib/data:vec",
     ],
@@ -49,8 +45,7 @@ cc_library(
     hdrs = ['spawner.hpp'],
     srcs = ['spawner.cpp'],
     deps = [
-        "//lib:settings",
-        "//lib/common:profiler",
+        "//lib/component:base",
         "//lib/option:sequence",
     ],
     visibility = [

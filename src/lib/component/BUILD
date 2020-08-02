@@ -18,6 +18,7 @@ cc_library(
     hdrs = ['calculus.hpp'],
     srcs = ['calculus.cpp'],
     deps = [
+        "//lib/component:base",
         "//lib/internal:context",
         "//lib/internal:trace",
         "//lib/internal:twin",
@@ -33,11 +34,9 @@ cc_library(
     hdrs = ['identifier.hpp'],
     srcs = ['identifier.cpp'],
     deps = [
-        "//lib:settings",
         "//lib/common:algorithm",
-        "//lib/common:mutex",
         "//lib/common:random_access_map",
-        "//lib/common:tagged_tuple",
+        "//lib/component:base",
     ],
     visibility = [
         '//visibility:public',
@@ -49,9 +48,7 @@ cc_library(
     hdrs = ['logger.hpp'],
     srcs = ['logger.cpp'],
     deps = [
-        "//lib:settings",
-        "//lib/common:mutex",
-        "//lib/common:profiler",
+        "//lib/component:base",
         "//lib/option:aggregator",
         "//lib/option:sequence",
     ],
@@ -65,7 +62,7 @@ cc_library(
     hdrs = ['randomizer.hpp'],
     srcs = ['randomizer.cpp'],
     deps = [
-        "//lib/common:tagged_tuple",
+        "//lib/component:base",
         "//lib/option:distribution",
     ],
     visibility = [
@@ -78,7 +75,7 @@ cc_library(
     hdrs = ['scheduler.hpp'],
     srcs = ['scheduler.cpp'],
     deps = [
-        "//lib:settings",
+        "//lib/component:base",
         "//lib/option:sequence",
     ],
     visibility = [
@@ -91,7 +88,7 @@ cc_library(
     hdrs = ['storage.hpp'],
     srcs = ['storage.cpp'],
     deps = [
-        "//lib/common:tagged_tuple",
+        "//lib/component:base",
     ],
     visibility = [
         '//visibility:public',
@@ -103,9 +100,8 @@ cc_library(
     hdrs = ['timer.hpp'],
     srcs = ['timer.cpp'],
     deps = [
-        "//lib:settings",
+        "//lib/component:base",
         "//lib/data:field",
-        "//lib/common:tagged_tuple",
     ],
     visibility = [
         '//visibility:public',

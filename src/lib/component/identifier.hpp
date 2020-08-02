@@ -12,11 +12,9 @@
 #include <queue>
 #include <type_traits>
 
-#include "lib/settings.hpp"
 #include "lib/common/algorithm.hpp"
-#include "lib/common/mutex.hpp"
 #include "lib/common/random_access_map.hpp"
-#include "lib/common/tagged_tuple.hpp"
+#include "lib/component/base.hpp"
 
 
 /**
@@ -47,12 +45,12 @@ namespace details {
         times_queue() {
             m_queue.emplace(TIME_MAX, std::vector<device_t>());
         }
-        
+
         //! @brief The smallest time in the queue.
         inline times_t next() const {
             return m_queue.begin()->first;
         }
-        
+
         //! @brief Adds a new pair to the queue.
         inline void push(times_t t, device_t uid) {
             m_queue[t].push_back(uid);
@@ -65,7 +63,7 @@ namespace details {
             m_queue.erase(m_queue.begin());
             return v;
         }
-        
+
       private:
         //! @brief The actual priority queue.
         std::map<times_t, std::vector<device_t>> m_queue;
@@ -79,12 +77,12 @@ namespace details {
         times_queue() {
             m_queue.emplace(TIME_MAX, device_t());
         }
-        
+
         //! @brief The smallest time in the queue.
         inline times_t next() const {
             return m_queue.top().first;
         }
-        
+
         //! @brief Adds a new pair to the queue.
         inline void push(times_t t, device_t uid) {
             m_queue.emplace(t, uid);
@@ -99,7 +97,7 @@ namespace details {
             }
             return v;
         }
-        
+
       private:
         //! @brief The type of queue elements.
         using type = std::pair<times_t, device_t>;
@@ -165,27 +163,20 @@ struct identifier {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that an identifier component is present.
-        struct identifier_tag {};
-        
-        //! @brief Checks if T has a `identifier_tag`.
-        template <typename T, typename = int>
-        struct has_itag : std::false_type {};
-        template <typename T>
-        struct has_itag<T, std::conditional_t<true,int,typename T::identifier_tag>> : std::true_type {};
-        
-        //! @brief Asserts that P has no `identifier_tag`.
-        static_assert(not has_itag<P>::value, "cannot combine multiple identifier components");
+        DECLARE_COMPONENT(identifier);
 
         //! @brief The local part of the component.
         using node = typename P::node;
-        
+
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
+            //! @brief The type of nodes.
+            using node_type = typename F::node;
+
             //! @brief The map type used internally for storing nodes.
-            using map_type = common::random_access_map<device_t, typename F::node>;
-            
+            using map_type = common::random_access_map<device_t, node_type>;
+
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
@@ -198,14 +189,14 @@ struct identifier {
             times_t next() const {
                 return std::min(m_queue.next(), P::net::next());
             }
-            
+
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_queue.next() < P::net::next()) {
                     std::vector<device_t> nv = m_queue.pop(m_queue.next() + m_epsilon);
                     common::parallel_for(common::tags::general_execution<parallel>(m_threads), nv.size(), [&nv,this](size_t i, size_t){
                         if (m_nodes.count(nv[i]) > 0) {
-                            typename F::node& n = m_nodes.at(nv[i]);
+                            node_type& n = m_nodes.at(nv[i]);
                             common::lock_guard<parallel> device_lock(n.mutex);
                             n.update();
                         }
@@ -217,49 +208,49 @@ struct identifier {
                     }
                 } else P::net::update();
             }
-            
+
             //! @brief Returns the total number of nodes.
             inline size_t node_size() const {
                 return m_nodes.size();
             }
-            
+
             //! @brief Returns whether a node with a certain device identifier exists.
             inline size_t node_count(device_t uid) const {
                 return m_nodes.count(uid);
             }
-            
+
             //! @brief Const access to the node with a given device device identifier.
-            inline const typename F::node& node_at(device_t uid) const {
+            inline const node_type& node_at(device_t uid) const {
                 return m_nodes.at(uid);
             }
 
             //! @brief Access to the node with a given device device identifier (given a lock for the node's mutex).
-            typename F::node& node_at(device_t uid, common::unique_lock<parallel>& l) {
+            node_type& node_at(device_t uid, common::unique_lock<parallel>& l) {
                 l = common::unique_lock<parallel>(m_nodes.at(uid).mutex);
                 return m_nodes.at(uid);
             }
-            
+
           protected: // visible by net objects only
             //! @brief Random-access iterator to the first node (in a random order).
             typename map_type::const_iterator node_begin() const {
                 return m_nodes.begin();
             }
-            
+
             //! @brief Random-access const iterator to the first node (in a random order).
             typename map_type::iterator node_begin() {
                 return m_nodes.begin();
             }
-            
+
             //! @brief Random-access iterator to the last node (in a random order).
             typename map_type::const_iterator node_end() const {
                 return m_nodes.end();
             }
-            
+
             //! @brief Random-access const iterator to the last node (in a random order).
             typename map_type::iterator node_end() {
                 return m_nodes.end();
             }
-            
+
             //! @brief Creates a new node, initialising it with data in `t` (returns the identifier assigned).
             template <typename S, typename T>
             device_t node_emplace(const common::tagged_tuple<S,T>& t) {
@@ -276,20 +267,20 @@ struct identifier {
             inline size_t node_erase(device_t uid) {
                 return m_nodes.erase(uid);
             }
-            
+
           private: // implementation details
             //! @brief The set of nodes, indexed by identifier.
             map_type m_nodes;
-            
+
             //! @brief The queue of identifiers by next event.
             details::times_queue<synchronised> m_queue;
-            
+
             //! @brief The next free identifier.
             device_t m_next_uid;
-            
+
             //! @brief The time sensitivity.
             const times_t m_epsilon;
-            
+
             //! @brief The number of threads to be used.
             const size_t m_threads;
         };

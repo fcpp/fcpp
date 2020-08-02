@@ -22,8 +22,7 @@ using combo1 = component::combine_spec<
     component::base<>
 >;
 using combo2 = component::combine_spec<
-    component::scheduler<round_schedule<seq_per>>,
-    component::scheduler<round_schedule<seq_mul>>,
+    component::scheduler<round_schedule<seq_per>,round_schedule<seq_mul>>,
     component::randomizer<>,
     component::base<>
 >;

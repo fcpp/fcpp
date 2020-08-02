@@ -17,6 +17,7 @@
 #include "lib/internal/trace.hpp"
 #include "lib/internal/twin.hpp"
 #include "lib/option/metric.hpp"
+#include "lib/component/base.hpp"
 
 
 /**
@@ -163,17 +164,7 @@ struct calculus {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that a calculus component is present.
-        struct calculus_tag {};
-
-        //! @brief Checks if T has a `calculus_tag`.
-        template <typename T, typename = int>
-        struct has_ctag : std::false_type {};
-        template <typename T>
-        struct has_ctag<T, std::conditional_t<true,int,typename T::calculus_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has no `calculus_tag`.
-        static_assert(not has_ctag<P>::value, "cannot combine multiple calculus components");
+        DECLARE_COMPONENT(calculus);
 
         //! @brief The local part of the component.
         class node : public P::node {

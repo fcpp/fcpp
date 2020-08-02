@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "lib/settings.hpp"
+#include "lib/component/base.hpp"
 #include "lib/option/sequence.hpp"
 
 
@@ -59,20 +59,9 @@ struct scheduler {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Checks if T has a `randomizer_tag`.
-        template <typename T, typename = int>
-        struct has_rtag : std::false_type {};
-        template <typename T>
-        struct has_rtag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
-        
-        //! @brief Checks if T has a `timer_tag`.
-        template <typename T, typename = int>
-        struct has_ttag : std::false_type {};
-        template <typename T>
-        struct has_ttag<T, std::conditional_t<true,int,typename T::timer_tag>> : std::true_type {};
-        
-        //! @brief Asserts that P has no `timer_tag`.
-        static_assert(not has_ttag<P>::value, "timer cannot be parent of scheduler component");
+        DECLARE_COMPONENT(scheduler);
+        AVOID_COMPONENT(scheduler,timer);
+        CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -84,7 +73,7 @@ struct scheduler {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_schedule(get_generator(has_randomizer<P>{}, *this),t) {}
 
             /**
              * @brief Returns next event to schedule for the node component.
@@ -99,7 +88,7 @@ struct scheduler {
             void update() {
                 if (m_schedule.next() < P::node::next()) {
                     times_t t = P::node::as_final().next();
-                    m_schedule.step(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
+                    m_schedule.step(get_generator(has_randomizer<P>{}, *this));
                     P::node::round(t);
                 } else P::node::update();
             }
@@ -107,13 +96,13 @@ struct scheduler {
           private: // implementation details
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
-            inline auto& get_generator(common::bool_pack<true>, N& n) {
+            inline auto& get_generator(std::true_type, N& n) {
                 return n.generator();
             }
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline crand get_generator(common::bool_pack<false>, N&) {
+            inline crand get_generator(std::false_type, N&) {
                 return {};
             }
             

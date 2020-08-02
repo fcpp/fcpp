@@ -2,7 +2,7 @@
 
 /**
  * @file physical_connector.hpp
- * @brief Implementation of the `physical_connector` component handling physical evolution of a position through time.
+ * @brief Implementation of the `physical_connector` component handling message exchanges between nodes.
  */
 
 #ifndef FCPP_SIMULATION_PHYSICAL_CONNECTOR_H_
@@ -15,9 +15,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "lib/settings.hpp"
-#include "lib/common/mutex.hpp"
-#include "lib/common/profiler.hpp"
+#include "lib/component/base.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/option/connect.hpp"
 #include "lib/option/distribution.hpp"
@@ -184,32 +182,9 @@ struct physical_connector {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that a connector component is present.
-        struct connector_tag {};
-
-        //! @brief Checks if T has a `randomizer_tag`.
-        template <typename T, typename = int>
-        struct has_rtag : std::false_type {};
-        template <typename T>
-        struct has_rtag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
-
-        //! @brief Checks if T has a `connector_tag`.
-        template <typename T, typename = int>
-        struct has_ctag : std::false_type {};
-        template <typename T>
-        struct has_ctag<T, std::conditional_t<true,int,typename T::connector_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has no `connector_tag`.
-        static_assert(not has_ctag<P>::value, "cannot combine multiple connector components");
-
-        //! @brief Checks if T has a `position_tag`.
-        template <typename T, typename = int>
-        struct has_ptag : std::false_type {};
-        template <typename T>
-        struct has_ptag<T, std::conditional_t<true,int,typename T::position_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has a `position_tag`.
-        static_assert(has_ptag<P>::value, "missing position parent for connector component");
+        DECLARE_COMPONENT(connector);
+        REQUIRE_COMPONENT(connector,positioner);
+        CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -222,7 +197,7 @@ struct physical_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_rtag<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})) {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})) {
                 m_send = m_leave = TIME_MAX;
                 m_epsilon = common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON);
                 P::node::net.cell_enter(P::node::as_final());
@@ -300,7 +275,7 @@ struct physical_connector {
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
-                m_send = t + m_delay(get_generator(has_rtag<P>{}, *this));
+                m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this));
                 P::node::round_start(t);
             }
 
@@ -355,7 +330,7 @@ struct physical_connector {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_connector(get_generator(has_rtag<P>{}, *this),t) {}
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
 
             //! @brief Inserts a new node into its cell.
             void cell_enter(typename F::node& n) {

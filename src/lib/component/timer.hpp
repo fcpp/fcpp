@@ -11,8 +11,7 @@
 #include <cassert>
 #include <type_traits>
 
-#include "lib/settings.hpp"
-#include "lib/common/tagged_tuple.hpp"
+#include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
 
 
@@ -57,26 +56,8 @@ struct timer {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that a timer component is present.
-        struct timer_tag {};
-        
-        //! @brief Checks if T has a `timer_tag`.
-        template <typename T, typename = int>
-        struct has_ttag : std::false_type {};
-        template <typename T>
-        struct has_ttag<T, std::conditional_t<true,int,typename T::timer_tag>> : std::true_type {};
-        
-        //! @brief Asserts that P has no `timer_tag`.
-        static_assert(not has_ttag<P>::value, "cannot combine multiple timer components");
-        
-        //! @brief Checks if T has a `connector_tag`.
-        template <typename T, typename = int>
-        struct has_ctag : std::false_type {};
-        template <typename T>
-        struct has_ctag<T, std::conditional_t<true,int,typename T::connector_tag>> : std::true_type {};
-        
-        //! @brief Asserts that P has no `connector_tag`.
-        static_assert(not has_ctag<P>::value, "connector cannot be parent of timer component");
+        DECLARE_COMPONENT(timer);
+        AVOID_COMPONENT(timer,connector);
 
         //! @brief The local part of the component.
         class node : public P::node {

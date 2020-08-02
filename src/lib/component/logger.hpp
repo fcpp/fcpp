@@ -22,9 +22,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "lib/settings.hpp"
-#include "lib/common/mutex.hpp"
-#include "lib/common/profiler.hpp"
+#include "lib/component/base.hpp"
 #include "lib/option/aggregator.hpp"
 #include "lib/option/sequence.hpp"
 
@@ -152,41 +150,10 @@ struct logger {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that a logger component is present.
-        struct logger_tag {};
-
-        //! @brief Checks if T has a `logger_tag`.
-        template <typename T, typename = int>
-        struct has_etag : std::false_type {};
-        template <typename T>
-        struct has_etag<T, std::conditional_t<true,int,typename T::logger_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has no `logger_tag`.
-        static_assert(not has_etag<P>::value, "cannot combine multiple logger components");
-
-        //! @brief Checks if T has a `storage_tag`.
-        template <typename T, typename = int>
-        struct has_stag : std::false_type {};
-        template <typename T>
-        struct has_stag<T, std::conditional_t<true,int,typename T::storage_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has a `storage_tag`.
-        static_assert(has_stag<P>::value, "missing storage parent for logger component");
-
-        //! @brief Checks if T has a `randomizer_tag`.
-        template <typename T, typename = int>
-        struct has_rtag : std::false_type {};
-        template <typename T>
-        struct has_rtag<T, std::conditional_t<true,int,typename T::randomizer_tag>> : std::true_type {};
-
-        //! @brief Checks if T has a `identifier_tag`.
-        template <typename T, typename = int>
-        struct has_itag : std::false_type {};
-        template <typename T>
-        struct has_itag<T, std::conditional_t<true,int,typename T::identifier_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has a `identifier_tag`.
-        static_assert(value_push or has_itag<P>::value, "missing identifier parent for logger component");
+        DECLARE_COMPONENT(logger);
+        REQUIRE_COMPONENT(logger,storage);
+        REQUIRE_COMPONENT_IF(logger,identifier, not value_push);
+        CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -228,7 +195,7 @@ struct logger {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_schedule(get_generator(common::bool_pack<has_rtag<P>::value>(), *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
                 std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
@@ -266,7 +233,7 @@ struct logger {
                 if (m_schedule.next() < P::net::next()) {
                     PROFILE_COUNT("logger");
                     *m_stream << m_schedule.next() << " ";
-                    m_schedule.step(get_generator(common::bool_pack<has_rtag<P>::value>(), *this));
+                    m_schedule.step(get_generator(has_randomizer<P>{}, *this));
                     data_puller(common::bool_pack<not value_push>(), *this);
                     print_output(t_tags());
                     *m_stream << std::endl;
@@ -330,13 +297,13 @@ struct logger {
 
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
-            inline auto& get_generator(common::bool_pack<true>, N& n) {
+            inline auto& get_generator(std::true_type, N& n) {
                 return n.generator();
             }
 
             //! @brief Returns a `crand` generator otherwise.
             template <typename N>
-            inline crand get_generator(common::bool_pack<false>, N&) {
+            inline crand get_generator(std::false_type, N&) {
                 return {};
             }
 

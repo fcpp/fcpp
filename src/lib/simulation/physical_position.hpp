@@ -12,9 +12,7 @@
 
 #include <type_traits>
 
-#include "lib/settings.hpp"
-#include "lib/common/profiler.hpp"
-#include "lib/common/tagged_tuple.hpp"
+#include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
 #include "lib/data/vec.hpp"
 
@@ -97,23 +95,13 @@ struct physical_position {
      */
     template <typename F, typename P>
     struct component : public P {
-        //! @brief Marks that a position component is present.
-        struct position_tag {};
-
-        //! @brief Checks if T has a `position_tag`.
-        template <typename T, typename = int>
-        struct has_ptag : std::false_type {};
-        template <typename T>
-        struct has_ptag<T, std::conditional_t<true,int,typename T::position_tag>> : std::true_type {};
-
-        //! @brief Asserts that P has no `position_tag`.
-        static_assert(not has_ptag<P>::value, "cannot combine multiple position components");
+        DECLARE_COMPONENT(positioner);
 
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
-            using message_t = typename P::node::message_t::template push_back<position_tag, position_type>;
+            using message_t = typename P::node::message_t::template push_back<positioner_tag, position_type>;
 
             #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::x node initialisation tag\033[0m"
 
@@ -288,7 +276,7 @@ struct physical_position {
             template <typename S, typename T>
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
-                position_type v = common::get<position_tag>(m) - position(t);
+                position_type v = common::get<positioner_tag>(m) - position(t);
                 fcpp::details::self(m_nbr_vec, d) = v;
                 fcpp::details::self(m_nbr_dist, d) = norm(v);
             }
@@ -297,7 +285,7 @@ struct physical_position {
             template <typename S, typename T>
             common::tagged_tuple<S,T>& send(times_t t, device_t d, common::tagged_tuple<S,T>& m) const {
                 P::node::send(t, d, m);
-                common::get<position_tag>(m) = position(t);
+                common::get<positioner_tag>(m) = position(t);
                 return m;
             }
 

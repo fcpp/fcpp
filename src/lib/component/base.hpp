@@ -10,6 +10,7 @@
 
 #include <chrono>
 #include <limits>
+#include <thread>
 
 #include "lib/settings.hpp"
 #include "lib/common/mutex.hpp"
@@ -33,11 +34,15 @@ namespace tags {
     template <bool b>
     struct parallel {};
 
+    //! @brief Declaration flag associating to whether running should follow real time.
+    template <bool b>
+    struct realtime {};
+
     //! @brief Node initialisation tag associating to a `device_t` unique identifier.
     struct uid {};
 
     //! @brief Net initialisation tag associating to a factor to be applied to real time.
-    struct realtime {};
+    struct realtime_factor {};
 }
 
 
@@ -77,17 +82,21 @@ namespace tags {
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
+ * - \ref tags::realtime defines whether running should follow real time (defaults to `FCPP_REALTIME == 1.0`).
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::uid associates to a `device_t` unique identifier (required).
  *
  * <b>Net initialisation tags:</b>
- * - \ref tags::realtime associates to a `double` factor to be applied to real time (defaults to `FCPP_REALTIME`).
+ * - \ref tags::realtime_factor associates to a `double` factor to be applied to real time (defaults to \ref FCPP_REALTIME and is ignored if `tags::realtime` is false).
  */
 template <class... Ts>
 struct base {
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Whether running should follow real time.
+    constexpr static bool realtime = common::option_flag<tags::realtime, FCPP_REALTIME == 1.0, Ts...>;
 
     /**
      * @brief The actual component.
@@ -106,7 +115,7 @@ struct base {
             using message_t = common::tagged_tuple_t<>;
 
             #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::uid node initialisation tag\033[0m"
-            
+
             //! @name constructors
             //@{
             /**
@@ -124,11 +133,11 @@ struct base {
 
             //! @brief Deleted copy constructor.
             node(const node&) = delete;
-            
+
             //! @brief Deleted copy assignment.
             node& operator=(const node&) = delete;
             //@}
-            
+
             /**
              * @brief Returns next event to schedule for the node component.
              *
@@ -137,32 +146,32 @@ struct base {
             times_t next() const {
                 return TIME_MAX; // no event to schedule
             }
-            
+
             //! @brief Updates the internal status of node component.
             void update() {}
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t) {}
-            
+
             //! @brief Performs computations at round middle with current time `t`.
             void round_main(times_t) {}
 
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t) {}
-            
+
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
             void receive(times_t, device_t, const common::tagged_tuple<S,T>&) {}
-            
+
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
             template <typename S, typename T>
             common::tagged_tuple<S,T>& send(times_t, device_t, common::tagged_tuple<S,T>& t) const {
                 return t;
             }
-            
+
             //! @brief The unique identifier of the device.
             const device_t uid;
-            
+
             //! @brief A mutex for regulating access to the node.
             common::mutex<parallel> mutex;
 
@@ -174,12 +183,12 @@ struct base {
             typename F::node& as_final() {
                 return *static_cast<typename F::node*>(this);
             }
-            
+
             //! @brief Gives const access to the node as instance of `F::node`. Should NEVER be overridden.
             const typename F::node& as_final() const {
                 return *static_cast<const typename F::node*>(this);
             }
-            
+
             //! @brief Performs a computation round with current time `t`. Should NEVER be overridden.
             void round(times_t t) {
                 PROFILE_COUNT("round");
@@ -197,7 +206,7 @@ struct base {
                 }
             }
         };
-        
+
         //! @brief The global part of the component.
         class net {
           public: // visible by node objects and the main program
@@ -207,12 +216,12 @@ struct base {
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) {
                 m_realtime_start = std::chrono::high_resolution_clock::now();
-                m_realtime_factor = common::get_or<tags::realtime>(t, FCPP_REALTIME);
+                m_realtime_factor = common::get_or<tags::realtime_factor>(t, FCPP_REALTIME) * std::chrono::high_resolution_clock::period::num / std::chrono::high_resolution_clock::period::den;
             }
-            
+
             //! @brief Deleted copy constructor.
             net(const net&) = delete;
-            
+
             //! @brief Deleted copy assignment.
             net& operator=(const net&) = delete;
             //@}
@@ -225,40 +234,50 @@ struct base {
             times_t next() const {
                 return TIME_MAX; // no event to schedule
             }
-            
+
             //! @brief Updates the internal status of net component.
             void update() {}
-            
-            //! @brief Runs the events at real time pace until a given end. Should NEVER be overridden.
+
+            //! @brief Runs the events until a given end. Should NEVER be overridden.
             void run(times_t end = TIME_MAX) {
-                while (as_final().next() < end)
-                    if (as_final().next() <= real_time())
-                        as_final().update();
+                while (as_final().next() < end) {
+                    maybe_sleep(std::integral_constant<bool, realtime>{});
+                    as_final().update();
+                }
                 PROFILE_REPORT();
             }
-            
+
           protected: // visible by net objects only
             //! @brief Gives access to the net as instance of `F::net`. Should NEVER be overridden.
             typename F::net& as_final() {
                 return *static_cast<typename F::net*>(this);
             }
-            
+
             //! @brief Gives const access to the net as instance of `F::net`. Should NEVER be overridden.
             const typename F::net& as_final() const {
                 return *static_cast<const typename F::net*>(this);
             }
-            
+
             //! @brief An estimate of real time elapsed from start. Should NEVER be overridden.
             times_t real_time() const {
                 if (m_realtime_factor == std::numeric_limits<double>::infinity())
                     return TIME_MAX;
                 return (std::chrono::high_resolution_clock::now() - m_realtime_start).count() * m_realtime_factor;
             }
-            
+
           private: // implementation details
+            //! @brief Does not wait before an update.
+            inline void maybe_sleep(std::false_type) {}
+
+            //! @brief Waits real time before an update.
+            inline void maybe_sleep(std::true_type) {
+                if (as_final().next() > real_time())
+                    std::this_thread::sleep_until(m_realtime_start + std::chrono::high_resolution_clock::duration((long long)(as_final().next()/m_realtime_factor)));
+            }
+
             //! @brief The start time of the program.
             std::chrono::high_resolution_clock::time_point m_realtime_start;
-            
+
             //! @brief A factor warping progression of real time.
             double m_realtime_factor;
         };

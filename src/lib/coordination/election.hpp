@@ -102,25 +102,40 @@ T color_election(node_t& node, trace_t call_point, const T& value) {
             } else return best;
         }, nbr_keys, node.uid);
         key_type const& best_nbr_key = *pbk;
-        bool not_true_root = get<leader>(old_key) != value or get<level>(old_key) != 0;
-        bool not_true_child = get<leader>(old_key) >= value or get<leader>(old_key) != get<leader>(parent_key) or get<level>(old_key) != get<level>(parent_key)+1;
-        bool is_false_root = not_true_root and not_true_child;
-        bool no_false_child = fold_hood(node, 0, [&](key_type const& key, bool holds){
-            return holds and (get<parent>(key) != node.uid or (get<leader>(key) == get<leader>(old_key) and get<level>(key) == get<level>(old_key)+1));
-        }, nbr_keys, true);
-        bool best_nbr_improves = get<leader>(best_nbr_key) < get<leader>(old_key) or (get<leader>(best_nbr_key) == get<leader>(old_key) and get<level>(best_nbr_key)+1 < get<level>(old_key));
-        if (best_nbr != node.uid and (is_false_root or best_nbr_improves) and no_false_child)
+        auto same_key_check = [&](key_type const& k, key_type const& h) {
+            return get<leader>(k) == get<leader>(h) and get<level>(k) == get<level>(h);
+        };
+        auto succ_key_check = [&](key_type const& succ, key_type const& prev) {
+            return get<leader>(succ) == get<leader>(prev) and get<level>(succ) == get<level>(prev)+1;
+        };
+        auto better_key_check = [&](key_type const& low, key_type const& hi) {
+            return get<leader>(low) < get<leader>(hi) or (get<leader>(low) == get<leader>(hi) and get<level>(low)+1 < get<level>(hi));
+        };
+        auto true_child_check = [&](key_type const& child) {
+            return get<parent>(child) == node.uid and succ_key_check(child, old_key);
+        };
+        auto false_child_check = [&](key_type const& child) {
+            return get<parent>(child) == node.uid and not succ_key_check(child, old_key);
+        };
+        bool is_true_root = same_key_check(old_key, self_key);
+        bool is_true_child = get<leader>(old_key) < value and succ_key_check(old_key, parent_key);
+        bool is_false_root = not (is_true_root or is_true_child);
+        bool has_false_child = fold_hood(node, 0, [&](key_type const& key, bool holds){
+            return holds or false_child_check(key);
+        }, nbr_keys, false);
+        bool best_nbr_improves = better_key_check(best_nbr_key, old_key);
+        if (best_nbr != node.uid and (is_false_root or best_nbr_improves) and (not has_false_child))
             return {true, get<leader>(best_nbr_key), get<level>(best_nbr_key) + 1, best_nbr};
         if (is_false_root)
             return self_key;
-        bool no_recruit = fold_hood(node, 0, [&](key_type const& key, bool holds){
-            return holds and get<leader>(key) <= get<leader>(old_key) and (get<leader>(key) < get<leader>(old_key) or get<level>(key) <= get<level>(old_key)+1);
-        }, nbr_keys, true);
-        bool no_similar_child = fold_hood(node, 0, [&](key_type const& key, bool holds){
-            return holds and (get<disable>(key) != get<disable>(old_key) or get<parent>(key) != node.uid or (get<leader>(key) != get<leader>(old_key) and get<level>(key) != get<level>(old_key)+1));
-        }, nbr_keys, true);
+        bool has_recruit = fold_hood(node, 0, [&](key_type const& key, bool holds){
+            return holds or better_key_check(old_key, key);
+        }, nbr_keys, false);
+        bool has_similar_child = fold_hood(node, 0, [&](key_type const& key, bool holds){
+            return holds or (true_child_check(key) and get<disable>(key) == get<disable>(old_key));
+        }, nbr_keys, false);
         bool similar_parent = get<disable>(parent_key) == get<disable>(old_key);
-        if (similar_parent and (get<disable>(old_key) or no_recruit) and no_similar_child) {
+        if (similar_parent and (get<disable>(old_key) or not has_recruit) and not has_similar_child) {
             key_type new_key = old_key;
             get<disable>(new_key) = not get<disable>(new_key);
             return new_key;

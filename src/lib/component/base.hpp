@@ -78,7 +78,7 @@ namespace tags {
 /**
  * @brief Empty component (base case for component construction).
  *
- * Must be unique and last in a composition of components.
+ * Must be last in a composition of components.
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).

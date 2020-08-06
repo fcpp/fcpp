@@ -43,7 +43,6 @@ namespace tags {
 /**
  * @brief Component handling automated generation of nodes.
  *
- * Multiple instances may coexist in a composition of components.
  * Requires a \ref identifier parent component.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *

@@ -99,7 +99,6 @@ namespace details {
 /**
  * @brief Component logging summarisations of nodes.
  *
- * Must be unique in a composition of components.
  * Requires a \ref storage parent component, and also an \ref identifier parent component if \ref tags::value_push is false.
  * If a \ref randomizer parent component is not found, \ref crand is passed to the \ref tags::log_schedule object.
  *

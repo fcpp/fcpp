@@ -119,9 +119,8 @@ namespace details {
 
 
 /**
- * @brief Component handling physical evolution of a position through time.
+ * @brief Component handling message exchanges between nodes.
  *
- * Must be unique in a composition of components.
  * Requires a \ref physical_position parent component.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  * Any \ref physical_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.

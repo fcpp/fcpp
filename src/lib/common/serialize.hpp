@@ -101,71 +101,27 @@ using osstream = sstream<true>;
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Checks whether a class has a member serialize function.
     template<typename C>
-    struct has_serialize {
-      private:
-        struct tag;
-
-        template <typename T>
-        static constexpr auto check(T*) -> typename std::is_same<
-            decltype(std::declval<T>().serialize(std::declval<tag&>())),
-            tag&
-        >::type;
-
-        template <typename>
-        static constexpr std::false_type check(...);
-
-        typedef decltype(check<C>(0)) type;
-
-      public:
-        static constexpr bool value = type::value;
-    };
+    struct has_serialize_method;
+    template<typename C>
+    struct has_serialize_function;
+    template <typename C>
+    struct has_serialize_trivial;
 }
 
-
-//! @brief Serialisation from trivial types.
-template <typename T>
-std::enable_if_t<std::is_trivially_copyable<T>::value, isstream&>
-inline operator&(isstream& is, T& x) {
-    return is.read(x);
-}
-
-//! @brief Serialisation to trivial types.
-template <typename T>
-std::enable_if_t<std::is_trivially_copyable<T>::value, osstream&>
-inline operator&(osstream& os, T& x) {
-    return os.write(x);
-}
-
-//! @brief Serialisation from/to user classes.
 template <bool io, typename T>
-std::enable_if_t<details::has_serialize<T>::value, sstream<io>&>
-inline operator&(sstream<io>& is, T& x) {
-    return x.serialize(is);
-}
-
-//! @brief Serialisation from/to standard containers.
+std::enable_if_t<details::has_serialize_method<T>::value, sstream<io>&>
+inline operator&(sstream<io>& is, T& x);
 template <bool io, typename T>
-inline std::enable_if_t<(not details::has_serialize<T>::value) and (not std::is_trivially_copyable<T>::value), sstream<io>&>
-operator&(sstream<io>&, T&);
-
-
-//! @brief Serialisation from an input stream.
+inline std::enable_if_t<details::has_serialize_function<T>::value, sstream<io>&>
+operator&(sstream<io>& is, T& x);
 template <typename T>
-inline isstream& operator>>(isstream& is, T& x) {
-    return is & x;
-}
-
-
-//! @brief Serialisation to an output stream.
+std::enable_if_t<details::has_serialize_trivial<T>::value, isstream&>
+inline operator&(isstream& is, T& x);
 template <typename T>
-inline osstream& operator<<(osstream& os, T const& x) {
-    return os & ((T&)x);
-}
+std::enable_if_t<details::has_serialize_trivial<T>::value, osstream&>
+inline operator&(osstream& os, T& x);
 
-
-//! @cond INTERNAL
 namespace details {
     //! @brief Serialization of indexed classes.
     //! @{
@@ -209,7 +165,7 @@ namespace details {
         x.clear();
         for (size_t i = 0; i < size; ++i) {
             typename T::value_type v;
-            s >> v;
+            s & v;
             x.insert(x.end(), std::move(v));
         }
         return s;
@@ -218,7 +174,7 @@ namespace details {
     template <typename T, bool b>
     osstream& iterable_serialize(osstream& s, T& x, std::integral_constant<bool, b>) {
         s.write(x.size(), size_sizeof<b>);
-        for (auto& i : x) s << i;
+        for (auto& i : x) s & i;
         return s;
     }
 
@@ -247,14 +203,97 @@ namespace details {
         return iterable_serialize(s, x, std::false_type{});
     }
     //! @}
+
+    //! @brief Checks whether a class has a serialize member function.
+    template<typename C>
+    struct has_serialize_method {
+      private:
+        struct tag;
+
+        template <typename T>
+        static constexpr auto check(T*) -> typename std::is_same<
+            decltype(std::declval<T>().serialize(std::declval<tag&>())),
+            tag&
+        >::type;
+
+        template <typename>
+        static constexpr std::false_type check(...);
+
+        typedef decltype(check<C>(0)) type;
+
+      public:
+        static constexpr bool value = type::value;
+    };
+
+    //! @brief Checks whether a class has a serialize free function.
+    template<typename C>
+    struct has_serialize_function {
+      private:
+        struct tag;
+
+        template <typename T>
+        static constexpr auto check(T*) -> typename std::is_same<
+            decltype(fcpp::common::details::serialize(std::declval<tag&>(), std::declval<T&>())),
+            tag&
+        >::type;
+
+        template <typename>
+        static constexpr std::false_type check(...);
+
+        typedef decltype(check<C>(0)) type;
+
+      public:
+        static constexpr bool value = type::value and not has_serialize_method<C>::value;
+    };
+
+    //! @brief Checks whether a class has a trivial serialize.
+    template <typename C>
+    struct has_serialize_trivial {
+        static constexpr bool value = std::is_trivially_copyable<C>::value and not has_serialize_method<C>::value and not has_serialize_function<C>::value;
+    };
 }
-//! @cond INTERNAL
+
+
+//! @brief Serialisation from/to user classes.
+template <bool io, typename T>
+std::enable_if_t<details::has_serialize_method<T>::value, sstream<io>&>
+inline operator&(sstream<io>& is, T& x) {
+    return x.serialize(is);
+}
 
 //! @brief Serialisation from/to standard containers.
 template <bool io, typename T>
-inline std::enable_if_t<(not details::has_serialize<T>::value) and (not std::is_trivially_copyable<T>::value), sstream<io>&>
+inline std::enable_if_t<details::has_serialize_function<T>::value, sstream<io>&>
 operator&(sstream<io>& is, T& x) {
     return details::serialize(is, x);
+}
+
+//! @brief Serialisation from trivial types.
+template <typename T>
+std::enable_if_t<details::has_serialize_trivial<T>::value, isstream&>
+inline operator&(isstream& is, T& x) {
+    return is.read(x);
+}
+
+//! @brief Serialisation to trivial types.
+template <typename T>
+std::enable_if_t<details::has_serialize_trivial<T>::value, osstream&>
+inline operator&(osstream& os, T& x) {
+    return os.write(x);
+}
+
+
+//! @brief Serialisation from an input stream.
+template <typename T>
+inline isstream& operator>>(isstream& is, T& x) {
+    return is & x;
+}
+
+
+//! @brief Serialisation to an output stream.
+template <typename T>
+inline osstream& operator<<(osstream& os, T const& x) {
+    return os & ((T&)x);
 }
 
 

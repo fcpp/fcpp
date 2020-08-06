@@ -84,8 +84,6 @@ namespace tags {
 /**
  * @brief Component providing the field calculus APIs.
  *
- * Must be unique in a composition of components.
- *
  * <b>Declaration tags:</b>
  * - \ref tags::exports defines a sequence of types to be used in exports (defaults to the empty sequence).
  * - \ref tags::program defines a callable class to be executed during rounds (defaults to \ref calculus::null_program).

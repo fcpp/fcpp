@@ -132,8 +132,6 @@ namespace tags {
 /**
  * @brief Component handling node creation and indexing.
  *
- * Must be unique in a composition of components.
- *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  * - \ref tags::synchronised defines whether many events are expected to happen at the same time (defaults to \ref FCPP_SYNCHRONISED).

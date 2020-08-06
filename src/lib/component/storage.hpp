@@ -34,8 +34,6 @@ namespace tags {
 /**
  * @brief Component modelling persistent data.
  *
- * Must be unique in a composition of components.
- *
  * <b>Declaration tags:</b>
  * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
  */

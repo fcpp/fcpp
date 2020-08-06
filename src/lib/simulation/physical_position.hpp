@@ -63,8 +63,6 @@ namespace details {
 /**
  * @brief Component handling physical evolution of a position through time.
  *
- * Must be unique in a composition of components.
- *
  * <b>Declaration tags:</b>
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *

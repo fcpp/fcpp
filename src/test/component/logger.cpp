@@ -85,7 +85,7 @@ using combo2 = component::combine_spec<
 >;
 
 
-TEST(ExporterTest, MakeStream) {
+TEST(LoggerTest, MakeStream) {
     common::tagged_tuple_t<name,const char*,uid,int,oth,char,gat,bool> t{"bar",7,'b',false};
     std::shared_ptr<std::ostream> p;
     p = component::details::make_stream("foo", t);
@@ -97,7 +97,7 @@ TEST(ExporterTest, MakeStream) {
     EXPECT_EQ("foo", s.str());
 }
 
-MULTI_TEST(ExporterTest, Push, O, 1) {
+MULTI_TEST(LoggerTest, Push, O, 1) {
     std::stringstream s;
     {
         typename combo1<O>::net network{common::make_tagged_tuple<output,devtag>(&s,0.0)};
@@ -158,7 +158,7 @@ MULTI_TEST(ExporterTest, Push, O, 1) {
     EXPECT_EQ("", line);
 }
 
-MULTI_TEST(ExporterTest, Pull, O, 2) {
+MULTI_TEST(LoggerTest, Pull, O, 2) {
     std::stringstream s;
     {
         typename combo2<O>::net network{common::make_tagged_tuple<output,devtag,name,fakeid>(&s, 0.0, "foo",false)};

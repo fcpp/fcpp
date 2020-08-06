@@ -36,7 +36,6 @@ namespace tags {
 /**
  * @brief Component scheduling round executions.
  *
- * Multiple instances may coexist in a composition of components.
  * The \ref timer component cannot be a parent of a \ref scheduler otherwise round planning may not work.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *

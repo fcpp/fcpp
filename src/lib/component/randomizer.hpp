@@ -40,8 +40,6 @@ namespace tags {
 /**
  * @brief Component handling random number generation.
  *
- * Must be unique in a composition of components.
- *
  * <b>Declaration tags:</b>
  * - \ref tags::generator defines a random number generator type (defaults to `std::mt19937_64`).
  *

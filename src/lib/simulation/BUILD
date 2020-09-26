@@ -12,9 +12,9 @@ cc_library(
 )
 
 cc_library(
-    name = 'physical_connector',
-    hdrs = ['physical_connector.hpp'],
-    srcs = ['physical_connector.cpp'],
+    name = 'simulated_connector',
+    hdrs = ['simulated_connector.hpp'],
+    srcs = ['simulated_connector.cpp'],
     deps = [
         "//lib/component:base",
         "//lib/data:vec",
@@ -27,9 +27,9 @@ cc_library(
 )
 
 cc_library(
-    name = 'physical_position',
-    hdrs = ['physical_position.hpp'],
-    srcs = ['physical_position.cpp'],
+    name = 'simulated_positioner',
+    hdrs = ['simulated_positioner.hpp'],
+    srcs = ['simulated_positioner.cpp'],
     deps = [
         "//lib/component:base",
         "//lib/data:field",

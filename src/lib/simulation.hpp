@@ -12,8 +12,8 @@
 
 #include "lib/component.hpp"
 #include "lib/simulation/batch.hpp"
-#include "lib/simulation/physical_connector.hpp"
-#include "lib/simulation/physical_position.hpp"
+#include "lib/simulation/simulated_connector.hpp"
+#include "lib/simulation/simulated_positioner.hpp"
 #include "lib/simulation/spawner.hpp"
 
 
@@ -30,7 +30,7 @@ namespace component {
  *
  * It can be instantiated as `batch_simulator<options...>::net`.
  */
-DECLARE_COMBINE(batch_simulator, calculus, logger, storage, spawner, physical_connector, physical_position, timer, scheduler, identifier, randomizer);
+DECLARE_COMBINE(batch_simulator, calculus, logger, storage, spawner, simulated_connector, simulated_positioner, timer, scheduler, identifier, randomizer);
 
 }
 

@@ -6,7 +6,7 @@
 #include "lib/component/calculus.hpp"
 #include "lib/component/randomizer.hpp"
 #include "lib/coordination/geometry.hpp"
-#include "lib/simulation/physical_position.hpp"
+#include "lib/simulation/simulated_positioner.hpp"
 
 #include "test/test_net.hpp"
 
@@ -22,7 +22,7 @@ DECLARE_OPTIONS(options,
     online_drop<(O & 4) == 4>
 );
 
-DECLARE_COMBINE(calc_pos, component::calculus, component::physical_position, component::randomizer);
+DECLARE_COMBINE(calc_pos, component::calculus, component::simulated_positioner, component::randomizer);
 
 template <int O>
 using combo = calc_pos<options<O>>;

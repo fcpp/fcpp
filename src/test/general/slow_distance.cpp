@@ -6,7 +6,7 @@
 #include "lib/component/calculus.hpp"
 #include "lib/component/identifier.hpp"
 #include "lib/component/storage.hpp"
-#include "lib/simulation/physical_position.hpp"
+#include "lib/simulation/simulated_positioner.hpp"
 
 #include "test/test_net.hpp"
 #include "test/general/slow_distance.hpp"
@@ -18,7 +18,7 @@ using namespace component::tags;
 
 template <int O>
 using combo = component::combine_spec<
-    component::physical_position<>,
+    component::simulated_positioner<>,
     component::storage<tuple_store<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>>,
     component::identifier<parallel<(O & 8) == 8>, synchronised<(O & 16) == 16>>,
     component::calculus<program<main>, exports<double, field<int>>,

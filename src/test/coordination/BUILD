@@ -37,7 +37,7 @@ cc_test(
         "//lib/component:calculus",
         "//lib/component:randomizer",
         "//lib/coordination:geometry",
-        "//lib/simulation:physical_position",
+        "//lib/simulation:simulated_positioner",
         "//test:test_net",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

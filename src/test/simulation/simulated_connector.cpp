@@ -7,8 +7,8 @@
 
 #include "lib/component/base.hpp"
 #include "lib/component/scheduler.hpp"
-#include "lib/simulation/physical_connector.hpp"
-#include "lib/simulation/physical_position.hpp"
+#include "lib/simulation/simulated_positioner.hpp"
+#include "lib/simulation/simulated_connector.hpp"
 
 #include "test/helper.hpp"
 
@@ -38,8 +38,8 @@ template <int O>
 using combo = component::combine_spec<
     exposer,
     component::scheduler<round_schedule<seq_per>>,
-    component::physical_connector<parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
-    component::physical_position<>,
+    component::simulated_connector<parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
+    component::simulated_positioner<>,
     component::base<parallel<(O & 1) == 1>>
 >;
 

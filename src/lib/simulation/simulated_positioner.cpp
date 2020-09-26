@@ -1,3 +1,3 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include "lib/simulation/physical_connector.hpp"
+#include "lib/simulation/simulated_positioner.hpp"

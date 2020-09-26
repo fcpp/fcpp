@@ -142,8 +142,8 @@ cc_library(
     deps = [
         "//lib:component",
         "//lib/simulation:batch",
-        "//lib/simulation:physical_connector",
-        "//lib/simulation:physical_position",
+        "//lib/simulation:simulated_connector",
+        "//lib/simulation:simulated_positioner",
         "//lib/simulation:spawner",
     ],
     visibility = [

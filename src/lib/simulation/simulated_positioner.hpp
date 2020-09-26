@@ -1,12 +1,12 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
- * @file physical_position.hpp
- * @brief Implementation of the `physical_position` component handling physical evolution of a position through time.
+ * @file simulated_positioner.hpp
+ * @brief Implementation of the `simulated_positioner` component handling physical evolution of a position through time.
  */
 
-#ifndef FCPP_SIMULATION_PHYSICAL_POSITION_H_
-#define FCPP_SIMULATION_PHYSICAL_POSITION_H_
+#ifndef FCPP_SIMULATION_SIMULATED_POSITIONER_H_
+#define FCPP_SIMULATION_SIMULATED_POSITIONER_H_
 
 #include <cmath>
 
@@ -75,7 +75,7 @@ namespace details {
  * Vectors are modelled as \ref position objects. Position \f$ x \f$ evolves as per the differential equation \f$ x'' = a - f x' \f$ of uniformily accelerated viscous motion.
  */
 template <class... Ts>
-struct physical_position {
+struct simulated_positioner {
     //! @brief The dimensionality of the space.
     constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
@@ -352,4 +352,4 @@ struct physical_position {
 
 }
 
-#endif // FCPP_SIMULATION_PHYSICAL_POSITION_H_
+#endif // FCPP_SIMULATION_SIMULATED_POSITIONER_H_

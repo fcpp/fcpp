@@ -1,12 +1,12 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 /**
- * @file physical_connector.hpp
- * @brief Implementation of the `physical_connector` component handling message exchanges between nodes.
+ * @file simulated_connector.hpp
+ * @brief Implementation of the `simulated_connector` component handling message exchanges between nodes.
  */
 
-#ifndef FCPP_SIMULATION_PHYSICAL_CONNECTOR_H_
-#define FCPP_SIMULATION_PHYSICAL_CONNECTOR_H_
+#ifndef FCPP_SIMULATION_SIMULATED_CONNECTOR_H_
+#define FCPP_SIMULATION_SIMULATED_CONNECTOR_H_
 
 #include <cmath>
 
@@ -123,7 +123,7 @@ namespace details {
  *
  * Requires a \ref physical_position parent component.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
- * Any \ref physical_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
+ * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::connector defines the connector class (defaults to \ref connect::clique "connect::clique<dimension>").
@@ -148,7 +148,7 @@ namespace details {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <class... Ts>
-struct physical_connector {
+struct simulated_connector {
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
@@ -446,4 +446,4 @@ struct physical_connector {
 
 }
 
-#endif // FCPP_SIMULATION_PHYSICAL_CONNECTOR_H_
+#endif // FCPP_SIMULATION_SIMULATED_CONNECTOR_H_

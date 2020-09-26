@@ -6,7 +6,7 @@
 
 #include "lib/component/base.hpp"
 #include "lib/component/scheduler.hpp"
-#include "lib/simulation/physical_position.hpp"
+#include "lib/simulation/simulated_positioner.hpp"
 
 using namespace fcpp;
 using namespace component::tags;
@@ -34,7 +34,7 @@ using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distrib
 using combo1 = component::combine_spec<
     exposer,
     component::scheduler<round_schedule<seq_per>>,
-    component::physical_position<dimension<2>>,
+    component::simulated_positioner<dimension<2>>,
     component::base<>
 >;
 

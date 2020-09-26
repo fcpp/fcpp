@@ -14,14 +14,14 @@ cc_test(
 )
 
 cc_test(
-    name = "physical_connector",
-    srcs = ["physical_connector.cpp"],
+    name = "simulated_connector",
+    srcs = ["simulated_connector.cpp"],
     deps = [
         "@gtest//:main",
         "//lib/component:base",
         "//lib/component:scheduler",
-        "//lib/simulation:physical_connector",
-        "//lib/simulation:physical_position",
+        "//lib/simulation:simulated_connector",
+        "//lib/simulation:simulated_positioner",
         "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
@@ -30,13 +30,13 @@ cc_test(
 )
 
 cc_test(
-    name = "physical_position",
-    srcs = ["physical_position.cpp"],
+    name = "simulated_positioner",
+    srcs = ["simulated_positioner.cpp"],
     deps = [
         "@gtest//:main",
         "//lib/component:base",
         "//lib/component:scheduler",
-        "//lib/simulation:physical_position",
+        "//lib/simulation:simulated_positioner",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

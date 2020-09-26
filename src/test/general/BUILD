@@ -20,7 +20,7 @@ cc_test(
         "//lib/component:calculus",
         "//lib/component:identifier",
         "//lib/component:storage",
-        "//lib/simulation:physical_position",
+        "//lib/simulation:simulated_positioner",
         "//lib/coordination:spreading",
         "//test:test_net",
     ],

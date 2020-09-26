@@ -185,6 +185,12 @@
 #endif
 
 
+#ifndef FCPP_MESSAGE_PUSH
+    //! @brief Setting defining whether incoming messages are pushed or pulled.
+    #define FCPP_MESSAGE_PUSH true
+#endif
+
+
 #ifndef FCPP_VALUE_PUSH
     //! @brief Setting defining whether new values should be pushed to aggregators or pulled when needed.
     #define FCPP_VALUE_PUSH false

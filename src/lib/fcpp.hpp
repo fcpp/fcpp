@@ -16,6 +16,7 @@
  * The second <i>components</i> layer comprises the components to be combined for generating the
  * <b>node</b> and <b>net</b> abstractions. It includes the following folders:
  * - <b>component</b> (namespace \ref fcpp::component): general purpose components.
+ * - <b>deployment</b> (namespace \ref fcpp::component): components for deployed systems.
  * - <b>simulation</b> (namespace \ref fcpp::component): components for simulated systems.
  *
  * The third <i>aggregate functions</i> layer comprises libraries of field calculus functions,
@@ -31,6 +32,7 @@
 #include "lib/component.hpp"
 #include "lib/coordination.hpp"
 #include "lib/data.hpp"
+#include "lib/deployment.hpp"
 #include "lib/internal.hpp"
 #include "lib/option.hpp"
 #include "lib/settings.hpp"

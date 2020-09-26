@@ -76,6 +76,22 @@ cc_library(
 )
 
 cc_library(
+    name = 'deployment',
+    hdrs = ['deployment.hpp'],
+    srcs = ['deployment.cpp'],
+    deps = [
+        "//lib:component",
+        "//lib/deployment:hardware_connector",
+        "//lib/deployment:hardware_identifier",
+        "//lib/deployment:hardware_logger",
+        "//lib/deployment:os",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'fcpp',
     hdrs = ['fcpp.hpp'],
     srcs = ['fcpp.cpp'],
@@ -85,6 +101,7 @@ cc_library(
         "//lib:component",
         "//lib:coordination",
         "//lib:data",
+        "//lib:deployment",
         "//lib:internal",
         "//lib:option",
         "//lib:settings",

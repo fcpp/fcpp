@@ -1008,31 +1008,31 @@ std::string type_name() {
 
 //! @brief Returns the string representation of the type of the argument.
 template <typename T>
-std::string type_name(T&&) {
+inline std::string type_name(T&&) {
     return type_name<T>();
 }
 
 
 //! @brief Escapes a value for clear printing.
 //! @{
-std::string escape(bool x) {
+inline std::string escape(bool x) {
     return x ? "true" : "false";
 }
-std::string escape(char x) {
+inline std::string escape(char x) {
     return std::string("'") + x + "'";
 }
-std::string escape(std::string x) {
+inline std::string escape(std::string x) {
     return '"' + x + '"';
 }
-std::string escape(const char* x) {
+inline std::string escape(const char* x) {
     return '"' + std::string(x) + '"';
 }
 template <typename T, typename = std::enable_if_t<std::is_empty<T>::value>>
-std::string escape(T) {
+inline std::string escape(T) {
     return type_name<T>();
 }
 template <typename T, typename = std::enable_if_t<type_count<bool, char, std::string, const char*> >= 0 and not std::is_empty<T>::value>>
-T const& escape(T const& x) {
+inline T const& escape(T const& x) {
     return x;
 }
 //! @}

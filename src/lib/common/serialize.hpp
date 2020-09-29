@@ -152,7 +152,7 @@ namespace details {
     }
     //! @}
 
-    //! @brief Bytes to be used for sizes.
+    //! @brief Bytes to be used for sizes (optimisation temporarily suppressed).
     template <bool b>
     constexpr size_t size_sizeof = b ? FCPP_TRACE/8 : sizeof(size_t);
 
@@ -161,7 +161,7 @@ namespace details {
     template <typename T, bool b>
     isstream& iterable_serialize(isstream& s, T& x, std::integral_constant<bool, b>) {
         size_t size = 0;
-        s.read(size, size_sizeof<b>);
+        s.read(size);
         x.clear();
         for (size_t i = 0; i < size; ++i) {
             typename T::value_type v;
@@ -173,7 +173,7 @@ namespace details {
 
     template <typename T, bool b>
     osstream& iterable_serialize(osstream& s, T& x, std::integral_constant<bool, b>) {
-        s.write(x.size(), size_sizeof<b>);
+        s.write(x.size());
         for (auto& i : x) s & i;
         return s;
     }

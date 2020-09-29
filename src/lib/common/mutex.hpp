@@ -369,7 +369,7 @@ struct unique_lock<false> {
     }
 };
 
-void swap(unique_lock<false>&, unique_lock<false>&) noexcept {}
+inline void swap(unique_lock<false>&, unique_lock<false>&) noexcept {}
 
 
 //! @brief Imported version of `std::unique_lock`.
@@ -450,7 +450,7 @@ struct shared_lock<false> {
     }
 };
 
-void swap(shared_lock<false>&, shared_lock<false>&) noexcept {}
+inline void swap(shared_lock<false>&, shared_lock<false>&) noexcept {}
 
 
 //! @brief Imported version of `std::shared_lock`.

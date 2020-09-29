@@ -332,18 +332,18 @@ namespace details {
     >::value;
 
     //! @brief Base case with no vectors.
-    std::vector<common::tagged_tuple_t<>> join_vectors() {
+    inline std::vector<common::tagged_tuple_t<>> join_vectors() {
         return std::vector<common::tagged_tuple_t<>>{1};
     }
 
     //! @brief Base case, forwarding a single vector.
     template <typename T>
-    std::vector<T> join_vectors(std::vector<T> v) {
+    inline std::vector<T> join_vectors(std::vector<T> v) {
         return v;
     }
     //! @brief Inductive case, joining a sequence of vectors.
     template <typename T, typename... Ts>
-    std::vector<T> join_vectors(std::vector<T> v, std::vector<Ts>... vs) {
+    inline std::vector<T> join_vectors(std::vector<T> v, std::vector<Ts>... vs) {
         auto w = join_vectors(vs...);
         static_assert(same_tuple<decltype(w[0]),T>, "tagged tuple sequences of different types in the same batch run");
         v.insert(v.end(), w.begin(), w.end());

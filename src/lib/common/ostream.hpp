@@ -100,13 +100,13 @@ namespace details {
 
     //! @brief Prints an indexable structure.
     //! @{
-    void indexed_print(std::ostream&) {}
+    inline void indexed_print(std::ostream&) {}
     template <typename T>
-    void indexed_print(std::ostream& o, const T& x) {
+    inline void indexed_print(std::ostream& o, const T& x) {
         o << x;
     }
     template <typename T, typename... Ts>
-    void indexed_print(std::ostream& o, const T& x, const Ts&... xs) {
+    inline void indexed_print(std::ostream& o, const T& x, const Ts&... xs) {
         o << x << "; ";
         indexed_print(o, xs...);
     }

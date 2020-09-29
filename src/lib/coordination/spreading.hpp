@@ -27,7 +27,7 @@ namespace coordination {
 
 
 //! @brief Mediates between an older and newer values.
-double damper(double old_v, double new_v, double delta, double factor) {
+inline double damper(double old_v, double new_v, double delta, double factor) {
     if (old_v > factor * new_v or new_v > factor * old_v)
         return new_v;
     double sign = old_v < new_v ? 0.5 : -0.5;

@@ -205,7 +205,7 @@ namespace details {
     constexpr const char* val_tag_sep<tags::arrowhead_tuple> = "; ";
 
     //! @brief Removes the namespaces from a type representation.
-    std::string strip_namespaces(std::string s) {
+    inline std::string strip_namespaces(std::string s) {
         size_t pos = s.rfind("::");
         if (pos != std::string::npos) return s.substr(pos+2);
         return s;

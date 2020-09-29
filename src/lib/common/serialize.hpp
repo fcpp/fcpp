@@ -32,7 +32,7 @@ namespace common {
 //! @cond INTERNAL
 namespace details {
     //! @brief Proxy function copying memory without unwanted warnings.
-    void copy(const void* x, const void* y, size_t l) {
+    inline void copy(const void* x, const void* y, size_t l) {
         memcpy((void*)x, y, l);
     }
 }

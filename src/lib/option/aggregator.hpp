@@ -558,7 +558,7 @@ class quantile;
 //! @cond INTERNAL
 namespace details {
     //! @brief The aggregator description for a quantile.
-    std::string quant_repr(char q) {
+    inline std::string quant_repr(char q) {
         if (q == 0)   return "min";
         if (q == 100) return "max";
         return "q" + std::to_string(int{q});

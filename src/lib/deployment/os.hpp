@@ -10,7 +10,6 @@
 
 #include <cassert>
 
-#include <atomic>
 #include <thread>
 #include <vector>
 
@@ -81,7 +80,7 @@ class network {
 
     //! @brief Constructor with given settings.
     network(node_t& n, data_type d) : m_node(n), m_transceiver(d), m_manager(&network::manage, this) {}
-    
+
     ~network() {
         m_running = false;
         m_manager.join();
@@ -106,9 +105,9 @@ class network {
     //! @brief Retrieves the collection of incoming messages.
     std::vector<message_type> receive() {
         assert(not push);
+        std::vector<message_type> m;
         common::lock_guard<true> l(m_mutex);
-        std::vector<message_type> m = std::move(m_receive);
-        m_receive.clear();
+        std::swap(m, m_receive);
         return m;
     }
 
@@ -140,11 +139,11 @@ class network {
     //! @brief Low-level hardware interface.
     transceiver_t m_transceiver;
 
-    //! @brief Thread managing send and receive of messages.
-    std::thread m_manager;
-
     //! @brief A mutex for regulating network operations.
     common::mutex<true> m_mutex;
+
+    //! @brief Whether the object is alive and running.
+    bool m_running = true;
 
     //! @brief Collection of received messages.
     std::vector<message_type> m_receive;
@@ -152,8 +151,8 @@ class network {
     //! @brief Message to be sent.
     std::vector<char> m_send;
 
-    //! @brief Whether the object is alive and running.
-    std::atomic<bool> m_running{true};
+    //! @brief Thread managing send and receive of messages.
+    std::thread m_manager;
 };
 
 

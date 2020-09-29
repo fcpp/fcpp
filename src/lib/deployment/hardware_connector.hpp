@@ -186,6 +186,11 @@ struct hardware_connector {
                 P::node::as_final().receive(m.time, m.device, mt);
             }
 
+            //! @brief Perceived distances from neighbours.
+            const fcpp::field<double>& nbr_dist() const {
+                return m_nbr_dist;
+            }
+
           private: // implementation details
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>

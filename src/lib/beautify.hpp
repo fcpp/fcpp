@@ -9,8 +9,7 @@
 #define FCPP_BEAUTIFY_H_
 
 
-//! @brief Maps a macro to a variable number of arguments (up to 9), comma separating the calls.
-//! @{
+//! @cond INTERNAL
 #define MACRO_MAPPER0(M)
 #define MACRO_MAPPER1(M,A)                          M(A)
 #define MACRO_MAPPER2(M,A,B)                        MACRO_MAPPER1(M,A), MACRO_MAPPER1(M,B)
@@ -22,11 +21,13 @@
 #define MACRO_MAPPER8(M,A,B,C,D,E,F,G,H)            MACRO_MAPPER1(M,A), MACRO_MAPPER7(M,B,C,D,E,F,G,H)
 #define MACRO_MAPPER9(M,A,B,C,D,E,F,G,H,I)          MACRO_MAPPER1(M,A), MACRO_MAPPER8(M,B,C,D,E,F,G,H,I)
 #define MACRO_MAPPERX(M,A,B,C,D,E,F,G,H,I,X,...)    X
+//! @endcond
+
+//! @brief Maps a macro to a variable number of arguments (up to 9), comma separating the calls.
 #define MACRO_MAPPER(...)                           MACRO_MAPPERX(__VA_ARGS__, MACRO_MAPPER9, \
                                                         MACRO_MAPPER8, MACRO_MAPPER7, MACRO_MAPPER6, \
                                                         MACRO_MAPPER5, MACRO_MAPPER4, MACRO_MAPPER3, \
                                                         MACRO_MAPPER2, MACRO_MAPPER1, MACRO_MAPPER0, *)(__VA_ARGS__)
-//! @}
 
 //! @brief Internal macro producing a typename declaration for a type variable.
 #define __TYPE_ARG__(T) typename T

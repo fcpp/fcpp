@@ -252,6 +252,7 @@ namespace details {
         static constexpr bool value = std::is_trivially_copyable<C>::value and not has_serialize_method<C>::value and not has_serialize_function<C>::value;
     };
 }
+//! @endcond
 
 
 //! @brief Serialisation from/to user classes.

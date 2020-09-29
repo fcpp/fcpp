@@ -28,6 +28,7 @@
 #ifndef FCPP_FCPP_H_
 #define FCPP_FCPP_H_
 
+#include "lib/beautify.hpp"
 #include "lib/common.hpp"
 #include "lib/component.hpp"
 #include "lib/coordination.hpp"

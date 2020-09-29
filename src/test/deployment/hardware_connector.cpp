@@ -43,21 +43,39 @@ using combo = component::combine_spec<
     component::base<parallel<(O & 1) == 1>>
 >;
 
-#define EXPECT_ROUND(t, s)                              \
-        EXPECT_EQ(n.next(), double{t});                 \
-        EXPECT_EQ(conn->fake_send().size(), size_t{s}); \
-        n.update()
+#define EXPECT_ROUND(t, send, ...)                                  \
+        std::this_thread::sleep_for(std::chrono::milliseconds(30)); \
+        EXPECT_EQ(n.next(), double{t});                             \
+        EXPECT_EQ(details::get_ids(n.node_at(42).nbr_dist()),       \
+                  (std::vector<device_t>__VA_ARGS__));              \
+        EXPECT_EQ(conn->fake_send().size(), send ? sizeof(int) : 0);\
+        n.update();
 
 MULTI_TEST(ConnectorTest, Messages, O, 2) {
+    bool message_push = (O & 2) == 2;
     typename combo<O>::net n{common::make_tagged_tuple<oth>("foo")};
     auto conn = n.node_at(42).connector_data();
-    EXPECT_ROUND(2.0, 0);
-    EXPECT_ROUND(2.5, 0);
-    EXPECT_ROUND(3.0, 4);
+    EXPECT_ROUND(2.0, false, {});
+    EXPECT_ROUND(2.5, false, {});
+    EXPECT_ROUND(3.0, true,  {});
     conn->fake_receive({3.2, 10, 2.5, {2, 0, 0, 0}});
     conn->fake_receive({3.3, 17, 3.5, {4, 0, 0, 0}});
+    if (message_push) {
+        EXPECT_ROUND(3.5, false, {10, 17});
+    } else {
+        EXPECT_ROUND(3.5, false, {});
+    }
+    if (message_push) {
+        EXPECT_ROUND(4.0, true,  {10, 17});
+    } else {
+        EXPECT_ROUND(4.0, true,  {});
+    }
+    EXPECT_ROUND(4.5, false, {10, 17});
     conn->fake_receive({3.7, 12, 3.0, {3, 0, 0, 0}});
-    EXPECT_ROUND(3.5, 4);
-    EXPECT_ROUND(4.0, 4);
-    EXPECT_ROUND(4.5, 4);
+    if (message_push) {
+        EXPECT_ROUND(5.0, true,  {10, 12, 17});
+    } else {
+        EXPECT_ROUND(5.0, true,  {10, 17});
+    }
+    EXPECT_ROUND(5.5, false, {10, 12, 17});
 }

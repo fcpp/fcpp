@@ -2,7 +2,7 @@
 
 /**
  * @file connect.hpp
- * @brief Connection predicates to be used with a \ref physical_connector.
+ * @brief Connection predicates to be used with a \ref fcpp::component::simulated_connector "simulated_connector".
  */
 
 #ifndef FCPP_OPTION_CONNECT_H_

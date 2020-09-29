@@ -46,38 +46,43 @@ struct transceiver {
     data_type data;
 
     transceiver(data_type) : data(this) {}
-    
+
     void send(device_t, std::vector<char> m) {
         assert(not sending and not receiving);
         sending = true;
         common::lock_guard<true> l(m_mutex);
-        m_out = m;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        m_out = std::move(m);
         sending = false;
     }
-    
+
     message_type receive() {
         assert(not sending and not receiving);
         receiving = true;
         common::lock_guard<true> l(m_mutex);
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
         message_type m;
         if (not m_in.empty()) {
-            m = m_in.back();
+            m = std::move(m_in.back());
             m_in.pop_back();
         }
+        else std::this_thread::sleep_for(std::chrono::milliseconds(10));
         receiving = false;
         return m;
     }
-    
+
     std::vector<char> fake_send() {
         common::lock_guard<true> l(m_mutex);
-        return m_out;
+        std::vector<char> v;
+        std::swap(v, m_out);
+        return v;
     }
-    
+
     void fake_receive(message_type m) {
         common::lock_guard<true> l(m_mutex);
         m_in.push_back(m);
     }
-    
+
   private:
     common::mutex<true> m_mutex;
 

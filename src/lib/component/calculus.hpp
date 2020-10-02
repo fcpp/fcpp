@@ -400,20 +400,28 @@ size_t count_hood(node_t& node, trace_t call_point) {
 
 //! @cond INTERNAL
 namespace details {
-    template <typename A, typename B>
-    inline B&& maybe_first(common::type_sequence<A>, tuple<B,A>& t) {
+    template <typename A, typename C>
+    struct valid_tuple_return : std::false_type {};
+    template <typename A, typename B, typename C>
+    struct valid_tuple_return<A, tuple<B,C>> : std::is_convertible<C,A> {};
+
+    template <typename A, typename B, typename C, typename = std::enable_if_t<std::is_convertible<C,A>::value>>
+    inline B&& maybe_first(common::type_sequence<A>, tuple<B,C>& t) {
         return std::move(get<0>(t));
     }
-    template <typename A, typename B>
-    inline A&& maybe_second(common::type_sequence<A>, tuple<B,A>& t) {
+    template <typename A, typename B, typename C, typename = std::enable_if_t<std::is_convertible<C,A>::value>>
+    inline A&& maybe_second(common::type_sequence<A>, tuple<B,C>& t) {
         return std::move(get<1>(t));
     }
-    template <typename A>
-    inline A&& maybe_first(common::type_sequence<A>, A& x) {
+    template <typename A, typename C, typename = std::enable_if_t<not valid_tuple_return<A,C>::value>>
+    inline A maybe_first(common::type_sequence<A>, C& x) {
         return std::move(x);
     }
-    template <typename A>
-    inline A& maybe_second(common::type_sequence<A>, A& x) {
+    template <typename A, typename C, typename = std::enable_if_t<not valid_tuple_return<A,C>::value>>
+    inline C& maybe_second(common::type_sequence<A>, C& x) {
+        #define INVALID_RETURN_MESSAGE "\033[1m\033[4minvalid return type (C) for update function in calculus construct (of type A)\033[0m"
+        static_assert(std::is_convertible<C,A>::value, INVALID_RETURN_MESSAGE);
+        #undef INVALID_RETURN_MESSAGE
         return x;
     }
 }

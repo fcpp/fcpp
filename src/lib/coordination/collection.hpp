@@ -28,10 +28,10 @@ namespace coordination {
 template <typename node_t, typename P, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
 T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const T& null, G&& accumulate) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
-    
+
     return nbr(node, 0, null, [&](field<T> x){
-        device_t parent = get<1>(min_hood( node, 0, nbr(node, 1, make_tuple(distance, node.uid)) ));
-        return fold_hood(node, 0, accumulate, mux(nbr(node, 2, parent) == node.uid, x, field<T>{null}), value);
+        device_t parent = get<1>(min_hood( node, 0, make_tuple(nbr(node, 1, distance), nbr(node, 2, node.uid)) ));
+        return fold_hood(node, 0, accumulate, mux(nbr(node, 3, parent) == node.uid, x, field<T>{null}), value);
     });
 }
 

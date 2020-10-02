@@ -26,15 +26,15 @@ namespace coordination {
 
 //! @brief Finds the minimum value, knowing an upper bound to the network diameter.
 template <typename node_t, typename T>
-T diameter_election(node_t& node, trace_t call_point, const T& value, int diameter) {
+T diameter_election(node_t& node, trace_t call_point, const T& value, hops_t diameter) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return get<0>(nbr(node, 0, make_tuple(value, 0), [&](field<tuple<T,int>> x){
-        tuple<T,int> best = fold_hood(node, 0, [&](tuple<T,int> const& a, tuple<T,int> const& b){
+    return get<0>(nbr(node, 0, make_tuple(value, hops_t{0}), [&](field<tuple<T,hops_t>> x){
+        tuple<T,hops_t> best = fold_hood(node, 0, [&](tuple<T,hops_t> const& a, tuple<T,hops_t> const& b){
             return get<1>(a) < diameter and a < b ? a : b;
-        }, x, make_tuple(value, -1));
+        }, x, make_tuple(value, hops_t{0}));
         get<1>(best) += 1;
-        return best;
+        return min(best, make_tuple(value, hops_t{0}));
     }));
 }
 

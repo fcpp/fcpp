@@ -57,14 +57,22 @@
     //! @brief Setting defining the size of device identifiers (32 for general systems, 16 for embedded systems).
     #define FCPP_DEVICE 32
     #endif
+    #ifndef FCPP_HOPS
+    //! @brief Setting defining the size of hop counts (16 for general systems, 8 for embedded systems).
+    #define FCPP_HOPS 16
+    #endif
 #elif FCPP_SYSTEM == FCPP_SYSTEM_EMBEDDED
     #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 32 for embedded systems).
-    #define FCPP_TRACE 32
+    #define FCPP_TRACE 16
     #endif
     #ifndef FCPP_DEVICE
     //! @brief Setting defining the size of device identifiers (32 for general systems, 16 for embedded systems).
     #define FCPP_DEVICE 16
+    #endif
+    #ifndef FCPP_HOPS
+    //! @brief Setting defining the size of hop counts (16 for general systems, 8 for embedded systems).
+    #define FCPP_HOPS 8
     #endif
 #else
     static_assert(false, "invalid value for FCPP_SYSTEM");
@@ -83,14 +91,6 @@
     #ifndef FCPP_ONLINE_DROP
     //! @brief Setting defining whether old messages should be dropped while new ones arrive (true, default for physical systems) or at round start (false, default for simulated and logical systems).
     #define FCPP_ONLINE_DROP false
-    #endif
-    #ifndef FCPP_TIME_TYPE
-    //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
-    #define FCPP_TIME_TYPE time_t
-    #endif
-    #ifndef FCPP_TIME_EPSILON
-    //! @brief Setting defining which time differences are to be considered negligible.
-    #define FCPP_TIME_EPSILON 0
     #endif
     #ifndef FCPP_PARALLEL
     //! @brief Setting defining whether the computation should be performed with parallel threads.
@@ -113,14 +113,6 @@
     //! @brief Setting defining whether old messages should be dropped while new ones arrive (true, default for physical systems) or at round start (false, default for simulated and logical systems).
     #define FCPP_ONLINE_DROP true
     #endif
-    #ifndef FCPP_TIME_TYPE
-    //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
-    #define FCPP_TIME_TYPE time_t
-    #endif
-    #ifndef FCPP_TIME_EPSILON
-    //! @brief Setting defining which time differences are to be considered negligible.
-    #define FCPP_TIME_EPSILON 0
-    #endif
     #ifndef FCPP_PARALLEL
     //! @brief Setting defining whether the computation should be performed with parallel threads.
     #define FCPP_PARALLEL false
@@ -141,14 +133,6 @@
     #ifndef FCPP_ONLINE_DROP
     //! @brief Setting defining whether old messages should be dropped while new ones arrive (true, default for physical systems) or at round start (false, default for simulated and logical systems).
     #define FCPP_ONLINE_DROP false
-    #endif
-    #ifndef FCPP_TIME_TYPE
-    //! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
-    #define FCPP_TIME_TYPE double
-    #endif
-    #ifndef FCPP_TIME_EPSILON
-    //! @brief Setting defining which time differences are to be considered negligible.
-    #define FCPP_TIME_EPSILON 0.01
     #endif
     #ifndef FCPP_PARALLEL
     //! @brief Setting defining whether the computation should be performed with parallel threads.
@@ -203,6 +187,16 @@
 #endif
 
 
+#ifndef FCPP_TIME_TYPE
+//! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
+#define FCPP_TIME_TYPE double
+#endif
+#ifndef FCPP_TIME_EPSILON
+//! @brief Setting defining which time differences are to be considered negligible.
+#define FCPP_TIME_EPSILON 0.01
+#endif
+
+
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
@@ -232,6 +226,18 @@ namespace fcpp {
     static_assert(false, "invalid value for FCPP_DEVICE");
     //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint64_t device_t;
+#endif
+
+#if   FCPP_HOPS == 8
+    typedef uint8_t hops_t;
+#elif FCPP_HOPS == 16
+    typedef uint16_t hops_t;
+#elif FCPP_HOPS == 32
+    typedef uint32_t hops_t;
+#else
+    static_assert(false, "invalid value for FCPP_HOPS");
+    //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
+    typedef uint32_t hops_t;
 #endif
 }
 

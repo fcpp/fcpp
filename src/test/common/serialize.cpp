@@ -21,6 +21,15 @@ std::pair<T,T> rebuild(T y, T z) {
     return {y, z};
 }
 
+size_t rebuild_size(size_t y) {
+    size_t z;
+    common::osstream os;
+    common::details::size_variable_write(os, y);
+    common::isstream is(os);
+    common::details::size_variable_read(is, z);
+    return z;
+}
+
 #define SERIALIZE_CHECK(x, null) {          \
             auto result = rebuild(x, null); \
             EXPECT_EQ(x, get<0>(result));   \
@@ -65,6 +74,10 @@ TEST(SerializeTest, Indexed) {
 }
 
 TEST(SerializeTest, Iterable) {
+    EXPECT_EQ(15LL,     rebuild_size(15));
+    EXPECT_EQ(3058LL,   rebuild_size(3058));
+    EXPECT_EQ(958102LL, rebuild_size(958102));
+    EXPECT_EQ(7646860119211199969LL, rebuild_size(7646860119211199969LL));
     std::vector<int> x = {1, 2, 4, 8};
     SERIALIZE_CHECK(x, {});
     std::set<int> s = {1, 2, 4, 8};

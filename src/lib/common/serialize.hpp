@@ -152,16 +152,32 @@ namespace details {
     }
     //! @}
 
-    //! @brief Bytes to be used for sizes (optimisation temporarily suppressed).
-    template <bool b>
-    constexpr size_t size_sizeof = b ? FCPP_TRACE/8 : sizeof(size_t);
+    //! @brief Variable-length serialization of container sizes.
+    //! @{
+    void size_variable_read(isstream& s, size_t& v) {
+        v = 0;
+        uint8_t x;
+        for (int offs = 0; ; offs += 7) {
+            s.read(x);
+            v += (x & 127ULL) << offs;
+            if (x < 128) break;
+        }
+    }
+    void size_variable_write(osstream& s, size_t v) {
+        do {
+            uint8_t x = (v & 127) + 128 * (v >= 128);
+            s.write(x);
+            v >>= 7;
+        } while (v > 0);
+    }
+    //! @}
 
     //! @brief Serialization of iterable classes.
     //! @{
-    template <typename T, bool b>
-    isstream& iterable_serialize(isstream& s, T& x, std::integral_constant<bool, b>) {
+    template <typename T>
+    isstream& iterable_serialize(isstream& s, T& x) {
         size_t size = 0;
-        s.read(size);
+        size_variable_read(s, size);
         x.clear();
         for (size_t i = 0; i < size; ++i) {
             typename T::value_type v;
@@ -171,36 +187,36 @@ namespace details {
         return s;
     }
 
-    template <typename T, bool b>
-    osstream& iterable_serialize(osstream& s, T& x, std::integral_constant<bool, b>) {
-        s.write(x.size());
+    template <typename T>
+    osstream& iterable_serialize(osstream& s, T& x) {
+        size_variable_write(s, x.size());
         for (auto& i : x) s & i;
         return s;
     }
 
     template <typename S, typename K>
     S& serialize(S& s, std::set<K>& x) {
-        return iterable_serialize(s, x, std::is_same<K, trace_t>{});
+        return iterable_serialize(s, x);
     }
 
     template <typename S, typename K, typename V>
     S& serialize(S& s, std::map<K, V>& x) {
-        return iterable_serialize(s, x, std::is_same<K, trace_t>{});
+        return iterable_serialize(s, x);
     }
 
     template <typename S, typename K>
     S& serialize(S& s, std::unordered_set<K>& x) {
-        return iterable_serialize(s, x, std::is_same<K, trace_t>{});
+        return iterable_serialize(s, x);
     }
 
     template <typename S, typename K, typename V>
     S& serialize(S& s, std::unordered_map<K, V>& x) {
-        return iterable_serialize(s, x, std::is_same<K, trace_t>{});
+        return iterable_serialize(s, x);
     }
 
     template <typename S, typename T>
     S& serialize(S& s, std::vector<T>& x) {
-        return iterable_serialize(s, x, std::false_type{});
+        return iterable_serialize(s, x);
     }
     //! @}
 

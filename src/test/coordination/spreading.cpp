@@ -12,11 +12,11 @@ using namespace fcpp;
 using namespace component::tags;
 
 
-constexpr int X = std::numeric_limits<int>::max();
+constexpr hops_t X = std::numeric_limits<hops_t>::max();
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<times_t, int, field<int>, tuple<double,double>, tuple<double,int>>,
+    exports<times_t, hops_t, int, field<int>, tuple<double,double>, tuple<double,int>>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -52,7 +52,7 @@ field<double> nbr_one() {
 
 
 MULTI_TEST(SpreadingTest, ABFH, O, 3) {
-    test_net<combo<O>, std::tuple<int>(bool)> n{
+    test_net<combo<O>, std::tuple<hops_t>(bool)> n{
         [&](auto& node, bool source){
             return std::make_tuple(
                 coordination::abf_hops(node, 0, source)
@@ -200,8 +200,8 @@ MULTI_TEST(SpreadingTest, Broadcast, O, 3) {
 }
 
 MULTI_TEST(SpreadingTest, BroadcastSource, O, 3) {
-    test_net<combo<O>, std::tuple<int>(int,int)> n{
-        [&](auto& node, int dist, int value){
+    test_net<combo<O>, std::tuple<int>(hops_t,int)> n{
+        [&](auto& node, hops_t dist, hops_t value){
             return std::make_tuple(
                 coordination::broadcast(node, 0, dist, value, dist==0, X)
             );

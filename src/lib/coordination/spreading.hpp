@@ -38,12 +38,12 @@ inline double damper(double old_v, double new_v, double delta, double factor) {
 
 //! @brief Computes the hop-count distance from a source through adaptive bellmann-ford.
 template <typename node_t>
-int abf_hops(node_t& node, trace_t call_point, bool source) {
+hops_t abf_hops(node_t& node, trace_t call_point, bool source) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, std::numeric_limits<int>::max(), [&] (field<int> d) {
-        int nd = min_hood(node, 0, d, std::numeric_limits<int>::max()-1) + 1;
-        return source ? 0 : nd;
+    return nbr(node, 0, std::numeric_limits<hops_t>::max(), [&] (field<hops_t> d) {
+        hops_t nd = min_hood(node, 0, d, std::numeric_limits<hops_t>::max()-1) + 1;
+        return source ? hops_t{0} : nd;
     });
 }
 

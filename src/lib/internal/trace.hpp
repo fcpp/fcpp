@@ -25,7 +25,12 @@
 namespace fcpp {
 
 
-#if   FCPP_TRACE == 24
+#if   FCPP_TRACE == 16
+    typedef uint16_t trace_t;
+    constexpr int k_hash_len = 12;
+    constexpr trace_t k_hash_factor = 17;
+    constexpr trace_t k_hash_inverse = 241;
+#elif FCPP_TRACE == 24
     typedef uint32_t trace_t;
     constexpr int k_hash_len = 16;
     constexpr trace_t k_hash_factor = 17;

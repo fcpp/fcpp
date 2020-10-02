@@ -243,8 +243,8 @@ inline to_local<A> sum_hood(node_t& node, trace_t call_point, const A& a, const 
 
 //! @brief A counter increasing by a given amount at every round, starting from a given amount.
 template <typename node_t, typename A, typename B>
-inline auto counter(node_t& node, trace_t call_point, A&& a, B&& b) {
-    return old(node, call_point, b, [&](int x){
+inline B counter(node_t& node, trace_t call_point, A&& a, B&& b) {
+    return old(node, call_point, b, [&](B x) -> B{
         return x+a;
     });
 }

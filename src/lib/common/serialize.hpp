@@ -154,7 +154,7 @@ namespace details {
 
     //! @brief Variable-length serialization of container sizes.
     //! @{
-    void size_variable_read(isstream& s, size_t& v) {
+    inline void size_variable_read(isstream& s, size_t& v) {
         v = 0;
         uint8_t x;
         for (int offs = 0; ; offs += 7) {
@@ -163,7 +163,7 @@ namespace details {
             if (x < 128) break;
         }
     }
-    void size_variable_write(osstream& s, size_t v) {
+    inline void size_variable_write(osstream& s, size_t v) {
         do {
             uint8_t x = (v & 127) + 128 * (v >= 128);
             s.write(x);

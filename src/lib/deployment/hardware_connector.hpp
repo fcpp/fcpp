@@ -157,6 +157,7 @@ struct hardware_connector {
                     typename F::node::message_t m;
                     os << P::node::as_final().send(m_send, P::node::uid, m);
                     m_network.send(std::move(os));
+                    P::node::as_final().receive(m_send, P::node::uid, m);
                     m_send = TIME_MAX;
                 } else P::node::update();
             }

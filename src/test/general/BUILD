@@ -12,6 +12,21 @@ cc_test(
 )
 
 cc_test(
+    name = "embedded",
+    srcs = ["embedded.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib:fcpp",
+        "//test:fake_os",
+        "//test:helper",
+        "//test:test_net",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "slow_distance",
     srcs = ["slow_distance.hpp", "slow_distance.cpp"],
     deps = [

@@ -22,6 +22,7 @@
 
 #include <functional>
 #include <memory>
+#include <regex>
 #include <type_traits>
 #include <vector>
 
@@ -1019,19 +1020,30 @@ inline std::string escape(bool x) {
     return x ? "true" : "false";
 }
 inline std::string escape(char x) {
+    if (x < 32 or x > 126) {
+        int y = x < 0 ? x + 256 : x;
+        return "'\\" + std::to_string(y/64) + std::to_string((y/8)%8) + std::to_string(y%8) + "'";
+    }
+    if (x == '\'') return "'\\''";
     return std::string("'") + x + "'";
 }
+inline int escape(int8_t x) {
+    return x;
+}
+inline int escape(uint8_t x) {
+    return x;
+}
 inline std::string escape(std::string x) {
-    return '"' + x + '"';
+    return '"' + std::regex_replace(x, std::regex("\""), "\\\"") + '"';
 }
 inline std::string escape(const char* x) {
-    return '"' + std::string(x) + '"';
+    return escape(std::string(x));
 }
 template <typename T, typename = std::enable_if_t<std::is_empty<T>::value>>
 inline std::string escape(T) {
     return type_name<T>();
 }
-template <typename T, typename = std::enable_if_t<type_count<bool, char, std::string, const char*> >= 0 and not std::is_empty<T>::value>>
+template <typename T, typename = std::enable_if_t<type_count<T, bool, char, int8_t, uint8_t, std::string, const char*> == 0 and not std::is_empty<T>::value>>
 inline T const& escape(T const& x) {
     return x;
 }

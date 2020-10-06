@@ -153,7 +153,7 @@ struct hardware_logger {
             }
             template <typename U, typename... Us>
             void print_output(common::type_sequence<U,Us...>) const {
-                *m_stream << P::node::storage(U{}) << " ";
+                *m_stream << common::escape(P::node::storage(U{})) << " ";
                 print_output(common::type_sequence<Us...>{});
             }
 

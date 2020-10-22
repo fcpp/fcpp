@@ -130,8 +130,6 @@ MULTI_TEST(CalculusTest, Old, O, 3) {
     typename combo<O>::net  network{common::make_tagged_tuple<>()};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
     double d;
-    d = delayed(d0, 0, 2.0);
-    EXPECT_EQ(2.0, d);
     d = delayed(d0, 0, 1.0);
     EXPECT_EQ(1.0, d);
     sendto(d0, d0);
@@ -153,8 +151,6 @@ MULTI_TEST(CalculusTest, Old, O, 3) {
     EXPECT_EQ(3.0, d);
     d = counter(d0, 2);
     EXPECT_EQ(1, d);
-    d = counter(d0, 2);
-    EXPECT_EQ(1, d);
     sendto(d0, d0);
     rounder(d0);
     d = counter(d0, 2);
@@ -171,8 +167,6 @@ MULTI_TEST(CalculusTest, Nbr, O, 3) {
     typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
     typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
     int d;
-    d = sharing(d0, 0, 3);
-    EXPECT_EQ(3, d);
     d = sharing(d0, 0, 4);
     EXPECT_EQ(4, d);
     d = sharing(d1, 0, 2);
@@ -202,9 +196,5 @@ MULTI_TEST(CalculusTest, Nbr, O, 3) {
     sendto(d2, d0);
     d0.round_start(0.0);
     d = gossip(d0, 1, 1);
-    EXPECT_EQ(4, d);
-    d = gossip(d0, 1, 5);
-    EXPECT_EQ(5, d);
-    d = gossip(d0, 1, 3);
     EXPECT_EQ(4, d);
 }

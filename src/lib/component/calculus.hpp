@@ -395,6 +395,18 @@ size_t count_hood(node_t& node, trace_t call_point) {
     details::get_export(node).second()->insert(t);
     return details::get_context(node).second().align(t, node.uid).size();
 }
+
+//! @brief Computes the number of neighbours aligned to the current call point.
+template <typename node_t>
+field<device_t> nbr_uid(node_t& node, trace_t call_point) {
+    trace_t t = node.stack_trace.hash(call_point);
+    details::get_export(node).second()->insert(t);
+    std::vector<device_t> ids = details::get_context(node).second().align(t, node.uid);
+    std::vector<device_t> vals;
+    vals.emplace_back();
+    vals.insert(vals.end(), ids.begin(), ids.end());
+    return details::make_field(std::move(ids), std::move(vals));
+}
 //! @}
 
 
@@ -441,6 +453,7 @@ namespace details {
 template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A)>>
 auto old(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
+    assert(details::get_export(node).first()->template count<A>(t) == 0);
     auto f = op(align(node, call_point, details::get_context(node).first().old(t, f0, node.uid)));
     details::get_export(node).first()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
     return details::maybe_first(common::type_sequence<A>{}, f);
@@ -458,6 +471,7 @@ auto old(node_t& node, trace_t call_point, const A& f0, G&& op) {
 template <typename node_t, typename A>
 A old(node_t& node, trace_t call_point, const A& f0, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
+    assert(details::get_export(node).first()->template count<A>(t) == 0);
     details::get_export(node).first()->insert(t, f);
     return align(node, call_point, details::get_context(node).first().old(t, f0, node.uid));
 }
@@ -486,6 +500,7 @@ inline A old(node_t& node, trace_t call_point, const A& f) {
 template <typename node_t, typename A, typename G, typename = std::result_of_t<G(to_field<A>)>>
 auto nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
+    assert(details::get_export(node).second()->template count<A>(t) == 0);
     auto f = op(details::get_context(node).second().nbr(t, f0, node.uid));
     details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
     return details::maybe_first(common::type_sequence<A>{}, f);
@@ -503,6 +518,7 @@ auto nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
 template <typename node_t, typename A>
 to_field<A> nbr(node_t& node, trace_t call_point, const A& f0, const A& f) {
     trace_t t = node.stack_trace.hash(call_point);
+    assert(details::get_export(node).second()->template count<A>(t) == 0);
     details::get_export(node).second()->insert(t, f);
     return details::get_context(node).second().nbr(t, f0, node.uid);
 }
@@ -530,6 +546,7 @@ inline to_field<A> nbr(node_t& node, trace_t call_point, const A& f) {
 template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A, to_field<A>)>>
 A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
+    assert(details::get_export(node).second()->template count<A>(t) == 0);
     auto f = op(align(node, call_point, details::get_context(node).second().old(t, f0, node.uid)), details::get_context(node).second().nbr(t, f0, node.uid));
     details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
     return details::maybe_first(common::type_sequence<A>{}, f);

@@ -66,7 +66,7 @@ namespace fcpp {
 constexpr trace_t k_hash_mod = (trace_t(1)<<k_hash_len)-1;
 
 //! @brief Maximium value allowed for code counters.
-constexpr trace_t k_hash_max = trace_t(1)<<(FCPP_TRACE - k_hash_len);
+constexpr trace_t k_hash_max = (trace_t(1)<<(FCPP_TRACE - k_hash_len))-1;
 
 
 //! @brief Namespace containing objects of internal use.
@@ -113,8 +113,8 @@ class trace {
 
     //! @brief Returns the hash together with the template argument into a @ref trace_t.
     inline trace_t hash(trace_t x) const {
-        assert(x < k_hash_max and "code points overflow: reduce code or increase FCPP_TRACE");
-    	return m_stack_hash + (x << k_hash_len);
+        assert((x <= k_hash_max or !FCPP_WARNING_TRACE) and "code points overflow: reduce code or increase FCPP_TRACE (ignore with #define FCPP_WARNING_TRACE false if using few CALLs for each function)");
+        return m_stack_hash + ((x & k_hash_max) << k_hash_len);
     }
 
   protected:

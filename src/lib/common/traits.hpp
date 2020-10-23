@@ -800,6 +800,26 @@ namespace details {
     template <template<size_t...> class T, typename S, typename... Ss>
     struct option_nums<T, S, Ss...> : public option_nums<T, type_sequence_decay<S>, Ss...> {};
 
+    // Extracts a floating-point numeric option (no arguments).
+    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ss>
+    struct option_float {
+        static constexpr double value = dnum / (double)dden;
+    };
+
+    // Extracts a floating-point numeric option (option in first place).
+    template <template<size_t,size_t> class T, size_t dnum, size_t dden, size_t i, size_t j, typename... Ss>
+    struct option_float<T,dnum,dden,T<i,j>,Ss...> {
+        static constexpr double value = i / (double)j;
+    };
+
+    // Extracts a floating-point numeric option (type sequence in first place).
+    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ts, typename... Ss>
+    struct option_float<T,dnum,dden,type_sequence<Ts...>,Ss...> : public option_float<T,dnum,dden,Ts...,Ss...> {};
+
+    // Extracts a floating-point numeric option (something else in first place).
+    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename S, typename... Ss>
+    struct option_float<T,dnum,dden,S,Ss...> : public option_float<T,dnum,dden,type_sequence_decay<S>,Ss...> {};
+
     // Extracts a type option (no arguments).
     template <template<class> class T, typename D, typename... Ss>
     struct option_type {
@@ -902,6 +922,17 @@ constexpr size_t option_num = details::option_num<T,d,Ss...>::value;
  */
 template <template<size_t...> class T, typename... Ss>
 using option_nums = typename details::option_nums<T, Ss...>::type;
+
+/**
+ * @brief Extracts a floating-point numeric option from a sequence of options.
+ *
+ * @param T Floating-point numeric option name.
+ * @param dnum Default numerator of the value if the option is missing.
+ * @param dden Default denumerator of the value if the option is missing.
+ * @param Ss Sequence of options.
+ */
+template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ss>
+constexpr double option_float = details::option_float<T,dnum,dden,Ss...>::value;
 
 /**
  * @brief Extracts a type option from a sequence of options.

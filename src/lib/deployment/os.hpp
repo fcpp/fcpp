@@ -31,7 +31,7 @@ struct message_type {
     device_t device;
     //! @brief An estimate of the signal power (RSSI).
     double power;
-    //! @brief The message content.
+    //! @brief The message content (empty content represent no message).
     std::vector<char> content;
 };
 
@@ -49,11 +49,11 @@ device_t uid();
  *
  * It should have the following minimal public interface:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * struct data_type;                       // default-constructible type for settings
- * data_type data;                         // network settings
- * transceiver(data_type);                 // constructor with settings
- * void send(device_t, std::vector<char>); // broadcasts a given message
- * message_type receive();                 // receives the next incoming message (empty if no incoming message)
+ * struct data_type;                            // default-constructible type for settings
+ * data_type data;                              // network settings
+ * transceiver(data_type);                      // constructor with settings
+ * bool send(device_t, std::vector<char>, int); // broadcasts a message after given attemps
+ * message_type receive(int);                   // listens for messages after given failed sends
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 struct transceiver;
@@ -100,6 +100,7 @@ class network {
     void send(std::vector<char> m) {
         common::lock_guard<true> l(m_mutex);
         m_send = std::move(m);
+        m_attempt = 0;
     }
 
     //! @brief Retrieves the collection of incoming messages.
@@ -116,19 +117,19 @@ class network {
     void manage() {
         while (m_running) {
             common::lock_guard<true> l(m_mutex);
-            if (m_send.empty()) {
-                // receiving
-                message_type m = m_transceiver.receive();
-                if (not m.content.empty()) {
-                    if (push) {
-                        common::unlock_guard<true> u(m_mutex);
-                        m_node.receive(m);
-                    } else m_receive.push_back(std::move(m));
-                }
-            } else {
+            if (not m_send.empty()) {
                 // sending
-                m_transceiver.send(m_node.uid, std::move(m_send));
-                m_send.clear();
+                if (m_transceiver.send(m_node.uid, std::move(m_send), m_attempt))
+                    m_send.clear();
+                else ++m_attempt;
+            }
+            // receiving
+            message_type m = m_transceiver.receive(m_attempt);
+            if (not m.content.empty()) {
+                if (push) {
+                    common::unlock_guard<true> u(m_mutex);
+                    m_node.receive(m);
+                } else m_receive.push_back(std::move(m));
             }
         }
     }
@@ -150,6 +151,9 @@ class network {
 
     //! @brief Message to be sent.
     std::vector<char> m_send;
+
+    //! @brief Number of attempts failed for a send.
+    int m_attempt;
 
     //! @brief Thread managing send and receive of messages.
     std::thread m_manager;

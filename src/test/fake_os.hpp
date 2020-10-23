@@ -33,11 +33,11 @@ device_t uid() {
  *
  * It should have the following minimal public interface:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * struct data_type;                       // default-constructible type for settings
- * data_type data;                         // network settings
- * transceiver(data_type);                 // constructor with settings
- * void send(device_t, std::vector<char>); // broadcasts a given message
- * message_type receive();                 // receives the next incoming message (empty if no incoming message)
+ * struct data_type;                            // default-constructible type for settings
+ * data_type data;                              // network settings
+ * transceiver(data_type);                      // constructor with settings
+ * bool send(device_t, std::vector<char>, int); // broadcasts a message after given attemps
+ * message_type receive(int);                   // listens for messages after given failed sends
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 struct transceiver {
@@ -47,16 +47,17 @@ struct transceiver {
 
     transceiver(data_type) : data(this) {}
 
-    void send(device_t, std::vector<char> m) {
+    bool send(device_t, std::vector<char> m, int) {
         assert(not sending and not receiving);
         sending = true;
         common::lock_guard<true> l(m_mutex);
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
         m_out = std::move(m);
         sending = false;
+        return true;
     }
 
-    message_type receive() {
+    message_type receive(int) {
         assert(not sending and not receiving);
         receiving = true;
         common::lock_guard<true> l(m_mutex);

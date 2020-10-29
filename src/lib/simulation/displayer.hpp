@@ -194,6 +194,14 @@ struct displayer {
                     PROFILE_COUNT("displayer");
                     vec<3> p = get_cached_position(m_refresh);
                     std::vector<vec<3>> np;
+                    // update shape and size
+                    shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
+                    double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
+                    // update color list
+                    std::vector<color> c;
+                    color_val_push(c, color_val{});
+                    color_tag_push(c, color_tag{});
+                    if (c.empty()) c.push_back(0); // black if nothing else
                     {
                         common::unlock_guard<parallel> ul(P::node::mutex);
                         for (device_t d : m_prev_nbr_uids) {
@@ -227,25 +235,6 @@ struct displayer {
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
                 m_prev_nbr_uids = std::move(m_nbr_uids);
                 m_nbr_uids.clear();
-                // update shape and size
-                shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
-                double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
-                // update color list
-                std::vector<color> c;
-                color_val_push(c, color_val{});
-                color_tag_push(c, color_tag{});
-                if (c.empty()) c.push_back(0); // black if nothing else
-                /**
-                 * Do not touch the code above.
-                 *
-                 * Only within this function can shape/size/colors change.
-                 * You find current values for them in s/d/c; but you may want
-                 * to cache these values into members m_shape/m_size/m_colors
-                 * to avoid updating things if they do not change.
-                 *
-                 * Update the openGL representation somehow below.
-                 */
-                common::details::ignore(s,d,c); // remove this line
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).

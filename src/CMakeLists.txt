@@ -63,7 +63,9 @@ add_library(fcpp_master SHARED
 	lib/option/metric.cpp
 	lib/option/sequence.cpp
 	lib/simulation/batch.cpp
+	lib/simulation/camera.cpp
 	lib/simulation/displayer.cpp
+	lib/simulation/shader.cpp
 	lib/simulation/simulated_connector.cpp
 	lib/simulation/simulated_positioner.cpp
 	lib/simulation/spawner.cpp
@@ -75,13 +77,35 @@ set_target_properties(fcpp_master PROPERTIES VERSION &{PROJECT_VERSION})
 # public API declaration
 set_target_properties(fcpp_master PROPERTIES PUBLIC_HEADER include/fcpp_main.h)
 
-# include directories
-target_include_directories(fcpp_master PRIVATE .)
-
-#MinGW threads
-option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
+# adding external libraries
+add_library(glad ./external/glad-core-3.3/include/KHR/khrplatform.h
+                 ./external/glad-core-3.3/include/glad/glad.h
+                 ./external/glad-core-3.3/src/glad.c)
+add_library(stb_image ./external/stb_image/stb_image.h
+                      ./external/stb_image/stb_image.cpp)
+add_subdirectory(./external/glm-0.9.9.8/glm/)
+add_subdirectory(./external/glfw-3.3.2)
 add_subdirectory(./external/mingw-std-threads-master)
-target_link_libraries(fcpp_master PRIVATE mingw_stdthreads)
+
+# include directories
+target_include_directories(glad PRIVATE ./external/glad-core-3.3/include/)
+target_include_directories(stb_image PRIVATE ./external/stb_image/)
+target_include_directories(fcpp_master PRIVATE ./
+											   ./external/
+											   ./external/mingw-std-threads-master
+											   ./external/glad-core-3.3/include/
+											   ./external/glm-0.9.9.8/glm
+											   ./external/glfw-3.3.2/include/)
+
+# MinGW threads options
+option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
+
+# link libraries to main target fcpp_master
+target_link_libraries(fcpp_master PRIVATE mingw_stdthreads
+										  glad
+										  glm
+										  glfw
+                                          stb_image)
 
 # defining install rules
 include(GNUInstallDirs)

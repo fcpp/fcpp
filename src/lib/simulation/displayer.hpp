@@ -1,4 +1,5 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// OpenGL implementation by Luigi Rapetta.
 
 /**
  * @file displayer.hpp
@@ -13,9 +14,20 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <iostream>
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <stb_image/stb_image.h>
 
 #include "lib/component/base.hpp"
 #include "lib/data/vec.hpp"
+#include "lib/simulation/camera.h"
+#include "lib/simulation/shader.h"
+
 
 
 /**
@@ -218,6 +230,7 @@ struct displayer {
                          *
                          * Update the openGL representation somehow below.
                          */
+
                         common::details::ignore(p,np); // remove this line
                     }
                     m_refresh += P::node::net.refresh_step();
@@ -302,11 +315,241 @@ struct displayer {
 
         //! @brief The global part of the component.
         class net : public P::net {
-          public: // visible by node objects and the main program
-            //! @brief Constructor from a tagged tuple.
+        public: // visible by node objects and the main program
+          //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_refresh(0) {
+            net(const common::tagged_tuple<S, T>& t)
+              : P::net{ t },
+                m_refresh{ 0 },
+                LIGHT_DEFAULT_POS{ glm::vec3{0.0f, 0.0f, 0.0f} },
+#ifdef _WIN32
+                VERTEX_PATH{ ".\\shaders\\vertex.glsl" },
+                FRAGMENT_PATH{ ".\\shaders\\fragment.glsl" },
+                VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" },
+                FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" },
+#else
+                VERTEX_PATH{ "./shaders/vertex.glsl" },
+                FRAGMENT_PATH{ "./shaders/fragment.glsl" },
+                VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" },
+                FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" },
+#endif
+                SCR_DEFAULT_WIDTH{ 800 },
+                SCR_DEFAULT_HEIGHT{ 600 },
+                SCR_DEFAULT_ORTHO{ 64 },
+                m_currentWidth{ SCR_DEFAULT_WIDTH },
+                m_currentHeight{ SCR_DEFAULT_HEIGHT },
+                m_orthoSize{ SCR_DEFAULT_ORTHO },
+                m_camera{ glm::vec3{ 0.0f, 0.0f, 3.0f } },
+                m_mouseLastX{ (float)(SCR_DEFAULT_WIDTH / 2) },
+                m_mouseLastY{ (float)(SCR_DEFAULT_HEIGHT / 2) },
+                m_mouseFirst{ 1 },
+                m_deltaTime{ 0.0f },
+                m_lastFrame{ 0.0f },
+                VERTEX_CUBE{
+                    // positions           // normals         
+                    -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+                     0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+                     0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+                     0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+                    -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+                    -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
+
+                    -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+                     0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+                     0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+                     0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+                    -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+                    -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
+
+                    -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+                    -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+                    -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+                    -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
+                    -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+                    -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
+
+                     0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+                     0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+                     0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+                     0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
+                     0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+                     0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
+
+                    -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+                     0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+                     0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+                     0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+                    -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
+                    -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
+
+                    -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+                     0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
+                     0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+                     0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+                    -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
+                    -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f
+                },
+                VERTEX_ORTHO{
+                    // positions              // colors
+                    -0.01f,  0.01f,  0.01f,   0.0f, 0.5f, 0.0f,
+                     0.01f,  0.01f,  0.01f,   0.0f, 0.5f, 0.0f,
+                     0.01f,  0.01f, -0.01f,   0.0f, 0.5f, 0.0f,
+                    -0.01f,  0.01f, -0.01f,   0.0f, 0.5f, 0.0f,
+                    -0.01f,  0.60f,  0.01f,   0.0f, 1.0f, 0.0f,
+                     0.01f,  0.60f,  0.01f,   0.0f, 1.0f, 0.0f,
+                     0.01f,  0.60f, -0.01f,   0.0f, 1.0f, 0.0f,
+                    -0.01f,  0.60f, -0.01f,   0.0f, 1.0f, 0.0f,
+
+                     0.01f,  0.01f,  0.01f,   0.5f, 0.0f, 0.0f,
+                     0.01f,  0.01f, -0.01f,   0.5f, 0.0f, 0.0f,
+                     0.01f, -0.01f, -0.01f,   0.5f, 0.0f, 0.0f,
+                     0.01f, -0.01f,  0.01f,   0.5f, 0.0f, 0.0f,
+                     0.60f,  0.01f,  0.01f,   1.0f, 0.0f, 0.0f,
+                     0.60f,  0.01f, -0.01f,   1.0f, 0.0f, 0.0f,
+                     0.60f, -0.01f, -0.01f,   1.0f, 0.0f, 0.0f,
+                     0.60f, -0.01f,  0.01f,   1.0f, 0.0f, 0.0f,
+
+                    -0.01f,  0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
+                     0.01f,  0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
+                     0.01f, -0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
+                    -0.01f, -0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
+                    -0.01f,  0.01f,  0.60f,   0.0f, 0.0f, 1.0f,
+                     0.01f,  0.01f,  0.60f,   0.0f, 0.0f, 1.0f,
+                     0.01f, -0.01f,  0.60f,   0.0f, 0.0f, 1.0f,
+                    -0.01f, -0.01f,  0.60f,   0.0f, 0.0f, 1.0f
+                },
+                INDEX_ORTHO{
+                    0, 1, 2,
+                    2, 3, 0,
+                    4, 5, 6,
+                    6, 7, 4,
+                    0, 1, 4,
+                    4, 7, 0,
+                    1, 2, 5,
+                    5, 4, 1,
+                    2, 3, 6,
+                    6, 5, 2,
+                    3, 0, 7,
+                    7, 6, 3,
+
+                    8, 9, 10,
+                    10, 11, 8,
+                    12, 13, 14,
+                    14, 15, 12,
+                    8, 12, 15,
+                    15, 11, 8,
+                    8, 12, 13,
+                    13, 8, 9,
+                    9, 13, 10,
+                    10, 13, 14,
+                    14, 15, 10,
+                    10, 11, 15,
+
+                    16, 17, 18,
+                    18, 19, 16,
+                    20, 21, 22,
+                    22, 23, 20,
+                    20, 16, 17,
+                    17, 20, 21,
+                    21, 17, 18,
+                    18, 21, 22,
+                    22, 18, 19,
+                    19, 22, 23,
+                    23, 19, 16,
+                    16, 23, 20
+                } {
+                // Set simulation refresh rate
                 m_step = common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) * common::get_or<tags::realtime_factor>(t, FCPP_REALTIME);
+
+                // Initialize GLFW
+                glfwInit();
+
+                // Set context options
+                glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+                glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+                glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+                glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+                // Create window (and its context)
+                m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, "LearnOpenGL", NULL, NULL);
+
+                if (m_window == NULL) {
+                    std::cerr << "Failed to create GLFW window.\n";
+                    glfwTerminate();
+                }
+
+                // Set newly created window's context as current
+                glfwMakeContextCurrent(m_window);
+
+                // Initialize GLAD
+                if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+                    std::cerr << "Failed to initialize GLAD.\n";
+
+                // Associates this (the net instance) to m_window
+                glfwSetWindowUserPointer(m_window, this);
+
+                // Set viewport and its callbacks
+                glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
+                glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
+                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from m_window
+                    n.framebufferSizeCallback(window, width, height);
+                });
+
+                // Enable cursor capture and callbacks
+                glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos) {
+                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from m_window
+                    n.mouseCallback(window, xpos, ypos);
+                });
+                glfwSetScrollCallback(m_window, [](GLFWwindow* window, double xoffset, double yoffset) {
+                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from m_window
+                    n.scrollCallback(window, xoffset, yoffset);
+                });
+
+                // --- !!! --- Delete blank shader objects (generated by the initializer list)
+                //delete m_shaderProgram;
+                //delete m_shaderProgram;
+
+                // Generate actual shader programs
+                m_shaderProgram = Shader{ VERTEX_PATH.c_str(), FRAGMENT_PATH.c_str() };
+                m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
+
+                // Generate VAOs, VBOs and EBOs
+                glGenVertexArrays(2, VAO);
+                glGenBuffers(2, VBO);
+                glGenBuffers(1, EBO);
+
+                // Store ortho data
+                glBindVertexArray(VAO[0]);
+                glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(VERTEX_ORTHO), VERTEX_ORTHO, GL_STATIC_DRAW);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]); // VAO[0] stores EBO[0] here; do NOT unbind EBO[0] until VAO[0] is unbound
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(INDEX_ORTHO), INDEX_ORTHO, GL_STATIC_DRAW);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+                glEnableVertexAttribArray(1);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindVertexArray(0);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+                // Store cube data
+                glBindVertexArray(VAO[1]);
+                glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(VERTEX_CUBE), VERTEX_CUBE, GL_STATIC_DRAW);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+                glEnableVertexAttribArray(1);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindVertexArray(0);
+
+                // Enabling depth test and blending
+                glEnable(GL_DEPTH_TEST);
+
+                // Uncomment this call to draw in wireframe polygons
+                //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             }
 
             /**
@@ -328,6 +571,46 @@ struct displayer {
                      * (drawing the scene, interpreting the user input).
                      * You may want to display the current simulation time t.
                      */
+
+                    // Deltatime
+                    float currentFrame{ (float)glfwGetTime() };
+                    m_deltaTime = currentFrame - m_lastFrame;
+                    m_lastFrame = currentFrame;
+
+                    // Input
+                    processKeyboardInput(m_window);
+
+                    // Clear frame
+                    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                    // Create matrices (used several times)
+                    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, 0.1f, 100.0f) };
+                    glm::mat4 view{ m_camera.getViewMatrix() };
+                    glm::mat4 model{ 1.0f };
+                    glm::mat3 normal;
+
+                    // Draw ortho
+                    glClear(GL_DEPTH_BUFFER_BIT); // Clean depth buffer, in order to draw on top of 3D objects
+                    m_shaderProgramCol.use();
+                    glBindVertexArray(VAO[0]);
+                    projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -1.0f, (float)m_orthoSize);
+                    m_shaderProgramCol.setMat4("u_projection", projection);
+                    view = glm::mat4{ 1.0f };
+                    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -(float)m_orthoSize / 2.0f));
+                    m_shaderProgramCol.setMat4("u_view", view);
+                    model = glm::mat4{ 1.0f };
+                    model = glm::translate(model, glm::vec3((float)m_currentWidth - ((float)m_orthoSize * 3.0f / 4.0f), (float)m_orthoSize * 3.0f / 4.0f, 0.0f));
+                    model = glm::rotate(model, glm::radians(-m_camera.getPitch()), glm::vec3(1.0f, 0.0f, 0.0f));
+                    model = glm::rotate(model, glm::radians(m_camera.getYaw()), glm::vec3(0.0f, 1.0f, 0.0f));
+                    model = glm::scale(model, glm::vec3((float)m_orthoSize));
+                    m_shaderProgramCol.setMat4("u_model", model);
+                    glDrawElements(GL_TRIANGLES, sizeof(INDEX_ORTHO) / sizeof(int), GL_UNSIGNED_INT, 0);
+
+                    // Check and call events, swap double buffers
+                    glfwPollEvents();
+                    glfwSwapBuffers(m_window);
+
                     common::details::ignore(t); // remove this line
                     m_refresh += m_step;
                 } else P::net::update();
@@ -351,11 +634,135 @@ struct displayer {
                 return t;
             }
 
+            //! @brief Keyboard input updater function (not a callback).
+            void processKeyboardInput(GLFWwindow* window) {
+                if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+                    glfwSetWindowShouldClose(window, true);
+                if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+                    m_camera.processKeyboard(FORWARD, m_deltaTime);
+                if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+                    m_camera.processKeyboard(BACKWARD, m_deltaTime);
+                if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+                    m_camera.processKeyboard(LEFT, m_deltaTime);
+                if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+                    m_camera.processKeyboard(RIGHT, m_deltaTime);
+                if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+                    m_camera.processKeyboard(FLY_UP, m_deltaTime);
+                if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+                    m_camera.processKeyboard(FLY_DOWN, m_deltaTime);
+            }
+
+            //! @brief Mouse input callback function.
+            void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+                if (m_mouseFirst) {
+                    m_mouseLastX = (float)xpos;
+                    m_mouseLastY = (float)ypos;
+                    m_mouseFirst = false;
+                }
+
+                float xoffset{ (float)(xpos - m_mouseLastX) };
+                float yoffset{ (float)(m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
+                m_mouseLastX = (float)xpos;
+                m_mouseLastY = (float)ypos;
+
+                m_camera.processMouseMovement(xoffset, yoffset);
+            }
+
+            //! @brief Mouse scroll callback function.
+            void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+                m_camera.processMouseScroll((float)yoffset);
+            }
+
+            //! @brief Window resize callback function.
+            void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+                glViewport(0, 0, width, height);
+                m_currentWidth = width;
+                m_currentHeight = height;
+            }
+
             //! @brief The next refresh time.
             times_t m_refresh;
 
             //! @brief The step between refresh times.
             times_t m_step;
+
+            //! @brief Window object for GLFW; it stores OpenGL context information.
+            GLFWwindow* m_window;
+
+            //! @brief Main shader program.
+            Shader m_shaderProgram;
+
+            //! @brief Additional shader program for reading vertex buffers with color info; used for orthogonal axis.
+            Shader m_shaderProgramCol;
+
+            //! @brief Vertex Array Object(s).
+            unsigned int VAO[2];
+
+            //! @brief Vertex Buffer Object(s).
+            unsigned int VBO[2];
+
+            //! @brief Element Buffer Object(s).
+            unsigned int EBO[1];
+
+            //! @brief Default light position.
+            const glm::vec3 LIGHT_DEFAULT_POS;
+
+            //! @brief Default path to vertex shader.
+            const std::string VERTEX_PATH;
+
+            //! @brief Default path to fragment shader.
+            const std::string FRAGMENT_PATH;
+
+            //! @brief Default path to vertex_col shader.
+            const std::string VERTEX_COLOR_PATH;
+
+            //! @brief Default path to fragment_col shader.
+            const std::string FRAGMENT_COLOR_PATH;
+
+            //! @brief Default width of the window.
+            const unsigned int SCR_DEFAULT_WIDTH;
+
+            //! @brief Default height of the window.
+            const unsigned int SCR_DEFAULT_HEIGHT;
+
+            //! @brief Default size of orthogonal axis.
+            const unsigned int SCR_DEFAULT_ORTHO;
+            
+            //! @brief Current width of the window.
+            unsigned int m_currentWidth;
+            
+            //! @brief Current height of the window.
+            unsigned int m_currentHeight;
+            
+            //! @brief Current size of orthogonal axis.
+            unsigned int m_orthoSize;
+
+            //! @brief Camera object of the scene
+            Camera m_camera;
+
+            //! @brief Last mouse X position.
+            float m_mouseLastX;
+
+            //! @brief Last mouse Y position.
+            float m_mouseLastY; 
+
+            //!@brief It checks if it's the first mouse's input capture.
+            bool m_mouseFirst;
+
+            //!@brief Time between current frame and last frame.
+            float m_deltaTime;
+
+            //!@brief Ttime of last frame.
+            float m_lastFrame;
+
+            //! @brief Cube's vertex data.
+            const float VERTEX_CUBE[216];
+
+            //! @brief Orthogonal axis' vertex data.
+            const float VERTEX_ORTHO[144];
+
+            //! @brief Orthogonal axis' index data.
+            const unsigned int INDEX_ORTHO[108];
         };
     };
 };

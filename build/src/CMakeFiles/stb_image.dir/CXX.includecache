@@ -1,0 +1,44 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/luigi/Documents/Git Repos/fcpp/fcpp/src/external/stb_image/stb_image.cpp
+stb_image.h
+C:/Users/luigi/Documents/Git Repos/fcpp/fcpp/src/external/stb_image/stb_image.h
+
+C:/Users/luigi/Documents/Git Repos/fcpp/fcpp/src/external/stb_image/stb_image.h
+stb_image.h
+C:/Users/luigi/Documents/Git Repos/fcpp/fcpp/src/external/stb_image/stb_image.h
+stdio.h
+-
+stdlib.h
+-
+stdarg.h
+-
+stddef.h
+-
+stdlib.h
+-
+string.h
+-
+limits.h
+-
+math.h
+-
+stdio.h
+-
+assert.h
+-
+stdint.h
+-
+emmintrin.h
+-
+intrin.h
+-
+arm_neon.h
+-
+

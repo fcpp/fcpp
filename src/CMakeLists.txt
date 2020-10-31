@@ -53,6 +53,8 @@ add_library(fcpp_master SHARED
 	lib/deployment/hardware_identifier.cpp
 	lib/deployment/hardware_logger.cpp
 	lib/deployment/os.cpp
+	lib/graphics/camera.cpp
+	lib/graphics/shader.cpp
 	lib/internal/context.cpp
 	lib/internal/flat_ptr.cpp
 	lib/internal/trace.cpp
@@ -63,9 +65,7 @@ add_library(fcpp_master SHARED
 	lib/option/metric.cpp
 	lib/option/sequence.cpp
 	lib/simulation/batch.cpp
-	lib/simulation/camera.cpp
 	lib/simulation/displayer.cpp
-	lib/simulation/shader.cpp
 	lib/simulation/simulated_connector.cpp
 	lib/simulation/simulated_positioner.cpp
 	lib/simulation/spawner.cpp

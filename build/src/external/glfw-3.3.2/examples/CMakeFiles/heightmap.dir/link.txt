@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\heightmap.dir/objects.a
+C:\mingw-w64\mingw64\bin\ar.exe cr CMakeFiles\heightmap.dir/objects.a @CMakeFiles\heightmap.dir\objects1.rsp
+C:\mingw-w64\mingw64\bin\gcc.exe -mwindows -Wl,--whole-archive CMakeFiles\heightmap.dir/objects.a -Wl,--no-whole-archive -o heightmap.exe -Wl,--out-implib,libheightmap.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\heightmap.dir\linklibs.rsp

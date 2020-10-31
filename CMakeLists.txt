@@ -40,7 +40,7 @@ target_link_libraries(fcppGL PRIVATE mingw_stdthreads
 #copying shaders into build
 add_custom_command(TARGET fcppGL PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${CMAKE_SOURCE_DIR}/src/lib/simulation/shaders/ $<TARGET_FILE_DIR:fcppGL>/shaders/)
+                       ${CMAKE_SOURCE_DIR}/src/lib/graphics/shaders/ $<TARGET_FILE_DIR:fcppGL>/shaders/)
 
 # defining install rules
 include(GNUInstallDirs)

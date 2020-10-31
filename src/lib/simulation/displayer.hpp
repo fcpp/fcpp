@@ -1,5 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
-// OpenGL implementation by Luigi Rapetta.
+// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file displayer.hpp
@@ -15,6 +14,7 @@
 #include <utility>
 #include <vector>
 #include <iostream>
+#include <stdexcept>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -25,8 +25,8 @@
 
 #include "lib/component/base.hpp"
 #include "lib/data/vec.hpp"
-#include "lib/simulation/camera.h"
-#include "lib/simulation/shader.h"
+#include "lib/graphics/camera.h"
+#include "lib/graphics/shader.h"
 
 
 
@@ -41,11 +41,11 @@ enum class shape { cube, sphere };
 
 
 //! @brief Colors for representing nodes.
-using color = uint32_t;
+using color = glm::vec3;
 
 //! @brief Builds a color from its RGB representation.
 color rgb(int r, int g, int b) {
-    return (r << 16) + (g << 8) + b;
+    return { r, g, b };
 }
 
 //! @brief Builds a color from its HSV representation.
@@ -204,8 +204,8 @@ struct displayer {
             void update() {
                 if (m_refresh < P::node::next()) {
                     PROFILE_COUNT("displayer");
-                    vec<3> p = get_cached_position(m_refresh);
-                    std::vector<vec<3>> np;
+                    glm::vec3 p = get_cached_position(m_refresh);
+                    std::vector<glm::vec3> np;
                     // update shape and size
                     shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
                     double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
@@ -213,7 +213,7 @@ struct displayer {
                     std::vector<color> c;
                     color_val_push(c, color_val{});
                     color_tag_push(c, color_tag{});
-                    if (c.empty()) c.push_back(0); // black if nothing else
+                    if (c.empty()) c.push_back(rgb(0, 0, 0)); // black if nothing else
                     {
                         common::unlock_guard<parallel> ul(P::node::mutex);
                         for (device_t d : m_prev_nbr_uids) {
@@ -230,6 +230,7 @@ struct displayer {
                          *
                          * Update the openGL representation somehow below.
                          */
+                        P::node::net.m_shaderProgram.use();
 
                         common::details::ignore(p,np); // remove this line
                     }
@@ -259,17 +260,17 @@ struct displayer {
 
           private: // implementation details
             //! @brief Conversion to 3D vector (trivial case).
-            vec<3> to_vec3(vec<3> p) const {
-                return p;
+            glm::vec3 to_vec3(vec<3> p) const {
+                return { p[0], p[1], p[2] };
             }
 
             //! @brief Conversion to 3D vector (non-trivial case).
-            vec<3> to_vec3(vec<2> p) const {
-                return {p[0], p[1], 0};
+            glm::vec3 to_vec3(vec<2> p) const {
+                return { p[0], p[1], 0 };
             }
 
             //! @brief Gets the current position using caching.
-            vec<3> get_cached_position(times_t t) {
+            glm::vec3 get_cached_position(times_t t) {
                 if (t > m_pos_time) {
                     m_position = to_vec3(P::node::position(t));
                     m_pos_time = t;
@@ -298,7 +299,7 @@ struct displayer {
             }
 
             //! @brief The current position of the device.
-            vec<3> m_position;
+            glm::vec3 m_position;
 
             //! @brief The uids of incoming messages.
             std::vector<device_t> m_nbr_uids;
@@ -318,8 +319,8 @@ struct displayer {
         public: // visible by node objects and the main program
           //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S, T>& t)
-              : P::net{ t },
+            net(const common::tagged_tuple<S, T>& t) :
+                P::net{ t },
                 m_refresh{ 0 },
                 LIGHT_DEFAULT_POS{ glm::vec3{0.0f, 0.0f, 0.0f} },
 #ifdef _WIN32
@@ -472,11 +473,11 @@ struct displayer {
                 glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
                 // Create window (and its context)
-                m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, "LearnOpenGL", NULL, NULL);
+                m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, "fcppGL", NULL, NULL);
 
                 if (m_window == NULL) {
-                    std::cerr << "Failed to create GLFW window.\n";
                     glfwTerminate();
+                    throw std::runtime_error("Failed to create GLFW window.\n");
                 }
 
                 // Set newly created window's context as current
@@ -484,7 +485,7 @@ struct displayer {
 
                 // Initialize GLAD
                 if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-                    std::cerr << "Failed to initialize GLAD.\n";
+                    throw std::runtime_error("Failed to initialize GLAD.\n");
 
                 // Associates this (the net instance) to m_window
                 glfwSetWindowUserPointer(m_window, this);
@@ -492,24 +493,20 @@ struct displayer {
                 // Set viewport and its callbacks
                 glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
                 glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
-                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from m_window
+                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     n.framebufferSizeCallback(window, width, height);
                 });
 
                 // Enable cursor capture and callbacks
                 glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos) {
-                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from m_window
+                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     n.mouseCallback(window, xpos, ypos);
                 });
                 glfwSetScrollCallback(m_window, [](GLFWwindow* window, double xoffset, double yoffset) {
-                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from m_window
+                    net& n = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     n.scrollCallback(window, xoffset, yoffset);
                 });
-
-                // --- !!! --- Delete blank shader objects (generated by the initializer list)
-                //delete m_shaderProgram;
-                //delete m_shaderProgram;
 
                 // Generate actual shader programs
                 m_shaderProgram = Shader{ VERTEX_PATH.c_str(), FRAGMENT_PATH.c_str() };
@@ -636,8 +633,8 @@ struct displayer {
 
             //! @brief Keyboard input updater function (not a callback).
             void processKeyboardInput(GLFWwindow* window) {
-                if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-                    glfwSetWindowShouldClose(window, true);
+                //if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+                //    glfwSetWindowShouldClose(window, true);
                 if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
                     m_camera.processKeyboard(FORWARD, m_deltaTime);
                 if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

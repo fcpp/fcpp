@@ -40,24 +40,102 @@ namespace fcpp {
 enum class shape { cube, sphere };
 
 
-//! @brief Colors for representing nodes.
-using color = glm::vec3;
+//! @brief Color type as a packed integer, for usage in template parameters.
+using packed_color = uint32_t;
 
-//! @brief Builds a color from its RGB representation.
-color rgb(int r, int g, int b) {
-    return { r, g, b };
+
+//! @brief Colors for representing nodes.
+struct color {
+    //! @brief Default color (black).
+    color() : rgba{0,0,0,1} {}
+
+    //! @brief Color constructor from float RGBA values.
+    color(float r, float g, float b, float a = 1) : rgba{r,g,b,a} {}
+
+    //! @brief Color constructor from integral RGBA values.
+    color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : rgba{r*1.0/255,g*1.0/255,b*1.0/255,a*1.0/255} {}
+
+    //! @brief Color constructor from a packed integral RGBA value.
+    color(packed_color irgba) : color((irgba>>24)&255, (irgba>>16)&255, (irgba>>8)&255, irgba&255) {}
+
+    //! @brief Access to the red component.
+    float& red() {
+        return rgba[0];
+    }
+
+    //! @brief Const access to the red component.
+    float const& red() const {
+        return rgba[0];
+    }
+
+    //! @brief Access to the green component.
+    float& green() {
+        return rgba[1];
+    }
+
+    //! @brief Const access to the green component.
+    float const& green() const {
+        return rgba[1];
+    }
+
+    //! @brief Access to the blue component.
+    float& blue() {
+        return rgba[2];
+    }
+
+    //! @brief Const access to the blue component.
+    float const& blue() const {
+        return rgba[2];
+    }
+
+    //! @brief Access to the alpha component.
+    float& alpha() {
+        return rgba[3];
+    }
+
+    //! @brief Const access to the alpha component.
+    float const& alpha() const {
+        return rgba[3];
+    }
+
+    //! @brief Builds a color from its HSVA representation (h maxes to 360, the rest is normalised).
+    static color hsva(double h, double s, double v, double a = 1) {
+        h -= 360 * floor(h/360);
+        double c = s*v;
+        double x = c*(1-abs(fmod(h/60.0, 2)-1));
+        double m = v-c;
+        double r,g,b;
+        if (h >= 0 and h < 60)
+            r = c, g = x, b = 0;
+        else if (h >= 60 and h < 120)
+            r = x, g = c, b = 0;
+        else if(h >= 120 and h < 180)
+            r = 0, g = c, b = x;
+        else if(h >= 180 and h < 240)
+            r = 0, g = x, b = c;
+        else if(h >= 240 and h < 300)
+            r = x, g = 0, b = c;
+        else
+            r = c, g = 0, b = x;
+        return rgb((r+m)*255, (g+m)*255, (b+m)*255);
+    }
+
+    //! @brief The float RGBA components of the color.
+    float[3] rgba;
 }
 
-//! @brief Builds a color from its HSV representation.
-color hsv(double h, double s, double v) {
-    assert(0 <= s and s <= 100 and 0 <= v and v <= 100);
-    h -= 360 * floor(h/360);
-    s /= 100;
-    v /= 100;
-    double c = s*v;
-    double x = c*(1-abs(fmod(h/60.0, 2)-1));
-    double m = v-c;
-    double r,g,b;
+//! @brief Builds a packed color from its RGB representation.
+constexpr packed_color packed_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
+    return ((uint32_t)r << 24) + ((uint32_t)g << 16) + ((uint32_t)b << 8) + a;
+}
+
+//! @brief Builds a packed color from its HSVA representation (h maxes to 360, the rest to 100).
+constexpr packed_color packed_hsva(int h, int s, int v, int a = 100) {
+    h %= 360;
+    int c = s*v;
+    int x = c*(60 - abs(h%120 - 60))/60;
+    int m = v*100-c;
+    int r,g,b;
     if (h >= 0 and h < 60)
         r = c, g = x, b = 0;
     else if (h >= 60 and h < 120)
@@ -70,7 +148,7 @@ color hsv(double h, double s, double v) {
         r = x, g = 0, b = c;
     else
         r = c, g = 0, b = x;
-    return rgb((r+m)*255, (g+m)*255, (b+m)*255);
+    return packed_rgba((r+m)*255/10000, (g+m)*255/10000, (b+m)*255/10000);
 }
 
 
@@ -148,7 +226,7 @@ struct displayer {
     using shape_tag = common::option_type<tags::shape_tag, void, Ts...>;
 
     //! @brief Base shape of nodes (defaults to sphere).
-    static constexpr shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<size_t>(shape::sphere), Ts...>);
+    constexpr static shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<size_t>(shape::sphere), Ts...>);
 
     //! @brief Storage tag regulating the size of nodes.
     using size_tag = common::option_type<tags::size_tag, void, Ts...>;
@@ -724,13 +802,13 @@ struct displayer {
 
             //! @brief Default size of orthogonal axis.
             const unsigned int SCR_DEFAULT_ORTHO;
-            
+
             //! @brief Current width of the window.
             unsigned int m_currentWidth;
-            
+
             //! @brief Current height of the window.
             unsigned int m_currentHeight;
-            
+
             //! @brief Current size of orthogonal axis.
             unsigned int m_orthoSize;
 

@@ -45,9 +45,9 @@ FUN() void diameter_estimation(ARGS) { CODE
     node.storage(tags::my_distance{}) = dist;
     node.storage(tags::source_diameter{}) = sdiam;
     node.storage(tags::diameter{}) = diam;
-    node.storage(tags::distance_c{}) = hsv(dist, 100, 100);
-    node.storage(tags::source_diameter_c{}) = hsv(sdiam, 100, 100);
-    node.storage(tags::diameter_c{}) = hsv(diam, 100, 100);
+    node.storage(tags::distance_c{}) = color::hsva(dist, 1, 1);
+    node.storage(tags::source_diameter_c{}) = color::hsva(sdiam, 1, 1);
+    node.storage(tags::diameter_c{}) = color::hsva(diam, 1, 1);
 }
 
 }

@@ -53,7 +53,7 @@ struct color {
     color(float r, float g, float b, float a = 1) : rgba{r,g,b,a} {}
 
     //! @brief Color constructor from integral RGBA values.
-    color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : rgba{r*1.0/255,g*1.0/255,b*1.0/255,a*1.0/255} {}
+    color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : rgba{(float)r/255,(float)g/255,(float)b/255,(float)a/255} {}
 
     //! @brief Color constructor from a packed integral RGBA value.
     color(packed_color irgba) : color((irgba>>24)&255, (irgba>>16)&255, (irgba>>8)&255, irgba&255) {}
@@ -117,11 +117,11 @@ struct color {
             r = x, g = 0, b = c;
         else
             r = c, g = 0, b = x;
-        return rgb((r+m)*255, (g+m)*255, (b+m)*255);
+        return color((r+m)*255, (g+m)*255, (b+m)*255);
     }
 
     //! @brief The float RGBA components of the color.
-    float[3] rgba;
+    float rgba[4];
 }
 
 //! @brief Builds a packed color from its RGB representation.

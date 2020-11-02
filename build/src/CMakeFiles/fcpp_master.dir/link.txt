@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\fcpp_master.dir/objects.a
-C:\mingw-w64\mingw64\bin\ar.exe cr CMakeFiles\fcpp_master.dir/objects.a @CMakeFiles\fcpp_master.dir\objects1.rsp
-C:\mingw-w64\mingw64\bin\g++.exe -shared -o libfcpp_master.dll -Wl,--out-implib,libfcpp_master.dll.a -Wl,--major-image-version,0,--minor-image-version,0 -Wl,--whole-archive CMakeFiles\fcpp_master.dir/objects.a -Wl,--no-whole-archive @CMakeFiles\fcpp_master.dir\linklibs.rsp

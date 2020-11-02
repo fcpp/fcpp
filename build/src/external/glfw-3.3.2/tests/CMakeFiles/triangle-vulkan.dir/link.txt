@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\triangle-vulkan.dir/objects.a
-C:\mingw-w64\mingw64\bin\ar.exe cr CMakeFiles\triangle-vulkan.dir/objects.a @CMakeFiles\triangle-vulkan.dir\objects1.rsp
-C:\mingw-w64\mingw64\bin\gcc.exe -mwindows -Wl,--whole-archive CMakeFiles\triangle-vulkan.dir/objects.a -Wl,--no-whole-archive -o triangle-vulkan.exe -Wl,--out-implib,libtriangle-vulkan.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\triangle-vulkan.dir\linklibs.rsp

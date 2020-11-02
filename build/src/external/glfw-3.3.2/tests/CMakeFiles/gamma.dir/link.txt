@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\gamma.dir/objects.a
-C:\mingw-w64\mingw64\bin\ar.exe cr CMakeFiles\gamma.dir/objects.a @CMakeFiles\gamma.dir\objects1.rsp
-C:\mingw-w64\mingw64\bin\gcc.exe -mwindows -Wl,--whole-archive CMakeFiles\gamma.dir/objects.a -Wl,--no-whole-archive -o gamma.exe -Wl,--out-implib,libgamma.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\gamma.dir\linklibs.rsp

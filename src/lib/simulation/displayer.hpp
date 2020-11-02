@@ -47,16 +47,20 @@ using packed_color = uint32_t;
 //! @brief Colors for representing nodes.
 struct color {
     //! @brief Default color (black).
-    color() : rgba{0,0,0,1} {}
+    color() : rgba{ 0,0,0,1 } {}
 
-    //! @brief Color constructor from float RGBA values.
-    color(float r, float g, float b, float a = 1) : rgba{r,g,b,a} {}
-
-    //! @brief Color constructor from integral RGBA values.
-    color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : rgba{(float)r/255,(float)g/255,(float)b/255,(float)a/255} {}
+    //! @brief Color constructor from RGBA values.
+    template <typename T, typename = std::enable_if_t<std::is_arithmetic<T>::value>>
+    color(T r, T g, T b, T a = 1) {
+        float mx = std::is_integral<T>::value ? 255 : 1;
+        rgba[0] = r / mx;
+        rgba[1] = g / mx;
+        rgba[2] = b / mx;
+        rgba[3] = a / mx;
+    }
 
     //! @brief Color constructor from a packed integral RGBA value.
-    color(packed_color irgba) : color((irgba>>24)&255, (irgba>>16)&255, (irgba>>8)&255, irgba&255) {}
+    color(packed_color irgba) : color((irgba >> 24) & 255, (irgba >> 16) & 255, (irgba >> 8) & 255, irgba & 255) {}
 
     //! @brief Access to the red component.
     float& red() {
@@ -100,29 +104,29 @@ struct color {
 
     //! @brief Builds a color from its HSVA representation (h maxes to 360, the rest is normalised).
     static color hsva(double h, double s, double v, double a = 1) {
-        h -= 360 * floor(h/360);
-        double c = s*v;
-        double x = c*(1-abs(fmod(h/60.0, 2)-1));
-        double m = v-c;
-        double r,g,b;
+        h -= 360 * floor(h / 360);
+        double c = s * v;
+        double x = c * (1 - abs(fmod(h / 60.0, 2) - 1));
+        double m = v - c;
+        double r, g, b;
         if (h >= 0 and h < 60)
             r = c, g = x, b = 0;
         else if (h >= 60 and h < 120)
             r = x, g = c, b = 0;
-        else if(h >= 120 and h < 180)
+        else if (h >= 120 and h < 180)
             r = 0, g = c, b = x;
-        else if(h >= 180 and h < 240)
+        else if (h >= 180 and h < 240)
             r = 0, g = x, b = c;
-        else if(h >= 240 and h < 300)
+        else if (h >= 240 and h < 300)
             r = x, g = 0, b = c;
         else
             r = c, g = 0, b = x;
-        return color((r+m)*255, (g+m)*255, (b+m)*255);
+        return { r + m, g + m, b + m, a };
     }
 
     //! @brief The float RGBA components of the color.
     float rgba[4];
-}
+};
 
 //! @brief Builds a packed color from its RGB representation.
 constexpr packed_color packed_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
@@ -135,7 +139,7 @@ constexpr packed_color packed_hsva(int h, int s, int v, int a = 100) {
     int c = s*v;
     int x = c*(60 - abs(h%120 - 60))/60;
     int m = v*100-c;
-    int r,g,b;
+    int r{ 0 }, g{ 0 }, b{ 0 };
     if (h >= 0 and h < 60)
         r = c, g = x, b = 0;
     else if (h >= 60 and h < 120)
@@ -291,7 +295,7 @@ struct displayer {
                     std::vector<color> c;
                     color_val_push(c, color_val{});
                     color_tag_push(c, color_tag{});
-                    if (c.empty()) c.push_back(rgb(0, 0, 0)); // black if nothing else
+                    if (c.empty()) c.push_back(0); // black if nothing else
                     {
                         common::unlock_guard<parallel> ul(P::node::mutex);
                         for (device_t d : m_prev_nbr_uids) {
@@ -308,9 +312,30 @@ struct displayer {
                          *
                          * Update the openGL representation somehow below.
                          */
-                        P::node::net.m_shaderProgram.use();
 
-                        common::details::ignore(p,np); // remove this line
+                        // Create matrices (used several times)
+                        glm::mat4 projection{ glm::perspective(glm::radians(P::node::net.m_camera.getFov()), (float)P::node::net.m_currentWidth / (float)P::node::net.m_currentHeight, 0.1f, 100.0f) };
+                        glm::mat4 view{ P::node::net.m_camera.getViewMatrix() };
+                        glm::mat4 model{ 1.0f };
+                        glm::mat3 normal;
+
+                        P::node::net.m_shaderProgram.use();
+                        glBindVertexArray(P::node::net.VAO[1]);
+                        P::node::net.m_shaderProgram.setVec3("u_lightPos", P::node::net.LIGHT_DEFAULT_POS);
+                        P::node::net.m_shaderProgram.setFloat("u_ambientStrength", 0.1f);
+                        P::node::net.m_shaderProgram.setFloat("u_specularStrength", 0.2f);
+                        P::node::net.m_shaderProgram.setInt("u_specularShininess", 32);
+                        P::node::net.m_shaderProgram.setVec3("u_objectColor", glm::vec3{ c[0].red(), c[0].green(), c[0].blue() }); // vec3 temporary; need to rework shaders
+                        P::node::net.m_shaderProgram.setVec3("u_lightColor", glm::vec3{ 1.0f, 1.0f, 1.0f });
+                        P::node::net.m_shaderProgram.setMat4("u_projection", projection);
+                        P::node::net.m_shaderProgram.setMat4("u_view", view);
+                        model = glm::mat4{ 1.0f };
+                        model = glm::translate(model, p);
+                        //model = glm::rotate(model, ..., ...);
+                        P::node::net.m_shaderProgram.setMat4("u_model", model);
+                        normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
+                        P::node::net.m_shaderProgram.setMat3("u_normal", normal);
+                        glDrawArrays(GL_TRIANGLES, 0, 36 /*sizeof(P::node::net.VBO[1]) / (sizeof(float) * 6)*/);
                     }
                     m_refresh += P::node::net.refresh_step();
                 } else P::node::update();
@@ -394,6 +419,9 @@ struct displayer {
 
         //! @brief The global part of the component.
         class net : public P::net {
+            // node is a friend of net (TEMPORARY: refactoring needed)
+            friend class node;
+
         public: // visible by node objects and the main program
           //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
@@ -625,6 +653,10 @@ struct displayer {
 
                 // Uncomment this call to draw in wireframe polygons
                 //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+                // Clear first frame
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             }
 
             /**
@@ -646,18 +678,6 @@ struct displayer {
                      * (drawing the scene, interpreting the user input).
                      * You may want to display the current simulation time t.
                      */
-
-                    // Deltatime
-                    float currentFrame{ (float)glfwGetTime() };
-                    m_deltaTime = currentFrame - m_lastFrame;
-                    m_lastFrame = currentFrame;
-
-                    // Input
-                    processKeyboardInput(m_window);
-
-                    // Clear frame
-                    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                     // Create matrices (used several times)
                     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, 0.1f, 100.0f) };
@@ -686,7 +706,19 @@ struct displayer {
                     glfwPollEvents();
                     glfwSwapBuffers(m_window);
 
-                    common::details::ignore(t); // remove this line
+                    // Deltatime
+                    float currentFrame{ (float)glfwGetTime() };
+                    m_deltaTime = currentFrame - m_lastFrame;
+                    m_lastFrame = currentFrame;
+
+                    // Input
+                    processKeyboardInput(m_window);
+
+                    // Clear frame
+                    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                    // Update m_refresh
                     m_refresh += m_step;
                 } else P::net::update();
             }

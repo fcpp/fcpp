@@ -1,1 +1,0 @@
- src/libfcpp_master.dll.a src/external/glfw-3.3.2/src/libglfw3.a src/libstb_image.a -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

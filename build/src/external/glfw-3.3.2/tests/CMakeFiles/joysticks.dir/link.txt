@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\joysticks.dir/objects.a
-C:\mingw-w64\mingw64\bin\ar.exe cr CMakeFiles\joysticks.dir/objects.a @CMakeFiles\joysticks.dir\objects1.rsp
-C:\mingw-w64\mingw64\bin\gcc.exe -mwindows -Wl,--whole-archive CMakeFiles\joysticks.dir/objects.a -Wl,--no-whole-archive -o joysticks.exe -Wl,--out-implib,libjoysticks.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\joysticks.dir\linklibs.rsp

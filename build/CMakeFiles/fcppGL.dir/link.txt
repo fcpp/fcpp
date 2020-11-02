@@ -1,3 +1,0 @@
-"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\fcppGL.dir/objects.a
-C:\mingw-w64\mingw64\bin\ar.exe cr CMakeFiles\fcppGL.dir/objects.a @CMakeFiles\fcppGL.dir\objects1.rsp
-C:\mingw-w64\mingw64\bin\g++.exe -Wl,--whole-archive CMakeFiles\fcppGL.dir/objects.a -Wl,--no-whole-archive -o fcppGL.exe -Wl,--out-implib,libfcppGL.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\fcppGL.dir\linklibs.rsp

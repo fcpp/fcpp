@@ -153,7 +153,7 @@ class network {
     std::vector<char> m_send;
 
     //! @brief Number of attempts failed for a send.
-    int m_attempt;
+    int m_attempt = 0;
 
     //! @brief Thread managing send and receive of messages.
     std::thread m_manager;

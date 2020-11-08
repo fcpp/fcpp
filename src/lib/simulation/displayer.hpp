@@ -27,6 +27,7 @@
 #include "lib/data/vec.hpp"
 #include "lib/graphics/camera.h"
 #include "lib/graphics/shader.h"
+#include "lib/graphics/shapes.h"
 
 
 
@@ -34,11 +35,6 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-
-
-//! @brief Supported shapes for representing nodes.
-enum class shape { cube, sphere };
-
 
 //! @brief Color type as a packed integer, for usage in template parameters.
 using packed_color = uint32_t;
@@ -451,120 +447,7 @@ struct displayer {
                 m_mouseLastY{ (float)(SCR_DEFAULT_HEIGHT / 2) },
                 m_mouseFirst{ 1 },
                 m_deltaTime{ 0.0f },
-                m_lastFrame{ 0.0f },
-                VERTEX_CUBE{
-                    // positions           // normals         
-                    -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-                     0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-                     0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-                     0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-                    -0.5f,  0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-                    -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
-
-                    -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-                     0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-                     0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-                     0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-                    -0.5f,  0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-                    -0.5f, -0.5f,  0.5f,   0.0f,  0.0f,  1.0f,
-
-                    -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
-                    -0.5f,  0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
-                    -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
-                    -0.5f, -0.5f, -0.5f,  -1.0f,  0.0f,  0.0f,
-                    -0.5f, -0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
-                    -0.5f,  0.5f,  0.5f,  -1.0f,  0.0f,  0.0f,
-
-                     0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
-                     0.5f,  0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
-                     0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
-                     0.5f, -0.5f, -0.5f,   1.0f,  0.0f,  0.0f,
-                     0.5f, -0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
-                     0.5f,  0.5f,  0.5f,   1.0f,  0.0f,  0.0f,
-
-                    -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
-                     0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
-                     0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
-                     0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
-                    -0.5f, -0.5f,  0.5f,   0.0f, -1.0f,  0.0f,
-                    -0.5f, -0.5f, -0.5f,   0.0f, -1.0f,  0.0f,
-
-                    -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
-                     0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f,
-                     0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
-                     0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
-                    -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
-                    -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f
-                },
-                VERTEX_ORTHO{
-                    // positions              // colors
-                    -0.01f,  0.01f,  0.01f,   0.0f, 0.5f, 0.0f,
-                     0.01f,  0.01f,  0.01f,   0.0f, 0.5f, 0.0f,
-                     0.01f,  0.01f, -0.01f,   0.0f, 0.5f, 0.0f,
-                    -0.01f,  0.01f, -0.01f,   0.0f, 0.5f, 0.0f,
-                    -0.01f,  0.60f,  0.01f,   0.0f, 1.0f, 0.0f,
-                     0.01f,  0.60f,  0.01f,   0.0f, 1.0f, 0.0f,
-                     0.01f,  0.60f, -0.01f,   0.0f, 1.0f, 0.0f,
-                    -0.01f,  0.60f, -0.01f,   0.0f, 1.0f, 0.0f,
-
-                     0.01f,  0.01f,  0.01f,   0.5f, 0.0f, 0.0f,
-                     0.01f,  0.01f, -0.01f,   0.5f, 0.0f, 0.0f,
-                     0.01f, -0.01f, -0.01f,   0.5f, 0.0f, 0.0f,
-                     0.01f, -0.01f,  0.01f,   0.5f, 0.0f, 0.0f,
-                     0.60f,  0.01f,  0.01f,   1.0f, 0.0f, 0.0f,
-                     0.60f,  0.01f, -0.01f,   1.0f, 0.0f, 0.0f,
-                     0.60f, -0.01f, -0.01f,   1.0f, 0.0f, 0.0f,
-                     0.60f, -0.01f,  0.01f,   1.0f, 0.0f, 0.0f,
-
-                    -0.01f,  0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
-                     0.01f,  0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
-                     0.01f, -0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
-                    -0.01f, -0.01f,  0.01f,   0.0f, 0.0f, 0.5f,
-                    -0.01f,  0.01f,  0.60f,   0.0f, 0.0f, 1.0f,
-                     0.01f,  0.01f,  0.60f,   0.0f, 0.0f, 1.0f,
-                     0.01f, -0.01f,  0.60f,   0.0f, 0.0f, 1.0f,
-                    -0.01f, -0.01f,  0.60f,   0.0f, 0.0f, 1.0f
-                },
-                INDEX_ORTHO{
-                    0, 1, 2,
-                    2, 3, 0,
-                    4, 5, 6,
-                    6, 7, 4,
-                    0, 1, 4,
-                    4, 7, 0,
-                    1, 2, 5,
-                    5, 4, 1,
-                    2, 3, 6,
-                    6, 5, 2,
-                    3, 0, 7,
-                    7, 6, 3,
-
-                    8, 9, 10,
-                    10, 11, 8,
-                    12, 13, 14,
-                    14, 15, 12,
-                    8, 12, 15,
-                    15, 11, 8,
-                    8, 12, 13,
-                    13, 8, 9,
-                    9, 13, 10,
-                    10, 13, 14,
-                    14, 15, 10,
-                    10, 11, 15,
-
-                    16, 17, 18,
-                    18, 19, 16,
-                    20, 21, 22,
-                    22, 23, 20,
-                    20, 16, 17,
-                    17, 20, 21,
-                    21, 17, 18,
-                    18, 21, 22,
-                    22, 18, 19,
-                    19, 22, 23,
-                    23, 19, 16,
-                    16, 23, 20
-                } {
+                m_lastFrame{ 0.0f } {
                 // Set simulation refresh rate
                 m_step = common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) * common::get_or<tags::realtime_factor>(t, FCPP_REALTIME);
 
@@ -626,9 +509,9 @@ struct displayer {
                 // Store ortho data
                 glBindVertexArray(VAO[0]);
                 glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(VERTEX_ORTHO), VERTEX_ORTHO, GL_STATIC_DRAW);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(fcpp::internal::Shapes::VERTEX_ORTHO), fcpp::internal::Shapes::VERTEX_ORTHO, GL_STATIC_DRAW);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]); // VAO[0] stores EBO[0] here; do NOT unbind EBO[0] until VAO[0] is unbound
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(INDEX_ORTHO), INDEX_ORTHO, GL_STATIC_DRAW);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(fcpp::internal::Shapes::INDEX_ORTHO), fcpp::internal::Shapes::INDEX_ORTHO, GL_STATIC_DRAW);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
                 glEnableVertexAttribArray(0);
                 glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -640,7 +523,7 @@ struct displayer {
                 // Store cube data
                 glBindVertexArray(VAO[1]);
                 glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(VERTEX_CUBE), VERTEX_CUBE, GL_STATIC_DRAW);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(fcpp::internal::Shapes::VERTEX_CUBE), fcpp::internal::Shapes::VERTEX_CUBE, GL_STATIC_DRAW);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
                 glEnableVertexAttribArray(0);
                 glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -700,7 +583,7 @@ struct displayer {
                     model = glm::rotate(model, glm::radians(m_camera.getYaw()), glm::vec3(0.0f, 1.0f, 0.0f));
                     model = glm::scale(model, glm::vec3((float)m_orthoSize));
                     m_shaderProgramCol.setMat4("u_model", model);
-                    glDrawElements(GL_TRIANGLES, sizeof(INDEX_ORTHO) / sizeof(int), GL_UNSIGNED_INT, 0);
+                    glDrawElements(GL_TRIANGLES, sizeof(fcpp::internal::Shapes::INDEX_ORTHO) / sizeof(int), GL_UNSIGNED_INT, 0);
 
                     // Check and call events, swap double buffers
                     glfwPollEvents();
@@ -861,15 +744,6 @@ struct displayer {
 
             //!@brief Ttime of last frame.
             float m_lastFrame;
-
-            //! @brief Cube's vertex data.
-            const float VERTEX_CUBE[216];
-
-            //! @brief Orthogonal axis' vertex data.
-            const float VERTEX_ORTHO[144];
-
-            //! @brief Orthogonal axis' index data.
-            const unsigned int INDEX_ORTHO[108];
         };
     };
 };

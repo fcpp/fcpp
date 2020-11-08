@@ -1,4 +1,5 @@
 // Copyright © 2020 Luigi Rapetta. All Rights Reserved.
+// Thanks to www.learnopengl.com for the initial structure!
 
 #version 330 core
 layout (location = 0) in vec3 aPos;

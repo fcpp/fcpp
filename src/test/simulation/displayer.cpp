@@ -75,7 +75,7 @@ using namespace component::tags;
 using namespace coordination::tags;
 
 #define DEV_NUM 1000
-#define FREQ    1
+#define FREQ    10
 
 using round_s = sequence::periodic<
     distribution::interval_n<times_t, 0, FREQ>,

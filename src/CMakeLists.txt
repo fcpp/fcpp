@@ -54,7 +54,9 @@ add_library(fcpp_master SHARED
 	lib/deployment/hardware_logger.cpp
 	lib/deployment/os.cpp
 	lib/graphics/camera.cpp
+	lib/graphics/renderer.cpp
 	lib/graphics/shader.cpp
+	lib/graphics/shapes.cpp
 	lib/internal/context.cpp
 	lib/internal/flat_ptr.cpp
 	lib/internal/trace.cpp

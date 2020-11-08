@@ -1,5 +1,5 @@
 // Copyright © 2020 Luigi Rapetta. All Rights Reserved.
-// Thanks to learnopengl.com for structuring this.
+// Thanks to learnopengl.com for the original structure.
 
 #ifndef CAMERA_H
 #define CAMERA_H

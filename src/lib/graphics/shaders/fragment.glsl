@@ -11,7 +11,7 @@ in vec3 ViewLightPos;
 uniform float     u_ambientStrength;
 uniform float     u_specularStrength;
 uniform int       u_specularShininess;
-uniform vec3      u_objectColor;
+uniform vec4      u_objectColor;
 uniform vec3      u_lightColor;
 
 void main()
@@ -34,8 +34,8 @@ void main()
     vec3 specular = u_specularStrength * specVal * u_lightColor;
 
     // Phong (final)
-    vec3 phong = (ambient + diffuse + specular) * u_objectColor;
+    vec4 phong = vec4(ambient + diffuse + specular, 1.0) * u_objectColor;
 
     // Fragment color
-    FragColor = vec4(phong, 1.0);
+    FragColor = phong;
 }

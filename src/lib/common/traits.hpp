@@ -22,7 +22,6 @@
 
 #include <functional>
 #include <memory>
-#include <regex>
 #include <type_traits>
 #include <vector>
 
@@ -1065,7 +1064,14 @@ inline int escape(uint8_t x) {
     return x;
 }
 inline std::string escape(std::string x) {
-    return '"' + std::regex_replace(x, std::regex("\""), "\\\"") + '"';
+    std::string r;
+    r.push_back('"');
+    for (char c : x) {
+        if (c == '"') r.push_back('\\');
+        r.push_back(c);
+    }
+    r.push_back('"');
+    return r;
 }
 inline std::string escape(const char* x) {
     return escape(std::string(x));

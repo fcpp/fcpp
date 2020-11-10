@@ -94,26 +94,24 @@ class context<true, pointer, M, Ts...> {
     //! @brief Inserts an export for a device with a certain metric, possibly cleaning up.
     void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t hoodsize) {
         if (m <= threshold) {
-            m_queue.emplace(m, d);
+            if (m_metrics.count(d) == 0 or m_metrics[d] != m)
+                m_queue.emplace(m, d);
             m_metrics[d] = m;
             m_data[d] = std::move(e);
             if (m_data.size() > hoodsize) pop();
+            else clean();
         }
     }
 
     //! @brief The worst export currently in context.
     device_t top() {
-        // erases invalid values
-        while (m_metrics.count(m_queue.top().second) == 0 or m_metrics.at(m_queue.top().second) != m_queue.top().first)
-            m_queue.pop();
+        clean();
         return m_queue.top().second;
     }
 
     //! @brief Erases the worst export.
     void pop() {
-        // erases invalid values
-        while (m_metrics.count(m_queue.top().second) == 0 or m_metrics.at(m_queue.top().second) != m_queue.top().first)
-            m_queue.pop();
+        clean();
         m_data.erase(m_queue.top().second);
         m_metrics.erase(m_queue.top().second);
         m_queue.pop();
@@ -193,6 +191,12 @@ class context<true, pointer, M, Ts...> {
     }
 
   private:
+    //! @brief Erases invalid values from the queue.
+    void clean() {
+        while (m_metrics.count(m_queue.top().second) == 0 or m_metrics.at(m_queue.top().second) != m_queue.top().first)
+            m_queue.pop();
+    }
+
     //! @brief Map associating devices to exports.
     std::unordered_map<device_t, export_type> m_data;
     //! @brief Map associating devices to metric results.

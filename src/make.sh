@@ -37,30 +37,41 @@ errored=( )
 exitcodes=( )
 folders=( `ls */BUILD | sed 's|/BUILD||'` )
 
+function numformat {
+    n=$1
+    n=$[n+0]
+    k=$2
+    l=${#n}
+    l=$[k-l]
+    for ((x=0; x<l; ++x)); do
+        n=" $n"
+    done
+    echo -n "$n"
+}
+
 function ramformat {
-	n=$1
-	l=${#n}
-	l=$[4-l]
-	for ((x=0; x<l; ++x)); do
-		n=" $n"
-	done
-	echo -n "$n MB"
+    numformat "$1" 4
+    echo -n " MB"
 }
 
 function addzero {
-        n=$1
-        if [ $n -lt 10 ]; then
-                n=0$n
-        fi
-        echo -n $n
+    n=$1
+    if [ $n -lt 10 ]; then
+            n=0$n
+    fi
+    echo -n $n
 }
 
 function timeformat {
+    if [[ "$1" =~ [0-9][0-9]:[0-9][0-9]:[0-9][0-9] ]]; then
+        echo -n "$1".00
+    else
         mins=`echo $1 | sed 's|:.*||'`
         hour=$[mins/60]
         mins=$[mins%60]
         secs=`echo $1 | sed 's|^[0-9]*:||'`
         echo -n `addzero $hour`:`addzero $mins`:$secs
+    fi
 }
 
 function reporter() {
@@ -312,8 +323,8 @@ while [ "$1" != "" ]; do
             max=0
             sum=0
             while true; do
-                tim=`ps x -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
-                m=`ps x -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
+                tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
+                m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
                 if [ "$m" == "" ]; then break; else mem=$m; fi
                 num=$[num+1]
                 sum=$[sum+mem]
@@ -322,7 +333,7 @@ while [ "$1" != "" ]; do
                 avg=$[((sum+511)/1024 + num/2)/ num]
                 fil=`ls output/raw/$name*.txt | wc -l`
                 row=`cat output/raw/$name*.txt | grep -v "^#" | wc -l`
-                echo -e "         `timeformat $tim`s `ramformat $mem` `ramformat $avg` `ramformat $max` $fil $row\n"
+                echo -e "         `timeformat $tim`s   `ramformat $mem` `ramformat $avg` `ramformat $max` `numformat $fil 7` `numformat $row 7`\n\033[J"
                 ( cat $file | tail -n 10; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 10
                 echo -en "\033[12A"
                 sleep 1

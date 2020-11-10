@@ -50,7 +50,7 @@
 
 #if   FCPP_SYSTEM == FCPP_SYSTEM_GENERAL
     #ifndef FCPP_TRACE
-    //! @brief Setting defining the size of trace hashes (64 for general systems, 32 for embedded systems).
+    //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
     #define FCPP_TRACE 64
     #endif
     #ifndef FCPP_DEVICE
@@ -63,7 +63,7 @@
     #endif
 #elif FCPP_SYSTEM == FCPP_SYSTEM_EMBEDDED
     #ifndef FCPP_TRACE
-    //! @brief Setting defining the size of trace hashes (64 for general systems, 32 for embedded systems).
+    //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
     #define FCPP_TRACE 16
     #endif
     #ifndef FCPP_DEVICE

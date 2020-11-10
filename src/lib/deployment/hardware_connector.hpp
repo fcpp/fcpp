@@ -113,7 +113,7 @@ struct hardware_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_dist{INF}, m_network(*this, common::get_or<tags::connection_data>(t, connection_data_type{})) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_dist(INF), m_nbr_msg_size(0), m_network(*this, common::get_or<tags::connection_data>(t, connection_data_type{})) {}
 
             //! @brief Connector data.
             connection_data_type& connector_data() {
@@ -181,6 +181,7 @@ struct hardware_connector {
                 PROFILE_COUNT("connector");
                 common::lock_guard<parallel> l(P::node::mutex);
                 fcpp::details::self(m_nbr_dist, m.device) = m.power;
+                fcpp::details::self(m_nbr_msg_size, m.device) = m.content.size();
                 common::isstream is(std::move(m.content));
                 typename F::node::message_t mt;
                 is >> mt;
@@ -188,8 +189,18 @@ struct hardware_connector {
             }
 
             //! @brief Perceived distances from neighbours.
-            const fcpp::field<double>& nbr_dist() const {
+            field<double> const& nbr_dist() const {
                 return m_nbr_dist;
+            }
+
+            //! @brief Size of last message sent.
+            size_t msg_size() const {
+                return fcpp::details::self(m_nbr_msg_size, P::node::uid);
+            }
+
+            //! @brief Sizes of messages received from neighbours.
+            field<size_t> const& nbr_msg_size() const {
+                return m_nbr_msg_size;
             }
 
           private: // implementation details
@@ -213,6 +224,9 @@ struct hardware_connector {
 
             //! @brief Perceived distances from neighbours.
             field<double> m_nbr_dist;
+
+            //! @brief Sizes of messages received from neighbours.
+            field<size_t> m_nbr_msg_size;
 
             //! @brief Backend regulating and performing the connection.
             connector_type m_network;

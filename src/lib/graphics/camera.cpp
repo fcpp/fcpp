@@ -7,8 +7,8 @@
 #include <vector>
 #include "lib/graphics/camera.h"
 
-Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
-: position{ position }, worldUp{ up }, yaw{ yaw }, pitch{ pitch },
+Camera::Camera(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch)
+: position{ position }, worldUp{ worldUp }, yaw{ yaw }, pitch{ pitch },
   front{ glm::vec3(0.0f, 0.0f, -1.0f) }, movementSpeed{ CAM_DEFAULT_SPEED },
   mouseSensitivity{ CAM_DEFAULT_SENSITIVITY }, fov{ CAM_DEFAULT_FOV }
 {

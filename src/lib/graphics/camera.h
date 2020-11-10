@@ -20,7 +20,7 @@ enum CameraMovement {
 };
 
 // Default camera values
-const float CAM_DEFAULT_YAW = -90.0f;
+const float CAM_DEFAULT_YAW = 0.0f;
 const float CAM_DEFAULT_PITCH = 0.0f;
 const float CAM_DEFAULT_SPEED = 2.5f;
 const float CAM_DEFAULT_SENSITIVITY = 0.1f;
@@ -52,7 +52,7 @@ private:
 
 public:
     // Constructor
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = CAM_DEFAULT_YAW, float pitch = CAM_DEFAULT_PITCH);
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = CAM_DEFAULT_YAW, float pitch = CAM_DEFAULT_PITCH);
 
     // LookAt generator
     glm::mat4 getViewMatrix();

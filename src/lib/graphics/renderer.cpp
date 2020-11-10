@@ -210,7 +210,7 @@ void Renderer::swapAndNext() {
 
 void Renderer::drawCube(glm::vec3 p, std::vector<color> c) {
     // Create matrices (used several times)
-    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, 0.1f, 100.0f) };
+    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, 0.1f, 2000.0f) };
     glm::mat4 view{ m_camera.getViewMatrix() };
     glm::mat4 model{ 1.0f };
     glm::mat3 normal;

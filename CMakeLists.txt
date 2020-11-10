@@ -42,6 +42,9 @@ add_custom_command(TARGET fcppGL PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/src/lib/graphics/shaders/ $<TARGET_FILE_DIR:fcppGL>/shaders/)
 
+#target compile options
+target_compile_options(fcppGL PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
+
 # defining install rules
 include(GNUInstallDirs)
 install(TARGETS fcppGL

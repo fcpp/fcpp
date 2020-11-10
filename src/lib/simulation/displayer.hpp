@@ -10,10 +10,10 @@
 
 #include <cassert>
 #include <cmath>
+#include <algorithm>
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -179,6 +179,7 @@ struct displayer {
                             common::unique_lock<parallel> l;
                             np.push_back(P::node::net.node_at(d, l).get_cached_position(m_refresh));
                         }
+                        if (m_refresh == 0) P::node::net.viewport_update(p);
                         /**
                          * Do not touch the code above.
                          *
@@ -302,6 +303,20 @@ struct displayer {
             void update() {
                 if (m_refresh < P::net::next()) {
                     PROFILE_COUNT("displayer");
+                    if (m_refresh == 0) {
+                        // first frame only: set camera position, rotation, sensitivity
+                        glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
+                        glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
+                        double dz = std::max(viewport_size.x/m_renderer.aspectRatio(), viewport_size.y);
+                        dz *= tan(m_renderer.viewAngle()/2)/2;
+                        camera_pos.z = m_viewport_max.z + dz;
+                        // roll/pitch angles should be zero (why is there no "roll" angle in your code so far?)
+                        // yaw should be so that the front of the camera is towards negative values of z (not clear to me where the zero angle starts)
+                        double zFar = sqrt(dz * (dz + viewport_size.z)) * 32;
+                        double zNear = zFar / 1024;
+                        // zFar/zNear also regulates the cameraSensitivity to input (speed of changes)
+                        // mousewheel changes zFar & zNear & cameraSensitivity (all proportionally)
+                    }
                     times_t t = get_warped(has_timer<P>{}, *this, m_refresh);
                     /**
                      * Do whatever global management you need to do here
@@ -330,6 +345,20 @@ struct displayer {
                 return m_renderer;
             }
 
+            //! @brief Updates the viewport adding a position to it.
+            void viewport_update(glm::vec3 pos) {
+                for (int i=0; i<3; ++i) {
+                    if (pos[i] < m_viewport_min[i]) {
+                        common::lock_guard<parallel> l(m_viewport_mutex);
+                        m_viewport_min[i] = pos[i];
+                    }
+                    if (pos[i] > m_viewport_max[i]) {
+                        common::lock_guard<parallel> l(m_viewport_mutex);
+                        m_viewport_max[i] = pos[i];
+                    }
+                }
+            }
+
           private: // implementation details
             //! @brief Converts to warped time.
             template <typename N>
@@ -351,6 +380,12 @@ struct displayer {
 
             //! @brief Net's Renderer object; it has the responsability of running OpenGL function calls.
             fcpp::internal::Renderer m_renderer;
+
+            //! @brief Boundaries of the viewport.
+            glm::vec3 m_viewport_min, m_viewport_max;
+
+            //! @brief A mutex for regulating access to the viewport boundaries.
+            common::mutex<parallel> m_viewport_mutex;
         };
     };
 };

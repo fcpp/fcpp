@@ -149,7 +149,7 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids(), m_pos_time(0), m_refresh(0) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids(), m_pos_time(-1), m_refresh(0) {}
 
             /**
              * @brief Returns next event to schedule for the node component.
@@ -305,6 +305,7 @@ struct displayer {
                     PROFILE_COUNT("displayer");
                     if (m_refresh == 0) {
                         // first frame only: set camera position, rotation, sensitivity
+                        std::cout << "\nupdate()\n";
                         std::cout << "m_viewport_min = (" << m_viewport_min.x << ", " << m_viewport_min.y << ", " << m_viewport_min.z << ")\n";
                         std::cout << "m_viewport_max = (" << m_viewport_max.x << ", " << m_viewport_max.y << ", " << m_viewport_max.z << ")\n";
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
@@ -319,7 +320,7 @@ struct displayer {
                         // zFar/zNear also regulates the cameraSensitivity to input (speed of changes)
                         // mousewheel changes zFar & zNear & cameraSensitivity (all proportionally)
                         m_renderer.setPosition(camera_pos);
-                        m_renderer.setYaw(270.0f);
+                        m_renderer.setYaw(-90.0f);  // -90.0f = 270.0f
                         m_renderer.setFarPlane((float)zFar);
                         m_renderer.setNearPlane((float)zNear);
                     }
@@ -353,6 +354,10 @@ struct displayer {
 
             //! @brief Updates the viewport adding a position to it.
             void viewport_update(glm::vec3 pos) {
+                std::cout << "\nviewport_update()\n";
+                std::cout << "pos = (" << pos.x << ", " << pos.y << ", " << pos.z << ")\n";
+                std::cout << "m_viewport_min = (" << m_viewport_min.x << ", " << m_viewport_min.y << ", " << m_viewport_min.z << ")\n";
+                std::cout << "m_viewport_max = (" << m_viewport_max.x << ", " << m_viewport_max.y << ", " << m_viewport_max.z << ")\n";
                 for (int i=0; i<3; ++i) {
                     if (pos[i] < m_viewport_min[i]) {
                         common::lock_guard<parallel> l(m_viewport_mutex);

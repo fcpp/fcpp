@@ -254,7 +254,7 @@ void Renderer::drawOrtho() {
     m_shaderProgramCol.setMat4("u_view", view);
     model = glm::translate(model, glm::vec3((float)m_currentWidth - ((float)m_orthoSize * 3.0f / 4.0f), (float)m_orthoSize * 3.0f / 4.0f, 0.0f));
     model = glm::rotate(model, glm::radians(-m_camera.getPitch()), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(m_camera.getYaw()), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(m_camera.getYaw() + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::scale(model, glm::vec3((float)m_orthoSize));
     m_shaderProgramCol.setMat4("u_model", model);
     glDrawElements(GL_TRIANGLES, sizeof(Shapes::INDEX_ORTHO) / sizeof(int), GL_UNSIGNED_INT, 0);

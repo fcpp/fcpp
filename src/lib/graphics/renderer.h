@@ -185,6 +185,9 @@ namespace fcpp {
             //! @brief Current size of orthogonal axis.
             unsigned int m_orthoSize;
 
+            //! @brief Current position of light source.
+            glm::vec3 m_lightPos;
+
             //! @brief Camera object of the scene
             Camera m_camera;
 
@@ -232,7 +235,7 @@ namespace fcpp {
             void swapAndNext();
 
             //! @brief It draws a cube, given the information on color(s) and position.
-            void drawCube(glm::vec3 p, std::vector<color> c);
+            void drawCube(glm::vec3 p, double d, std::vector<color> c);
 
             //! @brief It draws the orthogonal axis on the screen.
             void drawOrtho();
@@ -245,6 +248,9 @@ namespace fcpp {
 
             //! @brief Sets the camera's position.
             void setPosition(glm::vec3& newPos);
+
+            //! @brief Sets the light's position.
+            void setLightPosition(glm::vec3& newPos);
 
             //! @brief Sets the camera's yaw angle.
             void setYaw(float newYaw);

@@ -9,8 +9,6 @@ in vec3 Normal;
 in vec3 ViewLightPos;
 
 uniform float     u_ambientStrength;
-uniform float     u_specularStrength;
-uniform int       u_specularShininess;
 uniform vec4      u_objectColor;
 uniform vec3      u_lightColor;
 
@@ -27,15 +25,9 @@ void main()
     float diffVal = max(dot(normVec, lightDir), 0.0);
     vec3 diffuse = diffVal * u_lightColor;
 
-    // Specular lighting
-    vec3 reflectDir = reflect(-lightDir, normVec);
-    vec3 viewDir = normalize(-FragPos);
-    float specVal = pow(max(dot(viewDir, reflectDir), 0.0), u_specularShininess);
-    vec3 specular = u_specularStrength * specVal * u_lightColor;
-
-    // Phong (final)
-    vec4 phong = vec4(ambient + diffuse + specular, 1.0) * u_objectColor;
+    // Final (not Phong: specular scrapped for performance)
+    vec4 final = vec4(ambient + diffuse, 1.0) * u_objectColor;
 
     // Fragment color
-    FragColor = phong;
+    FragColor = final;
 }

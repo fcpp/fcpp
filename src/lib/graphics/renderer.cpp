@@ -40,6 +40,7 @@ Renderer::Renderer() :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_orthoSize{ SCR_DEFAULT_ORTHO },
+    m_lightPos{ LIGHT_DEFAULT_POS },
     m_camera{},
     m_mouseLastX{ (float)(SCR_DEFAULT_WIDTH / 2) },
     m_mouseLastY{ (float)(SCR_DEFAULT_HEIGHT / 2) },
@@ -128,7 +129,7 @@ Renderer::Renderer() :
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Set internal callbacks
-    //setInternalCallbacks();
+    setInternalCallbacks();
 }
 
 
@@ -213,7 +214,7 @@ void Renderer::swapAndNext() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::drawCube(glm::vec3 p, std::vector<color> c) {
+void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
     glm::mat4 view{ m_camera.getViewMatrix() };
@@ -222,16 +223,14 @@ void Renderer::drawCube(glm::vec3 p, std::vector<color> c) {
 
     m_shaderProgram.use();
     glBindVertexArray(VAO[1]);
-    m_shaderProgram.setVec3("u_lightPos", LIGHT_DEFAULT_POS);
+    m_shaderProgram.setVec3("u_lightPos", m_lightPos);
     m_shaderProgram.setFloat("u_ambientStrength", 0.1f);
-    m_shaderProgram.setFloat("u_specularStrength", 0.2f);
-    m_shaderProgram.setInt("u_specularShininess", 32);
     m_shaderProgram.setVec4("u_objectColor", glm::vec4{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }); // access to first color only is temporary...
     m_shaderProgram.setVec3("u_lightColor", glm::vec3{ 1.0f, 1.0f, 1.0f });
     m_shaderProgram.setMat4("u_projection", projection);
     m_shaderProgram.setMat4("u_view", view);
     model = glm::translate(model, p);
-    //model = glm::rotate(model, ..., ...);
+    model = glm::scale(model, glm::vec3(d));
     m_shaderProgram.setMat4("u_model", model);
     normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
     m_shaderProgram.setMat3("u_normal", normal);
@@ -270,6 +269,10 @@ float Renderer::viewAngle() {
 
 void Renderer::setPosition(glm::vec3& newPos) {
     m_camera.setPosition(newPos);
+}
+
+void Renderer::setLightPosition(glm::vec3& newPos) {
+    m_lightPos = newPos;
 }
 
 void Renderer::setYaw(float newYaw) {

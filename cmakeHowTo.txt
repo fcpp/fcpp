@@ -1,0 +1,9 @@
+To build the test application, you'll need:
+	* MinGW-w64 8.1.0
+	* CMake 3.9 (or higher)
+
+After setting the respective environmental variables, go into the ./fcpp directory through a prompt and type the following commands:
+	* cmake -S ./ -B ./build -G "MinGW Makefiles"
+	* cmake --build ./build/
+
+Wait the application to be built.

@@ -32,9 +32,6 @@ void Camera::updateCameraVectors()
 
 glm::mat4 Camera::getViewMatrix()
 {
-    //std::cout << "position = (" << position.x << ", " << position.y << ", " << position.z << ")\n";
-    //std::cout << "front = (" << front.x << ", " << front.y << ", " << front.z << ")\n";
-    //std::cout << "up = (" << up.x << ", " << up.y << ", " << up.z << ")\n";
     return glm::lookAt(position, position + front, up);
 }
 

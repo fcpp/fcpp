@@ -44,6 +44,7 @@ add_custom_command(TARGET fcppGL PRE_BUILD
 
 #target compile options
 target_compile_options(fcppGL PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
+#target_compile_options(fcppGL PUBLIC "-DFCPP_REFRESH_RATE=(1.0/144)")
 
 # defining install rules
 include(GNUInstallDirs)

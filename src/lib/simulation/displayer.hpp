@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -282,12 +283,11 @@ struct displayer {
             net(const common::tagged_tuple<S, T>& t) :
                 P::net{ t },
                 m_refresh{ 0 },
+                m_viewport_max{ -1.0 / 0.0, -1.0 / 0.0, -1.0 / 0.0 },
+                m_viewport_min{ 1.0 / 0.0, 1.0 / 0.0, 1.0 / 0.0 },
                 m_renderer{} {
                 // Set simulation refresh rate
                 m_step = common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) * common::get_or<tags::realtime_factor>(t, FCPP_REALTIME);
-
-                // Bind Renderer's internal callbacks to OpenGL events
-                m_renderer.setInternalCallbacks();
             }
 
             /**
@@ -305,10 +305,12 @@ struct displayer {
                     PROFILE_COUNT("displayer");
                     if (m_refresh == 0) {
                         // first frame only: set camera position, rotation, sensitivity
+                        std::cout << "m_viewport_min = (" << m_viewport_min.x << ", " << m_viewport_min.y << ", " << m_viewport_min.z << ")\n";
+                        std::cout << "m_viewport_max = (" << m_viewport_max.x << ", " << m_viewport_max.y << ", " << m_viewport_max.z << ")\n";
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
                         double dz = std::max(viewport_size.x/m_renderer.aspectRatio(), viewport_size.y);
-                        dz *= tan(m_renderer.viewAngle()/2)/2;
+                        dz /= tan(m_renderer.viewAngle() / 2) * 2;
                         camera_pos.z = m_viewport_max.z + dz;
                         // roll/pitch angles should be zero (why is there no "roll" angle in your code so far?)
                         // yaw should be so that the front of the camera is towards negative values of z (not clear to me where the zero angle starts)
@@ -316,6 +318,10 @@ struct displayer {
                         double zNear = zFar / 1024;
                         // zFar/zNear also regulates the cameraSensitivity to input (speed of changes)
                         // mousewheel changes zFar & zNear & cameraSensitivity (all proportionally)
+                        m_renderer.setPosition(camera_pos);
+                        m_renderer.setYaw(270.0f);
+                        m_renderer.setFarPlane((float)zFar);
+                        m_renderer.setNearPlane((float)zNear);
                     }
                     times_t t = get_warped(has_timer<P>{}, *this, m_refresh);
                     /**
@@ -359,7 +365,7 @@ struct displayer {
                 }
             }
 
-          private: // implementation details
+        private: // implementation details
             //! @brief Converts to warped time.
             template <typename N>
             inline times_t get_warped(std::true_type, N const& n, times_t t) const {
@@ -378,7 +384,7 @@ struct displayer {
             //! @brief The step between refresh times.
             times_t m_step;
 
-            //! @brief Net's Renderer object; it has the responsability of running OpenGL function calls.
+            //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
             fcpp::internal::Renderer m_renderer;
 
             //! @brief Boundaries of the viewport.

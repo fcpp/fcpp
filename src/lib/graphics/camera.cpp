@@ -5,11 +5,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
+#include <iostream>
 #include "lib/graphics/camera.h"
 
 Camera::Camera(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch)
 : position{ position }, worldUp{ worldUp }, yaw{ yaw }, pitch{ pitch },
-  front{ glm::vec3(0.0f, 0.0f, -1.0f) }, movementSpeed{ CAM_DEFAULT_SPEED },
+  front{ glm::vec3(0.0f) }, movementSpeed{ CAM_DEFAULT_SPEED },
   mouseSensitivity{ CAM_DEFAULT_SENSITIVITY }, fov{ CAM_DEFAULT_FOV }
 {
     updateCameraVectors();
@@ -31,6 +32,9 @@ void Camera::updateCameraVectors()
 
 glm::mat4 Camera::getViewMatrix()
 {
+    //std::cout << "position = (" << position.x << ", " << position.y << ", " << position.z << ")\n";
+    //std::cout << "front = (" << front.x << ", " << front.y << ", " << front.z << ")\n";
+    //std::cout << "up = (" << up.x << ", " << up.y << ", " << up.z << ")\n";
     return glm::lookAt(position, position + front, up);
 }
 
@@ -101,4 +105,21 @@ float Camera::getYaw()
 float Camera::getPitch()
 {
     return pitch;
+}
+
+void Camera::setPosition(glm::vec3& newPos)
+{
+    position = newPos;
+}
+
+void Camera::setYaw(float newYaw)
+{
+    yaw = newYaw;
+    updateCameraVectors();
+}
+
+void Camera::setPitch(float newPitch)
+{
+    pitch = newPitch;
+    updateCameraVectors();
 }

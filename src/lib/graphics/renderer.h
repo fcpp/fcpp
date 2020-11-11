@@ -200,8 +200,14 @@ namespace fcpp {
             //! @brief Time between current frame and last frame.
             float m_deltaTime;
 
-            //! @brief Ttime of last frame.
+            //! @brief Time of last frame.
             float m_lastFrame;
+
+            //! @brief The far plane's distance of the projection matrix.
+            float m_zFar;
+
+            //! @brief The near plane's distance of the projection matrix.
+            float m_zNear;
 
             //! @brief Keyboard input updater function (not a proper callback: it has to be called explicitly).
             void processKeyboardInput();
@@ -215,12 +221,12 @@ namespace fcpp {
             //! @brief Window resize callback function.
             void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
+            //! @brief Bind internally-defined callback functions to OpenGL events.
+            void setInternalCallbacks();
+
 		public:
 			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
 			Renderer();
-
-            //! @brief Bind internally-defined callback functions to OpenGL events.
-            void setInternalCallbacks();
 
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();
@@ -230,6 +236,27 @@ namespace fcpp {
 
             //! @brief It draws the orthogonal axis on the screen.
             void drawOrtho();
+
+            //! @brief Returns the aspect ratio of the window.
+            float aspectRatio();
+
+            //! @brief Returns the camera's Field of View.
+            float viewAngle();
+
+            //! @brief Sets the camera's position.
+            void setPosition(glm::vec3& newPos);
+
+            //! @brief Sets the camera's yaw angle.
+            void setYaw(float newYaw);
+
+            //! @brief Sets the camera's pitch angle.
+            void setPitch(float newPitch);
+
+            //! @brief Sets the far plane's distance of the projection (perspective) matrix.
+            void setFarPlane(float newFar);
+
+            //! @brief Sets the near plane's distance of the projection (perspective) matrix.
+            void setNearPlane(float newNear);
 		};
 	}
 }

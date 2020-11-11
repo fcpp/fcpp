@@ -40,12 +40,14 @@ Renderer::Renderer() :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_orthoSize{ SCR_DEFAULT_ORTHO },
-    m_camera{ glm::vec3{ 0.0f, 0.0f, 3.0f } },
+    m_camera{},
     m_mouseLastX{ (float)(SCR_DEFAULT_WIDTH / 2) },
     m_mouseLastY{ (float)(SCR_DEFAULT_HEIGHT / 2) },
     m_mouseFirst{ 1 },
     m_deltaTime{ 0.0f },
-    m_lastFrame{ 0.0f } {
+    m_lastFrame{ 0.0f },
+    m_zFar{ 1.0f },
+    m_zNear{ 1000.0f }{
     /* DEFINITION */
     // Initialize GLFW
     glfwInit();
@@ -124,6 +126,9 @@ Renderer::Renderer() :
     // Clear first frame
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Set internal callbacks
+    //setInternalCallbacks();
 }
 
 
@@ -170,8 +175,6 @@ void Renderer::framebufferSizeCallback(GLFWwindow* window, int width, int height
     m_currentHeight = height;
 }
 
-
-/* --- PUBLIC FUNCTIONS --- */
 void Renderer::setInternalCallbacks() {
     // Set viewport callbacks
     glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
@@ -190,6 +193,8 @@ void Renderer::setInternalCallbacks() {
         });
 }
 
+
+/* --- PUBLIC FUNCTIONS --- */
 void Renderer::swapAndNext() {
     // Check and call events, swap double buffers
     glfwPollEvents();
@@ -210,7 +215,7 @@ void Renderer::swapAndNext() {
 
 void Renderer::drawCube(glm::vec3 p, std::vector<color> c) {
     // Create matrices (used several times)
-    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, 0.1f, 2000.0f) };
+    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
     glm::mat4 view{ m_camera.getViewMatrix() };
     glm::mat4 model{ 1.0f };
     glm::mat3 normal;
@@ -253,4 +258,32 @@ void Renderer::drawOrtho() {
     model = glm::scale(model, glm::vec3((float)m_orthoSize));
     m_shaderProgramCol.setMat4("u_model", model);
     glDrawElements(GL_TRIANGLES, sizeof(Shapes::INDEX_ORTHO) / sizeof(int), GL_UNSIGNED_INT, 0);
+}
+
+float Renderer::aspectRatio() {
+    return (float)(m_currentWidth) / (float)(m_currentHeight);
+}
+
+float Renderer::viewAngle() {
+    return m_camera.getFov();
+}
+
+void Renderer::setPosition(glm::vec3& newPos) {
+    m_camera.setPosition(newPos);
+}
+
+void Renderer::setYaw(float newYaw) {
+    m_camera.setYaw(newYaw);
+}
+
+void Renderer::setPitch(float newPitch) {
+    m_camera.setPitch(newPitch);
+}
+
+void Renderer::setFarPlane(float newFar) {
+    m_zFar = newFar;
+}
+
+void Renderer::setNearPlane(float newNear) {
+    m_zNear = newNear;
 }

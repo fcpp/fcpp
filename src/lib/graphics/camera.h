@@ -20,11 +20,11 @@ enum CameraMovement {
 };
 
 // Default camera values
-const float CAM_DEFAULT_YAW = 0.0f;
-const float CAM_DEFAULT_PITCH = 0.0f;
-const float CAM_DEFAULT_SPEED = 2.5f;
-const float CAM_DEFAULT_SENSITIVITY = 0.1f;
-const float CAM_DEFAULT_FOV = 45.0f;
+const float CAM_DEFAULT_YAW{ 0.0f };
+const float CAM_DEFAULT_PITCH{ 0.0f };
+const float CAM_DEFAULT_SPEED{ 2.5f };
+const float CAM_DEFAULT_SENSITIVITY{ 0.1f };
+const float CAM_DEFAULT_FOV{ 45.0f };
 
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
@@ -71,5 +71,10 @@ public:
     float getFov();
     float getYaw();
     float getPitch();
+
+    // Setters
+    void setPosition(glm::vec3& newPos);
+    void setYaw(float newYaw);
+    void setPitch(float newPitch);
 };
 #endif

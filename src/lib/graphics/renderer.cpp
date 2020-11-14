@@ -243,14 +243,13 @@ void Renderer::drawOrtho() {
     glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_ORTHO) / sizeof(Shapes::VERTEX_ORTHO[0]));
 }
 
-void Renderer::drawGrid(float gridWidth, float gridHeight) {
+void Renderer::drawGrid(float gridWidth, float gridHeight, unsigned int divisions) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
     glm::mat4 view{ m_camera.getViewMatrix() };
     glm::mat4 model;
 
     // Draw grid
-    int divisions{ 16 }; // temporary
     float xDelta = gridWidth / (float)divisions;
     float yDelta = gridHeight / (float)divisions;
     m_shaderProgramCol.use();

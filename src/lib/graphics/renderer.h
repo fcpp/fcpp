@@ -238,7 +238,7 @@ namespace fcpp {
             void drawOrtho();
 
             //! @brief It draws the grid on the screen.
-            void drawGrid(float gridWidth, float gridHeight);
+            void drawGrid(float gridWidth, float gridHeight, unsigned int divisions);
 
             //! @brief It draws a cube, given the information on color(s) and position.
             void drawCube(glm::vec3 p, double d, std::vector<color> c);

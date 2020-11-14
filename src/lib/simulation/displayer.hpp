@@ -329,11 +329,11 @@ struct displayer {
                      * You may want to display the current simulation time t.
                      */
 
+                     // Draw grid
+                    m_renderer.drawGrid(viewport_size.x, viewport_size.y, 16);
+
                     // Draw orthogonal axis
                     m_renderer.drawOrtho();
-
-                    // Draw grid
-                    m_renderer.drawGrid(viewport_size.x, viewport_size.y);
 
                     // Swap buffers and prepare for next frame to draw
                     m_renderer.swapAndNext();

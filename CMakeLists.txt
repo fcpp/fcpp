@@ -32,7 +32,6 @@ target_include_directories(fcppGL PRIVATE ./src/
 # link libraries
 target_link_libraries(fcppGL PRIVATE mingw_stdthreads
                                      fcpp_master
-                                     #glad
                                      glm
 									 glfw
 									 stb_image)

@@ -15,10 +15,7 @@ namespace fcpp {
 			static const float VERTEX_CUBE[216];
 
 			//! @brief Orthogonal axis' vertex data.
-			static const float VERTEX_ORTHO[144];
-
-			//! @brief Orthogonal axis' index data.
-			static const int INDEX_ORTHO[108];
+			static const float VERTEX_ORTHO[36];
 
 			/*
             //Get the vertex data of the specified shape.

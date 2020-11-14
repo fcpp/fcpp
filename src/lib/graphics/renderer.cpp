@@ -91,21 +91,18 @@ Renderer::Renderer() :
     // Generate VAOs, VBOs and EBOs
     glGenVertexArrays(2, VAO);
     glGenBuffers(2, VBO);
-    glGenBuffers(1, EBO);
+    //glGenBuffers(1, EBO);  // uncomment this line if you need to render through indexing
 
     // Store ortho data
     glBindVertexArray(VAO[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_ORTHO), Shapes::VERTEX_ORTHO, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]); // VAO[0] stores EBO[0] here; do NOT unbind EBO[0] until VAO[0] is unbound
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::INDEX_ORTHO), Shapes::INDEX_ORTHO, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Store cube data
     glBindVertexArray(VAO[1]);
@@ -214,6 +211,28 @@ void Renderer::swapAndNext() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void Renderer::drawOrtho() {
+    // Create matrices (used several times)
+    glm::mat4 projection{ 1.0f };
+    glm::mat4 view{ 1.0f };
+    glm::mat4 model{ 1.0f };
+
+    // Draw ortho
+    glClear(GL_DEPTH_BUFFER_BIT); // Clean depth buffer, in order to draw on top of 3D objects
+    m_shaderProgramCol.use();
+    glBindVertexArray(VAO[0]);
+    projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -(float)m_orthoSize, (float)m_orthoSize);
+    m_shaderProgramCol.setMat4("u_projection", projection);
+    //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -(float)m_orthoSize / 2.0f));
+    m_shaderProgramCol.setMat4("u_view", view);
+    model = glm::translate(model, glm::vec3((float)m_currentWidth - ((float)m_orthoSize * 5.0f / 4.0f), (float)m_orthoSize * 5.0f / 4.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(-m_camera.getPitch()), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(m_camera.getYaw() + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3((float)m_orthoSize));
+    m_shaderProgramCol.setMat4("u_model", model);
+    glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_ORTHO) / sizeof(Shapes::VERTEX_ORTHO[0]));
+}
+
 void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
@@ -235,28 +254,6 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
     m_shaderProgram.setMat3("u_normal", normal);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-}
-
-void Renderer::drawOrtho() {
-    // Create matrices (used several times)
-    glm::mat4 projection{ 1.0f };
-    glm::mat4 view{ 1.0f };
-    glm::mat4 model{ 1.0f };
-
-    // Draw ortho
-    glClear(GL_DEPTH_BUFFER_BIT); // Clean depth buffer, in order to draw on top of 3D objects
-    m_shaderProgramCol.use();
-    glBindVertexArray(VAO[0]);
-    projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -1.0f, (float)m_orthoSize);
-    m_shaderProgramCol.setMat4("u_projection", projection);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -(float)m_orthoSize / 2.0f));
-    m_shaderProgramCol.setMat4("u_view", view);
-    model = glm::translate(model, glm::vec3((float)m_currentWidth - ((float)m_orthoSize * 3.0f / 4.0f), (float)m_orthoSize * 3.0f / 4.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(-m_camera.getPitch()), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(m_camera.getYaw() + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3((float)m_orthoSize));
-    m_shaderProgramCol.setMat4("u_model", model);
-    glDrawElements(GL_TRIANGLES, sizeof(Shapes::INDEX_ORTHO) / sizeof(int), GL_UNSIGNED_INT, 0);
 }
 
 float Renderer::aspectRatio() {

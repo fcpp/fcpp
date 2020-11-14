@@ -153,7 +153,7 @@ namespace fcpp {
             static const unsigned int SCR_DEFAULT_HEIGHT{ 600 };
 
             //! @brief Default size of orthogonal axis.
-            static const unsigned int SCR_DEFAULT_ORTHO{ 64 };
+            static const unsigned int SCR_DEFAULT_ORTHO{ 32 };
 
             //! @brief Default light position.
             static const glm::vec3 LIGHT_DEFAULT_POS;
@@ -234,11 +234,11 @@ namespace fcpp {
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();
 
-            //! @brief It draws a cube, given the information on color(s) and position.
-            void drawCube(glm::vec3 p, double d, std::vector<color> c);
-
             //! @brief It draws the orthogonal axis on the screen.
             void drawOrtho();
+
+            //! @brief It draws a cube, given the information on color(s) and position.
+            void drawCube(glm::vec3 p, double d, std::vector<color> c);
 
             //! @brief Returns the aspect ratio of the window.
             float aspectRatio();

@@ -303,9 +303,9 @@ struct displayer {
             void update() {
                 if (m_refresh < P::net::next()) {
                     PROFILE_COUNT("displayer");
+                    glm::vec3 viewport_size = m_viewport_max - m_viewport_min;;
                     if (m_refresh == 0) {
                         // first frame only: set camera position, rotation, sensitivity
-                        glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
                         double dz = std::max(viewport_size.x/m_renderer.aspectRatio(), viewport_size.y);
                         dz /= tan(m_renderer.viewAngle() / 2) * 2;
@@ -331,6 +331,9 @@ struct displayer {
 
                     // Draw orthogonal axis
                     m_renderer.drawOrtho();
+
+                    // Draw grid
+                    m_renderer.drawGrid(viewport_size.x, viewport_size.y);
 
                     // Swap buffers and prepare for next frame to draw
                     m_renderer.swapAndNext();

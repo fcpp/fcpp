@@ -1,4 +1,4 @@
-// Copyright © 2020 Luigi Rapetta. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <stdexcept>
 
@@ -89,8 +89,8 @@ Renderer::Renderer() :
     m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
 
     // Generate VAOs, VBOs and EBOs
-    glGenVertexArrays(2, VAO);
-    glGenBuffers(2, VBO);
+    glGenVertexArrays(3, VAO);
+    glGenBuffers(3, VBO);
     //glGenBuffers(1, EBO);  // uncomment this line if you need to render through indexing
 
     // Store ortho data
@@ -104,9 +104,20 @@ Renderer::Renderer() :
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Store cube data
+    // Store grid line data
     glBindVertexArray(VAO[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_GRIDLINE), Shapes::VERTEX_GRIDLINE, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Store cube data
+    glBindVertexArray(VAO[2]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_CUBE), Shapes::VERTEX_CUBE, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -223,7 +234,6 @@ void Renderer::drawOrtho() {
     glBindVertexArray(VAO[0]);
     projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -(float)m_orthoSize, (float)m_orthoSize);
     m_shaderProgramCol.setMat4("u_projection", projection);
-    //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -(float)m_orthoSize / 2.0f));
     m_shaderProgramCol.setMat4("u_view", view);
     model = glm::translate(model, glm::vec3((float)m_currentWidth - ((float)m_orthoSize * 5.0f / 4.0f), (float)m_orthoSize * 5.0f / 4.0f, 0.0f));
     model = glm::rotate(model, glm::radians(-m_camera.getPitch()), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -233,6 +243,37 @@ void Renderer::drawOrtho() {
     glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_ORTHO) / sizeof(Shapes::VERTEX_ORTHO[0]));
 }
 
+void Renderer::drawGrid(float gridWidth, float gridHeight) {
+    // Create matrices (used several times)
+    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
+    glm::mat4 view{ m_camera.getViewMatrix() };
+    glm::mat4 model;
+
+    // Draw grid
+    int divisions{ 16 }; // temporary
+    float xDelta = gridWidth / (float)divisions;
+    float yDelta = gridHeight / (float)divisions;
+    m_shaderProgramCol.use();
+    glBindVertexArray(VAO[1]);
+    m_shaderProgramCol.setMat4("u_projection", projection);
+    m_shaderProgramCol.setMat4("u_view", view);
+
+    for (int i = 0; i < divisions - 1; i++) {
+        model = glm::mat4{ 1.0f };
+        model = glm::translate(model, glm::vec3(gridWidth / 2.0f, yDelta * (float)(i + 1), 0.0f));
+        model = glm::scale(model, glm::vec3((float)gridWidth));
+        m_shaderProgramCol.setMat4("u_model", model);
+        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_GRIDLINE) / sizeof(Shapes::VERTEX_GRIDLINE[0]));
+
+        model = glm::mat4{ 1.0f };
+        model = glm::translate(model, glm::vec3(xDelta * (float)(i + 1), gridHeight / 2.0f, 0.0f));
+        model = glm::scale(model, glm::vec3((float)gridHeight));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        m_shaderProgramCol.setMat4("u_model", model);
+        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_GRIDLINE) / sizeof(Shapes::VERTEX_GRIDLINE[0]));
+    }
+}
+
 void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
@@ -240,8 +281,9 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     glm::mat4 model{ 1.0f };
     glm::mat3 normal;
 
+    // Draw cube
     m_shaderProgram.use();
-    glBindVertexArray(VAO[1]);
+    glBindVertexArray(VAO[2]);
     m_shaderProgram.setVec3("u_lightPos", m_lightPos);
     m_shaderProgram.setFloat("u_ambientStrength", 0.1f);
     m_shaderProgram.setVec4("u_objectColor", glm::vec4{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }); // access to first color only is temporary...

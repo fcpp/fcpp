@@ -1,4 +1,4 @@
-// Copyright © 2020 Luigi Rapetta. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #ifndef FCPP_GRAPHICS_RENDERER_H_
 #define FCPP_GRAPHICS_RENDERER_H_
@@ -168,10 +168,10 @@ namespace fcpp {
             Shader m_shaderProgramCol;
 
             //! @brief Vertex Array Object(s).
-            unsigned int VAO[2];
+            unsigned int VAO[3];
 
             //! @brief Vertex Buffer Object(s).
-            unsigned int VBO[2];
+            unsigned int VBO[3];
 
             //! @brief Element Buffer Object(s).
             unsigned int EBO[1];
@@ -236,6 +236,9 @@ namespace fcpp {
 
             //! @brief It draws the orthogonal axis on the screen.
             void drawOrtho();
+
+            //! @brief It draws the grid on the screen.
+            void drawGrid(float gridWidth, float gridHeight);
 
             //! @brief It draws a cube, given the information on color(s) and position.
             void drawCube(glm::vec3 p, double d, std::vector<color> c);

@@ -5,6 +5,24 @@
 #include "lib/graphics/shapes.h"
 
 
+const float fcpp::internal::Shapes::VERTEX_ORTHO[36] = {
+    // positions           // colors
+     0.0f,  0.0f,  0.0f,   0.0f, 0.4f, 0.0f,
+     0.0f,  1.0f,  0.0f,   0.0f, 1.0f, 0.0f,
+
+     0.0f,  0.0f,  0.0f,   0.4f, 0.0f, 0.0f,
+     1.0f,  0.0f,  0.0f,   1.0f, 0.0f, 0.0f,
+
+     0.0f,  0.0f,  0.0f,   0.0f, 0.0f, 0.4f,
+     0.0f,  0.0f,  1.0f,   0.0f, 0.0f, 1.0f
+};
+
+const float fcpp::internal::Shapes::VERTEX_GRIDLINE[12] = {
+    // positions           // colors
+    -0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f,
+     0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f
+};
+
 const float fcpp::internal::Shapes::VERTEX_CUBE[216] = {
     // positions           // normals         
     -0.5f, -0.5f, -0.5f,   0.0f,  0.0f, -1.0f,
@@ -48,18 +66,6 @@ const float fcpp::internal::Shapes::VERTEX_CUBE[216] = {
      0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
     -0.5f,  0.5f,  0.5f,   0.0f,  1.0f,  0.0f,
     -0.5f,  0.5f, -0.5f,   0.0f,  1.0f,  0.0f
-};
-
-const float fcpp::internal::Shapes::VERTEX_ORTHO[36] = {
-    // positions           // colors
-     0.0f,  0.0f,  0.0f,   0.0f, 0.4f, 0.0f,
-     0.0f,  1.0f,  0.0f,   0.0f, 1.0f, 0.0f,
-
-     0.0f,  0.0f,  0.0f,   0.4f, 0.0f, 0.0f,
-     1.0f,  0.0f,  0.0f,   1.0f, 0.0f, 0.0f,
-
-     0.0f,  0.0f,  0.0f,   0.0f, 0.0f, 0.4f,
-     0.0f,  0.0f,  1.0f,   0.0f, 0.0f, 1.0f
 };
 
 /*

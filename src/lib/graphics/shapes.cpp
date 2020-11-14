@@ -5,6 +5,25 @@
 #include "lib/graphics/shapes.h"
 
 
+const float fcpp::internal::Shapes::VERTEX_LINE[12] = {
+    // positions           // colors
+    -0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f,
+     0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f
+};
+
+const float fcpp::internal::Shapes::VERTEX_SQUARE[24] = {
+    // positions           // colors
+    -0.5f, -0.5f,  0.0f,   0.5f, 0.5f, 0.5f,
+     0.5f, -0.5f,  0.0f,   0.5f, 0.5f, 0.5f,
+    -0.5f,  0.5f,  0.0f,   0.5f, 0.5f, 0.5f,
+     0.5f,  0.5f,  0.0f,   0.5f, 0.5f, 0.5f
+};
+
+const int fcpp::internal::Shapes::INDEX_SQUARE[6] = {
+    0, 1, 2,
+    2, 3, 1
+};
+
 const float fcpp::internal::Shapes::VERTEX_ORTHO[36] = {
     // positions           // colors
      0.0f,  0.0f,  0.0f,   0.0f, 0.4f, 0.0f,
@@ -15,12 +34,6 @@ const float fcpp::internal::Shapes::VERTEX_ORTHO[36] = {
 
      0.0f,  0.0f,  0.0f,   0.0f, 0.0f, 0.4f,
      0.0f,  0.0f,  1.0f,   0.0f, 0.0f, 1.0f
-};
-
-const float fcpp::internal::Shapes::VERTEX_GRIDLINE[12] = {
-    // positions           // colors
-    -0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f,
-     0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f
 };
 
 const float fcpp::internal::Shapes::VERTEX_CUBE[216] = {

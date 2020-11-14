@@ -330,7 +330,7 @@ struct displayer {
                      */
 
                      // Draw grid
-                    m_renderer.drawGrid(viewport_size.x, viewport_size.y, 16);
+                    m_renderer.drawGrid(viewport_size.x, viewport_size.y, 16, 0.5f);
 
                     // Draw orthogonal axis
                     m_renderer.drawOrtho();

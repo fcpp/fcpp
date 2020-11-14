@@ -89,13 +89,38 @@ Renderer::Renderer() :
     m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
 
     // Generate VAOs, VBOs and EBOs
-    glGenVertexArrays(3, VAO);
-    glGenBuffers(3, VBO);
-    //glGenBuffers(1, EBO);  // uncomment this line if you need to render through indexing
+    glGenVertexArrays(4, VAO);
+    glGenBuffers(4, VBO);
+    glGenBuffers(1, EBO);
 
-    // Store ortho data
+    // Store line data
     glBindVertexArray(VAO[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_LINE), Shapes::VERTEX_LINE, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Store line data
+    glBindVertexArray(VAO[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_SQUARE), Shapes::VERTEX_SQUARE, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]); // VAO[1] stores EBO[0] here; do NOT unbind EBO[0] until VAO[1] is unbound
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::INDEX_SQUARE), Shapes::INDEX_SQUARE, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // Store ortho data
+    glBindVertexArray(VAO[2]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_ORTHO), Shapes::VERTEX_ORTHO, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -104,20 +129,9 @@ Renderer::Renderer() :
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Store grid line data
-    glBindVertexArray(VAO[1]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_GRIDLINE), Shapes::VERTEX_GRIDLINE, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
     // Store cube data
-    glBindVertexArray(VAO[2]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
+    glBindVertexArray(VAO[3]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[3]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_CUBE), Shapes::VERTEX_CUBE, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -126,8 +140,12 @@ Renderer::Renderer() :
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Enabling depth test and blending
+    // Enabling depth test
     glEnable(GL_DEPTH_TEST);
+
+    // Enable blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Uncomment this call to draw in wireframe polygons
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -222,6 +240,51 @@ void Renderer::swapAndNext() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void Renderer::drawGrid(float gridWidth, float gridHeight, unsigned int divisions, float planeAlpha) {
+    // Create matrices (used several times)
+    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
+    glm::mat4 view{ m_camera.getViewMatrix() };
+    glm::mat4 model;
+
+    // Setting up commonly used things...
+    float xDelta = gridWidth / (float)divisions;
+    float yDelta = gridHeight / (float)divisions;
+    m_shaderProgramCol.use();
+    m_shaderProgramCol.setMat4("u_projection", projection);
+    m_shaderProgramCol.setMat4("u_view", view);
+
+    // Draw grid lines
+    glBindVertexArray(VAO[0]);
+    m_shaderProgramCol.setFloat("u_alpha", 1.0f);
+    for (int i = 0; i < divisions - 1; i++) {
+        model = glm::mat4{ 1.0f };
+        model = glm::translate(model, glm::vec3(gridWidth / 2.0f, yDelta * (float)(i + 1), 0.0f));
+        model = glm::scale(model, glm::vec3((float)gridWidth));
+        m_shaderProgramCol.setMat4("u_model", model);
+        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
+
+        model = glm::mat4{ 1.0f };
+        model = glm::translate(model, glm::vec3(xDelta * (float)(i + 1), gridHeight / 2.0f, 0.0f));
+        model = glm::scale(model, glm::vec3((float)gridHeight));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        m_shaderProgramCol.setMat4("u_model", model);
+        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
+    }
+
+    // Draw grid plane
+    if (planeAlpha > 0.0f) {
+        glDepthMask(false);
+        glBindVertexArray(VAO[1]);
+        m_shaderProgramCol.setFloat("u_alpha", planeAlpha);
+        model = glm::mat4{ 1.0f };
+        model = glm::translate(model, glm::vec3(gridWidth / 2.0f, gridHeight / 2.0f, 0.0f));
+        model = glm::scale(model, glm::vec3((float)gridWidth, (float)gridHeight, 0.0f));
+        m_shaderProgramCol.setMat4("u_model", model);
+        glDrawElements(GL_TRIANGLES, sizeof(Shapes::INDEX_SQUARE) / sizeof(Shapes::INDEX_SQUARE[0]), GL_UNSIGNED_INT, 0);
+        glDepthMask(true);
+    }
+}
+
 void Renderer::drawOrtho() {
     // Create matrices (used several times)
     glm::mat4 projection{ 1.0f };
@@ -231,7 +294,8 @@ void Renderer::drawOrtho() {
     // Draw ortho
     glClear(GL_DEPTH_BUFFER_BIT); // Clean depth buffer, in order to draw on top of 3D objects
     m_shaderProgramCol.use();
-    glBindVertexArray(VAO[0]);
+    glBindVertexArray(VAO[2]);
+    m_shaderProgramCol.setFloat("u_alpha", 1.0f);
     projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -(float)m_orthoSize, (float)m_orthoSize);
     m_shaderProgramCol.setMat4("u_projection", projection);
     m_shaderProgramCol.setMat4("u_view", view);
@@ -243,35 +307,7 @@ void Renderer::drawOrtho() {
     glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_ORTHO) / sizeof(Shapes::VERTEX_ORTHO[0]));
 }
 
-void Renderer::drawGrid(float gridWidth, float gridHeight, unsigned int divisions) {
-    // Create matrices (used several times)
-    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
-    glm::mat4 view{ m_camera.getViewMatrix() };
-    glm::mat4 model;
 
-    // Draw grid
-    float xDelta = gridWidth / (float)divisions;
-    float yDelta = gridHeight / (float)divisions;
-    m_shaderProgramCol.use();
-    glBindVertexArray(VAO[1]);
-    m_shaderProgramCol.setMat4("u_projection", projection);
-    m_shaderProgramCol.setMat4("u_view", view);
-
-    for (int i = 0; i < divisions - 1; i++) {
-        model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(gridWidth / 2.0f, yDelta * (float)(i + 1), 0.0f));
-        model = glm::scale(model, glm::vec3((float)gridWidth));
-        m_shaderProgramCol.setMat4("u_model", model);
-        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_GRIDLINE) / sizeof(Shapes::VERTEX_GRIDLINE[0]));
-
-        model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(xDelta * (float)(i + 1), gridHeight / 2.0f, 0.0f));
-        model = glm::scale(model, glm::vec3((float)gridHeight));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        m_shaderProgramCol.setMat4("u_model", model);
-        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_GRIDLINE) / sizeof(Shapes::VERTEX_GRIDLINE[0]));
-    }
-}
 
 void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     // Create matrices (used several times)
@@ -282,7 +318,7 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
 
     // Draw cube
     m_shaderProgram.use();
-    glBindVertexArray(VAO[2]);
+    glBindVertexArray(VAO[3]);
     m_shaderProgram.setVec3("u_lightPos", m_lightPos);
     m_shaderProgram.setFloat("u_ambientStrength", 0.1f);
     m_shaderProgram.setVec4("u_objectColor", glm::vec4{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }); // access to first color only is temporary...

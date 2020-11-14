@@ -168,10 +168,10 @@ namespace fcpp {
             Shader m_shaderProgramCol;
 
             //! @brief Vertex Array Object(s).
-            unsigned int VAO[3];
+            unsigned int VAO[4];
 
             //! @brief Vertex Buffer Object(s).
-            unsigned int VBO[3];
+            unsigned int VBO[4];
 
             //! @brief Element Buffer Object(s).
             unsigned int EBO[1];
@@ -238,7 +238,7 @@ namespace fcpp {
             void drawOrtho();
 
             //! @brief It draws the grid on the screen.
-            void drawGrid(float gridWidth, float gridHeight, unsigned int divisions);
+            void drawGrid(float gridWidth, float gridHeight, unsigned int divisions, float planeAlpha);
 
             //! @brief It draws a cube, given the information on color(s) and position.
             void drawCube(glm::vec3 p, double d, std::vector<color> c);

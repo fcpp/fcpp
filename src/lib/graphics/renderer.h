@@ -185,6 +185,9 @@ namespace fcpp {
             //! @brief Current size of orthogonal axis.
             unsigned int m_orthoSize;
 
+            //! @brief The pass from a line to another of the grid.
+            double m_gridScale;
+
             //! @brief Current position of light source.
             glm::vec3 m_lightPos;
 
@@ -238,7 +241,7 @@ namespace fcpp {
             void drawOrtho();
 
             //! @brief It draws the grid on the screen.
-            void drawGrid(float gridWidth, float gridHeight, unsigned int divisions, float planeAlpha);
+            void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
 
             //! @brief It draws a cube, given the information on color(s) and position.
             void drawCube(glm::vec3 p, double d, std::vector<color> c);
@@ -254,6 +257,9 @@ namespace fcpp {
 
             //! @brief Sets the light's position.
             void setLightPosition(glm::vec3& newPos);
+
+            //! @brief Sets the scale of the grid.
+            void setGridScale(double newScale);
 
             //! @brief Sets the camera's yaw angle.
             void setYaw(float newYaw);

@@ -303,9 +303,9 @@ struct displayer {
             void update() {
                 if (m_refresh < P::net::next()) {
                     PROFILE_COUNT("displayer");
-                    glm::vec3 viewport_size = m_viewport_max - m_viewport_min;;
                     if (m_refresh == 0) {
                         // first frame only: set camera position, rotation, sensitivity
+                        glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
                         double dz = std::max(viewport_size.x/m_renderer.aspectRatio(), viewport_size.y);
                         dz /= tan(m_renderer.viewAngle() / 2) * 2;
@@ -321,6 +321,11 @@ struct displayer {
                         m_renderer.setYaw(-90.0f);  // -90.0f = 270.0f
                         m_renderer.setFarPlane((float)zFar);
                         m_renderer.setNearPlane((float)zNear);
+                        double diagonal = glm::length(viewport_size);
+                        double grid_scale = 1;
+                        while (grid_scale * 100 < diagonal) grid_scale *= 10;
+                        while (grid_scale * 10 > diagonal) grid_scale /= 10;
+                        m_renderer.setGridScale(grid_scale);
                     }
                     times_t t = get_warped(has_timer<P>{}, *this, m_refresh);
                     /**
@@ -329,8 +334,8 @@ struct displayer {
                      * You may want to display the current simulation time t.
                      */
 
-                     // Draw grid
-                    m_renderer.drawGrid(viewport_size.x, viewport_size.y, 16, 0.5f);
+                    // Draw grid
+                    m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
 
                     // Draw orthogonal axis
                     m_renderer.drawOrtho();

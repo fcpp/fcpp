@@ -1,6 +1,8 @@
 // Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
+#include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -40,6 +42,7 @@ Renderer::Renderer() :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_orthoSize{ SCR_DEFAULT_ORTHO },
+    m_gridScale{ 1.0 },
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_camera{},
     m_mouseLastX{ (float)(SCR_DEFAULT_WIDTH / 2) },
@@ -240,15 +243,16 @@ void Renderer::swapAndNext() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::drawGrid(float gridWidth, float gridHeight, unsigned int divisions, float planeAlpha) {
+void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
     glm::mat4 view{ m_camera.getViewMatrix() };
     glm::mat4 model;
 
     // Setting up commonly used things...
-    float xDelta = gridWidth / (float)divisions;
-    float yDelta = gridHeight / (float)divisions;
+    float gridWidth = std::abs(gridMin.x) + std::abs(gridMax.x);
+    float gridHeight = std::abs(gridMin.y) + std::abs(gridMax.y);
+    glm::vec3 gridCenter{ (gridMin.x + gridMax.x) / 2.0f, (gridMin.y + gridMax.y) / 2.0f, 0.0f };
     m_shaderProgramCol.use();
     m_shaderProgramCol.setMat4("u_projection", projection);
     m_shaderProgramCol.setMat4("u_view", view);
@@ -256,20 +260,26 @@ void Renderer::drawGrid(float gridWidth, float gridHeight, unsigned int division
     // Draw grid lines
     glBindVertexArray(VAO[0]);
     m_shaderProgramCol.setFloat("u_alpha", 1.0f);
-    for (int i = 0; i < divisions - 1; i++) {
+    for (float i = 0.0f; i <= gridWidth; i += m_gridScale) {
         model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(gridWidth / 2.0f, yDelta * (float)(i + 1), 0.0f));
-        model = glm::scale(model, glm::vec3((float)gridWidth));
-        m_shaderProgramCol.setMat4("u_model", model);
-        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
-
-        model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(xDelta * (float)(i + 1), gridHeight / 2.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(i + (gridCenter.x - gridWidth / 2.0f), gridCenter.y, 0.0f));
         model = glm::scale(model, glm::vec3((float)gridHeight));
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         m_shaderProgramCol.setMat4("u_model", model);
         glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
     }
+    for (float i = 0.0f; i <= gridHeight; i += m_gridScale) {
+        model = glm::mat4{ 1.0f };
+        model = glm::translate(model, glm::vec3(gridCenter.x, i + (gridCenter.y - gridHeight / 2.0f), 0.0f));
+        model = glm::scale(model, glm::vec3((float)gridWidth));
+        m_shaderProgramCol.setMat4("u_model", model);
+        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
+    }
+
+    std::cout << "gridMin = (" << gridMin.x << ", " << gridMin.y << ", " << gridMin.x << ")\n";
+    std::cout << "gridMax = (" << gridMax.x << ", " << gridMax.y << ", " << gridMax.x << ")\n";
+    std::cout << "gridWidth = " << gridWidth << "\n";
+    std::cout << "gridHeight = " << gridHeight << "\n";
 
     // Draw grid plane
     if (planeAlpha > 0.0f) {
@@ -277,7 +287,7 @@ void Renderer::drawGrid(float gridWidth, float gridHeight, unsigned int division
         glBindVertexArray(VAO[1]);
         m_shaderProgramCol.setFloat("u_alpha", planeAlpha);
         model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(gridWidth / 2.0f, gridHeight / 2.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(gridCenter.x, gridCenter.y, 0.0f));
         model = glm::scale(model, glm::vec3((float)gridWidth, (float)gridHeight, 0.0f));
         m_shaderProgramCol.setMat4("u_model", model);
         glDrawElements(GL_TRIANGLES, sizeof(Shapes::INDEX_SQUARE) / sizeof(Shapes::INDEX_SQUARE[0]), GL_UNSIGNED_INT, 0);
@@ -347,6 +357,10 @@ void Renderer::setPosition(glm::vec3& newPos) {
 
 void Renderer::setLightPosition(glm::vec3& newPos) {
     m_lightPos = newPos;
+}
+
+void Renderer::setGridScale(double newScale) {
+    m_gridScale = newScale;
 }
 
 void Renderer::setYaw(float newYaw) {

@@ -43,6 +43,20 @@ cc_library(
 )
 
 cc_library(
+    name = 'plot',
+    hdrs = ['plot.hpp'],
+    srcs = ['plot.cpp'],
+    deps = [
+        "//lib/common:mutex",
+        "//lib/common:tagged_tuple",
+        "//lib/option:aggregator",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'profiler',
     hdrs = ['profiler.hpp'],
     srcs = ['profiler.cpp'],

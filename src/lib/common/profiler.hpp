@@ -5,8 +5,8 @@
  * @brief Helper functions for profiling (if the `-DPROFILER` option is set).
  */
 
-#ifndef FCPP_PROFILER_H_
-#define FCPP_PROFILER_H_
+#ifndef FCPP_COMMON_PROFILER_H_
+#define FCPP_COMMON_PROFILER_H_
 
 #ifdef PROFILER
 
@@ -112,4 +112,4 @@ class profiler {
 
 #endif
 
-#endif // FCPP_PROFILER_H_
+#endif // FCPP_COMMON_PROFILER_H_

@@ -48,6 +48,7 @@ cc_library(
     hdrs = ['logger.hpp'],
     srcs = ['logger.cpp'],
     deps = [
+        "//lib/common:plot",
         "//lib/component:base",
         "//lib/option:aggregator",
         "//lib/option:sequence",

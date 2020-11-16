@@ -160,3 +160,22 @@ TEST(PlotTest, SplitJoinFilterSplitJoinValue) {
     ss << f;
     EXPECT_EQ(ss.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-oth0\", \"oth = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth0\", \"oth = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-oth10\", \"oth = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth10\", \"oth = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n\nshipout(\"experiment\");\n");
 }
+
+using joinsplitjoinfiltersplitjoinvalue = plot::join<splitjoinfiltersplitjoinvalue, filtersplitvalue>;
+
+TEST(PlotTest, JoinSplitJoinFilterSplitJoinValue) {
+    joinsplitjoinfiltersplitjoinvalue p;
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(0, 10, 0, -2);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(1, 5,  5, +1);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(2, 0, 10, +4);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(2, 10, 0, +6);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(1, 5,  5, +9);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(0, 0, 10, +13);
+    std::array<plot::page, 2> pb = p.build();
+    std::stringstream ss;
+    ss << pb[0];
+    EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-oth0\", \"oth = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth0\", \"oth = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-oth10\", \"oth = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth10\", \"oth = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
+    ss.str("");
+    ss << pb[1];
+    EXPECT_EQ(ss.str(), "plot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5), (10, 0)}}));\n\n");
+}

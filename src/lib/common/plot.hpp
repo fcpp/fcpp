@@ -80,12 +80,16 @@ namespace details {
         std::string pre;
         std::string main;
         while (not isalpha(s.back())) s.pop_back();
+        bool vowel = false;
         for (size_t i=0; i<s.size(); ++i) {
             if (isalpha(s[i])) {
-                if (main.size() < 3 or not isvowel(s[i])) main.push_back(s[i]);
+                if (main.size() < 3) main.push_back(s[i]);
+                else if (isvowel(s[i])) vowel = true;
+                else if (not vowel) main.push_back(s[i]);
             } else {
                 if (main.size()) pre.push_back(main[0]);
                 main = "";
+                vowel = false;
             }
         }
         return pre + main;
@@ -328,6 +332,42 @@ namespace details {
     struct array_cat<std::array<T,N>, std::array<T,M>> {
         using type = std::array<T,N+M>;
     };
+    //! @brief Concatenate plots and pages arrays.
+    template <size_t N, size_t M>
+    struct array_cat<std::array<plot,N>, std::array<page,M>> {
+        using type = std::array<page,M+1>;
+    };
+    template <size_t N, size_t M>
+    struct array_cat<std::array<page,N>, std::array<plot,M>> {
+        using type = std::array<page,N+1>;
+    };
+    //! @brief Concatenate plots and pages vectors.
+    template <>
+    struct array_cat<std::vector<plot>, std::vector<page>> {
+        using type = std::vector<page>;
+    };
+    template <>
+    struct array_cat<std::vector<page>, std::vector<plot>> {
+        using type = std::vector<page>;
+    };
+    //! @brief Concatenate plots arrays and pages vectors.
+    template <size_t N>
+    struct array_cat<std::array<plot,N>, std::vector<page>> {
+        using type = std::vector<page>;
+    };
+    template <size_t N>
+    struct array_cat<std::vector<page>, std::array<plot,N>> {
+        using type = std::vector<page>;
+    };
+    //! @brief Concatenate plots vectors and pages arrays.
+    template <size_t N>
+    struct array_cat<std::vector<plot>, std::array<page,N>> {
+        using type = std::array<page,N+1>;
+    };
+    template <size_t N>
+    struct array_cat<std::array<page,N>, std::vector<plot>> {
+        using type = std::array<page,N+1>;
+    };
     //! @brief Concatenate multiple vector and array types.
     template <typename T, typename U, typename... Us>
     struct array_cat<T, U, Us...> {
@@ -341,6 +381,25 @@ namespace details {
     //! @brief Does not resize an array.
     template <typename T, size_t N>
     void maybe_resize(std::array<T,N>&, size_t) {}
+    //! @brief Does not convert a vector.
+    template <typename T>
+    inline std::vector<T> maybe_promote(common::type_sequence<T>, std::vector<T> v) {
+        return v;
+    }
+    //! @brief Does not convert an array.
+    template <typename T, size_t N>
+    inline std::array<T,N> maybe_promote(common::type_sequence<T>, std::array<T,N> v) {
+        return v;
+    }
+    //! @brief Converts a vector of plots.
+    std::array<page,1> maybe_promote(common::type_sequence<page>, std::vector<plot> v) {
+        return {v};
+    }
+    //! @brief Converts an array of plots.
+    template <size_t N>
+    std::array<page,1> maybe_promote(common::type_sequence<page>, std::array<plot,N> v) {
+        return {v};
+    }
 }
 //! @endcond
 
@@ -381,7 +440,7 @@ class join {
     //! @brief Joining plotter builds.
     template <size_t i, size_t... is>
     void build_impl(build_type& res, std::index_sequence<i, is...>, size_t x = 0) const {
-        auto ri = std::get<i>(m_plotters).build();
+        auto ri = details::maybe_promote(common::type_sequence<typename build_type::value_type>{}, std::get<i>(m_plotters).build());
         details::maybe_resize(res, x+ri.size());
         for (size_t j = 0; j < ri.size(); ++j)
             res[x+j] = std::move(ri[j]);
@@ -690,8 +749,13 @@ class split {
     //! @brief Row processing.
     template <typename R>
     split& operator<<(R const& row) {
-        key_type k = row;
-        m_plotters[approx_impl(k, B{})] << row;
+        key_type k = approx_impl(row, B{});
+        P* p;
+        {
+            common::lock_guard<true> l(m_mutex);
+            p = &m_plotters[k];
+        }
+        *p << row;
         return *this;
     }
 
@@ -707,12 +771,14 @@ class split {
 
   private:
     //! @brief No approximations without buckets.
-    key_type& approx_impl(key_type& k, std::ratio<0>) {
-        return k;
+    template <typename R>
+    key_type approx_impl(R const& row, std::ratio<0>) const {
+        return row;
     }
     //! @brief Approximating the key to the closest bucket multiple.
-    template <intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>>
-    key_type& approx_impl(key_type& k, std::ratio<num,den>) {
+    template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>>
+    key_type approx_impl(R const& row, std::ratio<num,den>) const {
+        key_type k = row;
         intmax_t n = std::get<0>(k) * den / num + 0.5;
         std::get<0>(k) = double(n*num)/den;
         return k;
@@ -769,9 +835,23 @@ class split {
         }
     }
 
+    //! @brief A mutex for synchronised access to the map.
+    common::mutex<true> m_mutex;
     //! @brief The plotter.
     std::map<key_type, P> m_plotters;
 };
+
+
+/**
+ * @brief Produces a single plot.
+ *
+ * @param S The sequence of tags and aggregators for logging (intertwined).
+ * @param X The tag to be used for the x axis.
+ * @param Y The unit to be used for the y axis.
+ * @param A The sequence of row aggregators (defaults to `mean<double>`).
+ */
+template <typename S, typename X, template<class> class Y, typename A = common::type_sequence<>>
+using plotter = split<X, values<S, A, unit<Y>>>;
 
 
 }

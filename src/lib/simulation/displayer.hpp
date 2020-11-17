@@ -296,6 +296,7 @@ struct displayer {
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
+                if (P::net::next() == TIME_MAX) return TIME_MAX;
                 return std::min(m_refresh, P::net::next());
             }
 

@@ -25,8 +25,8 @@
 
 #include "lib/component/base.hpp"
 #include "lib/data/vec.hpp"
-#include "lib/graphics/renderer.h"
-#include "lib/graphics/shapes.h"
+#include "lib/graphics/renderer.hpp"
+#include "lib/graphics/shapes.hpp"
 
 
 

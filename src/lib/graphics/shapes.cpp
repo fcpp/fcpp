@@ -2,26 +2,26 @@
 
 #include <cstddef>
 
-#include "lib/graphics/shapes.h"
+#include "lib/graphics/shapes.hpp"
 
 
-const float fcpp::internal::Shapes::VERTEX_LINE[12] = {
-    // positions           // colors
-    -0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f,
-     0.5f,  0.0f,  0.0f,   1.0f, 1.0f, 1.0f
+const float fcpp::internal::Shapes::VERTEX_LINE[6] = {
+    // positions        
+     0.0f,  0.0f,  0.0f,
+     1.0f,  0.0f,  0.0f
 };
 
-const float fcpp::internal::Shapes::VERTEX_SQUARE[24] = {
-    // positions           // colors
-    -0.5f, -0.5f,  0.0f,   0.5f, 0.5f, 0.5f,
-     0.5f, -0.5f,  0.0f,   0.5f, 0.5f, 0.5f,
-    -0.5f,  0.5f,  0.0f,   0.5f, 0.5f, 0.5f,
-     0.5f,  0.5f,  0.0f,   0.5f, 0.5f, 0.5f
+const float fcpp::internal::Shapes::VERTEX_SQUARE[12] = {
+    // positions        
+     0.0f,  0.0f,  0.0f,
+     0.0f,  1.0f,  0.0f,
+     1.0f,  1.0f,  0.0f,
+     1.0f,  0.0f,  0.0f
 };
 
 const int fcpp::internal::Shapes::INDEX_SQUARE[6] = {
     0, 1, 2,
-    2, 3, 1
+    2, 3, 0
 };
 
 const float fcpp::internal::Shapes::VERTEX_ORTHO[36] = {

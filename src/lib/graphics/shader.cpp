@@ -6,7 +6,7 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "lib/graphics/shader.h"
+#include "lib/graphics/shader.hpp"
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath)
 {

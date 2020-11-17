@@ -12,10 +12,10 @@ namespace fcpp {
 		class Shapes {
         public:
 			//! @brief Line's vertex data.
-			static const float VERTEX_LINE[12];
+			static const float VERTEX_LINE[6];
 
 			//! @brief Square's vertex data.
-			static const float VERTEX_SQUARE[24];
+			static const float VERTEX_SQUARE[12];
 
 			//! @brief Square's index data.
 			static const int INDEX_SQUARE[6];

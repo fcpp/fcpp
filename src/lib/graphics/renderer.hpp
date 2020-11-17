@@ -10,9 +10,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image/stb_image.h>
 
-#include "lib/graphics/camera.h"
-#include "lib/graphics/shader.h"
-#include "lib/graphics/shapes.h"
+#include "lib/graphics/camera.hpp"
+#include "lib/graphics/shader.hpp"
+#include "lib/graphics/shapes.hpp"
 
 
 namespace fcpp {
@@ -146,6 +146,12 @@ namespace fcpp {
             //! @brief Default path to fragment_col shader.
             static const std::string FRAGMENT_COLOR_PATH;
 
+            //! @brief Default path to vertex_ortho shader.
+            static const std::string VERTEX_ORTHO_PATH;
+
+            //! @brief Default path to fragment_ortho shader.
+            static const std::string FRAGMENT_ORTHO_PATH;
+
             //! @brief Default width of the window.
             static const unsigned int SCR_DEFAULT_WIDTH{ 800 };
 
@@ -161,11 +167,14 @@ namespace fcpp {
             //! @brief Window object for GLFW; it stores OpenGL context information.
             GLFWwindow* m_window;
 
-            //! @brief Main shader program.
+            //! @brief Main shader program, with lighting caluclations and color info.
             Shader m_shaderProgram;
 
-            //! @brief Additional shader program for reading vertex buffers with color info; used for orthogonal axis.
+            //! @brief Additional shader program used for simple shapes and uniform color value.
             Shader m_shaderProgramCol;
+
+            //! @brief Additional shader program used for orthogonal axis.
+            Shader m_shaderProgramOrtho;
 
             //! @brief Vertex Array Object(s).
             unsigned int VAO[4];

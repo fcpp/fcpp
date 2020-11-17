@@ -11,10 +11,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image/stb_image.h>
 
-#include "lib/graphics/camera.h"
-#include "lib/graphics/renderer.h"
-#include "lib/graphics/shader.h"
-#include "lib/graphics/shapes.h"
+#include "lib/graphics/camera.hpp"
+#include "lib/graphics/renderer.hpp"
+#include "lib/graphics/shader.hpp"
+#include "lib/graphics/shapes.hpp"
 
 
 // using namespace fcpp::internal to prevent very verbose code...
@@ -27,11 +27,15 @@ using namespace fcpp::internal;
     const std::string Renderer::FRAGMENT_PATH{ ".\\shaders\\fragment.glsl" };
     const std::string Renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
     const std::string Renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
+    const std::string Renderer::VERTEX_ORTHO_PATH{ ".\\shaders\\vertex_ortho.glsl" };
+    const std::string Renderer::FRAGMENT_ORTHO_PATH{ ".\\shaders\\fragment_ortho.glsl" };
 #else
     const std::string Renderer::VERTEX_PATH{ "./shaders/vertex.glsl" };
     const std::string Renderer::FRAGMENT_PATH{ "./shaders/fragment.glsl" };
     const std::string Renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
     const std::string Renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
+    const std::string Renderer::VERTEX_ORTHO_PATH{ "./shaders/vertex_ortho.glsl" };
+    const std::string Renderer::FRAGMENT_ORTHO_PATH{ "./shaders/fragment_ortho.glsl" };
 #endif
 
     const glm::vec3 Renderer::LIGHT_DEFAULT_POS{ glm::vec3{0.0f, 0.0f, 0.0f} };
@@ -90,6 +94,7 @@ Renderer::Renderer() :
     // Generate actual shader programs
     m_shaderProgram = Shader{ VERTEX_PATH.c_str(), FRAGMENT_PATH.c_str() };
     m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
+    m_shaderProgramOrtho = Shader{ VERTEX_ORTHO_PATH.c_str(), FRAGMENT_ORTHO_PATH.c_str() };
 
     // Generate VAOs, VBOs and EBOs
     glGenVertexArrays(4, VAO);
@@ -99,24 +104,20 @@ Renderer::Renderer() :
     // Store line data
     glBindVertexArray(VAO[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_LINE), Shapes::VERTEX_LINE, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_LINE), Shapes::VERTEX_LINE, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Store line data
+    // Store square data
     glBindVertexArray(VAO[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_SQUARE), Shapes::VERTEX_SQUARE, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_SQUARE), Shapes::VERTEX_SQUARE, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]); // VAO[1] stores EBO[0] here; do NOT unbind EBO[0] until VAO[1] is unbound
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Shapes::INDEX_SQUARE), Shapes::INDEX_SQUARE, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -247,63 +248,62 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
     glm::mat4 view{ m_camera.getViewMatrix() };
-    glm::mat4 model;
+    glm::mat4 model{ 1.0f };;
 
     // Setting up commonly used things...
-    float gridWidth = std::abs(gridMin.x) + std::abs(gridMax.x);
-    float gridHeight = std::abs(gridMin.y) + std::abs(gridMax.y);
-    glm::vec3 gridCenter{ (gridMin.x + gridMax.x) / 2.0f, (gridMin.y + gridMax.y) / 2.0f, 0.0f };
-    int grid_min_x = floor(gridMin.x / m_gridScale);
-    int grid_max_x = ceil(gridMax.x / m_gridScale);
-    int grid_min_y = floor(gridMin.y / m_gridScale);
-    int grid_max_y = ceil(gridMax.y / m_gridScale);
+    float gridWidth = gridMax.x - gridMin.x;
+    float gridHeight = gridMax.y - gridMin.y;
+    int grid_min_x = std::floor(gridMin.x / m_gridScale);
+    int grid_max_x = std::ceil(gridMax.x / m_gridScale);
+    int grid_min_y = std::floor(gridMin.y / m_gridScale);
+    int grid_max_y = std::ceil(gridMax.y / m_gridScale);
     m_shaderProgramCol.use();
     m_shaderProgramCol.setMat4("u_projection", projection);
     m_shaderProgramCol.setMat4("u_view", view);
+    m_shaderProgramCol.setMat4("u_model", model);
 
     // Draw grid lines
     glBindVertexArray(VAO[0]);
-    m_shaderProgramCol.setFloat("u_alpha", 1.0f);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
     for (int x = grid_min_x; x <= grid_max_x; ++x) {
-        // disegno linea griglia in (x * m_gridScale, grid_min_y * m_gridScale) -- (x * m_gridScale, grid_max_y * m_gridScale)
-        // eventualmente: colore piu' marcato se x%10 == 0, colore meno marcato altrimenti
+        float newLine[] = {
+            (float)(x * m_gridScale), (float)(grid_min_y * m_gridScale), 0.0f,
+            (float)(x * m_gridScale), (float)(grid_max_y * m_gridScale), 0.0f
+        };
+        if(x % 10 == 0) m_shaderProgramCol.setVec4("u_color", glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
+        else m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f });
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Shapes::VERTEX_LINE), newLine);
+        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
     }
     for (int y = grid_min_y; y <= grid_max_y; ++y) {
-        // disegno linea griglia in (grid_min_x * m_gridScale, y * m_gridScale) -- (grid_max_x * m_gridScale, y * m_gridScale)
-    }
-    for (float i = 0.0f; i <= gridWidth; i += m_gridScale) {
-        model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(i + (gridCenter.x - gridWidth / 2.0f), gridCenter.y, 0.0f));
-        model = glm::scale(model, glm::vec3((float)gridHeight));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        m_shaderProgramCol.setMat4("u_model", model);
+        float newLine[] = {
+            (float)(grid_min_x * m_gridScale), (float)(y * m_gridScale), 0.0f,
+            (float)(grid_max_x * m_gridScale), (float)(y * m_gridScale), 0.0f
+        };
+        if (y % 10 == 0) m_shaderProgramCol.setVec4("u_color", glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
+        else m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f });
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Shapes::VERTEX_LINE), newLine);
         glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
     }
-    for (float i = 0.0f; i <= gridHeight; i += m_gridScale) {
-        model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(gridCenter.x, i + (gridCenter.y - gridHeight / 2.0f), 0.0f));
-        model = glm::scale(model, glm::vec3((float)gridWidth));
-        m_shaderProgramCol.setMat4("u_model", model);
-        glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_LINE) / sizeof(Shapes::VERTEX_LINE[0]));
-    }
-
-    std::cout << "gridMin = (" << gridMin.x << ", " << gridMin.y << ", " << gridMin.x << ")\n";
-    std::cout << "gridMax = (" << gridMax.x << ", " << gridMax.y << ", " << gridMax.x << ")\n";
-    std::cout << "gridWidth = " << gridWidth << "\n";
-    std::cout << "gridHeight = " << gridHeight << "\n";
 
     // Draw grid plane
     if (planeAlpha > 0.0f) {
+        m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.3f, 0.3f, 0.3f, planeAlpha });
+        float newSquare[] = {
+            (float)(grid_min_x * m_gridScale), (float)(grid_min_y * m_gridScale), 0.0f,
+            (float)(grid_min_x * m_gridScale), (float)(grid_max_y * m_gridScale), 0.0f,
+            (float)(grid_max_x * m_gridScale), (float)(grid_max_y * m_gridScale), 0.0f,
+            (float)(grid_max_x * m_gridScale), (float)(grid_min_y * m_gridScale), 0.0f,
+        };
         glDepthMask(false);
         glBindVertexArray(VAO[1]);
-        m_shaderProgramCol.setFloat("u_alpha", planeAlpha);
-        model = glm::mat4{ 1.0f };
-        model = glm::translate(model, glm::vec3(gridCenter.x, gridCenter.y, 0.0f));
-        model = glm::scale(model, glm::vec3((float)gridWidth, (float)gridHeight, 0.0f));
-        m_shaderProgramCol.setMat4("u_model", model);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Shapes::VERTEX_SQUARE), newSquare);
         glDrawElements(GL_TRIANGLES, sizeof(Shapes::INDEX_SQUARE) / sizeof(Shapes::INDEX_SQUARE[0]), GL_UNSIGNED_INT, 0);
         glDepthMask(true);
     }
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Renderer::drawOrtho() {
@@ -314,17 +314,17 @@ void Renderer::drawOrtho() {
 
     // Draw ortho
     glClear(GL_DEPTH_BUFFER_BIT); // Clean depth buffer, in order to draw on top of 3D objects
-    m_shaderProgramCol.use();
+    m_shaderProgramOrtho.use();
     glBindVertexArray(VAO[2]);
-    m_shaderProgramCol.setFloat("u_alpha", 1.0f);
+    m_shaderProgramOrtho.setFloat("u_alpha", 1.0f);
     projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -(float)m_orthoSize, (float)m_orthoSize);
-    m_shaderProgramCol.setMat4("u_projection", projection);
-    m_shaderProgramCol.setMat4("u_view", view);
+    m_shaderProgramOrtho.setMat4("u_projection", projection);
+    m_shaderProgramOrtho.setMat4("u_view", view);
     model = glm::translate(model, glm::vec3((float)m_currentWidth - ((float)m_orthoSize * 5.0f / 4.0f), (float)m_orthoSize * 5.0f / 4.0f, 0.0f));
     model = glm::rotate(model, glm::radians(-m_camera.getPitch()), glm::vec3(1.0f, 0.0f, 0.0f));
     model = glm::rotate(model, glm::radians(m_camera.getYaw() + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::scale(model, glm::vec3((float)m_orthoSize));
-    m_shaderProgramCol.setMat4("u_model", model);
+    m_shaderProgramOrtho.setMat4("u_model", model);
     glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_ORTHO) / sizeof(Shapes::VERTEX_ORTHO[0]));
 }
 

@@ -253,6 +253,10 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
     float gridWidth = std::abs(gridMin.x) + std::abs(gridMax.x);
     float gridHeight = std::abs(gridMin.y) + std::abs(gridMax.y);
     glm::vec3 gridCenter{ (gridMin.x + gridMax.x) / 2.0f, (gridMin.y + gridMax.y) / 2.0f, 0.0f };
+    int grid_min_x = floor(gridMin.x / m_gridScale);
+    int grid_max_x = ceil(gridMax.x / m_gridScale);
+    int grid_min_y = floor(gridMin.y / m_gridScale);
+    int grid_max_y = ceil(gridMax.y / m_gridScale);
     m_shaderProgramCol.use();
     m_shaderProgramCol.setMat4("u_projection", projection);
     m_shaderProgramCol.setMat4("u_view", view);
@@ -260,6 +264,13 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
     // Draw grid lines
     glBindVertexArray(VAO[0]);
     m_shaderProgramCol.setFloat("u_alpha", 1.0f);
+    for (int x = grid_min_x; x <= grid_max_x; ++x) {
+        // disegno linea griglia in (x * m_gridScale, grid_min_y * m_gridScale) -- (x * m_gridScale, grid_max_y * m_gridScale)
+        // eventualmente: colore piu' marcato se x%10 == 0, colore meno marcato altrimenti
+    }
+    for (int y = grid_min_y; y <= grid_max_y; ++y) {
+        // disegno linea griglia in (grid_min_x * m_gridScale, y * m_gridScale) -- (grid_max_x * m_gridScale, y * m_gridScale)
+    }
     for (float i = 0.0f; i <= gridWidth; i += m_gridScale) {
         model = glm::mat4{ 1.0f };
         model = glm::translate(model, glm::vec3(i + (gridCenter.x - gridWidth / 2.0f), gridCenter.y, 0.0f));

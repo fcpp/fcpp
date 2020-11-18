@@ -177,13 +177,13 @@ namespace fcpp {
             Shader m_shaderProgramOrtho;
 
             //! @brief Vertex Array Object(s).
-            unsigned int VAO[4];
+            unsigned int VAO[5];
 
             //! @brief Vertex Buffer Object(s).
-            unsigned int VBO[4];
+            unsigned int VBO[5];
 
             //! @brief Element Buffer Object(s).
-            unsigned int EBO[1];
+            unsigned int EBO[5];
 
             //! @brief Current width of the window.
             unsigned int m_currentWidth;
@@ -196,6 +196,15 @@ namespace fcpp {
 
             //! @brief The pass from a line to another of the grid.
             double m_gridScale;
+
+            //! @brief It checks if it's the first time it drawn the grid.
+            double m_gridFirst;
+
+            //! @brief Size (in bytes) of the plane's vertex data; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            int m_planeBufferSize;
+
+            //! @brief Size (in bytes) of the grid's vertex data; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            int m_gridBufferSize;
 
             //! @brief Current position of light source.
             glm::vec3 m_lightPos;

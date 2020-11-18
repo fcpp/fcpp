@@ -67,6 +67,7 @@ cc_test(
         "@gtest//:main",
         "//lib/component:base",
         "//lib/component:calculus",
+        "//lib/component:timer",
         "//lib/coordination:time",
         "//test:test_net",
     ],

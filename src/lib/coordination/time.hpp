@@ -13,8 +13,7 @@
 #include <algorithm>
 #include <limits>
 
-#include "lib/data/field.hpp"
-#include "lib/internal/trace.hpp"
+#include "lib/coordination/utils.hpp"
 
 
 /**
@@ -45,6 +44,57 @@ inline A counter(node_t& node, trace_t call_point, A&& a) {
 template <typename node_t>
 inline int counter(node_t& node, trace_t call_point) {
     return counter(node, call_point, 1, 0);
+}
+
+
+//! @brief An exponential filter dampening changes of a value across time.
+template <typename node_t, typename T>
+T exponential_filter(node_t& node, trace_t call_point, T initial, T value, double factor) {
+    return old(node, call_point, initial, [&](T x){
+        return value + (1-factor) * (x - value);
+    });
+}
+
+//! @brief An exponential filter dampening changes of a value across time.
+template <typename node_t, typename T>
+inline T exponential_filter(node_t& node, trace_t call_point, T value, double factor) {
+    return exponential_filter(node, call_point, value, value, factor);
+}
+
+
+//! @brief An exponential filter dampening changes of a value across time and space.
+template <typename node_t, typename T>
+T shared_filter(node_t& node, trace_t call_point, T initial, T value, double factor) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+
+    return old(node, 0, initial, [&](T x){
+        return value + (1-factor) * mean_hood(node, 0, nbr(node, 1, x) - nbr(node, 2, value), x - value);
+    });
+}
+
+//! @brief An exponential filter dampening changes of a value across time and space.
+template <typename node_t, typename T>
+T shared_filter(node_t& node, trace_t call_point, T value, double factor) {
+    return shared_filter(node, call_point, value, value, factor);
+}
+
+//! @brief An exponential decay fading from initial to value across time and space.
+template <typename node_t, typename T>
+T shared_decay(node_t& node, trace_t call_point, T initial, T value, double factor) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+
+    return nbr(node, 0, initial, [&](field<T> x){
+        return value + (1-factor) * mean_hood(node, 0, x - nbr(node, 1, value));
+    });
+}
+
+
+//! @brief Maintains a shared clock across the network.
+template <typename node_t>
+times_t shared_clock(node_t& node, trace_t call_point) {
+    return nbr(node, call_point, node.current_time(), [&](field<times_t> x){
+        return max_hood(node, call_point, x +node.nbr_lag());
+    });
 }
 
 

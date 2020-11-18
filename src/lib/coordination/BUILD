@@ -52,8 +52,7 @@ cc_library(
     hdrs = ['time.hpp'],
     srcs = ['time.cpp'],
     deps = [
-        "//lib/data:field",
-        "//lib/internal:trace",
+        "//lib/coordination:utils",
     ],
     visibility = [
         '//visibility:public',

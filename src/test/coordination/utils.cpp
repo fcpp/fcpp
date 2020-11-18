@@ -102,3 +102,19 @@ MULTI_TEST(UtilsTest, SumHood, O, 3) {
     EXPECT_ROUND(n, {1, 2, 4},
                     {3, 7, 6});
 }
+
+MULTI_TEST(UtilsTest, MeanHood, O, 3) {
+    test_net<combo<O>, std::tuple<double>(double)> n{
+        [&](auto& node, double value){
+            return std::make_tuple(
+                coordination::mean_hood(node, 0, nbr(node, 0, value))
+            );
+        }
+    };
+    EXPECT_ROUND(n, {1.0, 2.0, 6.0},
+                    {1.0, 2.0, 6.0});
+    EXPECT_ROUND(n, {1.0, 2.0, 6.0},
+                    {1.5, 3.0, 4.0});
+    EXPECT_ROUND(n, {1.0, 2.0, 6.0},
+                    {1.5, 3.0, 4.0});
+}

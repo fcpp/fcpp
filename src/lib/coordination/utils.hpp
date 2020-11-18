@@ -241,6 +241,23 @@ inline to_local<A> sum_hood(node_t& node, trace_t call_point, const A& a, const 
 }
 
 
+//! @brief Reduces a field to a single value by averaging.
+template <typename node_t, typename A>
+inline to_local<A> mean_hood(node_t& node, trace_t call_point, const A& a) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x + y;
+    }, a) / count_hood(node, call_point);
+}
+
+//! @brief Reduces a field to a single value by averaging with a default value for self.
+template <typename node_t, typename A, typename B>
+inline to_local<A> mean_hood(node_t& node, trace_t call_point, const A& a, const B& b) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x + y;
+    }, a, b) / count_hood(node, call_point);
+}
+
+
 }
 
 

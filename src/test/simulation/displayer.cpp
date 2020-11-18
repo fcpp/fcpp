@@ -24,6 +24,8 @@ namespace tags {
     struct source_diameter_c {};
     //! @brief Color representing the diameter of the network (in every node).
     struct diameter_c {};
+    //! @brief Size of the current node.
+    struct size {};
 }
 
 //! @brief Main function.
@@ -35,6 +37,7 @@ FUN() void diameter_estimation(ARGS) { CODE
 #endif
     device_t source_id = ((int)node.current_time()) / 50;
     bool is_source = node.uid == source_id;
+    node.storage(tags::size{}) = is_source ? 10 : 5;
     double dist = abf_distance(CALL, is_source);
     double sdiam = mp_collection(CALL, dist, dist, 0.0, [](double x, double y){
         return max(x, y);
@@ -103,12 +106,13 @@ DECLARE_OPTIONS(opt,
         diameter,           double,
         distance_c,         color,
         source_diameter_c,  color,
-        diameter_c,         color
+        diameter_c,         color,
+        size,               double
     >,
     spawn_schedule<sequence::multiple_n<DEV_NUM, 0>>,
     init<x, rectangle_d>,
     connector<connect::fixed<100>>,
-    size_val<5>,
+    size_tag<size>,
     color_tag<distance_c,source_diameter_c,diameter_c>
 );
 

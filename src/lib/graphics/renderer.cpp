@@ -251,8 +251,6 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
     glm::mat4 model{ 1.0f };;
 
     // Setting up commonly used things...
-    float gridWidth = gridMax.x - gridMin.x;
-    float gridHeight = gridMax.y - gridMin.y;
     int grid_min_x = std::floor(gridMin.x / m_gridScale);
     int grid_max_x = std::ceil(gridMax.x / m_gridScale);
     int grid_min_y = std::floor(gridMin.y / m_gridScale);

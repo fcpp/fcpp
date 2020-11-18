@@ -229,15 +229,15 @@ namespace fcpp {
 #endif
 
 #if   FCPP_HOPS == 8
-    typedef uint8_t hops_t;
+    typedef int8_t hops_t;
 #elif FCPP_HOPS == 16
-    typedef uint16_t hops_t;
+    typedef int16_t hops_t;
 #elif FCPP_HOPS == 32
-    typedef uint32_t hops_t;
+    typedef int32_t hops_t;
 #else
     static_assert(false, "invalid value for FCPP_HOPS");
     //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
-    typedef uint32_t hops_t;
+    typedef int32_t hops_t;
 #endif
 }
 

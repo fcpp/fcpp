@@ -24,52 +24,94 @@ namespace fcpp {
 namespace coordination {
 
 
-//! @brief Finds the minimum value, knowing an upper bound to the network diameter.
+//! @brief Finds the minimum value and hop distance to it, knowing an upper bound to the network diameter.
 template <typename node_t, typename T>
-T diameter_election(node_t& node, trace_t call_point, const T& value, hops_t diameter) {
+tuple<T,hops_t> diameter_election_distance(node_t& node, trace_t call_point, const T& value, hops_t diameter) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return get<0>(nbr(node, 0, make_tuple(value, hops_t{0}), [&](field<tuple<T,hops_t>> x){
-        tuple<T,hops_t> best = fold_hood(node, 0, [&](tuple<T,hops_t> const& a, tuple<T,hops_t> const& b){
+    using type = tuple<T,hops_t>;
+    return nbr(node, 0, type(value, 0), [&](field<type> x){
+        type best = fold_hood(node, 0, [&](type const& a, type const& b){
             return get<1>(a) < diameter and a < b ? a : b;
-        }, x, make_tuple(value, hops_t{0}));
+        }, x, type(value, -1));
         get<1>(best) += 1;
-        return min(best, make_tuple(value, hops_t{0}));
-    }));
+        return best;
+    });
+}
+
+//! @brief Finds the minimum value, knowing an upper bound to the network diameter.
+template <typename node_t, typename T>
+inline T diameter_election(node_t& node, trace_t call_point, const T& value, hops_t diameter) {
+    return get<0>(diameter_election_distance(node, call_point, value, diameter));
+}
+
+//! @brief Finds the minimum UID and hop distance to it, knowing an upper bound to the network diameter.
+template <typename node_t>
+inline tuple<device_t,hops_t> diameter_election_distance(node_t& node, trace_t call_point, hops_t diameter) {
+    return diameter_election_distance(node, call_point, node.uid, diameter);
 }
 
 //! @brief Finds the minimum UID, knowing an upper bound to the network diameter.
 template <typename node_t>
-inline device_t diameter_election(node_t& node, trace_t call_point, int diameter) {
+inline device_t diameter_election(node_t& node, trace_t call_point, hops_t diameter) {
     return diameter_election(node, call_point, node.uid, diameter);
 }
 
 
-//! @brief Finds the minimum value, without any additional knowledge, and following a given expansion function.
-template <typename node_t, typename T, typename G, typename = common::if_signature<G, int(int)>>
-T wave_election(node_t& node, trace_t call_point, const T& value, G&& expansion) {
+//! @brief Finds the minimum value, hop distance to it and other internal data, without any additional knowledge, and following a given expansion function.
+template <typename node_t, typename T, typename G, typename = common::if_signature<G, hops_t(hops_t)>>
+tuple<T,hops_t,hops_t,hops_t> wave_election_internal(node_t& node, trace_t call_point, const T& value, G&& expansion) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return get<0>(nbr(node, 0, make_tuple(value, 0, -expansion(0), 0), [&](field<tuple<T,int,int,int>> x){
-        tuple<T,int,int,int> next = fold_hood(node, 0, [](tuple<T,int,int,int> const& a, tuple<T,int,int,int> const& b){
+    using type = tuple<T,hops_t,hops_t,hops_t>;
+    return nbr(node, 0, type(value, 0, -expansion(0), 0), [&](field<type> x){
+        type next = fold_hood(node, 0, [](type const& a, type const& b){
             return get<1>(a) < -get<2>(a) and a < b ? a : b;
-        }, x, make_tuple(value, -1, -expansion(0), 0));
+        }, x, type(value, -1, -expansion(0), 0));
         get<1>(next) += 1;
-        get<3>(next) = max(fold_hood(node, 0, [&](tuple<T,int,int,int> const& a, int b){
+        get<3>(next) = max(fold_hood(node, 0, [&](type const& a, hops_t b){
             return get<1>(a) > get<1>(next) and get<3>(a) > b ? get<3>(a) : b;
-        }, x, 0), get<1>(next));
+        }, x, hops_t{0}), get<1>(next));
         if (get<1>(next) == 0) get<2>(next) = -expansion(get<3>(next));
         return next;
-    }));
+    });
+}
+
+//! @brief Finds the minimum value and hop distance to it, without any additional knowledge, and following a given expansion function.
+template <typename node_t, typename T, typename G, typename = common::if_signature<G, hops_t(hops_t)>>
+inline tuple<T,hops_t> wave_election_distance(node_t& node, trace_t call_point, const T& value, G&& expansion) {
+    auto r = wave_election_internal(node, call_point, value, expansion);
+    return {get<0>(r), get<1>(r)};
+}
+
+//! @brief Finds the minimum value, without any additional knowledge, and following a given expansion function.
+template <typename node_t, typename T, typename G, typename = common::if_signature<G, hops_t(hops_t)>>
+inline T wave_election(node_t& node, trace_t call_point, const T& value, G&& expansion) {
+    return get<0>(wave_election_internal(node, call_point, value, expansion));
+}
+
+//! @brief Finds the minimum value and hop distance to it, without any additional knowledge.
+template <typename node_t, typename T>
+inline tuple<T,hops_t> wave_election_distance(node_t& node, trace_t call_point, const T& value) {
+    return wave_election_distance(node, call_point, value, [](hops_t x) {
+        // expansion function granting recovery time below (1+√2)x diameter election (for x ≥ 3)
+        return std::max(hops_t(2.414213562373095*x+4.6), hops_t{6});
+    });
 }
 
 //! @brief Finds the minimum value, without any additional knowledge.
 template <typename node_t, typename T>
 inline T wave_election(node_t& node, trace_t call_point, const T& value) {
-    return wave_election(node, call_point, value, [](int x){
+    return wave_election(node, call_point, value, [](hops_t x) {
         // expansion function granting recovery time below (1+√2)x diameter election (for x ≥ 3)
-        return std::max(int(2.414213562373095*x+4.6), 6);
+        return std::max(hops_t(2.414213562373095*x+4.6), hops_t{6});
     });
+}
+
+//! @brief Finds the minimum UID and hop distance to it, without any additional knowledge.
+template <typename node_t>
+inline tuple<device_t,hops_t> wave_election_distance(node_t& node, trace_t call_point) {
+    return wave_election_distance(node, call_point, node.uid);
 }
 
 //! @brief Finds the minimum UID, without any additional knowledge.
@@ -81,17 +123,17 @@ inline device_t wave_election(node_t& node, trace_t call_point) {
 
 //! @brief Finds the minimum value, without any additional knowledge, through alternating colors.
 template <typename node_t, typename T>
-T color_election(node_t& node, trace_t call_point, const T& value) {
+tuple<bool,T,hops_t,device_t> color_election_internal(node_t& node, trace_t call_point, const T& value) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    using key_type = tuple<bool,T,int,device_t>;
+    using key_type = tuple<bool,T,hops_t,device_t>;
     constexpr size_t disable = 0;
     constexpr size_t leader  = 1;
     constexpr size_t level   = 2;
     constexpr size_t parent  = 3;
 
     key_type self_key{false, value, 0, node.uid};
-    return get<leader>(nbr(node, 0, self_key, [&](field<key_type> nbr_keys) -> key_type {
+    return nbr(node, 0, self_key, [&](field<key_type> nbr_keys) -> key_type {
         key_type const& old_key = self(node, 0, nbr_keys);
         key_type const& parent_key = self(node, 0, nbr_keys, get<parent>(old_key));
         key_type const* pbk = &self_key;
@@ -141,10 +183,29 @@ T color_election(node_t& node, trace_t call_point, const T& value) {
             return new_key;
         }
         return old_key;
-    }));
+    });
+}
+
+//! @brief Finds the minimum value and hop distance to it, without any additional knowledge, through alternating colors.
+template <typename node_t, typename T>
+inline tuple<T,hops_t> color_election_distance(node_t& node, trace_t call_point, const T& value) {
+    auto r = color_election_internal(node, call_point, value);
+    return {get<1>(r), get<2>(r)};
 }
 
 //! @brief Finds the minimum value, without any additional knowledge, through alternating colors.
+template <typename node_t, typename T>
+inline T color_election(node_t& node, trace_t call_point, const T& value) {
+    return get<1>(color_election_internal(node, call_point, value));
+}
+
+//! @brief Finds the minimum UID and hop distance to it, without any additional knowledge, through alternating colors.
+template <typename node_t>
+inline tuple<device_t,hops_t> color_election_distance(node_t& node, trace_t call_point) {
+    return color_election_distance(node, call_point, node.uid);
+}
+
+//! @brief Finds the minimum UID, without any additional knowledge, through alternating colors.
 template <typename node_t>
 inline device_t color_election(node_t& node, trace_t call_point) {
     return color_election(node, call_point, node.uid);

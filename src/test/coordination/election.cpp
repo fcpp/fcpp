@@ -14,7 +14,7 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<tuple<int,hops_t>, tuple<int,int>, tuple<int,int,int,int>, tuple<bool,int,int,unsigned int>>,
+    exports<tuple<int,hops_t>, tuple<int,hops_t,hops_t,hops_t>, tuple<bool,int,hops_t,device_t>>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

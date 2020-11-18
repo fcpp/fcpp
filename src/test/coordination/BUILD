@@ -61,6 +61,21 @@ cc_test(
 )
 
 cc_test(
+    name = "time",
+    srcs = ["time.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/component:base",
+        "//lib/component:calculus",
+        "//lib/coordination:time",
+        "//test:test_net",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "utils",
     srcs = ["utils.cpp"],
     deps = [

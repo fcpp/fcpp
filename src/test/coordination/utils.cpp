@@ -102,17 +102,3 @@ MULTI_TEST(UtilsTest, SumHood, O, 3) {
     EXPECT_ROUND(n, {1, 2, 4},
                     {3, 7, 6});
 }
-
-MULTI_TEST(UtilsTest, Counter, O, 3) {
-    test_net<combo<O>, std::tuple<int>()> n{
-        [&](auto& node){
-            return std::make_tuple(
-                coordination::counter(node, 0)
-            );
-        }
-    };
-    EXPECT_ROUND(n, {1, 1, 1});
-    EXPECT_ROUND(n, {2, 2, 2});
-    EXPECT_ROUND(n, {3, 3, 3});
-    EXPECT_ROUND(n, {4, 4, 4});
-}

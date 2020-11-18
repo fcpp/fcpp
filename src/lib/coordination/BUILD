@@ -48,6 +48,19 @@ cc_library(
 )
 
 cc_library(
+    name = 'time',
+    hdrs = ['time.hpp'],
+    srcs = ['time.cpp'],
+    deps = [
+        "//lib/data:field",
+        "//lib/internal:trace",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'utils',
     hdrs = ['utils.hpp'],
     srcs = ['utils.cpp'],

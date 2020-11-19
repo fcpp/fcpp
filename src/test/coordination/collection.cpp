@@ -57,6 +57,43 @@ double multiplier(double x, double f) {
 }
 
 
+MULTI_TEST(CollectionTest, Gossip, O, 3) {
+    {
+        test_net<combo<O>, std::tuple<int>(int)> n{
+            [&](auto& node, int val){
+                return std::make_tuple(
+                    coordination::gossip_max(node, 0, val)
+                );
+            }
+        };
+        EXPECT_ROUND(n, {0, 1, 2},
+                        {0, 1, 2});
+        EXPECT_ROUND(n, {0, 1, 0},
+                        {1, 2, 2});
+        EXPECT_ROUND(n, {0, 0, 0},
+                        {2, 2, 2});
+        EXPECT_ROUND(n, {0, 3, 0},
+                        {2, 3, 2});
+        EXPECT_ROUND(n, {0, 3, 0},
+                        {3, 3, 3});
+    }
+    {
+        test_net<combo<O>, std::tuple<double>(double)> n{
+            [&](auto& node, double val){
+                return std::make_tuple(
+                    coordination::gossip_mean(node, 0, val)
+                );
+            }
+        };
+        EXPECT_ROUND(n, {0, 4, 8},
+                        {0, 4, 8});
+        EXPECT_ROUND(n, {0, 4, 8},
+                        {2, 4, 6});
+        EXPECT_ROUND(n, {6, 4, 2},
+                        {5, 4, 3});
+    }
+}
+
 MULTI_TEST(CollectionTest, SP, O, 3) {
     test_net<combo<O>, std::tuple<double>(int, double)> n{
         [&](auto& node, int id, double val){

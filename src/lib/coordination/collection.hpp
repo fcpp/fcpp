@@ -24,6 +24,39 @@ namespace fcpp {
 namespace coordination {
 
 
+//! @brief Gossips distributed data with a given accumulation function.
+template <typename node_t, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
+T gossip(node_t& node, trace_t call_point, T value, G&& accumulate) {
+    return nbr(node, call_point, value, [&](field<T> x){
+        return accumulate(fold_hood(node, call_point, accumulate, x), value);
+    });
+}
+
+//! @brief Gossips distributed data by minimising.
+template <typename node_t, typename T>
+inline T gossip_min(node_t& node, trace_t call_point, T value) {
+    return gossip(node, call_point, value, [](T x, T y){
+        return std::min(x, y);
+    });
+}
+
+//! @brief Gossips distributed data by maximising.
+template <typename node_t, typename T>
+inline T gossip_max(node_t& node, trace_t call_point, T value) {
+    return gossip(node, call_point, value, [](T x, T y){
+        return std::max(x, y);
+    });
+}
+
+//! @brief Gossips distributed data by averaging.
+template <typename node_t, typename T>
+T gossip_mean(node_t& node, trace_t call_point, T value) {
+    return nbr(node, call_point, value, [&](field<T> x){
+        return mean_hood(node, call_point, x, value);
+    });
+}
+
+
 //! @brief Collects distributed data with a single-path strategy.
 template <typename node_t, typename P, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
 T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const T& null, G&& accumulate) {

@@ -61,61 +61,6 @@ namespace plot {
 //! @brief Tag for time information.
 struct time {};
 
-//! @cond INTERNAL
-namespace details {
-    //! @brief Check if character is a vowel.
-    bool isvowel(char c) {
-        std::string vowels = "aeiouAEIOU";
-        for (char v : vowels) if (c == v) return true;
-        return false;
-    }
-    //! @brief Check if character is alphabetic.
-    bool isalpha(char c) {
-        if ('a' <= c and c <= 'z') return true;
-        if ('A' <= c and c <= 'Z') return true;
-        return false;
-    }
-    //! @brief Shortens a string.
-    std::string shorten(std::string s) {
-        std::string pre;
-        std::string main;
-        while (not isalpha(s.back())) s.pop_back();
-        bool vowel = false;
-        for (size_t i=0; i<s.size(); ++i) {
-            if (isalpha(s[i])) {
-                if (main.size() < 3) main.push_back(s[i]);
-                else if (isvowel(s[i])) vowel = true;
-                else if (not vowel) main.push_back(s[i]);
-            } else {
-                if (main.size()) pre.push_back(main[0]);
-                main = "";
-                vowel = false;
-            }
-        }
-        return pre + main;
-    }
-    //! @brief Shortens a title string.
-    std::string multi_shorten(std::string s) {
-        if (s.empty()) return s;
-        std::vector<std::string> tags;
-        std::vector<std::string> vals;
-        size_t pos = 0, np;
-        while (true) {
-            np = s.find(" = ", pos);
-            tags.push_back(shorten(s.substr(pos, np-pos)));
-            pos = np+3;
-            np = s.find(", ", pos);
-            vals.push_back(s.substr(pos, np-pos));
-            if (np == std::string::npos) break;
-            pos = np+2;
-        }
-        s = "";
-        for (size_t i=0; i<tags.size(); ++i)
-            s += tags[i] + vals[i];
-        return s;
-    }
-}
-//! @endcond
 
 //! @brief Structure representing a point in a plot.
 struct point {
@@ -130,11 +75,8 @@ struct point {
 };
 
 //! @brief Printing a single page.
-std::ostream& operator<<(std::ostream& o, point const& p) {
-    o << "(";
-    if (p.unit.size()) o << p.unit << ", ";
-    return o << p.source << ", " << p.value << ")";
-}
+std::ostream& operator<<(std::ostream& o, point const& p);
+
 
 //! @brief Structure representing a single plot.
 struct plot {
@@ -153,44 +95,18 @@ struct plot {
 };
 
 //! @brief Printing a single plot.
-std::ostream& operator<<(std::ostream& o, plot const& p) {
-    o << "plot.put(plot.plot(name+\"-" << details::shorten(p.xname) << details::shorten(p.yname) << (p.title.size() ? "-" : "") << details::multi_shorten(p.title) << "\", \"" << p.title << "\", \"" << p.xname << "\", \"" << p.yname << "\", new string[] {";
-    bool first = true;
-    for (auto const& y : p.yvals) {
-        if (first) first = false;
-        else o << ", ";
-        o << "\"" << y.first << "\"";
-    }
-    o << "}, new pair[][] {";
-    first = true;
-    for (auto const& y : p.yvals) {
-        if (first) first = false;
-        else o << ", ";
-        o << "{";
-        for (size_t i=0; i<y.second.size(); ++i) {
-            if (i > 0) o << ", ";
-            o << "(" << p.xvals[i] << ", " << y.second[i] << ")";
-        }
-        o << "}";
-    }
-    return o << "}));\n";
-}
+std::ostream& operator<<(std::ostream& o, plot const& p);
+
 
 //! @brief Structure representing a page of plots.
 struct page {
     //! @brief Default constructor.
     page() = default;
     //! @brief Constructor with a vector of plots.
-    page(std::vector<plot> p) : title(), plots(p) {
-        rows = 1;
-        cols = plots.size();
-    }
+    page(std::vector<plot> p) : title(), rows(1), cols(p.size()), plots(p) {}
     //! @brief Constructor with an array of plots.
     template <size_t N>
-    page(std::array<plot, N> p) : title(), plots(p.begin(), p.end()) {
-        rows = 1;
-        cols = plots.size();
-    }
+    page(std::array<plot, N> p) : title(), rows(1), cols(N), plots(p.begin(), p.end()) {}
     //! @brief Title of the page.
     std::string title;
     //! @brief Number of rows.
@@ -202,13 +118,8 @@ struct page {
 };
 
 //! @brief Printing a single page.
-std::ostream& operator<<(std::ostream& o, page const& p) {
-    if (p.title.size()) o << "// " << p.title << "\n\n";
-    o << "plot.ROWS = " << p.rows << ";\n";
-    o << "plot.COLS = " << p.cols << ";\n\n";
-    for (plot const& q : p.plots) o << q << "\n";
-    return o;
-}
+std::ostream& operator<<(std::ostream& o, page const& p);
+
 
 //! @brief Structure representing a whole file of plots.
 struct file {
@@ -233,15 +144,7 @@ struct file {
 };
 
 //! @brief Printing a file.
-std::ostream& operator<<(std::ostream& o, file const& f) {
-    o << "// " << f.title << "\n";
-    o << "string name = \"" << f.title << "\";\n\n";
-    o << "import \"plot.asy\" as plot;\n";
-    o << "unitsize(1cm);\n\n";
-    for (page const& p : f.pages) o << p << "\n";
-    o << "shipout(\"" << f.title << "\");\n";
-    return o;
-}
+std::ostream& operator<<(std::ostream& o, file const& f);
 
 
 //! @brief Empty class not producing a plot.
@@ -373,6 +276,7 @@ namespace details {
     struct array_cat<T, U, Us...> {
         using type = typename array_cat<T, typename array_cat<U, Us...>::type>::type;
     };
+
     //! @brief Resizes a vector.
     template <typename T>
     void maybe_resize(std::vector<T>& v, size_t s) {
@@ -381,6 +285,7 @@ namespace details {
     //! @brief Does not resize an array.
     template <typename T, size_t N>
     void maybe_resize(std::array<T,N>&, size_t) {}
+
     //! @brief Does not convert a vector.
     template <typename T>
     inline std::vector<T> maybe_promote(common::type_sequence<T>, std::vector<T> v) {
@@ -392,12 +297,12 @@ namespace details {
         return v;
     }
     //! @brief Converts a vector of plots.
-    std::array<page,1> maybe_promote(common::type_sequence<page>, std::vector<plot> v) {
+    inline std::array<page,1> maybe_promote(common::type_sequence<page>, std::vector<plot> v) {
         return {v};
     }
     //! @brief Converts an array of plots.
     template <size_t N>
-    std::array<page,1> maybe_promote(common::type_sequence<page>, std::array<plot,N> v) {
+    inline std::array<page,1> maybe_promote(common::type_sequence<page>, std::array<plot,N> v) {
         return {v};
     }
 }
@@ -559,97 +464,78 @@ namespace details {
     struct appender {
         using type = join<Ps..., Q>;
     };
-
     //! @brief Smart append of a join to a join.
     template <typename... Qs, typename... Ps>
     struct appender<join<Qs...>, Ps...> {
         using type = join<Ps..., Qs...>;
     };
 
-
     //! @brief Smart join of plotters.
     template <typename... Ps>
     struct joiner;
-
     //! @brief Smart join of one plotter.
     template <typename P>
     struct joiner<P> {
         using type = P;
     };
-
     //! @brief Smart join of two plotters (first non-join).
     template <typename P, typename Q>
     struct joiner<P, Q> : public appender<Q, P> {};
-
     //! @brief Smart join of two plotter (first join).
     template <typename... Ps, typename Q>
     struct joiner<join<Ps...>, Q> : public appender<Q, Ps...> {};
-
     //! @brief Smart join of multiple plotters.
     template <typename P, typename Q, typename... Qs>
     struct joiner<P, Q, Qs...>  : public joiner<typename joiner<P, Q>::type, Qs...> {};
 
-
     //! @brief Searches type T within tags and aggregators in S (general form).
     template <typename T, typename S>
     struct field_grep;
-
     //! @brief Searches type T within tags and aggregators in S.
     template <typename T, typename... Ss, typename... As>
     struct field_grep<T, common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<As...>>> {
         using type = common::type_cat<std::conditional_t<std::is_same<Ss,T>::value or std::is_same<As,T>::value, typename As::template result_type<Ss>::tags, common::type_sequence<>>...>;
     };
 
-
     //! @brief Searches template T within tags in S (general form).
     template <template<class> class T, typename S>
     struct unit_grep {
         using type = common::type_sequence<bool>;
     };
-
-//! @brief Searches template T within tags in S.
+    //! @brief Searches template T within tags in S.
     template <template<class> class T, typename... Ss, typename... As>
     struct unit_grep<T, common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<As...>>> {
         using type = common::type_cat<std::conditional_t<common::is_class_template<T,Ss>, typename As::template result_type<Ss>::tags, common::type_sequence<>>...>;
     };
 
-
     //! @brief Maintains values for multiple columns and aggregators (general form).
     template <typename S, typename A, typename... Ts>
     struct values;
-
     //! @brief Maintains values for one explicit column and one aggregator.
     template <template<class...> class S, typename S1, template<class...> class A, typename A1>
     struct values<S<S1>, A<A1>> {
        using type = value<S1, A1>;
     };
-
     //! @brief Maintains values for multiple explicit columns and one aggregator.
     template <template<class...> class S, typename S1, typename... Ss, template<class...> class A, typename A1>
     struct values<S<S1, Ss...>, A<A1>> {
        using type = join<value<S1, A1>, value<Ss, A1>...>;
     };
-
     //! @brief Maintains values for multiple explicit columns and no aggregators (defaults to `mean<double>`).
     template <typename S, template<class...> class A>
     struct values<S, A<>> : public values<S, A<aggregator::mean<double>>> {};
-
     //! @brief Maintains values for multiple explicit columns and multiple aggregators.
     template <typename S, template<class...> class A, typename A1, typename... As>
     struct values<S, A<A1, As...>> : public joiner<typename values<S, A<A1>>::type, typename values<S, A<As>>::type...> {};
-
     //! @brief Maintains values for multiple columns and aggregators, defined through a single field.
     template <template<class...> class S, typename... Ss, typename A, typename T>
     struct values<S<Ss...>, A, T> : public values<typename field_grep<T, common::tagged_tuple_t<common::type_sequence<Ss...>>>::type, A> {};
-
     //! @brief Maintains values for multiple columns and aggregators, defined through a single unit.
     template <template<class...> class S, typename... Ss, typename A, template<class> class T>
     struct values<S<Ss...>, A, unit<T>> : public values<typename unit_grep<T, common::tagged_tuple_t<common::type_sequence<Ss...>>>::type, A> {};
-
     //! @brief Maintains values for multiple columns and aggregators, defined through multiple units.
     template <typename S, typename A, template<class> class T, template<class> class... Ts>
     struct values<S, A, unit<T, Ts...>> : public joiner<typename values<S, A, unit<T>>::type, typename values<S, A, unit<Ts>>::type...> {};
-
     //! @brief Maintains values for multiple columns and aggregators, defined through multiple fields.
     template <typename S, typename A, typename T1, typename T2, typename... Ts>
     struct values<S, A, T1, T2, Ts...> : public joiner<typename values<S, A, T1>::type, typename values<S, A, T2>::type, typename values<S, A, Ts>::type...> {};
@@ -680,6 +566,7 @@ namespace details {
         using type = common::tagged_tuple_cat<common::tagged_tuple_t<Ss, double>...>;
         static constexpr bool single = (sizeof...(Ss) == 1);
     };
+
     //! @brief Inspects a build type.
     template <typename T>
     struct inspector;
@@ -695,6 +582,7 @@ namespace details {
         using type = T;
         static constexpr bool single = (N == 1);
     };
+
     //! @brief Promotes a maximal build type after split.
     template <typename P, bool single>
     struct promote_impl {
@@ -715,6 +603,7 @@ namespace details {
     struct promote_impl<point, single> {
         using type = std::array<plot, 1>;
     };
+
     //! @brief Promotes a build type after split.
     template <typename P>
     using promote = typename promote_impl<typename inspector<P>::type, inspector<P>::single>::type;

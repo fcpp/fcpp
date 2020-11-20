@@ -9,6 +9,8 @@ using namespace fcpp;
 
 template <typename T>
 struct temp {};
+template <typename... Ts>
+struct temps {};
 
 struct tag {};
 struct gat {};
@@ -178,4 +180,135 @@ TEST(PlotTest, JoinSplitJoinFilterSplitJoinValue) {
     ss.str("");
     ss << pb[1];
     EXPECT_EQ(ss.str(), "plot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5), (10, 0)}}));\n\n");
+}
+
+#define EXPECT_SERIALIZE(a, b, s) \
+        EXPECT_EQ(tester(a, b), std::make_tuple(s, a, b))
+
+TEST(PlotTest, DeltaTuple) {
+    using tuple_type = plot::details::delta_tuple<common::tagged_tuple_t<tag, int, gat, double>>;
+
+    tuple_type t;
+    t = common::make_tagged_tuple<tag, gat>(2, 3.5);
+
+    auto tester = [&](int a, double b){
+        tuple_type u(t);
+        u = common::make_tagged_tuple<tag, gat>(a, b);
+        common::osstream os;
+        os << u;
+        tuple_type s(t);
+        common::isstream is(os);
+        is >> s;
+        return std::make_tuple(os.size(), get<tag>(s), get<gat>(s));
+    };
+
+    EXPECT_SERIALIZE(2, 3.5, 1);
+    EXPECT_SERIALIZE(3, 3.5, 1+sizeof(int));
+    EXPECT_SERIALIZE(2, 1.5, 1+sizeof(double));
+    EXPECT_SERIALIZE(3, 1.5, 1+sizeof(int)+sizeof(double));
+}
+
+TEST(PlotTest, Rows) {
+    EXPECT_SAME(typename plot::details::option_types<void>::type, common::type_sequence<>);
+    EXPECT_SAME(typename plot::details::option_types<common::type_sequence<int, bool>>::type, common::type_sequence<int, bool>);
+    EXPECT_SAME(typename plot::details::option_types<temps<int, bool>>::type, common::type_sequence<int, bool>);
+    {
+        using plot_t = plot::rows<temps<tag, int, gat, double>>;
+        EXPECT_SAME(plot_t::compressible_tuple_type, plot::details::delta_tuple<common::tagged_tuple_t<tag, int, gat, double>>);
+        EXPECT_SAME(plot_t::mutable_tuple_type, common::tagged_tuple_t<>);
+        EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<>);
+        EXPECT_EQ(plot_t::limit_size, sizeof(plot_t));
+        plot_t p;
+        p << common::make_tagged_tuple<tag,gat,oth>(1, 2.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(1, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(42, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(42, 4.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(42, 5.5, true);
+        EXPECT_EQ(p.size(), 5ULL);
+        EXPECT_EQ(p.byte_size(), sizeof(plot_t) + 5 + sizeof(int)*2 + sizeof(double)*4);
+        std::vector<std::string> v = {
+            "########################################################",
+            "# FCPP execution started at:  Fri Nov 20 13:22:29 2020 #",
+            "########################################################",
+            "# ",
+            "#",
+            "# The columns have the following meaning:",
+            "# tag gat ",
+            "1 2.5 ",
+            "1 3.5 ",
+            "42 3.5 ",
+            "42 4.5 ",
+            "42 5.5 ",
+            "########################################################",
+            "# FCPP execution finished at: Fri Nov 20 13:22:29 2020 #",
+            "########################################################"
+        };
+        std::stringstream ss;
+        p.print(ss);
+        for (size_t i=0; i<v.size(); ++i) {
+            std::string line;
+            getline(ss, line);
+            if (i != 1 and i != v.size()-2) {
+                EXPECT_EQ(line, v[i]);
+            }
+        }
+        ss.str("");
+        p.print(ss);
+        for (size_t i=0; i<v.size(); ++i) {
+            std::string line;
+            getline(ss, line);
+            if (i != 1 and i != v.size()-2) {
+                EXPECT_EQ(line, v[i]);
+            }
+        }
+    }
+    {
+        using plot_t = plot::rows<temps<tag, int>, temps<gat, double>, temps<oth, bool>, 50>;
+        EXPECT_SAME(plot_t::compressible_tuple_type, plot::details::delta_tuple<common::tagged_tuple_t<tag, int>>);
+        EXPECT_SAME(plot_t::mutable_tuple_type, common::tagged_tuple_t<gat, double>);
+        EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<oth, bool>);
+        EXPECT_EQ(plot_t::limit_size, sizeof(plot_t)+50);
+        plot_t p;
+        p << common::make_tagged_tuple<tag,gat,oth>(1, 2.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(1, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(42, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(42, 4.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth>(42, 5.5, true);
+        EXPECT_EQ(p.size(), 4ULL);
+        EXPECT_EQ(p.byte_size(), sizeof(plot_t) + 4 + sizeof(int)*2 + sizeof(double)*4);
+        std::vector<std::string> v = {
+            "########################################################",
+            "# FCPP execution started at:  Fri Nov 20 13:34:18 2020 #",
+            "########################################################",
+            "# oth = true",
+            "#",
+            "# The columns have the following meaning:",
+            "# gat tag ",
+            "2.5 1 ",
+            "3.5 1 ",
+            "3.5 42 ",
+            "4.5 42 ",
+            "########################################################",
+            "# FCPP execution finished at: Fri Nov 20 13:34:18 2020 #",
+            "########################################################"
+        };
+        std::stringstream ss;
+        p.print(ss);
+        for (size_t i=0; i<v.size(); ++i) {
+            std::string line;
+            getline(ss, line);
+            if (i != 1 and i != v.size()-2) {
+                EXPECT_EQ(line, v[i]);
+            }
+        }
+        ss.str("");
+        p.print(ss);
+        for (size_t i=0; i<v.size(); ++i) {
+            std::string line;
+            getline(ss, line);
+            if (i != 1 and i != v.size()-2) {
+                EXPECT_EQ(line, v[i]);
+            }
+        }
+    }
 }

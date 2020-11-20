@@ -48,6 +48,7 @@ cc_library(
     srcs = ['plot.cpp'],
     deps = [
         "//lib/common:mutex",
+        "//lib/common:serialize",
         "//lib/common:tagged_tuple",
         "//lib/option:aggregator",
     ],

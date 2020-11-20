@@ -65,6 +65,16 @@ class sstream<false> {
         return m_data.size() - m_idx;
     }
 
+    //! @brief Access to the raw data.
+    std::vector<char>& data() {
+        return m_data;
+    }
+
+    //! @brief Const access to the raw data.
+    std::vector<char> const& data() const {
+        return m_data;
+    }
+
   private:
     //! @brief The raw data.
     std::vector<char> m_data;
@@ -99,6 +109,16 @@ class sstream<true> {
     //! @brief The size of the raw data written so far.
     size_t size() const {
         return m_data.size();
+    }
+
+    //! @brief Access to the raw data.
+    std::vector<char>& data() {
+        return m_data;
+    }
+
+    //! @brief Const access to the raw data.
+    std::vector<char> const& data() const {
+        return m_data;
     }
 
   private:

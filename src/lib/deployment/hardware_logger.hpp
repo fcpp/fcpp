@@ -53,11 +53,14 @@ namespace tags {
  * Requires a \ref storage parent component.
  *
  * <b>Declaration tags:</b>
+ * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
+ * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
  * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::name associates to the main name of a component composition instance (defaults to the empty string).
  * - \ref tags::output associates to an output stream for logging (defaults to `std::cout`).
+ * - \ref tags::plotter associates to a pointer to a plotter object (defaults to `nullptr`).
  *
  * Admissible values for \ref tags::output are:
  * - a pointer to a stream (as `std::ostream*`);
@@ -66,6 +69,12 @@ namespace tags {
  */
 template <class... Ts>
 struct hardware_logger {
+    //! @brief Tagged tuple type for storing extra info.
+    using extra_info_type = common::tagged_tuple_t<common::option_types<tags::extra_info, Ts...>>;
+
+    //! @brief Type of the plotter object.
+    using plot_type = common::option_type<tags::plot_type, plot::none, Ts...>;
+
     //! @brief Sequence of tags and types for storing persistent data.
     using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;
 
@@ -88,7 +97,10 @@ struct hardware_logger {
           public: // visible by net objects and the main program
             //! @brief Tuple type of the contents.
             using tuple_type = common::tagged_tuple_t<tuple_store_type>;
-            
+
+            //! @brief Type for the result of an aggregation.
+            using row_type = common::tagged_tuple_cat<common::tagged_tuple_t<plot::time, times_t>, tuple_type, extra_info_type>;
+
             //! @brief Sequence of tags to be printed.
             using tag_type = typename tuple_type::tags;
 
@@ -99,14 +111,14 @@ struct hardware_logger {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)) {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t) {
                 std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "########################################################\n";
                 *m_stream << "# FCPP execution started at:  " << tstr << " #\n";
                 *m_stream << "########################################################\n# ";
-                t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output>);
+                t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
                 *m_stream << "\n#\n";
                 *m_stream << "# The columns have the following meaning:\n# time ";
                 print_headers(tag_type{});
@@ -134,10 +146,11 @@ struct hardware_logger {
             void round_end(times_t t) {
                 P::node::round_end(t);
                 print_output(tag_type{});
+                data_plotter(std::is_same<plot_type, plot::none>{}, t);
             }
-            
+
           private: // implementation details
-            //! @brief Prints the aggregator headers.
+            //! @brief Prints the storage headers.
             void print_headers(common::type_sequence<>) const {
                 *m_stream << std::endl;
             }
@@ -147,7 +160,7 @@ struct hardware_logger {
                 print_headers(common::type_sequence<Us...>{});
             }
 
-            //! @brief Prints the aggregator headers.
+            //! @brief Prints the storage values.
             void print_output(common::type_sequence<>) const {
                 *m_stream << std::endl;
             }
@@ -157,8 +170,23 @@ struct hardware_logger {
                 print_output(common::type_sequence<Us...>{});
             }
 
+            //! @brief Plots data if a plotter is given.
+            inline void data_plotter(std::false_type, times_t t) const {
+                row_type r = m_extra_info;
+                common::get<plot::time>(r) = t;
+                r = P::node::storage_tuple();
+                *m_plotter << r;
+            }
+            inline void data_plotter(std::true_type, times_t) const {}
+
             //! @brief The stream where data is exported.
             std::shared_ptr<std::ostream> m_stream;
+
+            //! @brief A reference to a plotter object.
+            std::shared_ptr<plot_type> m_plotter;
+
+            //! @brief Tuple storing extra information.
+            extra_info_type m_extra_info;
         };
 
         //! @brief The global part of the component.

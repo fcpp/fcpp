@@ -9,6 +9,8 @@
 #define FCPP_COMMON_PLOT_H_
 
 #include <cstdint>
+#include <ctime>
+
 #include <limits>
 #include <map>
 #include <ostream>
@@ -18,6 +20,7 @@
 #include <vector>
 
 #include "lib/common/mutex.hpp"
+#include "lib/common/serialize.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/option/aggregator.hpp"
 
@@ -167,6 +170,233 @@ class none {
         return {};
     }
 };
+
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief Extract any multi-type option from a single type.
+    template <typename T>
+    struct option_types {
+        using type = common::type_sequence<>;
+    };
+    template <template<class...> class T, typename... Ts>
+    struct option_types<T<Ts...>> {
+        using type = common::type_sequence<Ts...>;
+    };
+
+    //! @brief Integer holding a bit for every type in a type sequence.
+    template <typename T>
+    struct integer_delta_type;
+    template <size_t n>
+    struct integer_delta_type<std::array<int, n>> {
+        using type = std::conditional_t<n <= 16,
+            std::conditional_t<n <= 8,  uint8_t,  uint16_t>,
+            std::conditional_t<n <= 32, uint32_t, uint64_t>
+        >;
+    };
+    template <typename... Ts>
+    struct integer_delta_type<common::type_sequence<Ts...>> {
+        using type = typename integer_delta_type<std::array<int, sizeof...(Ts)>>::type;
+    };
+
+    //! @brief Tagged tuple wrapper, serialising the difference with a reference tuple.
+    template <typename T>
+    class delta_tuple : public T {
+        //! @brief Type for storing deltas.
+        using delta_type = typename integer_delta_type<typename T::tags>::type;
+
+      public:
+        //! @brief Default constructor.
+        delta_tuple() : T(), m_ref(*this) {}
+
+        //! @brief Reference constructor.
+        delta_tuple(delta_tuple const& t) : T(), m_ref(t) {}
+
+        //! @brief Inherit assignment operators.
+        using T::operator=;
+
+        //! @brief Assignment with delta tuples.
+        delta_tuple& operator=(delta_tuple const& t) {
+            T::operator=(static_cast<T const&>(t));
+            return *this;
+        }
+
+        //! @brief Serialises the content from/to a given input/output stream.
+        template <typename S>
+        S& serialize(S& s) {
+            delta_type d = serialize_delta(s);
+            serialize_impl(s, d, typename T::tags{});
+            return s;
+        }
+
+      private:
+        //! @brief Serialises the delta bits.
+        delta_type serialize_delta(common::isstream& s) {
+            delta_type d;
+            s.read(d);
+            return d;
+        }
+        delta_type serialize_delta(common::type_sequence<>) {
+            return 0;
+        }
+        template <typename S, typename... Ss>
+        delta_type serialize_delta(common::type_sequence<S, Ss...>) {
+            return (serialize_delta(common::type_sequence<Ss...>{}) << 1) + (common::get<S>(*this) == common::get<S>(m_ref));
+        }
+        delta_type serialize_delta(common::osstream& s) {
+            delta_type d = serialize_delta(typename T::tags{});
+            s.write(d);
+            return d;
+        }
+
+        //! @brief Serialises a skipped field.
+        template <typename S>
+        void serialize_skip(common::isstream const&, common::type_sequence<S>) {
+            common::get<S>(*this) = common::get<S>(m_ref);
+        }
+        template <typename S>
+        void serialize_skip(common::osstream const&, common::type_sequence<S>) {}
+
+        //! @brief Serialises given delta and tags.
+        template <typename S>
+        void serialize_impl(S&, delta_type, common::type_sequence<>) {}
+        template <typename S, typename S1, typename... Ss>
+        void serialize_impl(S& s, delta_type d, common::type_sequence<S1, Ss...>) {
+            if (d & 1) serialize_skip(s, common::type_sequence<S1>{});
+            else s & common::get<S1>(*this);
+            serialize_impl(s, d >> 1, common::type_sequence<Ss...>{});
+        }
+
+        //! @brief Reference tuple.
+        delta_tuple const& m_ref;
+    };
+}
+//! @endcond
+
+/**
+ * @brief Plotter storing all rows for later printing.
+ *
+ * @param C Tags and types to be delta-compressed upon serialisation.
+ * @param M Tags and types not compressed on serialisation.
+ * @param F Tags and types assumed constant and stored only once.
+ * @param max_size The maximum size in bytes allowed for the buffer (0 for no maximum size).
+ */
+template <typename C, typename M = void, typename F = void, size_t max_size = 0>
+class rows {
+  public:
+    //! @brief Sequence of tags and types to be delta-compressed upon serialisation.
+    using compressible_tuple_type = details::delta_tuple<common::tagged_tuple_t<typename details::option_types<C>::type>>;
+    //! @brief Sequence of tags and types not compressed on serialisation.
+    using mutable_tuple_type = common::tagged_tuple_t<typename details::option_types<M>::type>;
+    //! @brief Sequence of tags and types assumed constant and stored only once.
+    using fixed_tuple_type = common::tagged_tuple_t<typename details::option_types<F>::type>;
+
+    //! @brief The expected limit size of the object.
+    static constexpr size_t limit_size = sizeof(rows) + max_size;
+
+    //! @brief Default constructor.
+    rows() {
+        m_start = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        m_rows.data().reserve(max_size);
+        m_length = m_row_size = 0;
+    }
+
+    //! @brief Row processing.
+    template <typename R>
+    rows& operator<<(R const& row) {
+        size_t prev_size = m_rows.size();
+        if (max_size == 0 or prev_size + m_row_size < max_size) {
+            m_fixed = row;
+            compressible_tuple_type tc(m_last);
+            mutable_tuple_type tm;
+            tc = row;
+            tm = row;
+            (m_rows << tc << tm);
+            m_last = row;
+            m_row_size = std::max(m_row_size, m_rows.size() - prev_size);
+            ++m_length;
+        }
+        return *this;
+    }
+
+    //! @brief The number of rows stored.
+    size_t size() const {
+        return m_length;
+    }
+
+    //! @brief The number of bytes occupied by the structure.
+    size_t byte_size() const {
+        return sizeof(rows) + m_rows.size();
+    }
+
+    //! @brief Prints the object's contents.
+    void print(std::ostream& o) {
+        common::isstream rows({});
+        std::swap(rows.data(), m_rows.data());
+        std::string tstr = std::string(ctime(&m_start));
+        tstr.pop_back();
+        o << "########################################################\n";
+        o << "# FCPP execution started at:  " << tstr << " #\n";
+        o << "########################################################\n# ";
+        m_fixed.print(o, common::assignment_tuple);
+        o << "\n#\n";
+        o << "# The columns have the following meaning:\n# ";
+        print_headers(o, typename mutable_tuple_type::tags{});
+        print_headers(o, typename compressible_tuple_type::tags{});
+        o << "\n";
+        m_last = compressible_tuple_type();
+        for (size_t i=0; i<m_length; ++i) {
+            compressible_tuple_type tc(m_last);
+            mutable_tuple_type tm;
+            rows >> tc >> tm;
+            m_last = tc;
+            print_output(o, tm, typename mutable_tuple_type::tags{});
+            print_output(o, tc, typename compressible_tuple_type::tags{});
+            o << "\n";
+        }
+        std::time_t m_end = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        tstr = std::string(ctime(&m_end));
+        tstr.pop_back();
+        o << "########################################################\n";
+        o << "# FCPP execution finished at: " << tstr << " #\n";
+        o << "########################################################" << std::endl;
+        std::swap(rows.data(), m_rows.data());
+    }
+
+  private:
+    //! @brief Prints the storage headers.
+    void print_headers(std::ostream&, common::type_sequence<>) const {}
+    template <typename U, typename... Us>
+    void print_headers(std::ostream& o, common::type_sequence<U,Us...>) const {
+        o << common::details::strip_namespaces(common::type_name<U>()) << " ";
+        print_headers(o, common::type_sequence<Us...>{});
+    }
+
+    //! @brief Prints the storage values.
+    template <typename T>
+    void print_output(std::ostream&, T const&, common::type_sequence<>) const {}
+    template <typename T, typename U, typename... Us>
+    void print_output(std::ostream& o, T const& t, common::type_sequence<U,Us...>) const {
+        o << common::escape(common::get<U>(t)) << " ";
+        print_output(o, t, common::type_sequence<Us...>{});
+    }
+
+    //! @brief Start time.
+    std::time_t m_start;
+    //! @brief Fixed data.
+    fixed_tuple_type m_fixed;
+    //! @brief Last row of compressible data.
+    compressible_tuple_type m_last;
+    //! @brief Serialised rows.
+    common::osstream m_rows;
+    //! @brief Number of rows stored.
+    size_t m_length;
+    //! @brief Maximum size of a row ever recorded.
+    size_t m_row_size;
+};
+
+template <typename C, typename M, typename F, size_t max_size>
+constexpr size_t rows<C,M,F,max_size>::limit_size;
 
 
 //! @brief Filters values for column S according to property F in plotter P.

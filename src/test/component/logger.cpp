@@ -120,7 +120,7 @@ TEST(LoggerTest, MakeStream) {
 MULTI_TEST(LoggerTest, Push, O, 1) {
     std::stringstream s;
     {
-        typename combo1<O>::net network{common::make_tagged_tuple<output,devtag>(&s,0.0)};
+        typename combo1<O>::net network{common::make_tagged_tuple<output,devtag>(&s,times_t{0.0})};
         {
             typename combo1<O>::node device1{network, common::make_tagged_tuple<uid,oth,gat>(1,'b',5)};
             typename combo1<O>::node device2{network, common::make_tagged_tuple<uid,tag>(2,true)};
@@ -181,7 +181,7 @@ MULTI_TEST(LoggerTest, Push, O, 1) {
 MULTI_TEST(LoggerTest, Pull, O, 2) {
     std::stringstream s;
     {
-        typename combo2<O>::net network{common::make_tagged_tuple<output,devtag,name,fakeid>(&s, 0.0, "foo",false)};
+        typename combo2<O>::net network{common::make_tagged_tuple<output,devtag,name,fakeid>(&s, times_t{0.0}, "foo", false)};
         network.node_emplace(common::make_tagged_tuple<oth,gat>('b',5));
         network.node_emplace(common::make_tagged_tuple<tag>(true));
         network.node_emplace(common::make_tagged_tuple<gat>(1));
@@ -255,7 +255,7 @@ MULTI_TEST(LoggerTest, Pull, O, 2) {
 MULTI_TEST(LoggerTest, Plot, O, 2) {
     plotter_t p;
     {
-        typename combo3<O>::net network{common::make_tagged_tuple<output,devtag,name,fakeid,plotter,oth>("/dev/null", 0.0, "foo",false,&p,42)};
+        typename combo3<O>::net network{common::make_tagged_tuple<output,devtag,name,fakeid,plotter,oth>("/dev/null", times_t{0.0}, "foo", false, &p, 42)};
         network.node_emplace(common::make_tagged_tuple<oth,gat>('b',5));
         network.node_emplace(common::make_tagged_tuple<tag>(true));
         network.node_emplace(common::make_tagged_tuple<gat>(1));

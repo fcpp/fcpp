@@ -16,7 +16,7 @@ constexpr hops_t X = std::numeric_limits<hops_t>::max();
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<times_t, hops_t, int, field<int>, tuple<double,double>, tuple<double,int>>,
+    exports<times_t, hops_t, int, double, field<int>, tuple<double,double>, tuple<double,int>>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

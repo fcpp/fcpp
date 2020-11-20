@@ -15,7 +15,7 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<int, double>,
+    exports<int, double, times_t>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

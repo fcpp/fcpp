@@ -35,6 +35,8 @@ struct global_clock {};
 struct neigh_count {};
 //! @brief Current count of neighbours from which I received a packet now.
 struct neigh_now {};
+//! @brief Count of neighbours from which I received a packet now and in the last round.
+struct neigh_twice {};
 //! @brief Minimum UID in the network.
 struct min_uid {};
 //! @brief Distance in hops to the device with minimum UID.
@@ -59,6 +61,17 @@ struct positives {};
 FUN(T) T fix_after(ARGS, T value, times_t t) { CODE
     return old(node, 0, value, [&](T o){
         return node.current_time() < t ? value : o;
+    });
+}
+
+//! @brief Computes the number of neighbours from which I am receiving twice in a row.
+FUN() uint8_t recurring_neighbours(ARGS) { CODE
+    return old(node, 0, field<device_t>(node.uid), [&](field<device_t> x){
+        field<device_t> nbr_uids = mux(node.message_time() > node.previous_time(), nbr_uid(node, 0), node.uid);
+        uint8_t c = fold_hood(node, 0, [&](tuple<device_t,device_t> val, int acc){
+            return acc + (get<0>(val) != node.uid and get<1>(val) != node.uid);
+        }, make_tuple(x, nbr_uids), 0);
+        return make_tuple(c, nbr_uids);
     });
 }
 
@@ -132,11 +145,12 @@ FUN() void contact_tracing(ARGS, times_t window, bool positive) { CODE
 
 //! @brief Main aggregate function.
 FUN() void case_study(ARGS) { CODE
-    node.storage(round_count{}) = coordination::counter(node, 0, hops_t{1});
+    node.storage(round_count{}) = coordination::counter(node, 0, uint16_t{1});
     node.storage(global_clock{}) = coordination::shared_clock(node, 1);
     node.storage(neigh_count{}) = count_hood(node, 2);
     node.storage(neigh_now{}) = coordination::sum_hood(node, 2, node.message_time() > node.previous_time(), 0);
-    vulnerability_detection(node, 3, DIAMETER);
+    node.storage(neigh_twice{}) = recurring_neighbours(node, 3);
+    vulnerability_detection(node, 7, DIAMETER);
     contact_tracing(node, 4, WINDOW_TIME, false);
     resource_tracking(node, 5);
     topology_recording(node, 6);
@@ -149,7 +163,7 @@ MAIN(case_study,);
 
 using rows_type = plot::rows<
     tuple_store<
-        neigh_count,    int,
+        neigh_count,    uint8_t,
         min_uid,        device_t,
         hop_dist,       hops_t,
         some_weak,      bool,
@@ -161,10 +175,11 @@ using rows_type = plot::rows<
         nbr_list,       std::unordered_set<device_t>
     >,
     tuple_store<
-        plot::time, times_t,
-        round_count,    int,
+        plot::time,     uint16_t,
+        round_count,    uint16_t,
         global_clock,   times_t,
-        neigh_now,      int
+        neigh_now,      uint8_t,
+        neigh_twice,    uint8_t
     >,
     void,
     BUFFER_SIZE*1024
@@ -177,13 +192,14 @@ DECLARE_OPTIONS(opt,
     round_schedule<sequence::periodic_n<1, ROUND_PERIOD, ROUND_PERIOD>>, // rounds are happening every 1 secs (den, start, period)
     exports< // types that may appear in messages
         bool, hops_t, device_t, int8_t, uint16_t, times_t, tuple<device_t, hops_t>,
-        std::unordered_map<device_t, times_t>
+        field<device_t>, std::unordered_map<device_t, times_t>
     >,
     tuple_store< // tag/type that can appear in node.storage(tag{}) = type{}, are printed in output
-        round_count,    int,
+        round_count,    uint16_t,
         global_clock,   times_t,
-        neigh_now,      int,
-        neigh_count,    int,
+        neigh_now,      uint8_t,
+        neigh_twice,    uint8_t,
+        neigh_count,    uint8_t,
         min_uid,        device_t,
         hop_dist,       hops_t,
         some_weak,      bool,

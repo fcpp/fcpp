@@ -49,6 +49,10 @@
 
 
 #if   FCPP_SYSTEM == FCPP_SYSTEM_GENERAL
+    #ifndef FCPP_TIME_TYPE
+    //! @brief Setting defining the type to be used to represent times (double for general systems, float for embedded systems).
+    #define FCPP_TIME_TYPE double
+    #endif
     #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
     #define FCPP_TRACE 64
@@ -62,6 +66,10 @@
     #define FCPP_HOPS 16
     #endif
 #elif FCPP_SYSTEM == FCPP_SYSTEM_EMBEDDED
+    #ifndef FCPP_TIME_TYPE
+    //! @brief Setting defining the type to be used to represent times (double for general systems, float for embedded systems).
+    #define FCPP_TIME_TYPE float
+    #endif
     #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
     #define FCPP_TRACE 16
@@ -187,10 +195,6 @@
 #endif
 
 
-#ifndef FCPP_TIME_TYPE
-//! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
-#define FCPP_TIME_TYPE double
-#endif
 #ifndef FCPP_TIME_EPSILON
 //! @brief Setting defining which time differences are to be considered negligible.
 #define FCPP_TIME_EPSILON 0.01

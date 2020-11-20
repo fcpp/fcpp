@@ -33,6 +33,8 @@ struct round_count {};
 struct global_clock {};
 //! @brief Current count of neighbours.
 struct neigh_count {};
+//! @brief Current count of neighbours from which I received a packet now.
+struct neigh_now {};
 //! @brief Minimum UID in the network.
 struct min_uid {};
 //! @brief Distance in hops to the device with minimum UID.
@@ -133,6 +135,7 @@ FUN() void case_study(ARGS) { CODE
     node.storage(round_count{}) = coordination::counter(node, 0, hops_t{1});
     node.storage(global_clock{}) = coordination::shared_clock(node, 1);
     node.storage(neigh_count{}) = count_hood(node, 2);
+    node.storage(neigh_now{}) = coordination::sum_hood(node, 2, node.message_time() > node.previous_time(), 0);
     vulnerability_detection(node, 3, DIAMETER);
     contact_tracing(node, 4, WINDOW_TIME, false);
     resource_tracking(node, 5);
@@ -160,7 +163,8 @@ using rows_type = plot::rows<
     tuple_store<
         plot::time, times_t,
         round_count,    int,
-        global_clock,   times_t
+        global_clock,   times_t,
+        neigh_now,      int
     >,
     void,
     BUFFER_SIZE*1024
@@ -178,6 +182,7 @@ DECLARE_OPTIONS(opt,
     tuple_store< // tag/type that can appear in node.storage(tag{}) = type{}, are printed in output
         round_count,    int,
         global_clock,   times_t,
+        neigh_now,      int,
         neigh_count,    int,
         min_uid,        device_t,
         hop_dist,       hops_t,

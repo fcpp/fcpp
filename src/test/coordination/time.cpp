@@ -93,9 +93,11 @@ MULTI_TEST(TimeTest, SharedClock, O, 3) {
     test_net<combo<O>, std::tuple<bool>()> n{
         [&](auto& node){
             return std::make_tuple(
-                std::isnan(coordination::shared_clock(node, 0))
+                coordination::shared_clock(node, 0) < 0
             );
         }
     };
+    EXPECT_ROUND(n, {true, true, true});
+    EXPECT_ROUND(n, {true, true, true});
     EXPECT_ROUND(n, {true, true, true});
 }

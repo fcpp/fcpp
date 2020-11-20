@@ -92,8 +92,8 @@ T shared_decay(node_t& node, trace_t call_point, T initial, T value, double fact
 //! @brief Maintains a shared clock across the network.
 template <typename node_t>
 times_t shared_clock(node_t& node, trace_t call_point) {
-    return nbr(node, call_point, node.current_time(), [&](field<times_t> x){
-        return max_hood(node, call_point, x +node.nbr_lag());
+    return nbr(node, call_point, 0, [&](field<times_t> x){
+        return max_hood(node, call_point, node.previous_time() == TIME_MIN ? node.current_time() : x + node.nbr_lag());
     });
 }
 

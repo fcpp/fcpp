@@ -161,6 +161,12 @@ namespace fcpp {
             //! @brief Default size of orthogonal axis.
             static const unsigned int SCR_DEFAULT_ORTHO{ 32 };
 
+            //! @brief Number of vertex buffers.
+            //static const unsigned int BUFF_VERTEX_NUM{ ??? };
+
+            //! @brief Number of index buffers.
+            //static const unsigned int BUFF_INDEX_NUM{ ??? };
+
             //! @brief Default light position.
             static const glm::vec3 LIGHT_DEFAULT_POS;
 
@@ -200,11 +206,14 @@ namespace fcpp {
             //! @brief It checks if it's the first time it drawn the grid.
             double m_gridFirst;
 
-            //! @brief Size (in bytes) of the plane's vertex data; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
-            int m_planeBufferSize;
+            //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            int m_planeIndexSize;
 
-            //! @brief Size (in bytes) of the grid's vertex data; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
-            int m_gridBufferSize;
+            //! @brief Size (in bytes) of the index data of grid's non-highlighted lines; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            int m_gridNormIndexSize;
+
+            //! @brief Size (in bytes) of the index data of grid's highlighted lines; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            int m_gridHighIndexSize;
 
             //! @brief Current position of light source.
             glm::vec3 m_lightPos;

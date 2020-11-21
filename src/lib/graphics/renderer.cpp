@@ -48,8 +48,9 @@ Renderer::Renderer() :
     m_orthoSize{ SCR_DEFAULT_ORTHO },
     m_gridScale{ 1.0 },
     m_gridFirst{ 1 },
-    m_planeBufferSize{ 0 },
-    m_gridBufferSize{ 0 },
+    m_planeIndexSize{ 0 },
+    m_gridHighIndexSize{ 0 },
+    m_gridNormIndexSize{ 0 },
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_camera{},
     m_mouseLastX{ (float)(SCR_DEFAULT_WIDTH / 2) },
@@ -102,11 +103,11 @@ Renderer::Renderer() :
     // Generate VAOs, VBOs and EBOs
     glGenVertexArrays(5, VAO);
     glGenBuffers(5, VBO);
-    //glGenBuffers(1, EBO); //on hold...
+    glGenBuffers(5, EBO); //on hold...
 
     // Store (static) ortho data 
-    glBindVertexArray(VAO[Shapes::getIndex(shape::ortho)]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[Shapes::getIndex(shape::ortho)]);
+    glBindVertexArray(VAO[(int)vertex::ortho]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::ortho]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_ORTHO), Shapes::VERTEX_ORTHO, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -116,8 +117,8 @@ Renderer::Renderer() :
     glBindVertexArray(0);
 
     // Store (static) cube data 
-    glBindVertexArray(VAO[Shapes::getIndex(shape::cube)]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[Shapes::getIndex(shape::cube)]);
+    glBindVertexArray(VAO[(int)vertex::cube]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::cube]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_CUBE), Shapes::VERTEX_CUBE, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -245,9 +246,17 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
         int grid_max_x = std::ceil(gridMax.x / m_gridScale);
         int grid_min_y = std::floor(gridMin.y / m_gridScale);
         int grid_max_y = std::ceil(gridMax.y / m_gridScale);
-        int i = 0;
+        int numX = grid_max_x - grid_min_x + 1;
+        int numY = grid_max_y - grid_min_y + 1;
+        int numHighX = numX / 10 + 1;
+        int numHighY = numY / 10 + 1;
+        int i = 0; // for putting vertices into gridMesh
+        int j = 0; // for putting indices into gridHighMesh
+        int k = 0; // for putting indices into gridNormMesh
 
-        float gridMesh[(grid_max_x - grid_min_x + 1) * 6 + (grid_max_y - grid_min_y + 1) * 6];
+        float gridMesh[numX * 6 + numY * 6]; // will contain the vertex data of the grid
+        int gridNormIndex[(numX - numHighX) * 2 + (numY - numHighY) * 2]; // will contain the index data of the normal lines of the grid
+        int gridHighIndex[numHighX * 2 + numHighY * 2]; // will contain the index data of the highlighted lines of the grid
         for (int x = grid_min_x; x <= grid_max_x; ++x) {
             gridMesh[i * 6] = (float)(x * m_gridScale);
             gridMesh[1 + i * 6] = (float)(grid_min_y * m_gridScale);
@@ -255,9 +264,17 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
             gridMesh[3 + i * 6] = (float)(x * m_gridScale);
             gridMesh[4 + i * 6] = (float)(grid_max_y * m_gridScale);
             gridMesh[5 + i * 6] = 0.0f;
+            if (x % 10 == 0) {
+                gridHighIndex[j * 2] = i * 2;
+                gridHighIndex[1 + j * 2] = i * 2 + 1;
+                ++j;
+            }
+            else {
+                gridNormIndex[k * 2] = i * 2;
+                gridNormIndex[1 + k * 2] = i * 2 + 1;
+                ++k;
+            }
             ++i;
-            /*if (x % 10 == 0) m_shaderProgramCol.setVec4("u_color", glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
-            else m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f });*/
         }
         for (int y = grid_min_y; y <= grid_max_y; ++y) {
             gridMesh[i * 6] = (float)(grid_min_x * m_gridScale);
@@ -266,47 +283,78 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
             gridMesh[3 + i * 6] = (float)(grid_max_x * m_gridScale);
             gridMesh[4 + i * 6] = (float)(y * m_gridScale);
             gridMesh[5 + i * 6] = 0.0f;
+            if (y % 10 == 0) {
+                gridHighIndex[j * 2] = i * 2;
+                gridHighIndex[1 + j * 2] = i * 2 + 1;
+                ++j;
+            }
+            else {
+                gridNormIndex[k * 2] = i * 2;
+                gridNormIndex[1 + k * 2] = i * 2 + 1;
+                ++k;
+            }
             ++i;
-            /*if (x % 10 == 0) m_shaderProgramCol.setVec4("u_color", glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f });
-            else m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f });*/
         }
-        glBindVertexArray(VAO[Shapes::getIndex(shape::grid)]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[Shapes::getIndex(shape::grid)]);
+        glBindVertexArray(VAO[(int)vertex::grid]);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::grid]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(gridMesh), gridMesh, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridHighIndex), gridHighIndex, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridNormIndex), gridNormIndex, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        m_gridBufferSize = sizeof(gridMesh);
+        m_gridNormIndexSize = sizeof(gridNormIndex);
+        m_gridHighIndexSize = sizeof(gridHighIndex);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        float planeMesh[18] {
+        float planeMesh[12] {
             (float)(grid_min_x * m_gridScale), (float)(grid_min_y * m_gridScale), 0.0f,
             (float)(grid_min_x * m_gridScale), (float)(grid_max_y * m_gridScale), 0.0f,
             (float)(grid_max_x * m_gridScale), (float)(grid_max_y * m_gridScale), 0.0f,
-            (float)(grid_max_x * m_gridScale), (float)(grid_max_y * m_gridScale), 0.0f,
-            (float)(grid_max_x * m_gridScale), (float)(grid_min_y * m_gridScale), 0.0f,
-            (float)(grid_min_x * m_gridScale), (float)(grid_min_y * m_gridScale), 0.0f
+            (float)(grid_max_x * m_gridScale), (float)(grid_min_y * m_gridScale), 0.0f
         };
-        glBindVertexArray(VAO[Shapes::getIndex(shape::plane)]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[Shapes::getIndex(shape::plane)]);
+        int planeIndex[6]{
+            0, 1, 2,
+            2, 3, 0
+        };
+        glBindVertexArray(VAO[(int)vertex::plane]);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::plane]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(planeMesh), planeMesh, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::plane]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(planeIndex), planeIndex, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        m_planeBufferSize = sizeof(planeMesh);
+        m_planeIndexSize = sizeof(planeIndex);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     // Draw grid
+    glBindVertexArray(VAO[(int)vertex::grid]);
+    m_shaderProgramCol.setVec4("u_color", glm::vec4{ 1.0f });
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+    glDrawElements(GL_LINES, m_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
     m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f });
-    glBindVertexArray(VAO[Shapes::getIndex(shape::grid)]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[Shapes::getIndex(shape::grid)]);
-    glDrawArrays(GL_LINES, 0, m_gridBufferSize / sizeof(float));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+    glDrawElements(GL_LINES, m_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Draw plane
     if (planeAlpha > 0.0f) {
         m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.3f, 0.3f, 0.3f, planeAlpha });
         glDepthMask(false);
-        glBindVertexArray(VAO[Shapes::getIndex(shape::plane)]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[Shapes::getIndex(shape::plane)]);
-        glDrawArrays(GL_TRIANGLES, 0, m_planeBufferSize / sizeof(float));
+        glBindVertexArray(VAO[(int)vertex::plane]);
+        glDrawElements(GL_TRIANGLES, m_planeIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
         glDepthMask(true);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 }
 
@@ -319,7 +367,7 @@ void Renderer::drawOrtho() {
     // Draw ortho
     glClear(GL_DEPTH_BUFFER_BIT); // Clean depth buffer, in order to draw on top of 3D objects
     m_shaderProgramOrtho.use();
-    glBindVertexArray(VAO[Shapes::getIndex(shape::ortho)]);
+    glBindVertexArray(VAO[(int)vertex::ortho]);
     m_shaderProgramOrtho.setFloat("u_alpha", 1.0f);
     projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -(float)m_orthoSize, (float)m_orthoSize);
     m_shaderProgramOrtho.setMat4("u_projection", projection);
@@ -343,7 +391,7 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
 
     // Draw cube
     m_shaderProgram.use();
-    glBindVertexArray(VAO[Shapes::getIndex(shape::cube)]);
+    glBindVertexArray(VAO[(int)vertex::cube]);
     m_shaderProgram.setVec3("u_lightPos", m_lightPos);
     m_shaderProgram.setFloat("u_ambientStrength", 0.1f);
     m_shaderProgram.setVec4("u_objectColor", glm::vec4{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }); // access to first color only is temporary...

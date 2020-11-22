@@ -1,9 +1,26 @@
+//WINDOWS (MinGW-w64)
 To build the test application, you'll need:
 	* MinGW-w64 8.1.0
 	* CMake 3.9 (or higher)
 
 After setting the respective environmental variables, go into the ./fcpp directory through a prompt and type the following commands:
 	* cmake -S ./ -B ./build -G "MinGW Makefiles"
+	* cmake --build ./build/
+
+Wait the application to be built.
+
+
+
+//LINUX
+To build the test application, you'll need:
+	* xorg-dev package (X11)
+	* CMake 3.9 (or higher)
+
+To install the X11 package, type the following command:
+	* sudo apt-get  install xorg-dev
+
+After installing X11, go into the ./fcpp directory through the console and type the following commands:
+	* cmake -S ./ -B ./build -G "Unix Makefiles"
 	* cmake --build ./build/
 
 Wait the application to be built.

@@ -12,7 +12,9 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # adding fcpp_master
-option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
+if(MINGW)
+    option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
+endif(MINGW)
 add_subdirectory(./src/)
 
 # executable target
@@ -22,19 +24,34 @@ add_executable(fcppGL ./src/test/simulation/displayer.cpp)
 set_target_properties(fcppGL PROPERTIES VERSION &{PROJECT_VERSION})
 
 # include directories
+if(MINGW)
 target_include_directories(fcppGL PRIVATE ./src/
                                           ./src/external/
                                           ./src/external/mingw-std-threads-master
-										  ./src/external/glad-core-3.3/include/
-										  ./src/external/glm-0.9.9.8/glm
-										  ./src/external/glfw-3.3.2/include/)
+                                          ./src/external/glad-core-3.3/include/
+                                          ./src/external/glm-0.9.9.8/glm
+                                          ./src/external/glfw-3.3.2/include/)
+else()
+target_include_directories(fcppGL PRIVATE ./src/
+                                          ./src/external/
+                                          ./src/external/glad-core-3.3/include/
+                                          ./src/external/glm-0.9.9.8/glm
+                                          ./src/external/glfw-3.3.2/include/)
+endif(MINGW)
 
 # link libraries
+if(MINGW)
 target_link_libraries(fcppGL PRIVATE mingw_stdthreads
                                      fcpp_master
                                      glm
 									 glfw
 									 stb_image)
+else()
+target_link_libraries(fcppGL PRIVATE fcpp_master
+                                     glm
+									 glfw
+									 stb_image)
+endif(MINGW)
 
 #copying shaders into build
 add_custom_command(TARGET fcppGL PRE_BUILD
@@ -51,6 +68,7 @@ install(TARGETS fcppGL
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
 
 
 

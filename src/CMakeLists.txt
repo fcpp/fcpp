@@ -87,27 +87,51 @@ add_library(stb_image ./external/stb_image/stb_image.h
                       ./external/stb_image/stb_image.cpp)
 add_subdirectory(./external/glm-0.9.9.8/glm/)
 add_subdirectory(./external/glfw-3.3.2)
+if(MINGW)
 add_subdirectory(./external/mingw-std-threads-master)
+endif(MINGW)
 
 # include directories
 target_include_directories(glad PRIVATE ./external/glad-core-3.3/include/)
 target_include_directories(stb_image PRIVATE ./external/stb_image/)
+if(MINGW)
 target_include_directories(fcpp_master PRIVATE ./
 											   ./external/
 											   ./external/mingw-std-threads-master
 											   ./external/glad-core-3.3/include/
 											   ./external/glm-0.9.9.8/glm
 											   ./external/glfw-3.3.2/include/)
+else()
+target_include_directories(fcpp_master PRIVATE ./
+											   ./external/
+											   ./external/glad-core-3.3/include/
+											   ./external/glm-0.9.9.8/glm
+											   ./external/glfw-3.3.2/include/)
+endif(MINGW)
 
 # MinGW threads options
+if(MINGW)
 option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
+endif(MINGW)
 
 # link libraries to main target fcpp_master
+if(MINGW)
 target_link_libraries(fcpp_master PRIVATE mingw_stdthreads
 										  glad
 										  glm
 										  glfw
                                           stb_image)
+else()
+target_link_libraries(fcpp_master PRIVATE glad
+										  glm
+										  glfw
+                                          stb_image)
+endif(MINGW)
+
+#target compile options
+if(UNIX)
+target_compile_options(glad PUBLIC "-fPIC")
+endif(UNIX)
 
 # defining install rules
 include(GNUInstallDirs)
@@ -115,6 +139,9 @@ install(TARGETS fcpp_master
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+
+
 
 
 

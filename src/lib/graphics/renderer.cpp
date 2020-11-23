@@ -148,8 +148,6 @@ Renderer::Renderer() :
 
 /* --- PRIVATE FUNCTIONS --- */
 void Renderer::processKeyboardInput() {
-    //if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    //    glfwSetWindowShouldClose(m_window, true);
     if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
         m_camera.processKeyboard(FORWARD, m_deltaTime);
     if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
@@ -406,12 +404,16 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-float Renderer::aspectRatio() {
+float Renderer::getAspectRatio() {
     return (float)(m_currentWidth) / (float)(m_currentHeight);
 }
 
-float Renderer::viewAngle() {
+float Renderer::getViewAngle() {
     return m_camera.getFov();
+}
+
+GLFWwindow* Renderer::getWindow() {
+    return m_window;
 }
 
 void Renderer::setPosition(glm::vec3& newPos) {

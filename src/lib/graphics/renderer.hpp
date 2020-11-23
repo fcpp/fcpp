@@ -274,10 +274,13 @@ namespace fcpp {
             void drawCube(glm::vec3 p, double d, std::vector<color> c);
 
             //! @brief Returns the aspect ratio of the window.
-            float aspectRatio();
+            float getAspectRatio();
 
             //! @brief Returns the camera's Field of View.
-            float viewAngle();
+            float getViewAngle();
+            
+            //! @brief Returns the pointer to the Renderer's m_window
+            GLFWwindow* getWindow();
 
             //! @brief Sets the camera's position.
             void setPosition(glm::vec3& newPos);

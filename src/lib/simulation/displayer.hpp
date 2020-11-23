@@ -308,8 +308,8 @@ struct displayer {
                         // first frame only: set camera position, rotation, sensitivity
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
-                        double dz = std::max(viewport_size.x/m_renderer.aspectRatio(), viewport_size.y);
-                        dz /= tan(m_renderer.viewAngle() / 2) * 2;
+                        double dz = std::max(viewport_size.x/m_renderer.getAspectRatio(), viewport_size.y);
+                        dz /= tan(m_renderer.getViewAngle() / 2) * 2;
                         camera_pos.z = m_viewport_max.z + dz;
                         // roll/pitch angles should be zero (why is there no "roll" angle in your code so far?)
                         // yaw should be so that the front of the camera is towards negative values of z (not clear to me where the zero angle starts)
@@ -340,6 +340,9 @@ struct displayer {
 
                     // Draw orthogonal axis
                     m_renderer.drawOrtho();
+                    
+                    // Process displayer's input through custom handlers
+                    processDisplayerKeyboardInput();
 
                     // Swap buffers and prepare for next frame to draw
                     m_renderer.swapAndNext();
@@ -384,6 +387,15 @@ struct displayer {
             template <typename N>
             inline times_t get_warped(std::false_type, N const&, times_t t) const {
                 return t;
+            }
+            
+            //! @brief Custom keyboard handler for the displayer component.
+            void processDisplayerKeyboardInput() {
+                GLFWwindow* window{ m_renderer.getWindow() };
+                if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+                    glfwSetWindowShouldClose(window, true);
+                    P::net::terminate();
+                }
             }
 
             //! @brief The next refresh time.

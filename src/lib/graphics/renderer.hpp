@@ -133,6 +133,46 @@ namespace fcpp {
 	namespace internal {
         //! @brief Renderer class; it has the responsability of calling OpenGL directives.
         class Renderer {
+		public:
+			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
+			Renderer();
+
+            //! @brief Swaps the frame buffers and prepares everything for the next frame.
+            void swapAndNext();
+
+            //! @brief It draws the orthogonal axis on the screen.
+            //void drawOrtho();
+
+            //! @brief It draws the grid on the screen.
+            void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
+
+            //! @brief It draws a cube, given the information on color(s) and position.
+            void drawCube(glm::vec3 p, double d, std::vector<color> c);
+
+            //! @brief Returns the aspect ratio of the window.
+            float getAspectRatio();
+
+            //! @brief Returns the camera's Field of View.
+            float getViewAngle();
+            
+            //! @brief Returns the pointer to the Renderer's m_window
+            GLFWwindow* getWindow();
+            
+            //! @brief It runs m_camera's setViewDefault() with the given attributes.
+            void setDefaultCameraView(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch);
+
+            //! @brief Sets the light's position.
+            void setLightPosition(glm::vec3& newPos);
+
+            //! @brief Sets the scale of the grid.
+            void setGridScale(double newScale);
+
+            //! @brief Sets the far plane's distance of the projection (perspective) matrix.
+            void setFarPlane(float newFar);
+
+            //! @brief Sets the near plane's distance of the projection (perspective) matrix.
+            void setNearPlane(float newNear);
+            
         private:
             //! @brief Default path to vertex shader.
             static const std::string VERTEX_PATH;
@@ -256,52 +296,6 @@ namespace fcpp {
 
             //! @brief Bind internally-defined callback functions to OpenGL events.
             void setInternalCallbacks();
-
-		public:
-			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
-			Renderer();
-
-            //! @brief Swaps the frame buffers and prepares everything for the next frame.
-            void swapAndNext();
-
-            //! @brief It draws the orthogonal axis on the screen.
-            void drawOrtho();
-
-            //! @brief It draws the grid on the screen.
-            void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
-
-            //! @brief It draws a cube, given the information on color(s) and position.
-            void drawCube(glm::vec3 p, double d, std::vector<color> c);
-
-            //! @brief Returns the aspect ratio of the window.
-            float getAspectRatio();
-
-            //! @brief Returns the camera's Field of View.
-            float getViewAngle();
-            
-            //! @brief Returns the pointer to the Renderer's m_window
-            GLFWwindow* getWindow();
-
-            //! @brief Sets the camera's position.
-            void setPosition(glm::vec3& newPos);
-
-            //! @brief Sets the light's position.
-            void setLightPosition(glm::vec3& newPos);
-
-            //! @brief Sets the scale of the grid.
-            void setGridScale(double newScale);
-
-            //! @brief Sets the camera's yaw angle.
-            void setYaw(float newYaw);
-
-            //! @brief Sets the camera's pitch angle.
-            void setPitch(float newPitch);
-
-            //! @brief Sets the far plane's distance of the projection (perspective) matrix.
-            void setFarPlane(float newFar);
-
-            //! @brief Sets the near plane's distance of the projection (perspective) matrix.
-            void setNearPlane(float newNear);
 		};
 	}
 }

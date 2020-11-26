@@ -1,4 +1,4 @@
-// Copyright © 2020 Luigi Rapetta. All Rights Reserved.
+// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 // Thanks to learnopengl.com for the original structure.
 
 #ifndef CAMERA_H
@@ -9,7 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 
-// Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
+//! @brief Enum defining several possible options for camera movement, abstracting from specific input methods.
 enum CameraMovement {
     FORWARD,
     BACKWARD,
@@ -19,62 +19,64 @@ enum CameraMovement {
     FLY_DOWN
 };
 
-// Default camera values
+//! @brief Default camera's yaw
 const float CAM_DEFAULT_YAW{ -90.0f };
+
+//! @brief Default camera's pitch
 const float CAM_DEFAULT_PITCH{ 0.0f };
+
+//! @brief Default camera's speed
 const float CAM_DEFAULT_SPEED{ 50.0f };
+
+//! @brief Default camera's sensitivity
 const float CAM_DEFAULT_SENSITIVITY{ 0.1f };
+
+//! @brief Default camera's Field of View
 const float CAM_DEFAULT_FOV{ 45.0f };
 
 
-// An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
+//! @brief Camera class with integrated view matrix.
 class Camera
 {
-    // Camera vectors
-    glm::vec3 position;
-    glm::vec3 front;
-    glm::vec3 up;
-    glm::vec3 right;
-    glm::vec3 worldUp;
-
-    // Camera angles (Euler Angles)
-    float yaw;
-    float pitch;
-
-    // Camera options
-    float movementSpeed;
-    float mouseSensitivity;
-    float fov;
-
-private:
-    // Calculates the front vector from the Camera's (updated) Euler Angles
-    void updateCameraVectors();
-
 public:
-    // Constructor
+    //! @brief Camera's constructor, with default values for the camera's initial vectors.
     Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = CAM_DEFAULT_YAW, float pitch = CAM_DEFAULT_PITCH);
 
-    // LookAt generator
-    glm::mat4 getViewMatrix();
-
-    // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
+    //! @brief It processes input received from keyboard.
     void processKeyboard(CameraMovement direction, float deltaTime);
 
-    // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-    void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
+    //! @brief It processes input received from mouse input.
+    void processMouseMovement(float xoffset, float yoffset);
 
-    // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
+    //! @brief It processes input received from a mouse scroll-wheel.
     void processMouseScroll(float yoffset);
+    
+    //! @brief It moves camera to its initial position and rotation.
+    void applyViewDefault();
+    
+    //! @brief It sets camera's default view matrix; it also sets the current view matrix to these values.
+    void setViewDefault(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch);
 
-    // Getters
-    glm::vec3 getPosition();
+    //! @brief It returns camera's view matrix.
+    glm::mat4 getView();
+    
+    //! @brief It returns camera's Field of View.
     float getFov();
-    float getYaw();
-    float getPitch();
 
-    // Setters
-    void setPosition(glm::vec3& newPos);
-    void setYaw(float newYaw);
-    void setPitch(float newPitch);
+private:    
+    //! @brief Camera's current movement speed.
+    float m_movementSpeed;
+    
+    //! @brief Camera's current mouse sensitivity.
+    float m_mouseSensitivity;
+    
+    //! @brief Camera's current Field of View.
+    float m_fov;
+    
+    //! @brief Camera's view matrix; all trasnformations are made on this one.
+    glm::mat4 m_view;
+    
+    //! @brief Camera's default view matrix; it is stored to easily return to the default position.
+    glm::mat4 m_viewDefault;
 };
 #endif

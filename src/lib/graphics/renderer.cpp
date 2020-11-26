@@ -228,7 +228,7 @@ void Renderer::swapAndNext() {
 void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
-    glm::mat4 view{ m_camera.getViewMatrix() };
+    glm::mat4 view{ m_camera.getView() };
     glm::mat4 model{ 1.0f };;
 
     // Set up shader program
@@ -356,6 +356,7 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
     }
 }
 
+/*
 void Renderer::drawOrtho() {
     // Create matrices (used several times)
     glm::mat4 projection{ 1.0f };
@@ -377,13 +378,12 @@ void Renderer::drawOrtho() {
     m_shaderProgramOrtho.setMat4("u_model", model);
     glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_ORTHO) / sizeof(Shapes::VERTEX_ORTHO[0]));
 }
-
-
+*/
 
 void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
-    glm::mat4 view{ m_camera.getViewMatrix() };
+    glm::mat4 view{ m_camera.getView() };
     glm::mat4 model{ 1.0f };
     glm::mat3 normal;
 
@@ -416,8 +416,8 @@ GLFWwindow* Renderer::getWindow() {
     return m_window;
 }
 
-void Renderer::setPosition(glm::vec3& newPos) {
-    m_camera.setPosition(newPos);
+void Renderer::setDefaultCameraView(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch) {
+    m_camera.setViewDefault(position, worldUp, yaw, pitch);
 }
 
 void Renderer::setLightPosition(glm::vec3& newPos) {
@@ -426,14 +426,6 @@ void Renderer::setLightPosition(glm::vec3& newPos) {
 
 void Renderer::setGridScale(double newScale) {
     m_gridScale = newScale;
-}
-
-void Renderer::setYaw(float newYaw) {
-    m_camera.setYaw(newYaw);
-}
-
-void Renderer::setPitch(float newPitch) {
-    m_camera.setPitch(newPitch);
 }
 
 void Renderer::setFarPlane(float newFar) {

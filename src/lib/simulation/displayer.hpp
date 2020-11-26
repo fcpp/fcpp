@@ -317,9 +317,8 @@ struct displayer {
                         double zNear = zFar / 1024;
                         // zFar/zNear also regulates the cameraSensitivity to input (speed of changes)
                         // mousewheel changes zFar & zNear & cameraSensitivity (all proportionally)
-                        m_renderer.setPosition(camera_pos);
                         m_renderer.setLightPosition(camera_pos);
-                        m_renderer.setYaw(-90.0f);  // -90.0f = 270.0f
+                        m_renderer.setDefaultCameraView(camera_pos, glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
                         m_renderer.setFarPlane((float)zFar);
                         m_renderer.setNearPlane((float)zNear);
                         double diagonal = glm::length(viewport_size);
@@ -339,7 +338,7 @@ struct displayer {
                     m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
 
                     // Draw orthogonal axis
-                    m_renderer.drawOrtho();
+                    //m_renderer.drawOrtho();
                     
                     // Process displayer's input through custom handlers
                     processDisplayerKeyboardInput();

@@ -45,8 +45,11 @@ public:
     //! @brief It processes input received from keyboard.
     void processKeyboard(CameraMovement direction, float deltaTime);
 
-    //! @brief It processes input received from mouse input.
-    void processMouseMovement(float xoffset, float yoffset);
+    //! @brief It processes input received from mouse input as if controlling from a First Person Perspective (FPP).
+    void processMouseMovementFPP(float xoffset, float yoffset);
+    
+    //! @brief It processes input received from mouse input in editor mode.
+    void processMouseMovementEditor(float x, float y, float dx, float dy);
 
     //! @brief It processes input received from a mouse scroll-wheel.
     void processMouseScroll(float yoffset);

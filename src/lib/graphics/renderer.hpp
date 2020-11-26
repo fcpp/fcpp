@@ -286,10 +286,10 @@ namespace fcpp {
             void processKeyboardInput();
 
             //! @brief Mouse input callback function.
-            void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+            void mousePosCallback(GLFWwindow* window, double xpos, double ypos);
 
             //! @brief Mouse scroll callback function.
-            void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+            void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
             //! @brief Window resize callback function.
             void framebufferSizeCallback(GLFWwindow* window, int width, int height);

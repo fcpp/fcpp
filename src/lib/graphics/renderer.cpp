@@ -92,9 +92,6 @@ Renderer::Renderer() :
     // Set viewport
     glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
 
-    // Enable cursor capture
-    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     // Generate actual shader programs
     m_shaderProgram = Shader{ VERTEX_PATH.c_str(), FRAGMENT_PATH.c_str() };
     m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
@@ -103,7 +100,7 @@ Renderer::Renderer() :
     // Generate VAOs, VBOs and EBOs
     glGenVertexArrays(5, VAO);
     glGenBuffers(5, VBO);
-    glGenBuffers(5, EBO); //on hold...
+    glGenBuffers(5, EBO);
 
     // Store (static) ortho data 
     glBindVertexArray(VAO[(int)vertex::ortho]);
@@ -148,21 +145,24 @@ Renderer::Renderer() :
 
 /* --- PRIVATE FUNCTIONS --- */
 void Renderer::processKeyboardInput() {
-    if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-        m_camera.processKeyboard(FORWARD, m_deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-        m_camera.processKeyboard(BACKWARD, m_deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-        m_camera.processKeyboard(LEFT, m_deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-        m_camera.processKeyboard(RIGHT, m_deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS)
-        m_camera.processKeyboard(FLY_UP, m_deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS)
-        m_camera.processKeyboard(FLY_DOWN, m_deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
+            m_camera.processKeyboard(FORWARD, m_deltaTime);
+        if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
+            m_camera.processKeyboard(BACKWARD, m_deltaTime);
+        if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
+            m_camera.processKeyboard(LEFT, m_deltaTime);
+        if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
+            m_camera.processKeyboard(RIGHT, m_deltaTime);
+        if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS)
+            m_camera.processKeyboard(FLY_UP, m_deltaTime);
+        if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS)
+            m_camera.processKeyboard(FLY_DOWN, m_deltaTime);
+    }
 }
 
-void Renderer::mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+void Renderer::mousePosCallback(GLFWwindow* window, double xpos, double ypos) {
+    std::cout << "(" << xpos << ", " << ypos << ")\n" ;
     if (m_mouseFirst) {
         m_mouseLastX = (float)xpos;
         m_mouseLastY = (float)ypos;
@@ -174,10 +174,18 @@ void Renderer::mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     m_mouseLastX = (float)xpos;
     m_mouseLastY = (float)ypos;
 
-    m_camera.processMouseMovement(xoffset, yoffset);
+    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide cursor
+        m_camera.processMouseMovementFPP(xoffset, yoffset);
+    } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
+        m_camera.processMouseMovementEditor(xpos - (m_currentWidth / 2), (float)(m_currentHeight / 2) - ypos, xoffset, yoffset); // need to move (0,0) at the center of the screen
+    } else {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
+    }
 }
 
-void Renderer::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+void Renderer::mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     m_camera.processMouseScroll((float)yoffset);
 }
 
@@ -197,11 +205,11 @@ void Renderer::setInternalCallbacks() {
     // Enable cursor callbacks
     glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos) {
         Renderer& rend = *((Renderer*)glfwGetWindowUserPointer(window)); // get the Renderer instance from window
-        rend.mouseCallback(window, xpos, ypos);
+        rend.mousePosCallback(window, xpos, ypos);
         });
     glfwSetScrollCallback(m_window, [](GLFWwindow* window, double xoffset, double yoffset) {
         Renderer& rend = *((Renderer*)glfwGetWindowUserPointer(window)); // get the Renderer instance from window
-        rend.scrollCallback(window, xoffset, yoffset);
+        rend.mouseScrollCallback(window, xoffset, yoffset);
         });
 }
 

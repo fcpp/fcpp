@@ -3,6 +3,7 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <glm/gtx/norm.hpp>
 #include <glm/gtx/transform.hpp> 
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
@@ -48,13 +49,36 @@ void Camera::processKeyboard(CameraMovement direction, float deltaTime)
     }
 }
 
-void Camera::processMouseMovement(float xoffset, float yoffset)
+void Camera::processMouseMovementFPP(float xoffset, float yoffset)
 {
+    glm::mat4 rot;
     xoffset *= m_mouseSensitivity;
     yoffset *= m_mouseSensitivity;
 
-    m_view = glm::rotate(m_view, xoffset, glm::vec3(0.0f, 1.0f, 0.0f));
-    m_view = glm::rotate(m_view, yoffset, glm::vec3(1.0f, 0.0f, 0.0f));
+    rot = glm::rotate(glm::radians(xoffset), glm::vec3(0.0f, 1.0f, 0.0f));
+    m_view = rot * m_view;
+    rot = glm::rotate(glm::radians(-yoffset), glm::vec3(1.0f, 0.0f, 0.0f));
+    m_view = rot * m_view;
+}
+
+void Camera::processMouseMovementEditor(float x, float y, float dx, float dy)
+{
+    glm::mat4 rot;
+    x *= m_mouseSensitivity;
+    y *= m_mouseSensitivity;
+    dx *= m_mouseSensitivity;
+    dy *= m_mouseSensitivity;
+    glm::vec3 xyVec{ x, y, 0 };
+    glm::vec3 xyOffVec{ dx, dy, 0 };
+    
+    float a = glm::dot(xyVec, xyOffVec) / glm::l1Norm(xyVec);
+    glm::mat4 rotA{ glm::rotate(glm::radians(a), glm::vec3(0.0f, 0.0f, 1.0f)) };
+    
+    float b = glm::l1Norm(glm::cross(xyVec, xyOffVec)) / glm::l1Norm(xyVec);
+    glm::mat4 rotB{ glm::rotate(glm::radians(b), glm::vec3(y, -x, 0.0f)) };
+    
+    rot = rotA * rotB;
+    m_view = rot * m_view;
 }
 
 void Camera::processMouseScroll(float yoffset)

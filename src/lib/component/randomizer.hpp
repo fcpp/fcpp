@@ -100,21 +100,21 @@ struct randomizer {
                 return dist(generator());
             }
             
-            //! @brief Generates a `double` value between zero and `b`.
-            inline double next_double(double b = 1.0) {
-                return next_double(0.0,b);
+            //! @brief Generates a `real_t` value between zero and `b`.
+            inline real_t next_real(real_t b = 1) {
+                return next_real(0,b);
             }
 
-            //! @brief Generates a `double` value between `a` and `b`.
-            double next_double(double a, double b) {
-                std::uniform_real_distribution<double> dist(a,b);
+            //! @brief Generates a `real_t` value between `a` and `b`.
+            real_t next_real(real_t a, real_t b) {
+                std::uniform_real_distribution<real_t> dist(a,b);
                 return dist(generator());
             }
             
             //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
             template <template<typename> class D>
-            double random_error(double v, double r, double a = 0) {
-                D<double> dist = distribution::make<D>(v, r*v+a);
+            real_t random_error(real_t v, real_t r, real_t a = 0) {
+                D<real_t> dist = distribution::make<D>(v, r*v+a);
                 return dist(m_generator);
             }
             
@@ -147,21 +147,21 @@ struct randomizer {
                 return dist(m_generator);
             }
             
-            //! @brief Generates a `double` value between zero and `b`.
-            inline double next_double(double b = 1.0) {
-                return next_double(0.0,b);
+            //! @brief Generates a `real_t` value between zero and `b`.
+            inline real_t next_real(real_t b = 1) {
+                return next_real(0,b);
             }
 
-            //! @brief Generates a `double` value between `a` and `b`.
-            double next_double(double a, double b) {
-                std::uniform_real_distribution<double> dist(a,b);
+            //! @brief Generates a `real_t` value between `a` and `b`.
+            real_t next_real(real_t a, real_t b) {
+                std::uniform_real_distribution<real_t> dist(a,b);
                 return dist(m_generator);
             }
             
             //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
             template <template<typename> class D>
-            double random_error(double v, double r, double a = 0) {
-                D<double> dist = distribution::make<D>(v, r*v+a);
+            real_t random_error(real_t v, real_t r, real_t a = 0) {
+                D<real_t> dist = distribution::make<D>(v, r*v+a);
                 return dist(m_generator);
             }
             

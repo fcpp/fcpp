@@ -18,19 +18,19 @@ DECLARE_OPTIONS(options,
     round_schedule<sequence::list<distribution::constant_n<times_t, 100>>>,
     log_schedule<sequence::list<distribution::constant_n<times_t, 100>>>,
     exports<
-        device_t, double, field<double>, vec<2>,
-        tuple<double,device_t>, tuple<double,int>, tuple<double,double>
+        device_t, real_t, field<real_t>, vec<2>,
+        tuple<real_t,device_t>, tuple<real_t,int>, tuple<real_t,real_t>
     >,
     tuple_store<
         algorithm,  int,
-        spc_sum,    double,
-        mpc_sum,    double,
-        wmpc_sum,   double,
-        ideal_sum,  double,
-        spc_max,    double,
-        mpc_max,    double,
-        wmpc_max,   double,
-        ideal_max,  double
+        spc_sum,    real_t,
+        mpc_sum,    real_t,
+        wmpc_sum,   real_t,
+        ideal_sum,  real_t,
+        spc_max,    real_t,
+        mpc_max,    real_t,
+        wmpc_max,   real_t,
+        ideal_max,  real_t
     >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
@@ -43,9 +43,9 @@ using combo = component::batch_simulator<options<O>>;
 
 
 MULTI_TEST(CollectionCompareTest, ShortLine, O, 5) {
-    test_net<combo<O>, std::tuple<double>()> n{
+    test_net<combo<O>, std::tuple<real_t>()> n{
         [&](auto& node){
-            node.round_main(0.0);
+            node.round_main(0);
             return std::make_tuple(
                 node.storage(ideal_sum{})
             );

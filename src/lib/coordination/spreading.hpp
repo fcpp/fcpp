@@ -27,11 +27,11 @@ namespace coordination {
 
 
 //! @brief Mediates between an older and newer values.
-inline double damper(double old_v, double new_v, double delta, double factor) {
+inline real_t damper(real_t old_v, real_t new_v, real_t delta, real_t factor) {
     if (old_v > factor * new_v or new_v > factor * old_v)
         return new_v;
-    double sign = old_v < new_v ? 0.5 : -0.5;
-    double diff = abs(new_v - old_v);
+    real_t sign = old_v < new_v ? 0.5f : -0.5f;
+    real_t diff = abs(new_v - old_v);
     return diff > delta ? new_v - delta * sign : old_v;
 }
 
@@ -49,71 +49,66 @@ hops_t abf_hops(node_t& node, trace_t call_point, bool source) {
 
 //! @brief Computes the distance from a source through adaptive bellmann-ford.
 template <typename node_t>
-double abf_distance(node_t& node, trace_t call_point, bool source) {
+real_t abf_distance(node_t& node, trace_t call_point, bool source) {
     return abf_distance(node, call_point, source, [&](){
         return node.nbr_dist();
     });
 }
 
 //! @brief Computes the distance from a source with a custom metric through adaptive bellmann-ford.
-template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
-double abf_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
+template <typename node_t, typename G, typename = common::if_signature<G, field<real_t>()>>
+real_t abf_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, INF, [&] (field<double> d) {
-        return min_hood(node, 0, d + metric(), source ? 0.0 : INF);
+    return nbr(node, 0, INF, [&] (field<real_t> d) {
+        return min_hood(node, 0, d + metric(), source ? 0 : INF);
     });
 }
 
 
-//! @brief Computes the distance from a source through bounded information speeds.
-template <typename node_t>
-double bis_distance(node_t& node, trace_t call_point, bool source, double period, double speed) {
+//! @brief Computes the distance from a source with a custom metric through bounded information speeds.
+template <typename node_t, typename G, typename = common::if_signature<G, field<real_t>()>>
+real_t bis_distance(node_t& node, trace_t call_point, bool source, times_t period, real_t speed, G&& metric) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    tuple<double,double> loc = source ? make_tuple(0.0, 0.0) : make_tuple(INF, INF);
-    return get<0>(nbr(node, 0, loc, [&] (field<tuple<double,double>> x) {
-        field<double> d = get<0>(x) + node.nbr_dist();
-        field<double> t = get<1>(x) + node.nbr_lag();
+    tuple<real_t,times_t> loc = source ? tuple<real_t,times_t>(0, 0) : make_tuple(INF, TIME_MAX);
+    return get<0>(nbr(node, 0, loc, [&] (field<tuple<real_t,times_t>> x) {
+        field<real_t> d = get<0>(x) + metric();
+        field<times_t> t = get<1>(x) + node.nbr_lag();
         return min_hood(node, 0, make_tuple(max(d, (t-period)*speed), t), loc);
     }));
 }
 
-//! @brief Computes the distance from a source with a custom metric through bounded information speeds.
-template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
-double bis_distance(node_t& node, trace_t call_point, bool source, double period, double speed, G&& metric) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-
-    tuple<double,double> loc = source ? make_tuple(0.0, 0.0) : make_tuple(INF, INF);
-    return get<0>(nbr(node, 0, loc, [&] (field<tuple<double,double>> x) {
-        field<double> d = get<0>(x) + metric();
-        field<double> t = get<1>(x) + node.nbr_lag();
-        return min_hood(node, 0, make_tuple(max(d, (t-period)*speed), t), loc);
-    }));
+//! @brief Computes the distance from a source through bounded information speeds.
+template <typename node_t>
+inline real_t bis_distance(node_t& node, trace_t call_point, bool source, times_t period, real_t speed) {
+    return bis_distance(node, call_point, source, period, speed, [&](){
+        return node.nbr_dist();
+    });
 }
 
 
 //! @brief Computes the distance from a source through flexible gradients.
 template <typename node_t>
-inline double flex_distance(node_t& node, trace_t call_point, bool source, double epsilon, double radius, double distortion, int frequency) {
+inline real_t flex_distance(node_t& node, trace_t call_point, bool source, real_t epsilon, real_t radius, real_t distortion, int frequency) {
     return flex_distance(node, call_point, source, epsilon, radius, distortion, frequency, [&](){
         return node.nbr_dist();
     });
 }
 
 //! @brief Computes the distance from a source with a custom metric through flexible gradients.
-template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
-double flex_distance(node_t& node, trace_t call_point, bool source, double epsilon, double radius, double distortion, int frequency, G&& metric) {
+template <typename node_t, typename G, typename = common::if_signature<G, field<real_t>()>>
+real_t flex_distance(node_t& node, trace_t call_point, bool source, real_t epsilon, real_t radius, real_t distortion, int frequency, G&& metric) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    double loc = source ? 0.0 : INF;
-    return get<0>(nbr(node, 0, make_tuple(loc, 0), [&] (field<tuple<double,int>> x) {
-        field<double> dist = max(metric(), field<double>{distortion*radius});
-        double old_d = get<0>(self(node, 0, x));
+    real_t loc = source ? 0 : INF;
+    return get<0>(nbr(node, 0, make_tuple(loc, 0), [&] (field<tuple<real_t,int>> x) {
+        field<real_t> dist = max(metric(), field<real_t>{distortion*radius});
+        real_t old_d = get<0>(self(node, 0, x));
         int    old_c = get<1>(self(node, 0, x));
-        double new_d = min_hood(node, 0, get<0>(x) + dist, loc);
-        tuple<double,double,double> slopeinfo = max_hood(node, 0, make_tuple((old_d - get<0>(x))/dist, get<0>(x), dist), make_tuple(-INF, INF, 0));
-        if (old_d == new_d or new_d == 0.0 or old_c == frequency or
+        real_t new_d = min_hood(node, 0, get<0>(x) + dist, loc);
+        tuple<real_t,real_t,real_t> slopeinfo = max_hood(node, 0, make_tuple((old_d - get<0>(x))/dist, get<0>(x), dist), make_tuple(-INF, INF, 0));
+        if (old_d == new_d or new_d == 0 or old_c == frequency or
             old_d > max(2*new_d, radius) or new_d > max(2*old_d, radius))
             return make_tuple(new_d, 0);
         if (get<0>(slopeinfo) > 1 + epsilon)

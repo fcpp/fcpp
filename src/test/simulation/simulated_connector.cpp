@@ -92,7 +92,7 @@ MULTI_TEST(PhysicalConnectorTest, Cell, O, 1) {
 
 MULTI_TEST(PhysicalConnectorTest, Connection, O, 1) {
     typename combo<O>::net network{common::make_tagged_tuple<oth>("foo")};
-    EXPECT_EQ(1.0, network.connection_radius());
+    EXPECT_EQ(1, network.connection_radius());
     typename connect::fixed<1>::data_type data;
     bool connect;
     connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(0.4,0.9));
@@ -137,11 +137,11 @@ MULTI_TEST(PhysicalConnectorTest, Messages, O, 1) {
     typename combo<O>::node d2{network, common::make_tagged_tuple<uid, x>(2, make_vec(1.5,0.5))};
     typename combo<O>::node d3{network, common::make_tagged_tuple<uid, x>(3, make_vec(1.5,1.5))};
     typename combo<O>::node d4{network, common::make_tagged_tuple<uid, x>(4, make_vec(9.0,9.0))};
-    EXPECT_EQ(2.0, d0.next());
-    EXPECT_EQ(2.0, d1.next());
-    EXPECT_EQ(2.0, d2.next());
-    EXPECT_EQ(2.0, d3.next());
-    EXPECT_EQ(2.0, d4.next());
+    EXPECT_EQ(2, d0.next());
+    EXPECT_EQ(2, d1.next());
+    EXPECT_EQ(2, d2.next());
+    EXPECT_EQ(2, d3.next());
+    EXPECT_EQ(2, d4.next());
     d0.velocity() = make_vec(1,1);
     update(d0);
     update(d1);
@@ -158,7 +158,7 @@ MULTI_TEST(PhysicalConnectorTest, Messages, O, 1) {
     update(d2);
     update(d3);
     update(d4);
-    double d;
+    real_t d;
     d = fcpp::details::self(d0.nbr_dist(), 0);
     EXPECT_NEAR(0, d, 1e-9);
     d = fcpp::details::self(d0.nbr_dist(), 1);
@@ -166,18 +166,18 @@ MULTI_TEST(PhysicalConnectorTest, Messages, O, 1) {
     d = fcpp::details::self(d0.nbr_dist(), 2);
     EXPECT_NEAR(1, d, 1e-9);
     d = fcpp::details::self(d0.nbr_dist(), 3);
-    EXPECT_EQ(1.0/0.0, d);
+    EXPECT_EQ(INF, d);
     d = fcpp::details::self(d0.nbr_dist(), 4);
-    EXPECT_EQ(1.0/0.0, d);
+    EXPECT_EQ(INF, d);
     d = fcpp::details::self(d0.nbr_dist(), 5);
-    EXPECT_EQ(1.0/0.0, d);
+    EXPECT_EQ(INF, d);
     EXPECT_NEAR(2.75, d0.next(), FCPP_TIME_EPSILON);
-    EXPECT_EQ(3.0, d1.next());
-    EXPECT_EQ(3.0, d2.next());
-    EXPECT_EQ(3.0, d3.next());
-    EXPECT_EQ(3.0, d4.next());
+    EXPECT_EQ(3, d1.next());
+    EXPECT_EQ(3, d2.next());
+    EXPECT_EQ(3, d3.next());
+    EXPECT_EQ(3, d4.next());
     update(d0);
-    EXPECT_EQ(3.0, d0.next());
+    EXPECT_EQ(3, d0.next());
     update(d0);
     update(d1);
     update(d2);
@@ -200,9 +200,9 @@ MULTI_TEST(PhysicalConnectorTest, Messages, O, 1) {
     d = fcpp::details::self(d0.nbr_dist(), 2);
     EXPECT_NEAR(1, d, 1e-9);
     d = fcpp::details::self(d0.nbr_dist(), 3);
-    EXPECT_EQ(0.0, d);
+    EXPECT_EQ(0, d);
     d = fcpp::details::self(d0.nbr_dist(), 4);
-    EXPECT_EQ(1.0/0.0, d);
+    EXPECT_EQ(INF, d);
     d = fcpp::details::self(d0.nbr_dist(), 5);
-    EXPECT_EQ(1.0/0.0, d);
+    EXPECT_EQ(INF, d);
 }

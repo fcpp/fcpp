@@ -72,9 +72,9 @@ struct timer {
                 m_prev = m_cur = TIME_MIN;
                 m_next = common::get_or<tags::start>(t, TIME_MAX);
                 m_offs = (m_next == TIME_MAX ? 0 : m_next);
-                m_fact = 1.0;
+                m_fact = 1;
             }
-            
+
             /**
              * @brief Returns next event to schedule for the node component.
              *
@@ -83,7 +83,7 @@ struct timer {
             times_t next() const {
                 return m_next < TIME_MAX ? m_next : m_offs < TIME_MAX and P::node::next() < TIME_MAX ? P::node::next()/m_fact + m_offs : TIME_MAX;
             }
-            
+
             //! @brief Updates the internal status of node component.
             void update() {
                 m_prev = m_cur;
@@ -98,14 +98,14 @@ struct timer {
                     P::node::update();
                 }
             }
-            
+
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
                 fcpp::details::self(m_neigh, d) = t;
             }
-            
+
             //! @brief Returns the time of the second most recent round (previous during rounds).
             times_t previous_time() const {
                 return m_prev;
@@ -115,12 +115,12 @@ struct timer {
             times_t current_time() const {
                 return m_cur;
             }
-            
+
             //! @brief Returns the time of the next scheduled round.
             times_t next_time() const {
                 return next();
             }
-            
+
             //! @brief Plans the time of the next round (`TIME_MAX` to indicate termination).
             void next_time(times_t t) {
                 if (t < TIME_MAX) {
@@ -129,47 +129,47 @@ struct timer {
                 } else m_offs = TIME_MAX;
                 m_next = t;
             }
-            
+
             //! @brief Terminate round executions.
             void terminate() {
                 m_next = m_offs = TIME_MAX;
             }
-            
+
             //! @brief Returns the time stamps of the most recent messages from neighbours.
             const field<times_t>& message_time() const {
                 return m_neigh;
             }
-            
+
             //! @brief Returns the time difference with neighbours.
             field<times_t> nbr_lag() const {
                 return m_cur - m_neigh;
             }
 
             //! @brief Returns the warping factor applied to following schedulers.
-            double frequency() const {
+            real_t frequency() const {
                 return m_fact;
             }
-            
+
             //! @brief Sets the warping factor applied to following schedulers.
-            void frequency(double f) {
+            void frequency(real_t f) {
                 if (m_offs < TIME_MAX) m_offs = m_cur - times_t(m_fact*(m_cur - m_offs)/f);
                 m_fact = f;
             }
-            
+
           private: // implementation details
             //! @brief Times of previous, current and next planned rounds.
             times_t m_prev, m_cur, m_next;
-            
+
             //! @brief Times of neighbours.
             field<times_t> m_neigh;
-            
+
             //! @brief Offset between the following schedule and actual times.
             times_t m_offs;
-            
+
             //! @brief Warping factor for the following schedule.
-            double m_fact;
+            real_t m_fact;
         };
-        
+
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
@@ -177,9 +177,9 @@ struct timer {
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t) {
                 m_offs = 0;
-                m_fact = 1.0;
+                m_fact = 1;
             }
-            
+
             /**
              * @brief Returns next event to schedule for the net component.
              * 
@@ -188,30 +188,30 @@ struct timer {
             times_t next() const {
                 return m_offs < TIME_MAX and P::net::next() < TIME_MAX ? P::net::next()/m_fact + m_offs : TIME_MAX;
             }
-            
+
           protected: // visible by node objects only
             //! @brief Terminate round executions.
             void terminate() {
                 m_offs = TIME_MAX;
             }
-            
+
             //! @brief Returns the warping factor applied to following schedulers.
-            double frequency() const {
+            real_t frequency() const {
                 return m_fact;
             }
-            
+
             //! @brief Sets the warping factor applied to following schedulers (given current time `t`).
-            void frequency(double f, times_t t) {
+            void frequency(real_t f, times_t t) {
                 if (m_offs < TIME_MAX) m_offs = t - times_t(m_fact*(t - m_offs)/f);
                 m_fact = f;
             }
-            
+
           private: // implementation details
             //! @brief Offset between the following schedule and actual times.
             times_t m_offs;
-            
+
             //! @brief Warping factor for the following schedule.
-            double m_fact;
+            real_t m_fact;
         };
     };
 };

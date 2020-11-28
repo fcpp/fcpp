@@ -14,7 +14,7 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<int, double, device_t, field<double>, tuple<int, device_t>>,
+    exports<int, real_t, device_t, field<real_t>, tuple<int, device_t>>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -27,12 +27,12 @@ struct lagdist {
         struct node : public P::node {
             using P::node::node;
 
-            field<double> nbr_dist() {
-                return {1.0};
+            field<real_t> nbr_dist() {
+                return {1};
             }
 
-            field<double> nbr_lag() {
-                return {1.0};
+            field<real_t> nbr_lag() {
+                return {1};
             }
         };
         using net = typename P::net;
@@ -44,15 +44,15 @@ template <int O>
 using combo = calc_dist<options<O>>;
 
 
-double adder(double x, double y) {
+real_t adder(real_t x, real_t y) {
     return x+y;
 }
 
-double divider(double x, size_t n) {
+real_t divider(real_t x, size_t n) {
     return x/n;
 }
 
-double multiplier(double x, double f) {
+real_t multiplier(real_t x, real_t f) {
     return x*f;
 }
 
@@ -78,8 +78,8 @@ MULTI_TEST(CollectionTest, Gossip, O, 3) {
                         {3, 3, 3});
     }
     {
-        test_net<combo<O>, std::tuple<double>(double)> n{
-            [&](auto& node, double val){
+        test_net<combo<O>, std::tuple<real_t>(real_t)> n{
+            [&](auto& node, real_t val){
                 return std::make_tuple(
                     coordination::gossip_mean(node, 0, val)
                 );
@@ -95,10 +95,10 @@ MULTI_TEST(CollectionTest, Gossip, O, 3) {
 }
 
 MULTI_TEST(CollectionTest, SP, O, 3) {
-    test_net<combo<O>, std::tuple<double>(int, double)> n{
-        [&](auto& node, int id, double val){
+    test_net<combo<O>, std::tuple<real_t>(int, real_t)> n{
+        [&](auto& node, int id, real_t val){
             return std::make_tuple(
-                coordination::sp_collection(node, 0, id, val, 0.0, adder)
+                coordination::sp_collection(node, 0, id, val, 0, adder)
             );
         }
     };
@@ -120,10 +120,10 @@ MULTI_TEST(CollectionTest, SP, O, 3) {
 }
 
 MULTI_TEST(CollectionTest, MP, O, 3) {
-    test_net<combo<O>, std::tuple<double>(int, double)> n{
-        [&](auto& node, int id, double val){
+    test_net<combo<O>, std::tuple<real_t>(int, real_t)> n{
+        [&](auto& node, int id, real_t val){
             return std::make_tuple(
-                coordination::mp_collection(node, 0, id, val, 0.0, adder, divider)
+                coordination::mp_collection(node, 0, id, val, 0, adder, divider)
             );
         }
     };
@@ -142,10 +142,10 @@ MULTI_TEST(CollectionTest, MP, O, 3) {
 }
 
 MULTI_TEST(CollectionTest, WMP, O, 3) {
-    test_net<combo<O>, std::tuple<double>(int, double)> n{
-        [&](auto& node, int id, double val){
+    test_net<combo<O>, std::tuple<real_t>(int, real_t)> n{
+        [&](auto& node, int id, real_t val){
             return std::make_tuple(
-                coordination::wmp_collection(node, 0, id, 2.0, val, adder, multiplier)
+                coordination::wmp_collection(node, 0, id, 2, val, adder, multiplier)
             );
         }
     };

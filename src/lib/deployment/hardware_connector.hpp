@@ -190,7 +190,7 @@ struct hardware_connector {
             }
 
             //! @brief Perceived distances from neighbours.
-            field<double> const& nbr_dist() const {
+            field<real_t> const& nbr_dist() const {
                 return m_nbr_dist;
             }
 
@@ -224,7 +224,7 @@ struct hardware_connector {
             times_t m_send;
 
             //! @brief Perceived distances from neighbours.
-            field<double> m_nbr_dist;
+            field<real_t> m_nbr_dist;
 
             //! @brief Sizes of messages received from neighbours.
             field<size_t> m_nbr_msg_size;

@@ -16,13 +16,13 @@ struct exposer {
         struct node : public P::node {
             using P::node::node;
             using P::node::next_int;
-            using P::node::next_double;
+            using P::node::next_real;
             using P::node::random_error;
         };
         struct net : public P::net {
             using P::net::net;
             using P::net::next_int;
-            using P::net::next_double;
+            using P::net::next_real;
             using P::net::random_error;
         };
     };
@@ -46,12 +46,12 @@ TEST(RandomizerTest, Twister) {
         EXPECT_GE(9, device.next_int(9));
         EXPECT_LE(3, device.next_int(3, 8));
         EXPECT_GE(8, device.next_int(3, 8));
-        EXPECT_LE(0.0, device.next_double());
-        EXPECT_GE(1.0, device.next_double());
-        EXPECT_LE(0.0, device.next_double(9.0));
-        EXPECT_GE(9.0, device.next_double(9.0));
-        EXPECT_LE(3.0, device.next_double(3.0, 8.0));
-        EXPECT_GE(8.0, device.next_double(3.0, 8.0));
+        EXPECT_LE(0, device.next_real());
+        EXPECT_GE(1, device.next_real());
+        EXPECT_LE(0, device.next_real(9));
+        EXPECT_GE(9, device.next_real(9));
+        EXPECT_LE(3, device.next_real(3, 8));
+        EXPECT_GE(8, device.next_real(3, 8));
     }
 }
 
@@ -64,12 +64,12 @@ TEST(RandomizerTest, Crand) {
         EXPECT_GE(9, device.next_int(9));
         EXPECT_LE(3, device.next_int(3, 8));
         EXPECT_GE(8, device.next_int(3, 8));
-        EXPECT_LE(0.0, device.next_double());
-        EXPECT_GE(1.0, device.next_double());
-        EXPECT_LE(0.0, device.next_double(9.0));
-        EXPECT_GE(9.0, device.next_double(9.0));
-        EXPECT_LE(3.0, device.next_double(3.0, 8.0));
-        EXPECT_GE(8.0, device.next_double(3.0, 8.0));
+        EXPECT_LE(0, device.next_real());
+        EXPECT_GE(1, device.next_real());
+        EXPECT_LE(0, device.next_real(9));
+        EXPECT_GE(9, device.next_real(9));
+        EXPECT_LE(3, device.next_real(3, 8));
+        EXPECT_GE(8, device.next_real(3, 8));
     }
 }
 
@@ -81,28 +81,28 @@ TEST(RandomizerTest, Net) {
         EXPECT_GE(9, network.next_int(9));
         EXPECT_LE(3, network.next_int(3, 8));
         EXPECT_GE(8, network.next_int(3, 8));
-        EXPECT_LE(0.0, network.next_double());
-        EXPECT_GE(1.0, network.next_double());
-        EXPECT_LE(0.0, network.next_double(9.0));
-        EXPECT_GE(9.0, network.next_double(9.0));
-        EXPECT_LE(3.0, network.next_double(3.0, 8.0));
-        EXPECT_GE(8.0, network.next_double(3.0, 8.0));
+        EXPECT_LE(0, network.next_real());
+        EXPECT_GE(1, network.next_real());
+        EXPECT_LE(0, network.next_real(9));
+        EXPECT_GE(9, network.next_real(9));
+        EXPECT_LE(3, network.next_real(3, 8));
+        EXPECT_GE(8, network.next_real(3, 8));
     }
 }
 
 TEST(RandomizerTest, Error) {
     combo1::net  network{common::make_tagged_tuple<seed>(20)};
-    double d;
+    real_t d;
     d = 0;
     for (int i=0; i<10000; ++i)
-        d += network.random_error<std::uniform_real_distribution>(5.0, 0.1, 0.5);
-    EXPECT_NEAR(50000.0, d, 300.0);
+        d += network.random_error<std::uniform_real_distribution>(5, 0.1f, 0.5f);
+    EXPECT_NEAR(50000, d, 300);
     d = 0;
     for (int i=0; i<10000; ++i)
-        d += network.random_error<std::normal_distribution>(5.0, 0.1, 0.5);
-    EXPECT_NEAR(50000.0, d, 300.0);
+        d += network.random_error<std::normal_distribution>(5, 0.1f, 0.5f);
+    EXPECT_NEAR(50000, d, 300);
     d = 0;
     for (int i=0; i<10000; ++i)
-        d += network.random_error<std::weibull_distribution>(5.0, 0.1, 0.5);
-    EXPECT_NEAR(50000.0, d, 300.0);
+        d += network.random_error<std::weibull_distribution>(5, 0.1f, 0.5f);
+    EXPECT_NEAR(50000, d, 300);
 }

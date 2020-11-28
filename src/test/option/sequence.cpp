@@ -12,7 +12,7 @@ using namespace fcpp;
 
 TEST(SequenceTest, Never) {
     std::mt19937 rnd(42);
-    double d;
+    times_t d;
     sequence::never e(rnd);
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
@@ -22,7 +22,7 @@ TEST(SequenceTest, Never) {
 
 TEST(SequenceTest, MultipleSame) {
     std::mt19937 rnd(42);
-    double d;
+    times_t d;
     sequence::multiple_n<3, 52, 10> e(rnd);
     d = e(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
@@ -38,7 +38,7 @@ TEST(SequenceTest, MultipleSame) {
     d = e.next();
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
-    double f;
+    times_t f;
     sequence::multiple<distribution::constant_n<size_t, 2>, distribution::uniform_n<times_t, 50, 10, 10>> ee(rnd);
     d = ee(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
@@ -52,7 +52,7 @@ TEST(SequenceTest, MultipleSame) {
 
 TEST(SequenceTest, MultipleDiff) {
     std::mt19937 rnd(42);
-    double d;
+    times_t d;
     sequence::multiple<distribution::constant_n<size_t, 3>, distribution::constant_n<times_t, 52, 10>, false> e(rnd);
     d = e(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
@@ -80,7 +80,7 @@ TEST(SequenceTest, MultipleDiff) {
 
 TEST(SequenceTest, List) {
     std::mt19937 rnd(42);
-    double d;
+    times_t d;
     sequence::list_n<10, 33, 52, 15> e(rnd);
     d = e(rnd);
     EXPECT_NEAR(1.5, d, 1e-6);
@@ -100,7 +100,7 @@ TEST(SequenceTest, List) {
 
 TEST(SequenceTest, Periodic) {
     std::mt19937 rnd(42);
-    double d;
+    times_t d;
     sequence::periodic_n<10, 15, 20, 62, 5> e(rnd);
     d = e(rnd);
     EXPECT_NEAR(1.5, d, 1e-6);

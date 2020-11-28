@@ -12,6 +12,8 @@
 
 #include <array>
 
+#include "lib/settings.hpp"
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -30,32 +32,32 @@ struct vec {
     constexpr static size_t dimension = n;
     
     //! @brief Pointer to beginning.
-    double* begin() {
+    real_t* begin() {
         return data;
     }
     
     //! @brief Const pointer to beginning.
-    double const* begin() const {
+    real_t const* begin() const {
         return data;
     }
 
     //! @brief Pointer to end.
-    double* end() {
+    real_t* end() {
         return data + n;
     }
 
     //! @brief Const pointer to end.
-    double const* end() const {
+    real_t const* end() const {
         return data + n;
     }
 
     //! @brief Access to components of the vector.
-    double& operator[](size_t i) {
+    real_t& operator[](size_t i) {
         return data[i];
     }
     
     //! @brief Const access to components of the vector.
-    double operator[](size_t i) const {
+    real_t operator[](size_t i) const {
         return data[i];
     }
     
@@ -78,7 +80,7 @@ struct vec {
     }
     
     //! @brief The internal data as C array.
-    double data[n];
+    real_t data[n];
 };
 
 
@@ -91,7 +93,7 @@ vec<n>& operator+=(vec<n>& x, const vec<n>& y) {
 }
 
 template <size_t n>
-vec<n>& operator+=(vec<n>& x, double y) {
+vec<n>& operator+=(vec<n>& x, real_t y) {
     for (size_t i=0; i<n; ++i) x[i] += y;
     return x;
 }
@@ -107,12 +109,12 @@ vec<n> operator+(const vec<n>& x, vec<n>&& y) {
 }
 
 template <size_t n>
-vec<n> operator+(vec<n> x, double y) {
+vec<n> operator+(vec<n> x, real_t y) {
     return x += y;
 }
 
 template <size_t n>
-vec<n> operator+(double x, vec<n> y) {
+vec<n> operator+(real_t x, vec<n> y) {
     return y += x;
 }
 //! @}
@@ -127,7 +129,7 @@ vec<n>& operator-=(vec<n>& x, const vec<n>& y) {
 }
 
 template <size_t n>
-vec<n>& operator-=(vec<n>& x, double y) {
+vec<n>& operator-=(vec<n>& x, real_t y) {
     for (size_t i=0; i<n; ++i) x[i] -= y;
     return x;
 }
@@ -144,12 +146,12 @@ vec<n> operator-(const vec<n>& x, vec<n>&& y) {
 }
 
 template <size_t n>
-vec<n> operator-(vec<n> x, double y) {
+vec<n> operator-(vec<n> x, real_t y) {
     return x -= y;
 }
 
 template <size_t n>
-vec<n> operator-(double x, vec<n> y) {
+vec<n> operator-(real_t x, vec<n> y) {
     for (size_t i=0; i<n; ++i) y[i] = x-y[i];
     return y;
 }
@@ -173,29 +175,29 @@ vec<n> operator-(vec<n> x) {
 //! @brief Multiplication and division by a scalar.
 //! @{
 template <size_t n>
-vec<n>& operator*=(vec<n>& x, double y) {
+vec<n>& operator*=(vec<n>& x, real_t y) {
     for (size_t i=0; i<n; ++i) x[i] *= y;
     return x;
 }
 
 template <size_t n>
-vec<n> operator*(vec<n> x, double y) {
+vec<n> operator*(vec<n> x, real_t y) {
     return x *= y;
 }
 
 template <size_t n>
-vec<n> operator*(double x, vec<n> y) {
+vec<n> operator*(real_t x, vec<n> y) {
     return y *= x;
 }
 
 template <size_t n>
-vec<n>& operator/=(vec<n>& x, double y) {
+vec<n>& operator/=(vec<n>& x, real_t y) {
     for (size_t i=0; i<n; ++i) x[i] /= y;
     return x;
 }
 
 template <size_t n>
-vec<n> operator/(vec<n> x, double y) {
+vec<n> operator/(vec<n> x, real_t y) {
     return x /= y;
 }
 //! @}
@@ -204,24 +206,24 @@ vec<n> operator/(vec<n> x, double y) {
 //! @brief Scalar multiplication, vector norm and normalisation.
 //! @{
 template <size_t n>
-double operator*(const vec<n>& x, const vec<n>& y) {
-    double res = 0;
+real_t operator*(const vec<n>& x, const vec<n>& y) {
+    real_t res = 0;
     for (size_t i=0; i<n; ++i) res += x[i] * y[i];
     return res;
 }
 
 template <size_t n>
-double norm(const vec<n>& x) {
+real_t norm(const vec<n>& x) {
     return sqrt(x * x);
 }
 
 template <size_t n>
-double unit(const vec<n>& x) {
+real_t unit(const vec<n>& x) {
     return x / norm(x);
 }
 
 template <size_t n>
-double distance(const vec<n>& x, const vec<n>& y) {
+real_t distance(const vec<n>& x, const vec<n>& y) {
     return norm(x - y);
 }
 //! @}
@@ -230,7 +232,7 @@ double distance(const vec<n>& x, const vec<n>& y) {
 //! @brief Creates a vector from its arguments.
 template <typename... Ts>
 vec<sizeof...(Ts)> make_vec(Ts... xs) {
-    return {double(xs)...};
+    return {real_t(xs)...};
 }
 
 

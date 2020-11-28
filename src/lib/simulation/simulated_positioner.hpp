@@ -53,7 +53,7 @@ namespace details {
     template <size_t n>
     vec<n> nan_vec() {
         vec<n> v;
-        for (size_t i=0; i<n; ++i) v[i] = std::numeric_limits<double>::quiet_NaN();
+        for (size_t i=0; i<n; ++i) v[i] = std::numeric_limits<real_t>::quiet_NaN();
         return v;
     }
 }
@@ -111,7 +111,7 @@ struct simulated_positioner {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get_or<tags::x>(t, position_type{})), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0.0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{std::numeric_limits<double>::infinity()} {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get_or<tags::x>(t, position_type{})), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{INF} {
                 static_assert(common::tagged_tuple<S,T>::tags::template count<tags::x> >= 1, MISSING_TAG_MESSAGE);
                 m_last = TIME_MIN;
             }
@@ -130,17 +130,17 @@ struct simulated_positioner {
 
             //! @brief Position at a given time.
             position_type position(times_t t) const {
-                double dt = t - m_last;
+                real_t dt = t - m_last;
                 if (dt == 0) {
                     return m_x;
                 }
                 if (m_f == 0) {
                     return m_x + m_v * dt + m_a * (dt*dt/2);
                 }
-                if (m_f == std::numeric_limits<double>::infinity()) {
+                if (m_f == INF) {
                     return m_x;
                 }
-                double k = (1 - exp(-m_f * dt)) / m_f;
+                real_t k = (1 - exp(-m_f * dt)) / m_f;
                 return m_x + m_v * k + m_a * ((dt-k)/m_f);
             }
 
@@ -156,17 +156,17 @@ struct simulated_positioner {
 
             //! @brief Velocity at a given time.
             position_type velocity(times_t t) const {
-                double dt = t - m_last;
+                real_t dt = t - m_last;
                 if (dt == 0) {
                     return m_v;
                 }
                 if (m_f == 0) {
                     return m_v + m_a * dt;
                 }
-                if (m_f == std::numeric_limits<double>::infinity()) {
+                if (m_f == INF) {
                     return {};
                 }
-                double k1 = exp(-m_f * dt); // derivative of k
+                real_t k1 = exp(-m_f * dt); // derivative of k
                 return m_v * k1 + m_a * ((1-k1)/m_f);
             }
 
@@ -185,7 +185,7 @@ struct simulated_positioner {
                 if (m_f == 0) {
                     return m_a;
                 }
-                if (m_f == std::numeric_limits<double>::infinity()) {
+                if (m_f == INF) {
                     return {};
                 }
                 return m_a - m_f * m_v;
@@ -196,56 +196,56 @@ struct simulated_positioner {
                 if (m_f == 0) {
                     return m_a;
                 }
-                if (m_f == std::numeric_limits<double>::infinity()) {
+                if (m_f == INF) {
                     return 0;
                 }
-                double dt = t - m_last;
-                double k1 = exp(-m_f * dt);
+                real_t dt = t - m_last;
+                real_t k1 = exp(-m_f * dt);
                 return m_a * k1 - m_v * (m_f * k1);
             }
 
             //! @brief Friction coefficient.
-            double& friction() {
+            real_t& friction() {
                 return m_f;
             }
 
             //! @brief Friction coefficient (const access).
-            double friction() const {
+            real_t friction() const {
                 return m_f;
             }
 
             //! @brief First time after `t` when a value `y` will be reached on a certain coordinate `i`.
-            times_t reach_time(size_t i, double y, times_t t) {
+            times_t reach_time(size_t i, real_t y, times_t t) {
                 y -= m_x[i];
                 t -= m_last;
                 if (m_a[i] == m_v[i] * m_f) { // limit velocity reached, linear motion
-                    double sol = y / m_v[i];
+                    real_t sol = y / m_v[i];
                     return sol > t ? m_last + sol : TIME_MAX;
                 }
                 if (m_f == 0) { // no friction, uniformily accelerated motion
-                    double delta = m_v[i] * m_v[i] + 2 * y * m_a[i];
+                    real_t delta = m_v[i] * m_v[i] + 2 * y * m_a[i];
                     if (delta < 0) return TIME_MAX;
                     delta = sqrt(delta);
                     delta = m_a[i] > 0 ? delta : -delta;
-                    double sol1 = (-m_v[i] - delta) / m_a[i]; // lower solution
-                    double sol2 = (-m_v[i] + delta) / m_a[i]; // higher solution
+                    real_t sol1 = (-m_v[i] - delta) / m_a[i]; // lower solution
+                    real_t sol2 = (-m_v[i] + delta) / m_a[i]; // higher solution
                     return sol1 > t ? m_last + sol1 : sol2 > t ? m_last + sol2 : TIME_MAX;
                 }
-                if (m_f == std::numeric_limits<double>::infinity()) return TIME_MAX; // infinite friction, no motion
+                if (m_f == INF) return TIME_MAX; // infinite friction, no motion
                 if (m_a[i] == 0) { // no acceleration, exponentially decreasing motion
-                    double sol = 1 - y * m_f / m_v[i];
+                    real_t sol = 1 - y * m_f / m_v[i];
                     sol = sol <= 0 ? TIME_MIN : -log(sol) / m_f;
                     return sol > t ? m_last + sol : TIME_MAX;
                 }
-                double inv = m_v[i]*m_a[i] > 0 ? TIME_MIN : log(1 - m_v[i] / m_a[i] * m_f) / m_f; // inversion time
+                real_t inv = m_v[i]*m_a[i] > 0 ? TIME_MIN : log(1 - m_v[i] / m_a[i] * m_f) / m_f; // inversion time
                 if (inv <= t) { // unidirectional motion
-                    double vt = inv > 0 ? -m_v[i] : inv == 0 ? m_a[i] : m_v[i];
-                    double xt = position(i, t);
+                    real_t vt = inv > 0 ? -m_v[i] : inv == 0 ? m_a[i] : m_v[i];
+                    real_t xt = position(i, t);
                     return vt * (y-xt) > 0 ? m_last + binary_search(i, t, y) : TIME_MAX;
                 }
                 // motion with inversion
-                double xt = position(i, t);
-                double xi = position(i, inv);
+                real_t xt = position(i, t);
+                real_t xi = position(i, inv);
                 if ((y-xt)*(y-xi) < 0) return m_last + binary_search(i, t, inv, y); // meeting before inversion
                 if ((y-xi)*m_v[i] < 0) return m_last + binary_search(i, inv, y); // meeting after inversion
                 return TIME_MAX;
@@ -256,13 +256,13 @@ struct simulated_positioner {
                 P::node::round_start(t);
                 PROFILE_COUNT("positioner");
                 if (m_last > TIME_MIN) {
-                    double dt = t - m_last;
+                    real_t dt = t - m_last;
                     if (m_f == 0) {
                         m_x += m_v * dt + m_a * (dt*dt/2);
                         m_v += m_a * dt;
-                    } else if (m_f < std::numeric_limits<double>::infinity()) {
-                        double k1 = exp(-m_f * dt); // derivative of k
-                        double k = (1 - k1) / m_f;
+                    } else if (m_f < INF) {
+                        real_t k1 = exp(-m_f * dt); // derivative of k
+                        real_t k = (1 - k1) / m_f;
                         m_x += m_v * k + m_a * ((dt-k)/m_f);
                         m_v = m_v * k1 + m_a * ((1-k1)/m_f);
                     }
@@ -293,21 +293,21 @@ struct simulated_positioner {
             }
 
             //! @brief Perceived distances from neighbours.
-            const fcpp::field<double>& nbr_dist() const {
+            const fcpp::field<real_t>& nbr_dist() const {
                 return m_nbr_dist;
             }
 
           private: // implementation details
             //! @brief Position at a given time on a given coordinate (viscous general case; relative to round start).
-            double position(size_t i, double dt) const {
-                double k = (1 - exp(-m_f * dt)) / m_f;
+            real_t position(size_t i, real_t dt) const {
+                real_t k = (1 - exp(-m_f * dt)) / m_f;
                 return m_v[i] * k + m_a[i] * ((dt-k)/m_f);
             }
 
             //! @brief Searches for a time when the i-th coordinates becomes `y` (under several assumptions, with coordinates relative to round start), assuming motion is monotonic and viscous general case.
-            times_t binary_search(size_t i, times_t start, times_t end, double y) const {
-                double xs = position(i, start);
-                double xe = position(i, end);
+            times_t binary_search(size_t i, times_t start, times_t end, real_t y) const {
+                real_t xs = position(i, start);
+                real_t xe = position(i, end);
                 bool dir = xe > xs;
                 if ((y-xe)*(y-xs) > 0) return TIME_MIN; // it never happens
                 while (end - start > 1e-6) {
@@ -317,9 +317,9 @@ struct simulated_positioner {
                 }
                 return end;
             }
-            times_t binary_search(size_t i, times_t start, double y) const {
-                double dt = 1;
-                double xs = position(i, start);
+            times_t binary_search(size_t i, times_t start, real_t y) const {
+                real_t dt = 1;
+                real_t xs = position(i, start);
                 if ((y-xs)*m_a[i] < 0) return TIME_MIN; // it never happens
                 while ((y-position(i, start+dt))*(y-xs) <= 0) dt *= 2;
                 return binary_search(i, start, start+dt, y);
@@ -329,13 +329,13 @@ struct simulated_positioner {
             position_type m_x, m_v, m_a;
 
             //! @brief Friction coefficient.
-            double m_f;
+            real_t m_f;
 
             //! @brief Perceived positions of neighbours as difference vectors.
             fcpp::field<position_type> m_nbr_vec;
 
             //! @brief Perceived distances from neighbours.
-            fcpp::field<double> m_nbr_dist;
+            fcpp::field<real_t> m_nbr_dist;
 
             //! @brief Time of the last round happened.
             times_t m_last;

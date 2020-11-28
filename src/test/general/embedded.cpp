@@ -215,7 +215,7 @@ DECLARE_OPTIONS(opt,
 
 #define EXPECT_ROUND(t, rc, nc, mu, hd, sw)                                 \
         std::this_thread::sleep_for(std::chrono::milliseconds(30));         \
-        EXPECT_EQ(n.next(), double{t});                                     \
+        EXPECT_EQ(n.next(), times_t{t});                                    \
         {                                                                   \
         auto res = make_tuple(d.storage(round_count{}),                     \
                               d.storage(neigh_count{}),                     \
@@ -233,12 +233,12 @@ int main() {
     std::stringstream m_stream;
     component::deployment<opt>::net n{common::make_tagged_tuple<hoodsize,output,plotter>(device_t{DEGREE},&m_stream,&row_store)};
     auto& d = n.node_at(42);
-    EXPECT_ROUND(0.0, 0, 0, 0, 0, false);
-    EXPECT_ROUND(0.0, 1, 1, 42, 0, true);
-    EXPECT_ROUND(1.0, 1, 1, 42, 0, true);
-    EXPECT_ROUND(1.0, 2, 1, 42, 0, true);
-    EXPECT_ROUND(2.0, 2, 1, 42, 0, true);
-    EXPECT_ROUND(2.0, 3, 1, 42, 0, true);
+    EXPECT_ROUND(0, 0, 0, 0, 0, false);
+    EXPECT_ROUND(0, 1, 1, 42, 0, true);
+    EXPECT_ROUND(1, 1, 1, 42, 0, true);
+    EXPECT_ROUND(1, 2, 1, 42, 0, true);
+    EXPECT_ROUND(2, 2, 1, 42, 0, true);
+    EXPECT_ROUND(2, 3, 1, 42, 0, true);
     row_store.print(std::cerr);
     return 0;
 }

@@ -22,13 +22,13 @@ namespace coordination {
 
 
 //! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
-template <typename node_t, typename G, typename = common::if_signature<G, field<double>()>>
-double slow_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
+template <typename node_t, typename G, typename = common::if_signature<G, field<real_t>()>>
+real_t slow_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return old(node, 0, std::numeric_limits<double>::infinity(), [&] (double d) {
-        double r = min_hood(node, 1, nbr(node, 2, d) + metric());
-        return source ? 0.0 : r;
+    return old(node, 0, INF, [&] (real_t d) {
+        real_t r = min_hood(node, 1, nbr(node, 2, d) + metric());
+        return source ? 0 : r;
     });
 }
 
@@ -68,9 +68,9 @@ void distance_compare(node_t& node, trace_t call_point) {
     auto metric = [&](){
         return node.nbr_dist();
     };
-    double fastd = abf_distance(node, 0, source, metric);
-    double slowd = slow_distance(node, 1, source, metric);
-    double ideal = norm(node.net.node_at(0).position() - node.position());
+    real_t fastd = abf_distance(node, 0, source, metric);
+    real_t slowd = slow_distance(node, 1, source, metric);
+    real_t ideal = norm(node.net.node_at(0).position() - node.position());
     node.storage(tags::fastdist{})  = fastd;
     node.storage(tags::slowdist{})  = slowd;
     node.storage(tags::idealdist{}) = ideal;

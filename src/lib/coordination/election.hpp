@@ -95,7 +95,7 @@ template <typename node_t, typename T>
 inline tuple<T,hops_t> wave_election_distance(node_t& node, trace_t call_point, const T& value) {
     return wave_election_distance(node, call_point, value, [](hops_t x) {
         // expansion function granting recovery time below (1+√2)x diameter election (for x ≥ 3)
-        return std::max(hops_t(2.414213562373095*x+4.6), hops_t{6});
+        return std::max(hops_t(2.414213562f*x+4.6f), hops_t{6});
     });
 }
 
@@ -104,7 +104,7 @@ template <typename node_t, typename T>
 inline T wave_election(node_t& node, trace_t call_point, const T& value) {
     return wave_election(node, call_point, value, [](hops_t x) {
         // expansion function granting recovery time below (1+√2)x diameter election (for x ≥ 3)
-        return std::max(hops_t(2.414213562373095*x+4.6), hops_t{6});
+        return std::max(hops_t(2.414213562f*x+4.6f), hops_t{6});
     });
 }
 

@@ -96,23 +96,23 @@ struct retain {
 template <typename position_tag, intmax_t radius = 1, intmax_t period = 1, intmax_t scale = 1>
 struct minkowski {
     //! @brief The data type.
-    using result_type = double;
+    using result_type = real_t;
 
     //! @brief Default threshold.
     result_type build() const {
-        return 2 * radius / double(scale);
+        return 2 * radius / real_t(scale);
     }
 
     //! @brief Measures an incoming message.
     template <typename N, typename S, typename T>
     result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>& m) const {
-        return d == n.uid ? 0 : norm(common::get<position_tag>(m) - n.position(t)) + (n.next_time() - t) * radius / double(period);
+        return d == n.uid ? 0 : norm(common::get<position_tag>(m) - n.position(t)) + (n.next_time() - t) * radius / real_t(period);
     }
 
     //! @brief Updates an existing measure.
     template <typename N>
     result_type update(const result_type& r, const N& n) const {
-        return r == 0 ? 0 : r + (n.next_time() - n.current_time()) * radius / double(period);
+        return r == 0 ? 0 : r + (n.next_time() - n.current_time()) * radius / real_t(period);
     }
 };
 

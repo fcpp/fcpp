@@ -49,9 +49,9 @@
 
 
 #if   FCPP_SYSTEM == FCPP_SYSTEM_GENERAL
-    #ifndef FCPP_TIME_TYPE
-    //! @brief Setting defining the type to be used to represent times (double for general systems, float for embedded systems).
-    #define FCPP_TIME_TYPE double
+    #ifndef FCPP_REAL_TYPE
+    //! @brief Setting defining the type to be used for real numbers (double for general systems, float for embedded systems).
+    #define FCPP_REAL_TYPE double
     #endif
     #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
@@ -66,9 +66,9 @@
     #define FCPP_HOPS 16
     #endif
 #elif FCPP_SYSTEM == FCPP_SYSTEM_EMBEDDED
-    #ifndef FCPP_TIME_TYPE
-    //! @brief Setting defining the type to be used to represent times (double for general systems, float for embedded systems).
-    #define FCPP_TIME_TYPE float
+    #ifndef FCPP_REAL_TYPE
+    //! @brief Setting defining the type to be used for real numbers (double for general systems, float for embedded systems).
+    #define FCPP_REAL_TYPE float
     #endif
     #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
@@ -169,10 +169,10 @@
 #ifndef FCPP_REALTIME
     #if FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL || FCPP_CONFIGURATION == FCPP_CONFIGURATION_DEPENDENT
     //! @brief Factor multiplying real time passing (1 for physical or dependent systems, infinity for others).
-    #define FCPP_REALTIME 1.0
+    #define FCPP_REALTIME 1
     #else
     //! @brief Factor multiplying real time passing (1 for physical or dependent systems, infinity for others).
-    #define FCPP_REALTIME std::numeric_limits<double>::infinity()
+    #define FCPP_REALTIME INF
     #endif
 #endif
 
@@ -195,9 +195,15 @@
 #endif
 
 
+#ifndef FCPP_TIME_TYPE
+//! @brief Setting defining the type to be used to represent times (default to \ref FCPP_REAL_TYPE).
+#define FCPP_TIME_TYPE FCPP_REAL_TYPE
+#endif
+
+
 #ifndef FCPP_TIME_EPSILON
 //! @brief Setting defining which time differences are to be considered negligible.
-#define FCPP_TIME_EPSILON 0.01
+#define FCPP_TIME_EPSILON 0.01f
 #endif
 
 
@@ -205,14 +211,16 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+    //! @brief Type used for real numbers.
+    using real_t = FCPP_REAL_TYPE;
     //! @brief Type used for times.
     using times_t = FCPP_TIME_TYPE;
     //! @brief Minimum time (infinitely in the past).
     constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
     //! @brief Maximum time (infinitely in the future).
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
-    //! @brief Shorthand to double infinity value.
-    constexpr double INF = std::numeric_limits<double>::infinity();
+    //! @brief Shorthand to real infinity value.
+    constexpr real_t INF = std::numeric_limits<real_t>::infinity();
 
 #if   FCPP_DEVICE == 8
     typedef uint8_t device_t;

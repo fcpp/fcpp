@@ -97,8 +97,8 @@ auto get(const field<A>& f) {
 using std::log;
 
 //! @brief Pointwise natural logarithm.
-inline field<double> log(const field<double>& f) {
-    return map_hood([](double x){
+inline field<real_t> log(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::log(x);
     }, f);
 }
@@ -107,8 +107,8 @@ inline field<double> log(const field<double>& f) {
 using std::exp;
 
 //! @brief Pointwise natural exponentiation.
-inline field<double> exp(const field<double>& f) {
-    return map_hood([](double x){
+inline field<real_t> exp(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::exp(x);
     }, f);
 }
@@ -117,8 +117,8 @@ inline field<double> exp(const field<double>& f) {
 using std::sqrt;
 
 //! @brief Pointwise square root.
-inline field<double> sqrt(const field<double>& f) {
-    return map_hood([](double x){
+inline field<real_t> sqrt(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::sqrt(x);
     }, f);
 }
@@ -128,18 +128,18 @@ using std::pow;
 
 //! @brief Pointwise power.
 //! @{
-inline field<double> pow(const field<double>& base, const field<double>& exponent) {
-    return map_hood([](double x, double y){
+inline field<real_t> pow(const field<real_t>& base, const field<real_t>& exponent) {
+    return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
-inline field<double> pow(double base, const field<double>& exponent) {
-    return map_hood([](double x, double y){
+inline field<real_t> pow(real_t base, const field<real_t>& exponent) {
+    return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
-inline field<double> pow(const field<double>& base, double exponent) {
-    return map_hood([](double x, double y){
+inline field<real_t> pow(const field<real_t>& base, real_t exponent) {
+    return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
@@ -149,8 +149,8 @@ inline field<double> pow(const field<double>& base, double exponent) {
 using std::isinf;
 
 //! @brief Pointwise check for infinite values.
-inline field<bool> isinf(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isinf(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isinf(x);
     }, f);
 }
@@ -159,8 +159,8 @@ inline field<bool> isinf(const field<double>& f) {
 using std::isnan;
 
 //! @brief Pointwise check for not-a-number values.
-inline field<bool> isnan(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isnan(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isnan(x);
     }, f);
 }
@@ -169,8 +169,8 @@ inline field<bool> isnan(const field<double>& f) {
 using std::isfinite;
 
 //! @brief Pointwise check for finite values.
-inline field<bool> isfinite(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isfinite(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isfinite(x);
     }, f);
 }
@@ -179,8 +179,8 @@ inline field<bool> isfinite(const field<double>& f) {
 using std::isnormal;
 
 //! @brief Pointwise check for normal values (finite, non-zero and not sub-normal).
-inline field<bool> isnormal(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isnormal(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isnormal(x);
     }, f);
 }

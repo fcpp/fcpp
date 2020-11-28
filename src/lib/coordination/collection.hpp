@@ -58,41 +58,41 @@ T gossip_mean(node_t& node, trace_t call_point, T value) {
 
 
 //! @brief Collects distributed data with a single-path strategy.
-template <typename node_t, typename P, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
-T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const T& null, G&& accumulate) {
+template <typename node_t, typename P, typename T, typename U, typename G, typename = common::if_signature<G, T(T,T)>>
+T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const U& null, G&& accumulate) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, null, [&](field<T> x){
+    return nbr(node, 0, T{null}, [&](field<T> x){
         device_t parent = get<1>(min_hood( node, 0, make_tuple(nbr(node, 1, distance), nbr(node, 2, node.uid)) ));
-        return fold_hood(node, 0, accumulate, mux(nbr(node, 3, parent) == node.uid, x, field<T>{null}), value);
+        return fold_hood(node, 0, accumulate, mux(nbr(node, 3, parent) == node.uid, x, T{null}), value);
     });
 }
 
 //! @brief Collects distributed data with a multi-path strategy.
-template <typename node_t, typename P, typename T, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,size_t)>>
-T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const T& null, G&& accumulate, F&& divide) {
+template <typename node_t, typename P, typename T, typename U, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,size_t)>>
+T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const U& null, G&& accumulate, F&& divide) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, null, [&](field<T> x){
+    return nbr(node, 0, T{null}, [&](field<T> x){
         field<P> nbrdist = nbr(node, 1, distance);
-        T v = fold_hood(node, 1, accumulate, mux(nbrdist > distance, x, field<T>{null}), value);
+        T v = fold_hood(node, 1, accumulate, mux(nbrdist > distance, x, T{null}), value);
         int n = sum_hood(node, 1, mux(nbrdist < distance, 1, 0), 0);
         return make_tuple(divide(v, max(n, 1)), v);
     });
 }
 
 //! @brief Collects distributed data with a weighted multi-path strategy.
-template <typename node_t, typename T, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,double)>>
-T wmp_collection(node_t& node, trace_t call_point, double distance, double radius, const T& value, G&& accumulate, F&& multiply) {
+template <typename node_t, typename T, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,real_t)>>
+T wmp_collection(node_t& node, trace_t call_point, real_t distance, real_t radius, const T& value, G&& accumulate, F&& multiply) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    field<double> nbrdist = nbr(node, 0, distance);
-    field<double> d = max(radius - node.nbr_dist(), field<double>{0});
-    field<double> p = mux(isinf(distance) or isinf(nbrdist), field<double>{0},  distance - nbrdist);
-    field<double> out_w = max(d * p, field<double>{0});
-    double factor = sum_hood(node, 0, out_w, 0.0);
+    field<real_t> nbrdist = nbr(node, 0, distance);
+    field<real_t> d = max(radius - node.nbr_dist(), field<real_t>{0});
+    field<real_t> p = mux(isinf(distance) or isinf(nbrdist), field<real_t>{0},  distance - nbrdist);
+    field<real_t> out_w = max(d * p, field<real_t>{0});
+    real_t factor = sum_hood(node, 0, out_w, real_t{0});
     if (factor == 0) factor = 1;
-    field<double> in_w = nbr(node, 1, out_w / factor);
+    field<real_t> in_w = nbr(node, 1, out_w / factor);
     return nbr(node, 2, value, [&](field<T> x){
         return fold_hood(node, 2, accumulate, map_hood(multiply, x, in_w), value);
     });

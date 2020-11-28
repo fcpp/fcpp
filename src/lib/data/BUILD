@@ -28,6 +28,9 @@ cc_library(
     name = 'vec',
     hdrs = ['vec.hpp'],
     srcs = ['vec.cpp'],
+    deps = [
+        "//lib:settings",
+    ],
     visibility = [
         '//visibility:public',
     ],

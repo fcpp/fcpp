@@ -143,7 +143,7 @@ namespace details {
  * using data_type = // type for connection power data on nodes
  * using position_type = vec<n>;
  * template <typename G, typename S, typename T> connector_type(G&& gen, const common::tagged_tuple<S,T>& tup);
- * double maximum_radius() const;
+ * real_t maximum_radius() const;
  * bool operator()(const data_type& data1, const position_type& position1, const data_type& data2, const position_type& position2) const;
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -289,7 +289,7 @@ struct simulated_connector {
             void set_leave_time(times_t t) {
                 m_leave = TIME_MAX;
                 position_type x = P::node::position(t);
-                double R = P::node::net.connection_radius();
+                real_t R = P::node::net.connection_radius();
                 for (size_t i=0; i<dimension; ++i) {
                     int c = (int)floor(x[i]/R);
                     m_leave = std::min(m_leave, P::node::reach_time(i,  c   *R, t));
@@ -356,7 +356,7 @@ struct simulated_connector {
             }
 
             //! @brief The maximum connection radius.
-            inline double connection_radius() const {
+            inline real_t connection_radius() const {
                 return m_connector.maximum_radius();
             }
 

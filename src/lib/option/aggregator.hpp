@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "lib/settings.hpp"
 #include "lib/common/algorithm.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
@@ -337,7 +338,7 @@ class moment {
     //! @brief The results of aggregation.
     template <typename U>
     result_type<U> result() const {
-        return {m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : pow(m_sum/m_count, 1.0/n)};
+        return {m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : pow(m_sum/m_count, real_t(1)/n)};
     }
 
     //! @brief The aggregator name.

@@ -147,7 +147,7 @@ struct test_net {
             m_count(0), m_topology(t), m_func(f), m_stream(),
             m_network(common::make_tagged_tuple<component::tags::output>(&m_stream)) {
         for (int i = 0; i < N; ++i)
-            m_network.node_emplace(common::make_tagged_tuple<component::tags::x,component::tags::start>(make_vec(i * (1.25 - 0.25*i),0.0), 0.0));
+            m_network.node_emplace(common::make_tagged_tuple<component::tags::x,component::tags::start>(make_vec(i * (1.25f - 0.25f*i),0), 0));
         for (int i = 0; i < N; ++i) {
             m_topology.emplace_back();
             if (i > 0)
@@ -213,7 +213,7 @@ struct test_net {
         for (int source = 0; source < N; ++source)
             for (int dest : m_topology[source]) {
                 typename node_type::message_t m;
-                d(dest).receive(m_count + 0.5, source, d(source).send(m_count + 0.5, dest, m));
+                d(dest).receive(m_count + 0.5f, source, d(source).send(m_count + 0.5f, dest, m));
             }
         ++m_count;
         round_start();

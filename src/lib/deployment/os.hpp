@@ -30,7 +30,7 @@ struct message_type {
     //! @brief UID of the sender device.
     device_t device;
     //! @brief An estimate of the signal power (RSSI).
-    double power;
+    real_t power;
     //! @brief The message content (empty content represent no message).
     std::vector<char> content;
 };

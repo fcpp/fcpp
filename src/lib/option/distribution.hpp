@@ -263,7 +263,7 @@ class uniform {
     uniform(G&& g) : m_d(make<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
 
     template <typename G, typename S, typename T>
-    uniform(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make<std::uniform_real_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    uniform(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make<std::uniform_real_distribution>((type)common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), (type)common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
 
     template <typename G>
     type operator()(G&& g) {
@@ -465,7 +465,7 @@ class weibull {
     weibull(G&& g) : m_d(make<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
 
     template <typename G, typename S, typename T>
-    weibull(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make<std::weibull_distribution>(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+    weibull(G&& g, const common::tagged_tuple<S,T>& t) : m_d(make<std::weibull_distribution>((type)common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), (type)common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
 
     template <typename G>
     type operator()(G&& g) {
@@ -523,7 +523,7 @@ struct positive : public D {
 /**
  * @brief With coordinates as distributions.
  *
- * All `Ds::type` must be convertible to `double`.
+ * All `Ds::type` must be convertible to `real_t`.
  *
  * @param Ds The coordinates (as distributions).
  */
@@ -557,13 +557,13 @@ class point {
  * @param x The (integral) coordinates.
  */
 template <intmax_t scale, intmax_t... x>
-using point_n = point<constant_n<double, x, scale>...>;
+using point_n = point<constant_n<real_t, x, scale>...>;
 /**
  * @brief With coordinates as initialisation values.
  * @param x_tag The tags corresponding to coordinates in initialisation values.
  */
 template <typename... x_tag>
-using point_i = point<constant_i<double, x_tag>...>;
+using point_i = point<constant_i<real_t, x_tag>...>;
 //! @}
 
 
@@ -582,7 +582,7 @@ namespace details {
 /**
  * @brief With extremes as distributions.
  *
- * All `Ds::type` must be convertible to `double`.
+ * All `Ds::type` must be convertible to `real_t`.
  *
  * @param Ds The extremes (as distributions).
  */
@@ -597,13 +597,13 @@ using rect  = typename details::rect<
  * @param x The (integral) extremes.
  */
 template <intmax_t scale, intmax_t... x>
-using rect_n = rect<constant_n<double, x, scale>...>;
+using rect_n = rect<constant_n<real_t, x, scale>...>;
 /**
  * @brief With extremes as initialisation values.
  * @param x_tag The tags corresponding to extremes in initialisation values.
  */
 template <typename... x_tag>
-using rect_i = rect<constant_i<double, x_tag>...>;
+using rect_i = rect<constant_i<real_t, x_tag>...>;
 //! @}
 
 

@@ -1,6 +1,6 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#define FCPP_REALTIME 0.0
+#define FCPP_REALTIME 0
 
 #include <limits>
 
@@ -163,13 +163,13 @@ TEST(BaseTest, RealTime) {
     // just waste some time in a non-optimizable way
     for (int i=acc=0; i<1000; ++i) acc += workhard();
     EXPECT_EQ(1000, acc);
-    EXPECT_EQ(times_t(0.0), net1.real_time());
-    combo2::net net2{common::make_tagged_tuple<realtime_factor>(std::numeric_limits<double>::infinity())};
+    EXPECT_EQ(times_t(0), net1.real_time());
+    combo2::net net2{common::make_tagged_tuple<realtime_factor>(INF)};
     EXPECT_EQ(TIME_MAX,     net2.real_time());
-    combo2::net net3{common::make_tagged_tuple<realtime_factor>(1.0)};
+    combo2::net net3{common::make_tagged_tuple<realtime_factor>(1)};
     // just waste some time in a non-optimizable way
     for (int i=acc=0; i<1000; ++i) acc += workhard();
     EXPECT_EQ(1000, acc);
-    EXPECT_LT(times_t(0.0), net3.real_time());
+    EXPECT_LT(times_t(0), net3.real_time());
     EXPECT_GT(TIME_MAX,     net3.real_time());
 }

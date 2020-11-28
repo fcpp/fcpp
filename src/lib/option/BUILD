@@ -3,6 +3,7 @@ cc_library(
     hdrs = ['aggregator.hpp'],
     srcs = ['aggregator.cpp'],
     deps = [
+        "//lib:settings",
         "//lib/common:algorithm",
         "//lib/common:tagged_tuple",
     ],

@@ -63,9 +63,9 @@ MAIN(coordination::diameter_estimation,);
 namespace component {
 
 /**
- * @brief Combination of components for batch simulations.
+ * @brief Combination of components for interactive simulations.
  *
- * It can be instantiated as `batch_simulator<options...>::net`.
+ * It can be instantiated as `interactive_simulator<options...>::net`.
  */
 DECLARE_COMBINE(interactive_simulator, displayer, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
 

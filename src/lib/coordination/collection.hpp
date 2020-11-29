@@ -62,9 +62,9 @@ template <typename node_t, typename P, typename T, typename U, typename G, typen
 T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const U& null, G&& accumulate) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, T{null}, [&](field<T> x){
+    return nbr(node, 0, (T)null, [&](field<T> x){
         device_t parent = get<1>(min_hood( node, 0, make_tuple(nbr(node, 1, distance), nbr(node, 2, node.uid)) ));
-        return fold_hood(node, 0, accumulate, mux(nbr(node, 3, parent) == node.uid, x, T{null}), value);
+        return fold_hood(node, 0, accumulate, mux(nbr(node, 3, parent) == node.uid, x, (T)null), value);
     });
 }
 
@@ -73,9 +73,9 @@ template <typename node_t, typename P, typename T, typename U, typename G, typen
 T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const U& null, G&& accumulate, F&& divide) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
-    return nbr(node, 0, T{null}, [&](field<T> x){
+    return nbr(node, 0, (T)null, [&](field<T> x){
         field<P> nbrdist = nbr(node, 1, distance);
-        T v = fold_hood(node, 1, accumulate, mux(nbrdist > distance, x, T{null}), value);
+        T v = fold_hood(node, 1, accumulate, mux(nbrdist > distance, x, (T)null), value);
         int n = sum_hood(node, 1, mux(nbrdist < distance, 1, 0), 0);
         return make_tuple(divide(v, max(n, 1)), v);
     });

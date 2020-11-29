@@ -132,6 +132,8 @@ namespace tags {
 /**
  * @brief Component handling node creation and indexing.
  *
+ * The \ref timer component cannot be a parent of a \ref identifier to preserve node scheduling.
+ *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  * - \ref tags::synchronised defines whether many events are expected to happen at the same time (defaults to \ref FCPP_SYNCHRONISED).
@@ -162,6 +164,7 @@ struct identifier {
     template <typename F, typename P>
     struct component : public P {
         DECLARE_COMPONENT(identifier);
+        AVOID_COMPONENT(identifier,timer);
 
         //! @brief The local part of the component.
         using node = typename P::node;

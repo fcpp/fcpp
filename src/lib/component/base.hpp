@@ -40,9 +40,6 @@ namespace tags {
 
     //! @brief Node initialisation tag associating to a `device_t` unique identifier.
     struct uid {};
-
-    //! @brief Net initialisation tag associating to a factor to be applied to real time.
-    struct realtime_factor {};
 }
 
 
@@ -82,13 +79,10 @@ namespace tags {
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
- * - \ref tags::realtime defines whether running should follow real time (defaults to `FCPP_REALTIME == 1`).
+ * - \ref tags::realtime defines whether running should follow real time (defaults to `FCPP_REALTIME < INF`).
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::uid associates to a `device_t` unique identifier (required).
- *
- * <b>Net initialisation tags:</b>
- * - \ref tags::realtime_factor associates to a `real_t` factor to be applied to real time (defaults to \ref FCPP_REALTIME and is ignored if `tags::realtime` is false).
  */
 template <class... Ts>
 struct base {
@@ -96,7 +90,7 @@ struct base {
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
     //! @brief Whether running should follow real time.
-    constexpr static bool realtime = common::option_flag<tags::realtime, FCPP_REALTIME == 1, Ts...>;
+    constexpr static bool realtime = common::option_flag<tags::realtime, FCPP_REALTIME < INF, Ts...>;
 
     /**
      * @brief The actual component.
@@ -214,9 +208,9 @@ struct base {
             //@{
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) {
+            net(const common::tagged_tuple<S,T>&) {
                 m_realtime_start = std::chrono::high_resolution_clock::now();
-                m_realtime_factor = real_t(common::get_or<tags::realtime_factor>(t, FCPP_REALTIME)) * std::chrono::high_resolution_clock::period::num / std::chrono::high_resolution_clock::period::den;
+                m_realtime_factor = real_t(std::chrono::high_resolution_clock::period::num) / std::chrono::high_resolution_clock::period::den;
             }
 
             //! @brief Deleted copy constructor.
@@ -247,6 +241,16 @@ struct base {
                 PROFILE_REPORT();
             }
 
+            //! @brief Converts real time into internal time.
+            times_t realtime_to_internal(times_t t) const {
+                return t;
+            }
+
+            //! @brief An estimate of real time elapsed from start. Should NEVER be overridden.
+            inline times_t real_time() const {
+                return (std::chrono::high_resolution_clock::now() - m_realtime_start).count() * m_realtime_factor;
+            }
+
           protected: // visible by net objects only
             //! @brief Gives access to the net as instance of `F::net`. Should NEVER be overridden.
             typename F::net& as_final() {
@@ -256,13 +260,6 @@ struct base {
             //! @brief Gives const access to the net as instance of `F::net`. Should NEVER be overridden.
             const typename F::net& as_final() const {
                 return *static_cast<const typename F::net*>(this);
-            }
-
-            //! @brief An estimate of real time elapsed from start. Should NEVER be overridden.
-            times_t real_time() const {
-                if (m_realtime_factor == INF)
-                    return TIME_MAX;
-                return (std::chrono::high_resolution_clock::now() - m_realtime_start).count() * m_realtime_factor;
             }
 
           private: // implementation details
@@ -278,7 +275,7 @@ struct base {
             //! @brief The start time of the program.
             std::chrono::high_resolution_clock::time_point m_realtime_start;
 
-            //! @brief A factor warping progression of real time.
+            //! @brief A conversion factor from clock ticks to real time in seconds.
             real_t m_realtime_factor;
         };
     };

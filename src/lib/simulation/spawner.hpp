@@ -44,6 +44,7 @@ namespace tags {
  * @brief Component handling automated generation of nodes.
  *
  * Requires a \ref identifier parent component.
+ * The \ref timer component cannot be a parent of a \ref spawner otherwise to preserve spawn scheduling.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *
  * <b>Declaration tags:</b>
@@ -79,6 +80,7 @@ struct spawner {
     struct component : public P {
         DECLARE_COMPONENT(spawner);
         REQUIRE_COMPONENT(spawner,identifier);
+        AVOID_COMPONENT(spawner,timer);
         CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.

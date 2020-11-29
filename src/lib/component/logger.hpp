@@ -130,6 +130,7 @@ namespace details {
  * @brief Component logging summarisations of nodes.
  *
  * Requires a \ref storage parent component, and also an \ref identifier parent component if \ref tags::value_push is false.
+ * The \ref timer component cannot be a parent of a \ref logger to preserve log scheduling.
  * If a \ref randomizer parent component is not found, \ref crand is passed to the \ref tags::log_schedule object.
  *
  * <b>Declaration tags:</b>
@@ -191,6 +192,7 @@ struct logger {
         DECLARE_COMPONENT(logger);
         REQUIRE_COMPONENT(logger,storage);
         REQUIRE_COMPONENT_IF(logger,identifier, not value_push);
+        AVOID_COMPONENT(logger,timer);
         CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.

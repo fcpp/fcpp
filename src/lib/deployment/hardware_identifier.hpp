@@ -42,6 +42,8 @@ namespace tags {
 /**
  * @brief Component handling node creation and indexing.
  *
+ * The \ref timer component cannot be a parent of a \ref hardware_identifier to preserve node scheduling.
+ *
  * Creates a single node, with `uid` and `start` determined through system calls.
  * It also substitutes the `spawner` component.
  *
@@ -66,6 +68,7 @@ struct hardware_identifier {
     struct component : public P {
         DECLARE_COMPONENT(identifier);
         DECLARE_COMPONENT(spawner);
+        AVOID_COMPONENT(identifier,timer);
 
         //! @brief The local part of the component.
         using node = typename P::node;

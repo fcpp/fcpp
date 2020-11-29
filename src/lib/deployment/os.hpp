@@ -126,6 +126,7 @@ class network {
             // receiving
             message_type m = m_transceiver.receive(m_attempt);
             if (not m.content.empty()) {
+                m.time = m_node.net.realtime_to_internal(m.time);
                 if (push) {
                     common::unlock_guard<true> u(m_mutex);
                     m_node.receive(m);

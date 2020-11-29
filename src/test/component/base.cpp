@@ -111,7 +111,6 @@ using combo1 = component::combine_spec<empty<true,2>, overwriter, empty<>, calle
 
 using combo2 = component::combine_spec<theanswer, caller, overwriter, component::base<>>;
 
-//using combo3 = component::combine<>::component<>;
 
 // slow computation
 int workhard(int n=15) {

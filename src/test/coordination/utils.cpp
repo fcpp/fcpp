@@ -118,3 +118,27 @@ MULTI_TEST(UtilsTest, MeanHood, O, 3) {
     EXPECT_ROUND(n, {1,   2,   6},
                     {1.5f,3,   4});
 }
+
+MULTI_TEST(UtilsTest, ListHood, O, 3) {
+    test_net<combo<O>, std::tuple<real_t,real_t>(real_t)> n{
+        [&](auto& node, real_t value){
+            std::vector<real_t> v;
+            v = coordination::list_hood(node, 0, std::vector<real_t>(), nbr(node, 0, value), coordination::nothing);
+            real_t r = 0;
+            for (real_t x : v) r += x;
+            v = coordination::list_hood(node, 0, std::vector<real_t>(), nbr(node, 1, value));
+            real_t s = 0;
+            for (real_t x : v) s += x;
+            return std::make_tuple(r, s);
+        }
+    };
+    EXPECT_ROUND(n, {1,   2,   6},
+                    {0,   0,   0},
+                    {1,   2,   6});
+    EXPECT_ROUND(n, {1,   3,   6},
+                    {2,   7,   2},
+                    {3,   9,   8});
+    EXPECT_ROUND(n, {1,   4,   6},
+                    {3,   7,   3},
+                    {4,   10,  9});
+}

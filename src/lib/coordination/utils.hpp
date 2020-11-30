@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "lib/common/algorithm.hpp"
 #include "lib/data/field.hpp"
 #include "lib/internal/trace.hpp"
 
@@ -92,6 +93,36 @@ auto get(const field<A>& f) {
     }, f);
 }
 
+
+//! @brief Rounding.
+using std::round;
+
+//! @brief Pointwise rounding.
+inline field<real_t> round(const field<real_t>& f) {
+    return map_hood([](real_t x){
+        return std::round(x);
+    }, f);
+}
+
+//! @brief Floor rounding.
+using std::floor;
+
+//! @brief Pointwise floor rounding.
+inline field<real_t> floor(const field<real_t>& f) {
+    return map_hood([](real_t x){
+        return std::floor(x);
+    }, f);
+}
+
+//! @brief Ceil rounding.
+using std::ceil;
+
+//! @brief Pointwise ceil rounding.
+inline field<real_t> ceil(const field<real_t>& f) {
+    return map_hood([](real_t x){
+        return std::ceil(x);
+    }, f);
+}
 
 //! @brief Natural logarithm.
 using std::log;
@@ -255,6 +286,61 @@ inline to_local<A> mean_hood(node_t& node, trace_t call_point, const A& a, const
     return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
         return x + y;
     }, a, b) / count_hood(node, call_point);
+}
+
+
+//! @brief Namespace of tags for use in aggregate functions.
+namespace tags {
+    //! @brief Struct for indicating a missing argument
+    struct nothing {};
+}
+
+//! @brief Object indicating a missing argument.
+constexpr tags::nothing nothing{};
+
+//! @brief Reduces a field to a container of its constituent values skipping self in device order.
+template <typename node_t, typename C, typename A>
+void list_hood(node_t& node, trace_t call_point, C& c, const A& a, tags::nothing) {
+    fold_hood(node, call_point, [&] (const to_local<A>& x, char) -> char {
+        common::uniform_insert(c, x);
+        return {};
+    }, a, char{});
+}
+template <typename node_t, typename C, typename A>
+inline C list_hood(node_t& node, trace_t call_point, C&& c, const A& a, tags::nothing) {
+    list_hood(node, call_point, c, a, nothing);
+    return std::move(c);
+}
+
+//! @brief Reduces a field to a container of its constituent values with a default value for self in device order.
+template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
+void list_hood(node_t& node, trace_t call_point, C& c, const A& a, const B& b) {
+    bool done = false;
+    fold_hood(node, call_point, [&] (device_t curr, const to_local<A>& x, char) -> char {
+        if (curr > node.uid) {
+            common::uniform_insert(c, self(node, call_point, b));
+            done = true;
+        }
+        common::uniform_insert(c, x);
+        return {};
+    }, a, char{});
+    if (not done) common::uniform_insert(c, self(node, call_point, b));
+}
+template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
+inline C list_hood(node_t& node, trace_t call_point, C&& c, const A& a, const B& b) {
+    list_hood(node, call_point, c, a, b);
+    return std::move(c);
+}
+
+//! @brief Reduces a field to a container of its constituent values in device order.
+template <typename node_t, typename C, typename A>
+inline void list_hood(node_t& node, trace_t call_point, C& c, const A& a) {
+    list_hood(node, call_point, c, a, a);
+}
+template <typename node_t, typename C, typename A>
+inline C list_hood(node_t& node, trace_t call_point, C&& c, const A& a) {
+    list_hood(node, call_point, c, a);
+    return std::move(c);
 }
 
 

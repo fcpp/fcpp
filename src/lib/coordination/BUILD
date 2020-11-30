@@ -64,6 +64,7 @@ cc_library(
     hdrs = ['utils.hpp'],
     srcs = ['utils.cpp'],
     deps = [
+        "//lib/common:algorithm",
         "//lib/data:field",
         "//lib/internal:trace",
     ],

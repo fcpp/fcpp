@@ -15,7 +15,7 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<int, real_t, times_t>,
+    exports<bool, int8_t, int, real_t, times_t>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -39,6 +39,116 @@ MULTI_TEST(TimeTest, Counter, O, 3) {
     EXPECT_ROUND(n, {2, 2, 2});
     EXPECT_ROUND(n, {3, 3, 3});
     EXPECT_ROUND(n, {4, 4, 4});
+}
+
+MULTI_TEST(TimeTest, RoundSince, O, 3) {
+    test_net<combo<O>, std::tuple<int>(bool)> n{
+        [&](auto& node, bool value){
+            return std::make_tuple(
+                coordination::round_since(node, 0, value)
+            );
+        }
+    };
+    EXPECT_ROUND(n, {false, false, true},
+                    {1,     1,     0});
+    EXPECT_ROUND(n, {false, true,  false},
+                    {2,     0,     1});
+    EXPECT_ROUND(n, {false, true,  false},
+                    {3,     0,     2});
+    EXPECT_ROUND(n, {false, false, true},
+                    {4,     1,     0});
+}
+
+MULTI_TEST(TimeTest, Constant, O, 3) {
+    test_net<combo<O>, std::tuple<int>(int)> n{
+        [&](auto& node, int value){
+            return std::make_tuple(
+                coordination::constant(node, 0, value)
+            );
+        }
+    };
+    EXPECT_ROUND(n, {0,   1,   2},
+                    {0,   1,   2});
+    EXPECT_ROUND(n, {2,   5,   8},
+                    {0,   1,   2});
+    EXPECT_ROUND(n, {1,   4,   3},
+                    {0,   1,   2});
+}
+
+MULTI_TEST(TimeTest, Toggle, O, 3) {
+    test_net<combo<O>, std::tuple<int>(int)> n{
+        [&](auto& node, int value){
+            return std::make_tuple(
+                coordination::toggle(node, 0, value)
+            );
+        }
+    };
+    EXPECT_ROUND(n, {0,   1,   0},
+                    {0,   1,   0});
+    EXPECT_ROUND(n, {0,   1,   1},
+                    {0,   0,   1});
+    EXPECT_ROUND(n, {1,   1,   0},
+                    {1,   1,   1});
+}
+
+MULTI_TEST(TimeTest, ToggleFilter, O, 3) {
+    test_net<combo<O>, std::tuple<int>(int)> n{
+        [&](auto& node, int value){
+            return std::make_tuple(
+                coordination::toggle_filter(node, 0, value)
+            );
+        }
+    };
+    EXPECT_ROUND(n, {0,   1,   0},
+                    {0,   1,   0});
+    EXPECT_ROUND(n, {0,   1,   1},
+                    {0,   1,   1});
+    EXPECT_ROUND(n, {1,   0,   0},
+                    {1,   1,   1});
+    EXPECT_ROUND(n, {0,   1,   1},
+                    {1,   0,   0});
+}
+
+MULTI_TEST(TimeTest, FixedDelay, O, 3) {
+    test_net<combo<O>, std::tuple<int>(int)> n{
+        [&](auto& node, int value){
+            return std::make_tuple(
+                coordination::delay(node, 0, value, 2)
+            );
+        }
+    };
+    EXPECT_ROUND(n, {0,   0,   0},
+                    {0,   0,   0});
+    EXPECT_ROUND(n, {1,   2,   3},
+                    {0,   0,   0});
+    EXPECT_ROUND(n, {2,   1,   0},
+                    {0,   0,   0});
+    EXPECT_ROUND(n, {2,   1,   0},
+                    {1,   2,   3});
+    EXPECT_ROUND(n, {2,   1,   0},
+                    {2,   1,   0});
+}
+
+MULTI_TEST(TimeTest, VariableDelay, O, 3) {
+    test_net<combo<O>, std::tuple<int>(int)> n{
+        [&](auto& node, int value){
+            return std::make_tuple(
+                coordination::delay(node, 0, coordination::counter(node, 1), value)
+            );
+        }
+    };
+    EXPECT_ROUND(n, {0,   0,   0},
+                    {1,   1,   1});
+    EXPECT_ROUND(n, {0,   1,   2},
+                    {2,   1,   1});
+    EXPECT_ROUND(n, {0,   2,   2},
+                    {3,   1,   1});
+    EXPECT_ROUND(n, {1,   2,   1},
+                    {3,   2,   3});
+    EXPECT_ROUND(n, {1,   1,   1},
+                    {4,   4,   4});
+    EXPECT_ROUND(n, {0,   0,   0},
+                    {6,   6,   6});
 }
 
 MULTI_TEST(TimeTest, ExponentialFilter, O, 3) {

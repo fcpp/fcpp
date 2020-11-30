@@ -11,8 +11,10 @@
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#include <set>
 #include <thread>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 
@@ -412,6 +414,37 @@ void parallel_while(tags::dynamic_execution e, F&& f) {
     for (std::thread& t : pool) t.join();
 }
 #endif
+
+
+//! @brief Uniform interface for inserting elements into a vector.
+template <typename T>
+void uniform_insert(std::vector<T>& container, T value) {
+    container.push_back(value);
+}
+
+//! @brief Uniform interface for inserting elements into a set.
+template <typename T>
+void uniform_insert(std::set<T>& container, T value) {
+    container.insert(value);
+}
+
+//! @brief Uniform interface for inserting elements into a multiset.
+template <typename T>
+void uniform_insert(std::multiset<T>& container, T value) {
+    container.insert(value);
+}
+
+//! @brief Uniform interface for inserting elements into an unordered set.
+template <typename T>
+void uniform_insert(std::unordered_set<T>& container, T value) {
+    container.insert(value);
+}
+
+//! @brief Uniform interface for inserting elements into an unordered multiset.
+template <typename T>
+void uniform_insert(std::unordered_multiset<T>& container, T value) {
+    container.insert(value);
+}
 
 
 }

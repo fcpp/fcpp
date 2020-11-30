@@ -67,7 +67,7 @@ namespace component {
  *
  * It can be instantiated as `batch_simulator<options...>::net`.
  */
-DECLARE_COMBINE(interactive_simulator, displayer, calculus, storage, spawner, simulated_connector, simulated_positioner, timer, scheduler, identifier, randomizer);
+DECLARE_COMBINE(interactive_simulator, displayer, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
 
 }
 

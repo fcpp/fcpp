@@ -162,7 +162,7 @@ void Renderer::processKeyboardInput() {
 }
 
 void Renderer::mousePosCallback(GLFWwindow* window, double xpos, double ypos) {
-    std::cout << "(" << xpos << ", " << ypos << ")\n" ;
+    //std::cout << "(" << xpos << ", " << ypos << ")\n" ;
     if (m_mouseFirst) {
         m_mouseLastX = (float)xpos;
         m_mouseLastY = (float)ypos;

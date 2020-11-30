@@ -64,18 +64,22 @@ void Camera::processMouseMovementFPP(float xoffset, float yoffset)
 void Camera::processMouseMovementEditor(float x, float y, float dx, float dy)
 {
     glm::mat4 rot;
-    x *= m_mouseSensitivity;
-    y *= m_mouseSensitivity;
-    dx *= m_mouseSensitivity;
-    dy *= m_mouseSensitivity;
-    glm::vec3 xyVec{ x, y, 0 };
-    glm::vec3 xyOffVec{ dx, dy, 0 };
+    //x *= m_mouseSensitivity;
+    //y *= m_mouseSensitivity;
+    //dx *= m_mouseSensitivity;
+    //dy *= m_mouseSensitivity;
     
-    float a = glm::dot(xyVec, xyOffVec) / glm::l1Norm(xyVec);
-    glm::mat4 rotA{ glm::rotate(glm::radians(a), glm::vec3(0.0f, 0.0f, 1.0f)) };
+    float n = std::sqrt(x*x + y*y); // norm of (x, y)
     
-    float b = glm::l1Norm(glm::cross(xyVec, xyOffVec)) / glm::l1Norm(xyVec);
-    glm::mat4 rotB{ glm::rotate(glm::radians(b), glm::vec3(y, -x, 0.0f)) };
+    float a = (x*dx + y*dy) / n;
+    glm::mat4 rotA{ glm::rotate(glm::radians(a), glm::vec3(y, -x, 0.0f)) };
+    
+    float b = (x*dx - y*dy) / n;
+    glm::mat4 rotB{ glm::rotate(glm::radians(b), glm::vec3(0.0f, 0.0f, 1.0f)) };
+    
+    std::cout << "x,y:   (" << x << ", " << y << ")\n" ;
+    std::cout << "dx,dy: (" << dx << ", " << dy << ")\n" ;
+    std::cout << "a,b:   (" << a << ", " << b << ")\n" ;
     
     rot = rotA * rotB;
     m_view = rot * m_view;

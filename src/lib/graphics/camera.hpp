@@ -31,6 +31,9 @@ const float CAM_DEFAULT_SPEED{ 50.0f };
 //! @brief Default camera's sensitivity
 const float CAM_DEFAULT_SENSITIVITY{ 0.1f };
 
+//! @brief Threshold for unintentional camera movement
+const float CAM_THRESHOLD{ 0.7f };
+
 //! @brief Default camera's Field of View
 const float CAM_DEFAULT_FOV{ 45.0f };
 
@@ -66,6 +69,11 @@ public:
     //! @brief It returns camera's Field of View.
     float getFov();
 
+	//! @brief Sets the current screen diagonal size given window size.
+	void setDiagonal(float width, float height) {
+		m_diagonal = std::sqrt(width*width + height*height) / 2;
+	}
+
 private:    
     //! @brief Camera's current movement speed.
     float m_movementSpeed;
@@ -81,5 +89,8 @@ private:
     
     //! @brief Camera's default view matrix; it is stored to easily return to the default position.
     glm::mat4 m_viewDefault;
+
+	//! @brief The screen diagonal.
+	float m_diagonal;
 };
 #endif

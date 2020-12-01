@@ -140,6 +140,8 @@ Renderer::Renderer() :
 
     // Set internal callbacks
     setInternalCallbacks();
+
+	m_camera.setDiagonal(m_currentWidth, m_currentHeight);
 }
 
 
@@ -192,6 +194,7 @@ void Renderer::framebufferSizeCallback(GLFWwindow* window, int width, int height
     glViewport(0, 0, width, height);
     m_currentWidth = width;
     m_currentHeight = height;
+	m_camera.setDiagonal(width, height);
 }
 
 void Renderer::setInternalCallbacks() {

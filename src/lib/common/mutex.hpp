@@ -12,7 +12,6 @@
 
 #include <chrono>
 #include <mutex>
-#include <shared_mutex>
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
@@ -102,129 +101,6 @@ struct mutex<true> {
 template <>
 struct mutex<true> : public std::mutex {
     using std::mutex::mutex;
-};
-#endif
-
-
-/**
- * @brief Provides an uniform object interface for an OpenMP or C++14 mutex.
- *
- * @param enabled Whether the mutex will actually perform anything.
- */
-template <bool enabled>
-struct shared_mutex;
-
-
-//! @brief Empty mutex interface when `enabled` is false.
-template <>
-struct shared_mutex<false> {
-    //! @brief Default constructor.
-    shared_mutex() = default;
-
-    //! @brief Deleted copy constructor.
-    shared_mutex(const shared_mutex&) = delete;
-
-    //! @brief Tries to acquire the exclusive lock, returning false if not available.
-    inline bool try_lock() {
-        return true;
-    }
-
-    //! @brief Acquires the exclusive lock, waiting if not available.
-    inline void lock() {}
-
-    //! @brief Releases the exclusive lock.
-    inline void unlock() {}
-
-    //! @brief Tries to acquire the shared lock, returning false if not available.
-    inline bool try_lock_shared() {
-        return true;
-    }
-
-    //! @brief Acquires the shared lock, waiting if not available.
-    inline void lock_shared() {}
-
-    //! @brief Releases the shared lock.
-    inline void unlock_shared() {}
-};
-
-
-#if defined(_OPENMP)
-//! @brief Actual mutex interface when `enabled` is true and OpenMP is available.
-template <>
-struct shared_mutex<true> {
-    //! @brief Default constructor.
-    shared_mutex() {
-        omp_init_lock(&m_lock);
-    }
-
-    //! @brief Default destructor.
-    ~shared_mutex() {
-        omp_destroy_lock(&m_lock);
-    }
-
-    //! @brief Deleted copy constructor.
-    shared_mutex(const shared_mutex&) = delete;
-
-    //! @brief Tries to acquire the exclusive lock, returning false if not available.
-    inline bool try_lock() {
-        if (not omp_test_lock(&m_lock)) return false;
-        if (m_counter == 0) return true;
-        omp_unset_lock(&m_lock);
-        return false;
-    }
-
-    //! @brief Acquires the exclusive lock, waiting if not available.
-    inline void lock() {
-        while (true) {
-            omp_set_lock(&m_lock);
-            if (m_counter == 0) return;
-            omp_unset_lock(&m_lock);
-        }
-    }
-
-    //! @brief Releases the exclusive lock.
-    inline void unlock() {
-        omp_unset_lock(&m_lock);
-    }
-
-    //! @brief Tries to acquire the shared lock, returning false if not available.
-    inline bool try_lock_shared() {
-        if (not omp_test_lock(&m_lock)) return false;
-        ++m_counter;
-        omp_unset_lock(&m_lock);
-    }
-
-    //! @brief Acquires the shared lock, waiting if not available.
-    inline void lock_shared() {
-        omp_set_lock(&m_lock);
-        ++m_counter;
-        omp_unset_lock(&m_lock);
-    }
-
-    //! @brief Releases the shared lock.
-    inline void unlock_shared() {
-        omp_set_lock(&m_lock);
-        --m_counter;
-        omp_unset_lock(&m_lock);
-    }
-
-  private:
-    //! @brief The actual lock.
-    omp_lock_t m_lock;
-    //! @brief The number of shared locks aquired.
-    uint16_t m_counter;
-};
-#elif __cplusplus >= 201700
-//! @brief Actual mutex interface when `enabled` is true and the standard C++17 `shared_mutex` is available.
-template <>
-struct shared_mutex<true> : public std::shared_mutex {
-    using std::shared_mutex::shared_mutex;
-};
-#else
-//! @brief Actual mutex interface when `enabled` is true and the standard C++14 `shared_timed_mutex` is available.
-template <>
-struct shared_mutex<true> : public std::shared_timed_mutex {
-    using std::shared_timed_mutex::shared_timed_mutex;
 };
 #endif
 
@@ -379,6 +255,155 @@ struct unique_lock<true> : std::unique_lock<mutex<true>> {
 };
 
 
+template <typename... Ts>
+void lock(mutex<false>&, Ts&...) {}
+
+template <typename... Ts>
+void lock(mutex<true>& a, Ts&... ms) {
+    std::lock(a, ms...);
+}
+
+template <typename... Ts>
+int try_lock(mutex<false>&, Ts&...) {
+    return -1;
+}
+
+template <typename... Ts>
+int try_lock(mutex<true>& a, Ts&... ms) {
+    return std::try_lock(a, ms...);
+}
+
+
+//! @cond INTERNAL
+/**
+ * @brief Shared mutexes and locks are not currently used by the FCPP library.
+ * Their compilation is disabled since it may be problematic for some platforms.
+ */
+#if false
+#include <shared_mutex>
+/**
+ * @brief Provides an uniform object interface for an OpenMP or C++14 mutex.
+ *
+ * @param enabled Whether the mutex will actually perform anything.
+ */
+template <bool enabled>
+struct shared_mutex;
+
+
+//! @brief Empty mutex interface when `enabled` is false.
+template <>
+struct shared_mutex<false> {
+    //! @brief Default constructor.
+    shared_mutex() = default;
+
+    //! @brief Deleted copy constructor.
+    shared_mutex(const shared_mutex&) = delete;
+
+    //! @brief Tries to acquire the exclusive lock, returning false if not available.
+    inline bool try_lock() {
+        return true;
+    }
+
+    //! @brief Acquires the exclusive lock, waiting if not available.
+    inline void lock() {}
+
+    //! @brief Releases the exclusive lock.
+    inline void unlock() {}
+
+    //! @brief Tries to acquire the shared lock, returning false if not available.
+    inline bool try_lock_shared() {
+        return true;
+    }
+
+    //! @brief Acquires the shared lock, waiting if not available.
+    inline void lock_shared() {}
+
+    //! @brief Releases the shared lock.
+    inline void unlock_shared() {}
+};
+
+
+#if defined(_OPENMP)
+//! @brief Actual mutex interface when `enabled` is true and OpenMP is available.
+template <>
+struct shared_mutex<true> {
+    //! @brief Default constructor.
+    shared_mutex() {
+        omp_init_lock(&m_lock);
+    }
+
+    //! @brief Default destructor.
+    ~shared_mutex() {
+        omp_destroy_lock(&m_lock);
+    }
+
+    //! @brief Deleted copy constructor.
+    shared_mutex(const shared_mutex&) = delete;
+
+    //! @brief Tries to acquire the exclusive lock, returning false if not available.
+    inline bool try_lock() {
+        if (not omp_test_lock(&m_lock)) return false;
+        if (m_counter == 0) return true;
+        omp_unset_lock(&m_lock);
+        return false;
+    }
+
+    //! @brief Acquires the exclusive lock, waiting if not available.
+    inline void lock() {
+        while (true) {
+            omp_set_lock(&m_lock);
+            if (m_counter == 0) return;
+            omp_unset_lock(&m_lock);
+        }
+    }
+
+    //! @brief Releases the exclusive lock.
+    inline void unlock() {
+        omp_unset_lock(&m_lock);
+    }
+
+    //! @brief Tries to acquire the shared lock, returning false if not available.
+    inline bool try_lock_shared() {
+        if (not omp_test_lock(&m_lock)) return false;
+        ++m_counter;
+        omp_unset_lock(&m_lock);
+    }
+
+    //! @brief Acquires the shared lock, waiting if not available.
+    inline void lock_shared() {
+        omp_set_lock(&m_lock);
+        ++m_counter;
+        omp_unset_lock(&m_lock);
+    }
+
+    //! @brief Releases the shared lock.
+    inline void unlock_shared() {
+        omp_set_lock(&m_lock);
+        --m_counter;
+        omp_unset_lock(&m_lock);
+    }
+
+  private:
+    //! @brief The actual lock.
+    omp_lock_t m_lock;
+    //! @brief The number of shared locks aquired.
+    uint16_t m_counter;
+};
+#elif __cplusplus >= 201700
+//! @brief Actual mutex interface when `enabled` is true and the standard C++17 `shared_mutex` is available.
+template <>
+struct shared_mutex<true> : public std::shared_mutex {
+    using std::shared_mutex::shared_mutex;
+};
+#else
+//! @brief Actual mutex interface when `enabled` is true and the standard C++14 `shared_timed_mutex` is available.
+template <>
+struct shared_mutex<true> : public std::shared_timed_mutex {
+    using std::shared_timed_mutex::shared_timed_mutex;
+};
+#endif
+
+
 //! @brief Bypassable version of `std::shared_lock` (manages a shared_mutex through lifetime).
 template <bool enabled>
 struct shared_lock;
@@ -458,25 +483,8 @@ template <>
 struct shared_lock<true> : std::shared_lock<shared_mutex<true>> {
     using std::shared_lock<common::shared_mutex<true>>::shared_lock;
 };
-
-
-template <typename... Ts>
-void lock(mutex<false>&, Ts&...) {}
-
-template <typename... Ts>
-void lock(mutex<true>& a, Ts&... ms) {
-    std::lock(a, ms...);
-}
-
-template <typename... Ts>
-int try_lock(mutex<false>&, Ts&...) {
-    return -1;
-}
-
-template <typename... Ts>
-int try_lock(mutex<true>& a, Ts&... ms) {
-    return std::try_lock(a, ms...);
-}
+#endif
+//! @endcond
 
 
 }

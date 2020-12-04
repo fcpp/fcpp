@@ -29,7 +29,7 @@ namespace tags {
 }
 
 //! @brief Main function.
-FUN() void diameter_estimation(ARGS) { CODE
+MAIN() {
 #ifdef EXAMPLE_3D
     rectangle_walk(CALL, make_vec(0,0,0), make_vec(500,500,200), 30.5, 1);
 #else
@@ -54,9 +54,6 @@ FUN() void diameter_estimation(ARGS) { CODE
 }
 
 }
-
-//! @brief Main struct calling `collection_compare`.
-MAIN(coordination::diameter_estimation,);
 
 
 //! @brief Namespace for all FCPP components.
@@ -95,7 +92,7 @@ constexpr size_t dim = 2;
 
 DECLARE_OPTIONS(opt,
     synchronised<false>,
-    program<main>,
+    program<coordination::main>,
     round_schedule<round_s>,
     dimension<dim>,
     exports<vec<dim>, double>,

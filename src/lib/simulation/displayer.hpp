@@ -14,7 +14,6 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -23,6 +22,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image/stb_image.h>
 
+#include "lib/common/algorithm.hpp"
 #include "lib/component/base.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/graphics/renderer.hpp"
@@ -68,19 +68,18 @@ namespace tags {
     template <bool b>
     struct parallel;
 
-    //! @brief Net initialisation tag associating to a factor to be applied to real time.
-    struct realtime_factor;
-
-    //! @brief Net initialisation tag associating to the refresh rate.
+    //! @brief Net initialisation tag associating to the refresh rate (0 for opportunistic frame refreshing).
     struct refresh_rate {};
+
+    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    struct threads;
 }
 
 
 /**
  * @brief Component representing the simulation status graphically.
  *
- * Requires a \ref identifier , \ref positioner and \ref storage parent component.
- * A \ref displayer component cannot be a parent of a \ref timer otherwise refresh rate may be warped.
+ * Requires a \ref identifier , \ref positioner, \ref storage and \ref timer parent component.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::shape_tag defines a storage tag regulating the shape of nodes (defaults to none).
@@ -94,10 +93,10 @@ namespace tags {
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  *
  * <b>Net initialisation tags:</b>
- * - \ref tags::realtime_factor associates to a `double` factor to be applied to real time (defaults to \ref FCPP_REALTIME).
- * - \ref tags::refresh_rate associates to the refresh rate (defaults to \ref FCPP_REFRESH_RATE).
+ * - \ref tags::refresh_rate associates to the refresh rate (0 for opportunistic frame refreshing, defaults to \ref FCPP_REFRESH_RATE).
+ * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).
  *
- * If no color tags or color values are specified, the color defaults to black.
+ * If no color tags or color values are specified, the color defaults to white.
  */
 template <class... Ts>
 struct displayer {
@@ -119,7 +118,7 @@ struct displayer {
     //! @brief Storage tags regulating the colors of nodes.
     using color_tag = common::option_types<tags::color_tag, Ts...>;
 
-    //! @brief Base colors of nodes (defaults to black).
+    //! @brief Base colors of nodes (defaults to white).
     using color_val = common::option_nums<tags::color_val, Ts...>;
 
     /**
@@ -137,7 +136,7 @@ struct displayer {
         REQUIRE_COMPONENT(displayer,identifier);
         REQUIRE_COMPONENT(displayer,positioner);
         REQUIRE_COMPONENT(displayer,storage);
-        CHECK_COMPONENT(timer);
+        REQUIRE_COMPONENT(displayer,timer);
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -149,62 +148,43 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids(), m_pos_time(-1), m_refresh(0) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids(), m_pos_time(-1) {}
 
-            /**
-             * @brief Returns next event to schedule for the node component.
-             *
-             * Should correspond to the next time also during updates.
-             */
-            times_t next() const {
-                return std::min(m_refresh, P::node::next());
+            //! @brief Caches the current position for later use.
+            void cache_position(times_t t) {
+                m_position = to_vec3(P::node::position(t));
+                if (t == 0) P::node::net.viewport_update(m_position);
+            }
+
+            //! @brief Accesses the cached position.
+            glm::vec3 const& get_cached_position() const {
+                return m_position;
             }
 
             //! @brief Updates the internal status of node component.
-            void update() {
-                if (m_refresh < P::node::next()) {
-                    PROFILE_COUNT("displayer");
-                    glm::vec3 p = get_cached_position(m_refresh);
-                    std::vector<glm::vec3> np;
-                    // update shape and size
-                    shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
-                    double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
-                    // update color list
-                    std::vector<color> c;
-                    color_val_push(c, color_val{});
-                    color_tag_push(c, color_tag{});
-                    if (c.empty()) c.push_back(0); // black if nothing else
-                    {
-                        common::unlock_guard<parallel> ul(P::node::mutex);
-                        for (device_t d : m_prev_nbr_uids) {
-                            common::unique_lock<parallel> l;
-                            np.push_back(P::node::net.node_at(d, l).get_cached_position(m_refresh));
-                        }
-                        if (m_refresh == 0) P::node::net.viewport_update(p);
-                        /**
-                         * Do not touch the code above.
-                         *
-                         * Use this function to update node positions
-                         * (possibly more often than shape/size/colors).
-                         * You find the current position in p, and
-                         * neighbours' positions in np (for displaying links).
-                         *
-                         * Update the openGL representation somehow below.
-                         */
-
-                        // Draw cube through net's Renderer
-                        P::node::net.getRenderer().drawCube(p, d, c);
-                    }
-                    m_refresh += P::node::net.refresh_step();
-                } else P::node::update();
+            void draw() const {
+                PROFILE_COUNT("displayer");
+                // gather shape and size
+                shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
+                double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
+                // gather color list
+                std::vector<color> c;
+                color_val_push(c, color_val{});
+                color_tag_push(c, color_tag{});
+                if (c.empty()) c.emplace_back(1.0f, 1.0f, 1.0f, 1.0f); // white if nothing else
+                // gather personal and neighbours' positions
+                glm::vec3 p = get_cached_position();
+                std::vector<glm::vec3> np;
+                for (device_t d : m_prev_nbr_uids)
+                    np.push_back(P::node::net.node_at(d).get_cached_position());
+                // render the node
+                P::node::net.getRenderer().drawCube(p, d, c);
             }
 
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
                 P::node::round_end(t);
                 PROFILE_COUNT("displayer");
-                // skip if the next update is before the next refresh
-                if (P::node::next() < m_refresh) return;
                 // update neighbours list
                 std::sort(m_nbr_uids.begin(), m_nbr_uids.end());
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
@@ -228,15 +208,6 @@ struct displayer {
             //! @brief Conversion to 3D vector (non-trivial case).
             glm::vec3 to_vec3(vec<2> p) const {
                 return { p[0], p[1], 0 };
-            }
-
-            //! @brief Gets the current position using caching.
-            glm::vec3 get_cached_position(times_t t) {
-                if (t > m_pos_time) {
-                    m_position = to_vec3(P::node::position(t));
-                    m_pos_time = t;
-                }
-                return m_position;
             }
 
             //! @brief Pushes colors in an index sequence into a vector (base case).
@@ -267,12 +238,6 @@ struct displayer {
 
             //! @brief The uids of incoming messages during the previous round.
             std::vector<device_t> m_prev_nbr_uids;
-
-            //! @brief The cached position time.
-            times_t m_pos_time;
-
-            //! @brief The next refresh time.
-            times_t m_refresh;
         };
 
         //! @brief The global part of the component.
@@ -282,13 +247,12 @@ struct displayer {
             template <typename S, typename T>
             net(const common::tagged_tuple<S, T>& t) :
                 P::net{ t },
+                m_threads{ common::get_or<tags::threads>(t, FCPP_THREADS) },
                 m_refresh{ 0 },
-                m_viewport_max{ -1.0 / 0.0, -1.0 / 0.0, -1.0 / 0.0 },
-                m_viewport_min{ 1.0 / 0.0, 1.0 / 0.0, 1.0 / 0.0 },
-                m_renderer{} {
-                // Set simulation refresh rate
-                m_step = common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) * common::get_or<tags::realtime_factor>(t, FCPP_REALTIME);
-            }
+                m_step{ common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) },
+                m_viewport_max{ -INF, -INF, -INF },
+                m_viewport_min{ +INF, +INF, +INF },
+                m_renderer{} {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -297,14 +261,25 @@ struct displayer {
              */
             times_t next() const {
                 if (P::net::next() == TIME_MAX) return TIME_MAX;
+                if (m_step == 0) return 0;
                 return std::min(m_refresh, P::net::next());
             }
 
             //! @brief Updates the internal status of net component.
             void update() {
+                if (m_step == 0 and m_refresh > 0) m_refresh = P::net::real_time();
                 if (m_refresh < P::net::next()) {
                     PROFILE_COUNT("displayer");
-                    if (m_refresh == 0) {
+                    times_t t = P::net::realtime_to_internal(m_refresh);
+                    auto n_beg = P::net::node_begin();
+                    auto n_end = P::net::node_end();
+                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&n_beg,this] (size_t i, size_t) {
+                        n_beg[i].second.cache_position(t);
+                    });
+                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&n_beg,this] (size_t i, size_t) {
+                        n_beg[i].second.draw();
+                    });
+                    if (t == 0) {
                         // first frame only: set camera position, rotation, sensitivity
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
@@ -327,7 +302,6 @@ struct displayer {
                         while (grid_scale * 10 > diagonal) grid_scale /= 10;
                         m_renderer.setGridScale(grid_scale);
                     }
-                    times_t t = get_warped(has_timer<P>{}, *this, m_refresh);
                     /**
                      * Do whatever global management you need to do here
                      * (drawing the scene, interpreting the user input).
@@ -347,13 +321,9 @@ struct displayer {
                     m_renderer.swapAndNext();
                     
                     // Update m_refresh
-                    m_refresh += m_step;
+                    if (m_step > 0) m_refresh += m_step;
+                    else m_refresh = P::net::real_time();
                 } else P::net::update();
-            }
-
-            //! @brief Returns the refresh step in subjective node time.
-            times_t refresh_step() const {
-                return get_warped(has_timer<P>{}, *this, m_step);
             }
 
             //! @brief Returns net's Renderer object.
@@ -376,18 +346,6 @@ struct displayer {
             }
 
         private: // implementation details
-            //! @brief Converts to warped time.
-            template <typename N>
-            inline times_t get_warped(std::true_type, N const& n, times_t t) const {
-                return n.warped_time(t);
-            }
-
-            //! @brief Converts to warped time.
-            template <typename N>
-            inline times_t get_warped(std::false_type, N const&, times_t t) const {
-                return t;
-            }
-            
             //! @brief Custom keyboard handler for the displayer component.
             void processDisplayerKeyboardInput() {
                 GLFWwindow* window{ m_renderer.getWindow() };
@@ -395,7 +353,23 @@ struct displayer {
                     glfwSetWindowShouldClose(window, true);
                     P::net::terminate();
                 }
+                if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+                    // decelerate simulation
+                    P::net::frequency(0.9*P::net::frequency(), P::net::real_time());
+                }
+                if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+                    // decelerate simulation
+                    P::net::frequency(1.1*P::net::frequency(), P::net::real_time());
+                }
+                if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+                    // play/pause simulation
+                    real_t f = P::net::frequency();
+                    P::net::frequency(f == 0 ? 1 : 0);
+                }
             }
+
+            //! @brief The number of threads to be used.
+            const size_t m_threads;
 
             //! @brief The next refresh time.
             times_t m_refresh;

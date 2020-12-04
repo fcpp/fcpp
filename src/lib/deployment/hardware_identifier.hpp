@@ -72,13 +72,13 @@ struct hardware_identifier {
 
         //! @brief The local part of the component.
         using node = typename P::node;
-        
+
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
             //! @brief The type of nodes.
             using node_type = typename F::node;
-            
+
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
@@ -91,7 +91,7 @@ struct hardware_identifier {
             times_t next() const {
                 return std::min(m_node.next(), P::net::next());
             }
-            
+
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_node.next() < P::net::next()) {
@@ -100,17 +100,17 @@ struct hardware_identifier {
                 }
                 else P::net::update();
             }
-            
+
             //! @brief Returns the total number of nodes.
             static constexpr size_t node_size() {
                 return 1;
             }
-            
+
             //! @brief Returns whether a node with a certain device identifier exists.
             inline size_t node_count(device_t uid) const {
                 return m_node.uid == uid;
             }
-            
+
             //! @brief Const access to the node with a given device identifier.
             inline const node_type& node_at(device_t uid) const {
                 assert(m_node.uid == uid);
@@ -123,12 +123,12 @@ struct hardware_identifier {
                 l = common::unique_lock<parallel>(m_node.mutex);
                 return m_node;
             }
-            
+
           private: // implementation details
             //! @brief Adds a tagged value to a tagged tuple if not already present.
             //! @{
             template <typename S, typename T, typename Ss, typename Us>
-            auto maybe_push(const common::tagged_tuple<Ss,Us>& t, T const& x, common::type_sequence<S>) {
+            auto maybe_push(const common::tagged_tuple<Ss,Us>& t, T const&, common::type_sequence<S>) {
                 return t;
             }
             template <typename S, typename T, typename Ss, typename Us>

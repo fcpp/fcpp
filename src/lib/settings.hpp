@@ -221,6 +221,11 @@ namespace fcpp {
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
     //! @brief Shorthand to real infinity value.
     constexpr real_t INF = std::numeric_limits<real_t>::infinity();
+#ifdef NAN
+    #undef NAN
+#endif
+    //! @brief Shorthand to real not-a-number value.
+    constexpr real_t NAN = std::numeric_limits<real_t>::quiet_NaN();
 
 #if   FCPP_DEVICE == 8
     typedef uint8_t device_t;

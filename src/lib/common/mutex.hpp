@@ -36,7 +36,7 @@ namespace common {
  * @param enabled Whether the mutex will actually perform anything.
  */
 template <bool enabled>
-class mutex;
+struct mutex;
 
 
 //! @brief Empty mutex interface when `enabled` is false.
@@ -64,11 +64,7 @@ struct mutex<false> {
 #if defined(_OPENMP)
 //! @brief Actual mutex interface when `enabled` is true and OpenMP is available.
 template <>
-class mutex<true> {
-    //! @brief The actual lock.
-    omp_lock_t m_lock;
-
-  public:
+struct mutex<true> {
     //! @brief Default constructor.
     mutex() {
         omp_init_lock(&m_lock);
@@ -96,6 +92,10 @@ class mutex<true> {
     inline void unlock() {
         omp_unset_lock(&m_lock);
     }
+
+  private:
+    //! @brief The actual lock.
+    omp_lock_t m_lock;
 };
 #else
 //! @brief Actual mutex interface when `enabled` is true and the standard C++ `mutex` is available.
@@ -112,7 +112,7 @@ struct mutex<true> : public std::mutex {
  * @param enabled Whether the mutex will actually perform anything.
  */
 template <bool enabled>
-class shared_mutex;
+struct shared_mutex;
 
 
 //! @brief Empty mutex interface when `enabled` is false.
@@ -151,13 +151,7 @@ struct shared_mutex<false> {
 #if defined(_OPENMP)
 //! @brief Actual mutex interface when `enabled` is true and OpenMP is available.
 template <>
-class shared_mutex<true> {
-    //! @brief The actual lock.
-    omp_lock_t m_lock;
-    //! @brief The number of shared locks aquired.
-    uint16_t m_counter;
-
-  public:
+struct shared_mutex<true> {
     //! @brief Default constructor.
     shared_mutex() {
         omp_init_lock(&m_lock);
@@ -213,6 +207,12 @@ class shared_mutex<true> {
         --m_counter;
         omp_unset_lock(&m_lock);
     }
+
+  private:
+    //! @brief The actual lock.
+    omp_lock_t m_lock;
+    //! @brief The number of shared locks aquired.
+    uint16_t m_counter;
 };
 #elif __cplusplus >= 201700
 //! @brief Actual mutex interface when `enabled` is true and the standard C++17 `shared_mutex` is available.
@@ -231,7 +231,7 @@ struct shared_mutex<true> : public std::shared_timed_mutex {
 
 //! @brief Bypassable version of `std::lock_guard` (keeps a mutex locked during its lifetime).
 template <bool enabled>
-class lock_guard;
+struct lock_guard;
 
 
 //! @brief Bypassed version of `std::lock_guard`.
@@ -257,7 +257,7 @@ struct lock_guard<true> : public std::lock_guard<mutex<true>> {
 
 //! @brief Bypassable unlocker of a mutex during its lifetime.
 template <bool enabled>
-class unlock_guard;
+struct unlock_guard;
 
 
 //! @brief Bypassed version of `unlock_guard`.
@@ -300,7 +300,7 @@ struct unlock_guard<true> {
 
 //! @brief Bypassable version of `std::unique_lock` (manages a mutex through lifetime).
 template <bool enabled>
-class unique_lock;
+struct unique_lock;
 
 
 //! @brief Bypassed version of `std::unique_lock`.
@@ -381,7 +381,7 @@ struct unique_lock<true> : std::unique_lock<mutex<true>> {
 
 //! @brief Bypassable version of `std::shared_lock` (manages a shared_mutex through lifetime).
 template <bool enabled>
-class shared_lock;
+struct shared_lock;
 
 
 //! @brief Bypassed version of `std::shared_lock`.

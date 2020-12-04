@@ -156,12 +156,12 @@ struct spawner {
             }
 
             //! @brief Emplaces a node generated through the j-th distribution.
-            template <size_t i, size_t... is>
-            inline void call_distribution(size_t j, times_t t, std::index_sequence<i, is...>) {
-                if (i == j)
-                    call_distribution(j, t, std::index_sequence<i>{});
+            template <size_t i1, size_t i2, size_t... is>
+            inline void call_distribution(size_t j, times_t t, std::index_sequence<i1, i2, is...>) {
+                if (i1 == j)
+                    call_distribution(j, t, std::index_sequence<i1>{});
                 else
-                    call_distribution(j, t, std::index_sequence<is...>{});
+                    call_distribution(j, t, std::index_sequence<i2, is...>{});
             }
 
             //! @brief Emplaces a node generated through the j-th distribution.

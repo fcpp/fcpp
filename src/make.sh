@@ -30,7 +30,7 @@ if [ "$1" == "" ]; then
     usage
 fi
 
-asan="--config=asan"
+asan="--features=asan"
 copts=""
 targets=""
 errored=( )
@@ -112,7 +112,7 @@ function parseopt() {
     i=0
     while [ "${1:0:1}" == "-" ]; do
         if [ "${1:0:2}" == "-O" ]; then
-            asan="--config=opt"
+            asan="--features=opt"
         else
             copts="$copts --copt=$1"
         fi
@@ -188,8 +188,8 @@ while [ "$1" != "" ]; do
         export TEST_TMPDIR=`pwd`/..
     elif [ "$1" == "gcc" ]; then
         shift 1
-        gcc=$(which $(compgen -c | grep "^gcc-.$" | uniq))
-        gpp=$(which $(compgen -c | grep "^g++-.$" | uniq))
+        gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
+        gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
         export CC="$gcc"
         export CXX="$gpp"

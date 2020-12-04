@@ -217,7 +217,7 @@ TEST(PlotTest, Rows) {
         EXPECT_SAME(plot_t::compressible_tuple_type, plot::details::delta_tuple<common::tagged_tuple_t<tag, int, gat, double>>);
         EXPECT_SAME(plot_t::mutable_tuple_type, common::tagged_tuple_t<>);
         EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<>);
-        EXPECT_EQ(plot_t::limit_size, sizeof(plot_t));
+        EXPECT_EQ(plot_t::limit_size, size_t{0});
         plot_t p;
         p << common::make_tagged_tuple<tag,gat,oth>(1, 2.5, true);
         p << common::make_tagged_tuple<tag,gat,oth>(1, 3.5, true);
@@ -267,7 +267,7 @@ TEST(PlotTest, Rows) {
         EXPECT_SAME(plot_t::compressible_tuple_type, plot::details::delta_tuple<common::tagged_tuple_t<tag, int>>);
         EXPECT_SAME(plot_t::mutable_tuple_type, common::tagged_tuple_t<gat, double>);
         EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<oth, bool>);
-        EXPECT_EQ(plot_t::limit_size, sizeof(plot_t)+50);
+        EXPECT_EQ(plot_t::limit_size, size_t{50});
         plot_t p;
         p << common::make_tagged_tuple<tag,gat,oth>(1, 2.5, true);
         p << common::make_tagged_tuple<tag,gat,oth>(1, 3.5, true);

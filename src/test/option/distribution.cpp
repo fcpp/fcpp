@@ -113,7 +113,7 @@ TEST(DistributionTest, Uniform) {
 TEST(DistributionTest, Interval) {
     std::mt19937 rnd(42);
     distribution::interval_n<double, 1, 5> distr{rnd};
-    double d, acc;
+    double d, acc = 0;
     for (int i=0; i<10000; ++i) {
         d = distr(rnd);
         EXPECT_NEAR(3.0, d, 2.0);

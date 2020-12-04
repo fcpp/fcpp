@@ -313,9 +313,9 @@ namespace details {
         return get<i>(x.tuple()) < get<i>(y.tuple());
     }
 
-    template <typename T, typename U, typename I, size_t i, size_t... is>
-    inline auto tw_lt(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
-        return ( get<i>(x.tuple()) < get<i>(y.tuple()) ) or (( get<i>(x.tuple()) == get<i>(y.tuple()) ) and tw_lt(x, y, std::index_sequence<is...>{}));
+    template <typename T, typename U, typename I, size_t i1, size_t i2, size_t... is>
+    inline auto tw_lt(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i1, i2, is...>) {
+        return ( get<i1>(x.tuple()) < get<i1>(y.tuple()) ) or (( get<i1>(x.tuple()) == get<i1>(y.tuple()) ) and tw_lt(x, y, std::index_sequence<i2, is...>{}));
     }
 
     template <typename T, typename U, typename I>
@@ -338,9 +338,9 @@ namespace details {
         return get<i>(x.tuple()) <= get<i>(y.tuple());
     }
 
-    template <typename T, typename U, typename I, size_t i, size_t... is>
-    inline auto tw_le(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
-        return ( get<i>(x.tuple()) < get<i>(y.tuple()) ) or (( get<i>(x.tuple()) == get<i>(y.tuple()) ) and tw_le(x, y, std::index_sequence<is...>{}));
+    template <typename T, typename U, typename I, size_t i1, size_t i2, size_t... is>
+    inline auto tw_le(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i1, i2, is...>) {
+        return ( get<i1>(x.tuple()) < get<i1>(y.tuple()) ) or (( get<i1>(x.tuple()) == get<i1>(y.tuple()) ) and tw_le(x, y, std::index_sequence<i2, is...>{}));
     }
 
     template <typename T, typename U, typename I>

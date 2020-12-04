@@ -269,6 +269,11 @@ struct identifier {
                 return m_nodes.erase(uid);
             }
 
+            //! @brief Erases all nodes.
+            inline void node_clear() {
+                m_nodes.clear();
+            }
+
           private: // implementation details
             //! @brief The set of nodes, indexed by identifier.
             map_type m_nodes;

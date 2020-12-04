@@ -87,7 +87,7 @@ TEST(AlgorithmTest, ParallelFor) {
 
 TEST(AlgorithmTest, ParallelWhile) {
     std::mt19937 rnd(42);
-    auto make_queue = [&rnd] (int N) {
+    auto make_queue = [] (int N) {
         std::priority_queue<int> q;
         for (int i=0; i<N; ++i) q.push(i);
         return q;

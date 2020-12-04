@@ -70,20 +70,20 @@ inline bool buttonPressed() {
 // AGGREGATE STATUS TRACKING
 
 //! @brief Tracks the passage of time.
-FUN() void time_tracking(ARGS) { CODE
+FUN void time_tracking(ARGS) { CODE
     node.storage(round_count{}) = coordination::counter(CALL, uint16_t{1});
     node.storage(global_clock{}) = coordination::shared_clock(CALL);
 }
 
 //! @brief Tracks the maximum consumption of memory and message resources.
-FUN() void resource_tracking(ARGS) { CODE
+FUN void resource_tracking(ARGS) { CODE
     node.storage(max_stack{}) = coordination::gossip_max(CALL, usedStack());
     node.storage(max_heap{}) = uint32_t{2} * coordination::gossip_max(CALL, usedHeap());
     node.storage(max_msg{}) = coordination::gossip_max(CALL, (int8_t)min(node.msg_size(), size_t{127}));
 }
 
 //! @brief Records the set of neighbours connected at least 50% of the time.
-FUN() void topology_recording(ARGS) { CODE
+FUN void topology_recording(ARGS) { CODE
     node.storage(nbr_list{}).clear();
     coordination::list_hood(CALL, node.storage(nbr_list{}), nbr_uid(CALL), coordination::nothing);
 
@@ -103,7 +103,7 @@ FUN() void topology_recording(ARGS) { CODE
 }
 
 //! @brief Checks whether to terminate the execution.
-FUN() void termination_check(ARGS) { CODE
+FUN void termination_check(ARGS) { CODE
     if (coordination::round_since(CALL, not buttonPressed()) >= PRESS_TIME) node.terminate();
 }
 
@@ -111,7 +111,7 @@ FUN() void termination_check(ARGS) { CODE
 // AGGREGATE CASE STUDIES
 
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
-FUN() void vulnerability_detection(ARGS, int diameter) { CODE
+FUN void vulnerability_detection(ARGS, int diameter) { CODE
     tie(node.storage(min_uid{}), node.storage(hop_dist{})) = coordination::diameter_election_distance(CALL, diameter);
     bool collect_weak = coordination::sp_collection(CALL, node.storage(hop_dist{}), count_hood(CALL) <= 2, false, [](bool x, bool y) {
         return x or y;
@@ -120,7 +120,7 @@ FUN() void vulnerability_detection(ARGS, int diameter) { CODE
 }
 
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
-FUN() void contact_tracing(ARGS, times_t window) { CODE
+FUN void contact_tracing(ARGS, times_t window) { CODE
     bool positive = coordination::toggle_filter(CALL, buttonPressed());
     using contact_t = std::unordered_map<device_t, times_t>;
     contact_t contacts = old(CALL, contact_t{}, [&](contact_t c){
@@ -156,10 +156,10 @@ FUN() void contact_tracing(ARGS, times_t window) { CODE
 }
 
 
-// AGGREGATE MAIN
+// AGGREGATE MAIN AND SETTINGS
 
 //! @brief Main aggregate function.
-FUN() void case_study(ARGS) { CODE
+MAIN() {
         time_tracking(CALL);
         vulnerability_detection(CALL, DIAMETER);
         contact_tracing(CALL, WINDOW_TIME);
@@ -168,9 +168,6 @@ FUN() void case_study(ARGS) { CODE
         termination_check(CALL);
 }
 
-
-//! @brief Main struct calling `case_study`.
-MAIN(case_study,);
 
 using rows_type = plot::rows<
     tuple_store<

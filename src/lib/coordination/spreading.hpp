@@ -47,14 +47,6 @@ hops_t abf_hops(node_t& node, trace_t call_point, bool source) {
     });
 }
 
-//! @brief Computes the distance from a source through adaptive bellmann-ford.
-template <typename node_t>
-real_t abf_distance(node_t& node, trace_t call_point, bool source) {
-    return abf_distance(node, call_point, source, [&](){
-        return node.nbr_dist();
-    });
-}
-
 //! @brief Computes the distance from a source with a custom metric through adaptive bellmann-ford.
 template <typename node_t, typename G, typename = common::if_signature<G, field<real_t>()>>
 real_t abf_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
@@ -62,6 +54,14 @@ real_t abf_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
 
     return nbr(node, 0, INF, [&] (field<real_t> d) {
         return min_hood(node, 0, d + metric(), source ? 0 : INF);
+    });
+}
+
+//! @brief Computes the distance from a source through adaptive bellmann-ford.
+template <typename node_t>
+real_t abf_distance(node_t& node, trace_t call_point, bool source) {
+    return abf_distance(node, call_point, source, [&](){
+        return node.nbr_dist();
     });
 }
 
@@ -88,14 +88,6 @@ inline real_t bis_distance(node_t& node, trace_t call_point, bool source, times_
 }
 
 
-//! @brief Computes the distance from a source through flexible gradients.
-template <typename node_t>
-inline real_t flex_distance(node_t& node, trace_t call_point, bool source, real_t epsilon, real_t radius, real_t distortion, int frequency) {
-    return flex_distance(node, call_point, source, epsilon, radius, distortion, frequency, [&](){
-        return node.nbr_dist();
-    });
-}
-
 //! @brief Computes the distance from a source with a custom metric through flexible gradients.
 template <typename node_t, typename G, typename = common::if_signature<G, field<real_t>()>>
 real_t flex_distance(node_t& node, trace_t call_point, bool source, real_t epsilon, real_t radius, real_t distortion, int frequency, G&& metric) {
@@ -117,6 +109,14 @@ real_t flex_distance(node_t& node, trace_t call_point, bool source, real_t epsil
             return make_tuple(get<1>(slopeinfo) + get<2>(slopeinfo) * (1 - epsilon), old_c+1);
         return make_tuple(old_d, old_c+1);
     }));
+}
+
+//! @brief Computes the distance from a source through flexible gradients.
+template <typename node_t>
+inline real_t flex_distance(node_t& node, trace_t call_point, bool source, real_t epsilon, real_t radius, real_t distortion, int frequency) {
+    return flex_distance(node, call_point, source, epsilon, radius, distortion, frequency, [&](){
+        return node.nbr_dist();
+    });
 }
 
 

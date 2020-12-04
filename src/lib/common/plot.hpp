@@ -292,7 +292,7 @@ class rows {
     using fixed_tuple_type = common::tagged_tuple_t<typename details::option_types<F>::type>;
 
     //! @brief The expected limit size of the object.
-    static constexpr size_t limit_size = sizeof(rows) + max_size;
+    static constexpr size_t limit_size = max_size;
 
     //! @brief Default constructor.
     rows() {

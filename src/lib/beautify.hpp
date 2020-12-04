@@ -10,30 +10,32 @@
 
 
 //! @cond INTERNAL
-#define MACRO_MAPPER0(M)
-#define MACRO_MAPPER1(M,A)                          M(A)
-#define MACRO_MAPPER2(M,A,B)                        MACRO_MAPPER1(M,A), MACRO_MAPPER1(M,B)
-#define MACRO_MAPPER3(M,A,B,C)                      MACRO_MAPPER1(M,A), MACRO_MAPPER2(M,B,C)
-#define MACRO_MAPPER4(M,A,B,C,D)                    MACRO_MAPPER1(M,A), MACRO_MAPPER3(M,B,C,D)
-#define MACRO_MAPPER5(M,A,B,C,D,E)                  MACRO_MAPPER1(M,A), MACRO_MAPPER4(M,B,C,D,E)
-#define MACRO_MAPPER6(M,A,B,C,D,E,F)                MACRO_MAPPER1(M,A), MACRO_MAPPER5(M,B,C,D,E,F)
-#define MACRO_MAPPER7(M,A,B,C,D,E,F,G)              MACRO_MAPPER1(M,A), MACRO_MAPPER6(M,B,C,D,E,F,G)
-#define MACRO_MAPPER8(M,A,B,C,D,E,F,G,H)            MACRO_MAPPER1(M,A), MACRO_MAPPER7(M,B,C,D,E,F,G,H)
-#define MACRO_MAPPER9(M,A,B,C,D,E,F,G,H,I)          MACRO_MAPPER1(M,A), MACRO_MAPPER8(M,B,C,D,E,F,G,H,I)
-#define MACRO_MAPPERX(M,A,B,C,D,E,F,G,H,I,X,...)    X
+#define __TYPE_ARG__(T) typename T
+
+#define __MAPPER0__(M)
+#define __MAPPER1__(M,A)                          M(A)
+#define __MAPPER2__(M,A,B)                        __MAPPER1__(M,A), __MAPPER1__(M,B)
+#define __MAPPER3__(M,A,B,C)                      __MAPPER1__(M,A), __MAPPER2__(M,B,C)
+#define __MAPPER4__(M,A,B,C,D)                    __MAPPER1__(M,A), __MAPPER3__(M,B,C,D)
+#define __MAPPER5__(M,A,B,C,D,E)                  __MAPPER1__(M,A), __MAPPER4__(M,B,C,D,E)
+#define __MAPPER6__(M,A,B,C,D,E,F)                __MAPPER1__(M,A), __MAPPER5__(M,B,C,D,E,F)
+#define __MAPPER7__(M,A,B,C,D,E,F,G)              __MAPPER1__(M,A), __MAPPER6__(M,B,C,D,E,F,G)
+#define __MAPPER8__(M,A,B,C,D,E,F,G,H)            __MAPPER1__(M,A), __MAPPER7__(M,B,C,D,E,F,G,H)
+#define __MAPPER9__(M,A,B,C,D,E,F,G,H,I)          __MAPPER1__(M,A), __MAPPER8__(M,B,C,D,E,F,G,H,I)
+#define __MAPPERX__(M,A,B,C,D,E,F,G,H,I,X,...)    X
 //! @endcond
 
 //! @brief Maps a macro to a variable number of arguments (up to 9), comma separating the calls.
-#define MACRO_MAPPER(...)                           MACRO_MAPPERX(__VA_ARGS__, MACRO_MAPPER9, \
-                                                        MACRO_MAPPER8, MACRO_MAPPER7, MACRO_MAPPER6, \
-                                                        MACRO_MAPPER5, MACRO_MAPPER4, MACRO_MAPPER3, \
-                                                        MACRO_MAPPER2, MACRO_MAPPER1, MACRO_MAPPER0, *)(__VA_ARGS__)
+#define MACRO_MAPPER(...)                         __MAPPERX__(__VA_ARGS__, __MAPPER9__, __MAPPER8__, \
+                                                              __MAPPER7__, __MAPPER6__, __MAPPER5__, \
+                                                              __MAPPER4__, __MAPPER3__, __MAPPER2__, \
+                                                              __MAPPER1__, __MAPPER0__)(__VA_ARGS__)
 
-//! @brief Internal macro producing a typename declaration for a type variable.
-#define __TYPE_ARG__(T) typename T
+//! @brief Macro defining a non-generic aggregate function.
+#define FUN             template <typename node_t>
 
-//! @brief Macro defining the type arguments of a function.
-#define FUN(...)        template <MACRO_MAPPER(__TYPE_ARG__, node_t __VA_OPT__(,) __VA_ARGS__)>
+//! @brief Macro defining the type arguments of an aggregate function.
+#define GEN(...)        template <MACRO_MAPPER(__TYPE_ARG__, node_t, __VA_ARGS__)>
 
 //! @brief Macro inserting the default arguments.
 #define ARGS            node_t& node, trace_t call_point
@@ -45,21 +47,21 @@
 #define CODE            internal::trace_call trace_caller(node.stack_trace, call_point);
 
 /**
- * @brief Macro for defining a main class to be used in the calculus component.
- *
- * The function to be called by the main class is given as the first argument `f`.
- * The second argument `t` is a variable name for the `times_t` time of function call
- * (leave empty if not used).
- * Further arguments to be provided to `f` follow (possibly using `t`).
- *
+ * @brief Macro for defining a main class to be used in the calculus component. Usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * MAIN() {
+ *   ...
+ * }
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * The code of the main function has access to the `node` object.
  */
-#define MAIN(f, t, ...)                         \
+#define MAIN()                                  \
 struct main {                                   \
     template <typename node_t>                  \
-    void operator()(node_t& node, times_t t) {  \
-        f(node, 0 __VA_OPT__(,) __VA_ARGS__);   \
-    }                                           \
-}
+    void operator()(node_t&, times_t);          \
+};                                              \
+template <typename node_t>                      \
+void main::operator()(node_t& node, times_t)
 
 
 #endif // FCPP_BEAUTIFY_H_

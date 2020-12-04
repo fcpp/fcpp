@@ -63,7 +63,7 @@ namespace details {
     template <typename T, typename>
     class field_iterator;
 
-    template <bool b, typename T>
+    template <bool b>
     struct field_base {};
 
     template <typename A>
@@ -120,7 +120,7 @@ namespace details {
  * @brief Class representing a neighboring field of T values.
  */
 template <typename T>
-class field : public details::field_base<std::is_same<T, bool>::value, T> {
+class field : public details::field_base<std::is_same<T, bool>::value> {
     static_assert(not common::has_template<field, T>, "cannot instantiate a field of fields");
 
     //! @cond INTERNAL
@@ -128,8 +128,8 @@ class field : public details::field_base<std::is_same<T, bool>::value, T> {
     //! @{
     template <typename A>
     friend class field;
-    template <bool b, typename A>
-    friend class details::field_base;
+    template <bool b>
+    friend struct details::field_base;
 
     //! @brief Function friendships
     //! @{
@@ -295,11 +295,11 @@ class field : public details::field_base<std::is_same<T, bool>::value, T> {
 //! @cond INTERNAL
 namespace details {
     //! @brief Additional explicit cast to bool for field of bool.
-    template <typename T>
-    struct field_base<true, T> {
+    template <>
+    struct field_base<true> {
         explicit operator bool() const {
-            const field<T>& f = *((const field<T>*)this);
-            for (const auto& x : f.m_vals) if (not x) return false;
+            const field<bool>& f = *((const field<bool>*)this);
+            for (bool x : f.m_vals) if (not x) return false;
             return true;
         }
     };
@@ -355,7 +355,7 @@ namespace details {
     }
 
     //! @brief Full access on fields. WARNING: may lead to unexpected results if the argument is not aligned.
-    template <typename A, typename = common::if_class_template<field, A>>
+    template <typename A, typename>
     to_local<A&&> other(A&& x) {
         return get_vals(std::forward<A>(x))[0];
     }
@@ -367,7 +367,7 @@ namespace details {
     }
 
     //! @brief Full access on tuples.
-    template <typename A, typename = if_field<A>, typename = common::if_class_template<tuple, A>>
+    template <typename A, typename, typename>
     to_local<A&&> other(A&& x) {
         return other(std::forward<A>(x), std::make_index_sequence<common::template_args<A>::size>{});
     }
@@ -400,7 +400,7 @@ namespace details {
         return get_vals(std::move(f))[0];
     }
     //! @brief Full access on fields.
-    template <typename A, typename = common::if_class_template<field, A>>
+    template <typename A, typename>
     to_local<A&&> self(A&& x, device_t i) {
         size_t j = std::lower_bound(get_ids(x).begin(), get_ids(x).end(), i) - get_ids(x).begin();
         if (j == get_ids(x).size() or get_ids(x)[j] != i)
@@ -415,7 +415,7 @@ namespace details {
     }
 
     //! @brief Full access on tuples.
-    template <typename A, typename = if_field<A>, typename = common::if_class_template<tuple, A>>
+    template <typename A, typename, typename>
     to_local<A&&> self(A&& x, device_t i) {
         return self(std::forward<A>(x), i, std::make_index_sequence<common::template_args<A>::size>{});
     }
@@ -429,7 +429,7 @@ namespace details {
      */
     //! @{
     //! @brief align of locals.
-    template <typename A, typename = if_local<A>>
+    template <typename A, typename>
     inline A align(A&& x, std::vector<device_t> const&) {
         return x;
     }
@@ -495,7 +495,7 @@ namespace details {
     tuple<A...> align(tuple<A...> const& x, std::vector<device_t> const& s, std::index_sequence<is...>) {
         return {align(get<is>(x), s)...};
     }
-    template <typename A, typename = if_field<A>, typename = common::if_class_template<tuple, A>>
+    template <typename A, typename, typename>
     decltype(auto) align(A&& x, std::vector<device_t> const& s) {
         return align(std::forward<A>(x), s, std::make_index_sequence<common::template_args<A>::size>{});
     }
@@ -933,7 +933,7 @@ namespace details {
     template <typename A, typename B>
     field<A> mod_self(field<A>&& x, B const& y, device_t i) {
         self(x, i) = self(y, i);
-        return x;
+        return std::move(x);
     }
     //! @}
 

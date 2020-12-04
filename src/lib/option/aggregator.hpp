@@ -689,7 +689,7 @@ namespace details {
 
     //! @brief Prints the results of aggregation for quantile (empty case).
     template <typename T>
-    void quantile_output(std::ostream& os, T&&, std::index_sequence<>) {}
+    void quantile_output(std::ostream&, T&&, std::index_sequence<>) {}
 
     //! @brief Prints the results of aggregation for quantile.
     template <typename T, size_t i, size_t... is>

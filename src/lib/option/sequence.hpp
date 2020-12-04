@@ -424,12 +424,12 @@ class merge {
     }
 
     //! @brief Steps over a sub-sequence among a list of possible ones.
-    template <typename G, size_t i, size_t... is>
-    void step(G&& g, std::index_sequence<i, is...>) {
-        if (std::get<i>(m_generators).next() == m_next)
-            std::get<i>(m_generators).step(std::forward<G>(g));
+    template <typename G, size_t i1, size_t i2, size_t... is>
+    void step(G&& g, std::index_sequence<i1, i2, is...>) {
+        if (std::get<i1>(m_generators).next() == m_next)
+            std::get<i1>(m_generators).step(std::forward<G>(g));
         else
-            step(std::forward<G>(g), std::index_sequence<is...>{});
+            step(std::forward<G>(g), std::index_sequence<i2, is...>{});
     }
 
     //! @brief Computes the next event.
@@ -447,12 +447,12 @@ class merge {
     }
 
     //! @brief Returns the index of the subsequence generating the next event.
-    template <size_t i, size_t... is>
-    size_t next_sequence(std::index_sequence<i, is...>) const {
-        if (std::get<i>(m_generators).next() == m_next)
-            return i;
+    template <size_t i1, size_t i2, size_t... is>
+    size_t next_sequence(std::index_sequence<i1, i2, is...>) const {
+        if (std::get<i1>(m_generators).next() == m_next)
+            return i1;
         else
-            return next_sequence(std::index_sequence<is...>{});
+            return next_sequence(std::index_sequence<i2, is...>{});
     }
 
     //! @brief Tuple of sequence generators.

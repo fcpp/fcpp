@@ -84,9 +84,9 @@ TEST(AggregatorTest, Sum) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(0.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -94,8 +94,8 @@ TEST(AggregatorTest, Sum) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        EXPECT_EQ(1.0/0.0, common::get<tag_t>(v.result<tag>()));
+        v.insert(INF);
+        EXPECT_EQ(INF, common::get<tag_t>(v.result<tag>()));
     }
 }
 
@@ -125,10 +125,10 @@ TEST(AggregatorTest, Mean) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -136,8 +136,8 @@ TEST(AggregatorTest, Mean) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        EXPECT_EQ(1.0/0.0, common::get<tag_t>(v.result<tag>()));
+        v.insert(INF);
+        EXPECT_EQ(INF, common::get<tag_t>(v.result<tag>()));
     }
 }
 
@@ -167,10 +167,10 @@ TEST(AggregatorTest, Moment) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -178,8 +178,8 @@ TEST(AggregatorTest, Moment) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        EXPECT_EQ(1.0/0.0, common::get<tag_t>(v.result<tag>()));
+        v.insert(INF);
+        EXPECT_EQ(INF, common::get<tag_t>(v.result<tag>()));
     }
 }
 
@@ -209,10 +209,10 @@ TEST(AggregatorTest, Dev) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(0.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -220,7 +220,7 @@ TEST(AggregatorTest, Dev) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
+        v.insert(INF);
         EXPECT_TRUE(std::isnan(common::get<tag_t>(v.result<tag>())));
     }
 }
@@ -249,19 +249,19 @@ TEST(AggregatorTest, Stats) {
         using aggr_t = aggregator::stats<double>;
         using res_t = aggr_t::result_type<tag>;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(res_t(1.0, 0.0), v.result<tag>());
     }
     {
         using aggr_t = aggregator::stats<double,false>;
         aggr_t v;
-        v.insert(1.0/0.0);
+        v.insert(INF);
         double m = std::get<0>(v.result<tag>());
         double d = std::get<1>(v.result<tag>());
-        EXPECT_EQ(1.0/0.0, m);
+        EXPECT_EQ(INF, m);
         EXPECT_TRUE(std::isnan(d));
     }
 }
@@ -288,10 +288,10 @@ TEST(AggregatorTest, Min) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -299,8 +299,8 @@ TEST(AggregatorTest, Min) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        EXPECT_EQ(1.0/0.0, common::get<tag_t>(v.result<tag>()));
+        v.insert(INF);
+        EXPECT_EQ(INF, common::get<tag_t>(v.result<tag>()));
     }
 }
 
@@ -326,10 +326,10 @@ TEST(AggregatorTest, Max) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -337,8 +337,8 @@ TEST(AggregatorTest, Max) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        EXPECT_EQ(1.0/0.0, common::get<tag_t>(v.result<tag>()));
+        v.insert(INF);
+        EXPECT_EQ(INF, common::get<tag_t>(v.result<tag>()));
     }
 }
 
@@ -368,10 +368,10 @@ TEST(AggregatorTest, Minimum) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -379,8 +379,8 @@ TEST(AggregatorTest, Minimum) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        EXPECT_EQ(1.0/0.0, common::get<tag_t>(v.result<tag>()));
+        v.insert(INF);
+        EXPECT_EQ(INF, common::get<tag_t>(v.result<tag>()));
     }
 }
 
@@ -410,10 +410,10 @@ TEST(AggregatorTest, Maximum) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        v.insert(1.0/1.0);
-        v.insert(0.0/0.0);
-        v.insert(-1.0/0.0);
+        v.insert(INF);
+        v.insert(1.0);
+        v.insert(NAN);
+        v.insert(-INF);
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
@@ -421,8 +421,8 @@ TEST(AggregatorTest, Maximum) {
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
-        v.insert(1.0/0.0);
-        EXPECT_EQ(1.0/0.0, common::get<tag_t>(v.result<tag>()));
+        v.insert(INF);
+        EXPECT_EQ(INF, common::get<tag_t>(v.result<tag>()));
     }
 }
 

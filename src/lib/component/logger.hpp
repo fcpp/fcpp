@@ -260,6 +260,7 @@ struct logger {
                 *m_stream << "##########################################################\n";
                 *m_stream << "# FCPP data export finished at: " << tstr << " #\n";
                 *m_stream << "##########################################################" << std::endl;
+                maybe_clear(has_identifier<P>{}, *this);
             }
 
             /**
@@ -350,6 +351,16 @@ struct logger {
             inline crand get_generator(std::false_type, N&) {
                 return {};
             }
+
+            //! @brief Deletes all nodes if parent identifier.
+            template <typename N>
+            inline void maybe_clear(std::true_type, N& n) {
+                return n.node_clear();
+            }
+
+            //! @brief Does nothing otherwise.
+            template <typename N>
+            inline void maybe_clear(std::false_type, N&) {}
 
             //! @brief Collects data actively from nodes if `identifier` is available.
             template <typename N>

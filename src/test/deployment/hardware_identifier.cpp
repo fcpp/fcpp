@@ -73,11 +73,11 @@ MULTI_TEST(IdentifierTest, Schedule, O, 1) {
     EXPECT_EQ(1, (int)network.node_size());
     EXPECT_EQ(0, (int)network.node_count(0));
     EXPECT_EQ(1, (int)network.node_count(42));
-    EXPECT_EQ(1.5, network.next());
+    EXPECT_EQ(1.5f, network.next());
     network.update();
-    EXPECT_EQ(3.5, network.next());
+    EXPECT_EQ(3.5f, network.next());
     network.update();
-    EXPECT_EQ(5.5, network.next());
+    EXPECT_EQ(5.5f, network.next());
     network.update();
     EXPECT_EQ(TIME_MAX, network.next());
 }

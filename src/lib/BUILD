@@ -54,6 +54,7 @@ cc_library(
         "//lib/coordination:election",
         "//lib/coordination:geometry",
         "//lib/coordination:spreading",
+        "//lib/coordination:time",
         "//lib/coordination:utils",
     ],
     visibility = [

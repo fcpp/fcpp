@@ -74,10 +74,10 @@ TEST(SerializeTest, Indexed) {
 }
 
 TEST(SerializeTest, Iterable) {
-    EXPECT_EQ(15LL,     rebuild_size(15));
-    EXPECT_EQ(3058LL,   rebuild_size(3058));
-    EXPECT_EQ(958102LL, rebuild_size(958102));
-    EXPECT_EQ(7646860119211199969LL, rebuild_size(7646860119211199969LL));
+    EXPECT_EQ(15ULL,     rebuild_size(15));
+    EXPECT_EQ(3058ULL,   rebuild_size(3058));
+    EXPECT_EQ(958102ULL, rebuild_size(958102));
+    EXPECT_EQ(7646860119211199969ULL, rebuild_size(7646860119211199969LL));
     std::vector<int> x = {1, 2, 4, 8};
     SERIALIZE_CHECK(x, {});
     std::set<int> s = {1, 2, 4, 8};

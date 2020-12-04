@@ -4,6 +4,7 @@
 #include <mutex>
 #include <queue>
 #include <random>
+#include <set>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -86,7 +87,7 @@ TEST(AlgorithmTest, ParallelFor) {
 
 TEST(AlgorithmTest, ParallelWhile) {
     std::mt19937 rnd(42);
-    auto make_queue = [&rnd] (int N) {
+    auto make_queue = [] (int N) {
         std::priority_queue<int> q;
         for (int i=0; i<N; ++i) q.push(i);
         return q;
@@ -152,4 +153,13 @@ TEST(AlgorithmTest, ParallelWhile) {
         return true;
     });
     EXPECT_EQ(N, acc);
+}
+
+TEST(AlgorithmTest, UniformInsert) {
+    std::vector<int> v;
+    common::uniform_insert(v, 42);
+    std::set<int> s;
+    common::uniform_insert(s, 42);
+    std::multiset<int> m;
+    common::uniform_insert(m, 42);
 }

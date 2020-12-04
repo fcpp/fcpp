@@ -30,11 +30,11 @@ struct mock_node {
 
 TEST(MetricTest, Once) {
     using metric_type = metric::once;
-    mock_node n(0, 0.0, 0.5, {1.5, 2.5});
+    mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
     metric_type m;
     metric_type::result_type x = m.build(), y, z;
-    y = m.build(n, 0.2, 1, common::make_tagged_tuple<>());
-    z = m.build(n, 0.2, 0, common::make_tagged_tuple<>());
+    y = m.build(n, 0.2f, 1, common::make_tagged_tuple<>());
+    z = m.build(n, 0.2f, 0, common::make_tagged_tuple<>());
     EXPECT_LE(y, x);
     EXPECT_LE(z, x);
     y = m.update(y, n);
@@ -45,11 +45,11 @@ TEST(MetricTest, Once) {
 
 TEST(MetricTest, Retain) {
     using metric_type = metric::retain<>;
-    mock_node n(0, 0.0, 0.5, {1.5, 2.5});
+    mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
     metric_type m;
     metric_type::result_type x = m.build(), y, z;
-    y = m.build(n, 0.2, 1, common::make_tagged_tuple<>());
-    z = m.build(n, 0.2, 0, common::make_tagged_tuple<>());
+    y = m.build(n, 0.2f, 1, common::make_tagged_tuple<>());
+    z = m.build(n, 0.2f, 0, common::make_tagged_tuple<>());
     EXPECT_LE(y, x);
     EXPECT_LE(z, x);
     y = m.update(y, n);
@@ -57,7 +57,7 @@ TEST(MetricTest, Retain) {
     EXPECT_LE(y, x);
     EXPECT_LE(z, x);
     n.ct = n.nt;
-    n.nt += 1.0;
+    n.nt += 1;
     y = m.update(y, n);
     z = m.update(z, n);
     EXPECT_GT(y, x);
@@ -66,11 +66,11 @@ TEST(MetricTest, Retain) {
 
 TEST(MetricTest, Minkowski) {
     using metric_type = metric::minkowski<tag>;
-    mock_node n(0, 0.0, 0.5, {1.5, 2.5});
+    mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
     metric_type m;
     metric_type::result_type x = m.build(), y, z;
-    y = m.build(n, 0.2, 1, common::make_tagged_tuple<tag>(make_vec(2.0, 2.0)));
-    z = m.build(n, 0.2, 0, common::make_tagged_tuple<tag>(make_vec(1.5, 2.5)));
+    y = m.build(n, 0.2f, 1, common::make_tagged_tuple<tag>(make_vec(2, 2)));
+    z = m.build(n, 0.2f, 0, common::make_tagged_tuple<tag>(make_vec(1.5f, 2.5f)));
     EXPECT_LE(y, x);
     EXPECT_LE(z, x);
     y = m.update(y, n);
@@ -78,7 +78,7 @@ TEST(MetricTest, Minkowski) {
     EXPECT_LE(y, x);
     EXPECT_LE(z, x);
     n.ct = n.nt;
-    n.nt += 1.0;
+    n.nt += 1;
     y = m.update(y, n);
     z = m.update(z, n);
     EXPECT_GT(y, x);

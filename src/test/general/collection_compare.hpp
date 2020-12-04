@@ -43,50 +43,52 @@ namespace tags {
 
 
 //! @brief Computes the distance from a source through adaptive bellmann-ford with old+nbr.
-FUN() double generic_distance(ARGS, int algorithm, bool source) { CODE
+FUN real_t generic_distance(ARGS, int algorithm, bool source) { CODE
     if (algorithm == 0) return abf_distance(CALL, source);
-    if (algorithm == 1) return bis_distance(CALL, source, 1.0, 50.0);
-    if (algorithm == 2) return flex_distance(CALL, source, 0.2, 100.0, 0.1, 10);
+    if (algorithm == 1) return bis_distance(CALL, source, 1, 50);
+    if (algorithm == 2) return flex_distance(CALL, source, 0.2f, 100, 0.1f, 10);
     return 0;
 }
 
 //! @brief Device counting case study.
-FUN() void device_counting(ARGS, bool is_source, double dist) { CODE
-    auto adder = [](double x, double y) {
+FUN void device_counting(ARGS, bool is_source, real_t dist) { CODE
+    real_t value = 1;
+
+    auto adder = [](real_t x, real_t y) {
         return x+y;
     };
-    auto divider = [](double x, size_t n) {
+    auto divider = [](real_t x, size_t n) {
         return x/n;
     };
-    auto multiplier = [](double x, double f) {
+    auto multiplier = [](real_t x, real_t f) {
         return x*f;
     };
-    double spc = sp_collection(CALL, dist, 1.0, 0.0, adder);
-    double mpc = mp_collection(CALL, dist, 1.0, 0.0, adder, divider);
-    double wmpc = wmp_collection(CALL, dist, 100.0, 1.0, adder, multiplier);
+    real_t spc = sp_collection(CALL, dist, value, 0, adder);
+    real_t mpc = mp_collection(CALL, dist, value, 0, adder, divider);
+    real_t wmpc = wmp_collection(CALL, dist, 100, value, adder, multiplier);
     node.storage(tags::spc_sum{}) = is_source ? spc : 0;
     node.storage(tags::mpc_sum{}) = is_source ? mpc : 0;
     node.storage(tags::wmpc_sum{}) = is_source ? wmpc : 0;
-    node.storage(tags::ideal_sum{}) = 1.0;
+    node.storage(tags::ideal_sum{}) = value;
 }
 
 //! @brief Progress tracking case study.
-FUN() void progress_tracking(ARGS, bool is_source, device_t source_id, double dist) { CODE
-    double value = distance(node.net.node_at(source_id).position(), node.position()) + (500 - node.current_time());
-    double threshold = 3.5 / count_hood(CALL);
+FUN void progress_tracking(ARGS, bool is_source, device_t source_id, real_t dist) { CODE
+    real_t value = distance(node.net.node_at(source_id).position(), node.position()) + (500 - node.current_time());
+    real_t threshold = 3.5f / count_hood(CALL);
     
-    auto adder = [](double x, double y) {
+    auto adder = [](real_t x, real_t y) {
         return max(x,y);
     };
-    auto divider = [](double x, size_t) {
+    auto divider = [](real_t x, size_t) {
         return x;
     };
-    auto multiplier = [&](double x, double f) {
+    auto multiplier = [&](real_t x, real_t f) {
         return f > threshold ? x : 0;
     };
-    double spc = sp_collection(CALL, dist, value, 0.0, adder);
-    double mpc = mp_collection(CALL, dist, value, 0.0, adder, divider);
-    double wmpc = wmp_collection(CALL, dist, 100.0, value, adder, multiplier);
+    real_t spc = sp_collection(CALL, dist, value, 0, adder);
+    real_t mpc = mp_collection(CALL, dist, value, 0, adder, divider);
+    real_t wmpc = wmp_collection(CALL, dist, 100, value, adder, multiplier);
     node.storage(tags::spc_max{}) = is_source ? spc : 0;
     node.storage(tags::mpc_max{}) = is_source ? mpc : 0;
     node.storage(tags::wmpc_max{}) = is_source ? wmpc : 0;
@@ -94,13 +96,13 @@ FUN() void progress_tracking(ARGS, bool is_source, device_t source_id, double di
 }
 
 //! @brief Main function.
-FUN() void collection_compare(ARGS) { CODE
-    rectangle_walk(CALL, make_vec(0,0), make_vec(2000,200), 30.5, 1);
+MAIN() {
+    rectangle_walk(CALL, make_vec(0,0), make_vec(2000,200), 30.5f, 1);
     
     device_t source_id = node.current_time() < 250 ? 0 : 1;
     bool is_source = node.uid == source_id;
     int dist_algo = node.storage(tags::algorithm{});
-    double dist = generic_distance(CALL, dist_algo, is_source);
+    real_t dist = generic_distance(CALL, dist_algo, is_source);
     
     device_counting(CALL, is_source, dist);
     progress_tracking(CALL, is_source, source_id, dist);
@@ -108,10 +110,6 @@ FUN() void collection_compare(ARGS) { CODE
 
 
 }
-
-
-//! @brief Main struct calling `collection_compare`.
-MAIN(coordination::collection_compare,);
 
 
 }

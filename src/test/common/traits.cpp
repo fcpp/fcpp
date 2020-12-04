@@ -19,9 +19,10 @@ TEST(TraitsTest, TypeName) {
     ex  = "double";
     res = common::type_name<double>();
     EXPECT_EQ(ex, res);
-    ex  = "std::array<int, 10ul>";
+    std::string ex1 = "std::array<int, 10ul>";
+    std::string ex2 = "std::__1::array<int, 10ul>";
     res = common::type_name<std::array<int,10>>();
-    EXPECT_EQ(ex, res);
+    EXPECT_TRUE(res == ex1 or res == ex2);
 }
 
 TEST(TraitsTest, QueueOp) {

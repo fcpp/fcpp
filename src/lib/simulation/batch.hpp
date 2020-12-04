@@ -205,7 +205,7 @@ namespace details {
     //! @brief Base case, forwarding a given tuple sequence.
     template <typename... Ss, typename... Us>
     auto make_tagged_tuple_sequence(std::vector<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>>&& v) {
-        return v;
+        return std::move(v);
     }
     //! @brief Inductive case, expanding a tuple sequence with an additional tag and generator.
     template <typename... Ss, typename... Us, typename tag_t, typename gen_t, typename... Ts>

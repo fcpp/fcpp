@@ -19,9 +19,9 @@ using namespace component::tags;
 template <int O>
 using combo = component::combine_spec<
     component::simulated_positioner<>,
-    component::storage<tuple_store<idealdist, double, fastdist, double, slowdist, double, fasterr, double, slowerr, double>>,
+    component::storage<tuple_store<idealdist, real_t, fastdist, real_t, slowdist, real_t, fasterr, real_t, slowerr, real_t>>,
     component::identifier<parallel<(O & 8) == 8>, synchronised<(O & 16) == 16>>,
-    component::calculus<program<main>, exports<double, field<int>>,
+    component::calculus<program<main>, exports<real_t, field<int>>,
         export_pointer<(O & 1) == 1>,
         export_split<(O & 2) == 2>,
         online_drop<(O & 4) == 4>
@@ -31,9 +31,9 @@ using combo = component::combine_spec<
 
 
 MULTI_TEST(SlowdistanceTest, ShortLine, O, 5) {
-    test_net<combo<O>, std::tuple<double,double,double>()> n{
+    test_net<combo<O>, std::tuple<real_t,real_t,real_t>()> n{
         [&](auto& node){
-            node.round_main(0.0);
+            node.round_main(0);
             return std::make_tuple(
                 node.storage(idealdist{}),
                 node.storage( fastdist{}),
@@ -42,29 +42,29 @@ MULTI_TEST(SlowdistanceTest, ShortLine, O, 5) {
         }
     };
     EXPECT_ROUND(n,
-        {0.0, 1.0, 1.5},
-        {0.0, INF, INF},
-        {0.0, INF, INF}
+        {0,   1,   1.5f},
+        {0,   INF, INF},
+        {0,   INF, INF}
     );
     EXPECT_ROUND(n,
-        {0.0, 1.0, 1.5},
-        {0.0, 1.0, INF},
-        {0.0, INF, INF},
+        {0,   1,   1.5f},
+        {0,   1,   INF},
+        {0,   INF, INF},
     );
     EXPECT_ROUND(n,
-        {0.0, 1.0, 1.5},
-        {0.0, 1.0, 1.5},
-        {0.0, 1.0, INF},
+        {0,   1,   1.5f},
+        {0,   1,   1.5f},
+        {0,   1,   INF},
     );
     EXPECT_ROUND(n,
-        {0.0, 1.0, 1.5},
-        {0.0, 1.0, 1.5},
-        {0.0, 1.0, INF},
+        {0,   1,   1.5f},
+        {0,   1,   1.5f},
+        {0,   1,   INF},
     );
     EXPECT_ROUND(n,
-        {0.0, 1.0, 1.5},
-        {0.0, 1.0, 1.5},
-        {0.0, 1.0, 1.5},
+        {0,   1,   1.5f},
+        {0,   1,   1.5f},
+        {0,   1,   1.5f},
     );
 }
 

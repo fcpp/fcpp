@@ -237,11 +237,11 @@ namespace details {
     }
 
     //! @brief Prints multiple tags from a tagged tuple.
-    template<typename S, typename T, typename F, typename S1, typename... Ss>
-    void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F f, type_sequence<S1,Ss...>) {
+    template<typename S, typename T, typename F, typename S1, typename S2, typename... Ss>
+    void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F f, type_sequence<S1,S2,Ss...>) {
         tt_print(t, o, f, type_sequence<S1>());
         o << val_tag_sep<F>;
-        tt_print(t, o, f, type_sequence<Ss...>());
+        tt_print(t, o, f, type_sequence<S2,Ss...>());
     }
 }
 //! @endcond

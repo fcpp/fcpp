@@ -100,19 +100,19 @@ TEST(MutexTest, Locking) {
         constexpr bool enabled = true;
         common::mutex<enabled> m1, m2;
         common::lock_guard<enabled> l(m1);
-        EXPECT_EQ(try_lock(m2, m1), 1);
+        EXPECT_EQ(common::try_lock(m2, m1), 1);
         {
             common::unlock_guard<enabled> u(m1);
-            lock(m1, m2);
-            EXPECT_EQ(try_lock(m1, m2), 0);
-            EXPECT_EQ(try_lock(m2, m1), 0);
+            common::lock(m1, m2);
+            EXPECT_EQ(common::try_lock(m1, m2), 0);
+            EXPECT_EQ(common::try_lock(m2, m1), 0);
             m1.unlock();
             m2.unlock();
         }
-        EXPECT_EQ(try_lock(m2, m1), 1);
+        EXPECT_EQ(common::try_lock(m2, m1), 1);
         {
             common::unlock_guard<enabled> u(m1);
-            EXPECT_EQ(try_lock(m1, m2), -1);
+            EXPECT_EQ(common::try_lock(m1, m2), -1);
             m1.unlock();
             m2.unlock();
         }

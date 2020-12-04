@@ -18,7 +18,7 @@ class TwinTest : public ::testing::Test {
 
 
 TEST_F(TwinTest, TrueOperators) {
-    internal::twin<int, true> x(mirrored), y, z;
+    internal::twin<int, true> x(mirrored), y{}, z;
     z = y;
     y = x;
     z = std::move(y);
@@ -26,7 +26,7 @@ TEST_F(TwinTest, TrueOperators) {
 }
 
 TEST_F(TwinTest, FalseOperators) {
-    internal::twin<int, false> x(separate), y, z;
+    internal::twin<int, false> x(separate), y{}, z;
     z = y;
     y = x;
     z = std::move(y);

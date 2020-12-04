@@ -39,7 +39,7 @@ TEST(GeometryTest, Target) {
         p += q;
     }
     p /= 10000;
-    EXPECT_LT(distance(p, make_vec(2,5)), 0.1);
+    EXPECT_LT(distance(p, make_vec(2,5)), 0.1f);
     p = {0,0};
     for (int i=0; i<10000; ++i) {
         vec<2> q = coordination::random_rectangle_target(n.d(2), 0, make_vec(1,2), make_vec(3,8), 2);
@@ -48,13 +48,13 @@ TEST(GeometryTest, Target) {
         p += q;
     }
     p /= 10000;
-    EXPECT_LT(distance(p, make_vec(2,2.5)), 0.1);
+    EXPECT_LT(distance(p, make_vec(2,2.5f)), 0.1f);
 }
 
 MULTI_TEST(GeometryTest, Follow, O, 3) {
     {
-        test_net<combo<O>, std::tuple<double>(double), 1> n{
-            [&](auto& node, double val){
+        test_net<combo<O>, std::tuple<real_t>(real_t), 1> n{
+            [&](auto& node, real_t val){
                 return std::make_tuple(
                     coordination::follow_target(node, 0, make_vec(val, 0), 3, 1)
                 );
@@ -68,7 +68,7 @@ MULTI_TEST(GeometryTest, Follow, O, 3) {
         EXPECT_ROUND(n, {10}, {0});
     }
     vec<2> target;
-    test_net<combo<O>, std::tuple<double>(), 1> n{
+    test_net<combo<O>, std::tuple<real_t>(), 1> n{
         [&](auto& node){
             return std::make_tuple(
                 coordination::follow_target(node, 0, target, 3, 1, 1)
@@ -78,7 +78,7 @@ MULTI_TEST(GeometryTest, Follow, O, 3) {
     for (int i=0; i<1000; ++i) {
         target = coordination::random_rectangle_target(n.d(0), 0, -make_vec(4,3), make_vec(4,3));
         int c = 0;
-        for (double d = INF; d > 1; d = get<0>(n.full_round({}))[0]) ++c;
+        for (real_t d = INF; d > 1; d = get<0>(n.full_round({}))[0]) ++c;
         EXPECT_LT(c, 16);
     }
 }
@@ -86,13 +86,13 @@ MULTI_TEST(GeometryTest, Follow, O, 3) {
 MULTI_TEST(GeometryTest, Walk, O, 3) {
     test_net<combo<O>, std::tuple<bool, bool, bool, bool>(), 1> n{
         [&](auto& node){
-            vec<2> t = coordination::rectangle_walk(node, 0, make_vec(0,0), make_vec(3,3), 1, 0.5, 1);
+            vec<2> t = coordination::rectangle_walk(node, 0, make_vec(0,0), make_vec(3,3), 1, 0.5f, 1);
             vec<2> p = node.position();
             return std::make_tuple(
                 0 <= t[0] and t[0] <= 3 and 0 <= t[1] and t[1] <= 3,
                 0 <= p[0] and p[0] <= 3 and 0 <= p[1] and p[1] <= 3,
-                norm(node.velocity()) <= 0.5000001,
-                node.propulsion() == make_vec(0,0) and node.friction() == 0.0
+                norm(node.velocity()) <= 0.5000001f,
+                node.propulsion() == make_vec(0,0) and node.friction() == 0
             );
         }
     };

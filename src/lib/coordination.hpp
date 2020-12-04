@@ -12,6 +12,7 @@
 #include "lib/coordination/election.hpp"
 #include "lib/coordination/geometry.hpp"
 #include "lib/coordination/spreading.hpp"
+#include "lib/coordination/time.hpp"
 #include "lib/coordination/utils.hpp"
 
 #endif // FCPP_COORDINATION_H_

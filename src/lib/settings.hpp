@@ -49,6 +49,10 @@
 
 
 #if   FCPP_SYSTEM == FCPP_SYSTEM_GENERAL
+    #ifndef FCPP_REAL_TYPE
+    //! @brief Setting defining the type to be used for real numbers (double for general systems, float for embedded systems).
+    #define FCPP_REAL_TYPE double
+    #endif
     #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
     #define FCPP_TRACE 64
@@ -62,6 +66,10 @@
     #define FCPP_HOPS 16
     #endif
 #elif FCPP_SYSTEM == FCPP_SYSTEM_EMBEDDED
+    #ifndef FCPP_REAL_TYPE
+    //! @brief Setting defining the type to be used for real numbers (double for general systems, float for embedded systems).
+    #define FCPP_REAL_TYPE float
+    #endif
     #ifndef FCPP_TRACE
     //! @brief Setting defining the size of trace hashes (64 for general systems, 16 for embedded systems).
     #define FCPP_TRACE 16
@@ -161,10 +169,10 @@
 #ifndef FCPP_REALTIME
     #if FCPP_ENVIRONMENT == FCPP_ENVIRONMENT_PHYSICAL || FCPP_CONFIGURATION == FCPP_CONFIGURATION_DEPENDENT
     //! @brief Factor multiplying real time passing (1 for physical or dependent systems, infinity for others).
-    #define FCPP_REALTIME 1.0
+    #define FCPP_REALTIME 1
     #else
     //! @brief Factor multiplying real time passing (1 for physical or dependent systems, infinity for others).
-    #define FCPP_REALTIME std::numeric_limits<double>::infinity()
+    #define FCPP_REALTIME INF
     #endif
 #endif
 
@@ -188,12 +196,14 @@
 
 
 #ifndef FCPP_TIME_TYPE
-//! @brief Setting defining the type to be used to represent times (double for simulations, time_t for physical and logical systems).
-#define FCPP_TIME_TYPE double
+//! @brief Setting defining the type to be used to represent times (default to \ref FCPP_REAL_TYPE).
+#define FCPP_TIME_TYPE FCPP_REAL_TYPE
 #endif
+
+
 #ifndef FCPP_TIME_EPSILON
 //! @brief Setting defining which time differences are to be considered negligible.
-#define FCPP_TIME_EPSILON 0.01
+#define FCPP_TIME_EPSILON 0.01f
 #endif
 #ifndef FCPP_REFRESH_RATE
 //! @brief Setting defining the refresh rate of graphical representations.
@@ -205,14 +215,21 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+    //! @brief Type used for real numbers.
+    using real_t = FCPP_REAL_TYPE;
     //! @brief Type used for times.
     using times_t = FCPP_TIME_TYPE;
     //! @brief Minimum time (infinitely in the past).
     constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
     //! @brief Maximum time (infinitely in the future).
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
-    //! @brief Shorthand to double infinity value.
-    constexpr double INF = std::numeric_limits<double>::infinity();
+    //! @brief Shorthand to real infinity value.
+    constexpr real_t INF = std::numeric_limits<real_t>::infinity();
+#ifdef NAN
+    #undef NAN
+#endif
+    //! @brief Shorthand to real not-a-number value.
+    constexpr real_t NAN = std::numeric_limits<real_t>::quiet_NaN();
 
 #if   FCPP_DEVICE == 8
     typedef uint8_t device_t;
@@ -233,15 +250,15 @@ namespace fcpp {
 #endif
 
 #if   FCPP_HOPS == 8
-    typedef uint8_t hops_t;
+    typedef int8_t hops_t;
 #elif FCPP_HOPS == 16
-    typedef uint16_t hops_t;
+    typedef int16_t hops_t;
 #elif FCPP_HOPS == 32
-    typedef uint32_t hops_t;
+    typedef int32_t hops_t;
 #else
     static_assert(false, "invalid value for FCPP_HOPS");
     //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
-    typedef uint32_t hops_t;
+    typedef int32_t hops_t;
 #endif
 }
 

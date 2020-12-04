@@ -171,7 +171,7 @@ struct trace_reset {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * template <class node_t, ...>
  * type func(node_t& node, trace_t call_point, ...) {
- *     data::trace_call trace_caller(node.stack_trace, call_point);
+ *     internal::trace_call trace_caller(node.stack_trace, call_point);
  *     ...
  * }
  * ... func(node, __COUNTER__, ...) ...
@@ -198,7 +198,7 @@ struct trace_call {
  * The intended usage is:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * {
- *     data::trace_cycle trace_cycler(node.stack_trace);
+ *     internal::trace_cycle trace_cycler(node.stack_trace);
  *     while (...) {
  *         ....
  *         ++trace_cycler;
@@ -208,7 +208,7 @@ struct trace_call {
  * Additionally, a `trace_cycle` can be directly used as a `trace_t` index:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * {
- *     for (data::trace_cycle i{node.stack_trace, 1}; i < N; ++i) {
+ *     for (internal::trace_cycle i{node.stack_trace, 1}; i < N; ++i) {
  *         ... // can use i as trace_t index here
  *     }
  * }

@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "lib/settings.hpp"
 #include "lib/common/algorithm.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
@@ -66,6 +67,10 @@ class count {
     //! @brief The type of values aggregated.
     using type = T;
 
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<count<U>, size_t>;
+
     //! @brief Default constructor.
     count() = default;
 
@@ -86,18 +91,24 @@ class count {
     }
 
     //! @brief The results of aggregation.
-    size_t result() const {
-        return m_count;
+    template <typename U>
+    result_type<U> result() const {
+        return {m_count};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "count";
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "count");
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -112,6 +123,10 @@ class distinct {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<distinct<U, only_finite>, size_t>;
 
     //! @brief Default constructor.
     distinct() = default;
@@ -134,18 +149,24 @@ class distinct {
     }
 
     //! @brief The results of aggregation.
-    size_t result() const {
-        return m_counts.size();
+    template <typename U>
+    result_type<U> result() const {
+        return {m_counts.size()};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "distinct";
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "distinct");
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -160,6 +181,10 @@ class sum {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<sum<U, only_finite>, T>;
 
     //! @brief Default constructor.
     sum() = default;
@@ -184,18 +209,24 @@ class sum {
     }
 
     //! @brief The results of aggregation.
-    T result() const {
-        return m_sum;
+    template <typename U>
+    result_type<U> result() const {
+        return {m_sum};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "sum";
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "sum");
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -209,6 +240,10 @@ class mean {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<mean<U, only_finite>, T>;
 
     //! @brief Default constructor.
     mean() = default;
@@ -237,18 +272,24 @@ class mean {
     }
 
     //! @brief The results of aggregation.
-    T result() const {
-        return m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : m_sum/m_count;
+    template <typename U>
+    result_type<U> result() const {
+        return {m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : m_sum/m_count};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "mean";
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "mean");
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -263,6 +304,10 @@ class moment {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<moment<U, n, only_finite>, T>;
 
     //! @brief Default constructor.
     moment() = default;
@@ -291,18 +336,24 @@ class moment {
     }
 
     //! @brief The results of aggregation.
-    T result() const {
-        return m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : pow(m_sum/m_count, 1.0/n);
+    template <typename U>
+    result_type<U> result() const {
+        return {m_count == 0 ? std::numeric_limits<T>::quiet_NaN() : pow(m_sum/m_count, real_t(1)/n)};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "moment" + std::to_string(int{n});
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "moment" + std::to_string(int{n}));
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -317,6 +368,10 @@ class deviation {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<deviation<U, only_finite>, T>;
 
     //! @brief Default constructor.
     deviation() = default;
@@ -348,22 +403,28 @@ class deviation {
     }
 
     //! @brief The results of aggregation.
-    T result() const {
-        if (m_count == 0) return std::numeric_limits<T>::quiet_NaN();
+    template <typename U>
+    result_type<U> result() const {
+        if (m_count == 0) return {std::numeric_limits<T>::quiet_NaN()};
         T d2 = (m_sqsum*m_count-m_sum*m_sum)/m_count/m_count;
         T d1 = sqrt(d2);
         if (std::isfinite(d1) and (d1+1)*(d1+1) <= d2) ++d1;
-        return d1;
+        return {d1};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "dev";
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "dev");
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -379,6 +440,10 @@ class stats {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<mean<U, only_finite>, T, deviation<U, only_finite>, T>;
 
     //! @brief Default constructor.
     stats() = default;
@@ -410,12 +475,18 @@ class stats {
     }
 
     //! @brief The results of aggregation.
-    std::tuple<T,T> result() const {
+    template <typename U>
+    result_type<U> result() const {
         if (m_count == 0) return {std::numeric_limits<T>::quiet_NaN(), std::numeric_limits<T>::quiet_NaN()};
         T d2 = (m_sqsum*m_count-m_sum*m_sum)/m_count/m_count;
         T d1 = sqrt(d2);
         if (std::isfinite(d1) and (d1+1)*(d1+1) <= d2) ++d1;
         return {m_sum/m_count, d1};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "mean-dev";
     }
 
     //! @brief Outputs the aggregator description.
@@ -425,7 +496,7 @@ class stats {
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        std::tuple<T,T> res = result();
+        auto res = result<void>();
         os << std::get<0>(res) << " " << std::get<1>(res) << " ";
     }
 
@@ -450,6 +521,10 @@ class min {
     //! @brief The type of values aggregated.
     using type = T;
 
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<min<U, only_finite>, T>;
+
     //! @brief Default constructor.
     min() = default;
 
@@ -472,18 +547,24 @@ class min {
     }
 
     //! @brief The results of aggregation.
-    T result() const {
-        return m_min;
+    template <typename U>
+    result_type<U> result() const {
+        return {m_min};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "min";
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "min");
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -497,6 +578,10 @@ class max {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<max<U, only_finite>, T>;
 
     //! @brief Default constructor.
     max() = default;
@@ -520,18 +605,24 @@ class max {
     }
 
     //! @brief The results of aggregation.
-    T result() const {
-        return m_max;
+    template <typename U>
+    result_type<U> result() const {
+        return {m_max};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "max";
     }
 
     //! @brief Outputs the aggregator description.
     void header(std::ostream& os, std::string tag) const {
-        os << details::header(tag, "max");
+        os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        os << result() << " ";
+        os << std::get<0>(result<void>()) << " ";
     }
 
   private:
@@ -564,6 +655,10 @@ namespace details {
         return "q" + std::to_string(int{q});
     }
 
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U, typename T, bool only_finite, bool insert_only, char... qs>
+    using quantile_result_type = common::tagged_tuple<common::type_sequence<quantile<U, only_finite, insert_only, qs>...>, common::type_sequence<std::enable_if_t<qs==qs, T>...>>;
+
     //! @brief The results of aggregation for quantile.
     template <typename T, size_t n>
     std::array<T,n> quantiles(std::vector<T>& ev, const std::array<char,n>& quantiles) {
@@ -584,6 +679,24 @@ namespace details {
         }
         return res;
     }
+
+    //! @brief The results of aggregation for quantile as tuple.
+    template <typename U, typename T, bool only_finite, bool insert_only, char... qs, size_t... is>
+    quantile_result_type<U, T, only_finite, insert_only, qs...> quantiles_tuple(quantile<T, only_finite, insert_only, qs...> const&, std::vector<T>& ev, const std::array<char,sizeof...(qs)>& quantiles, std::index_sequence<is...>) {
+        std::array<T,sizeof...(qs)> r = details::quantiles(ev, quantiles);
+        return {r[is]...};
+    }
+
+    //! @brief Prints the results of aggregation for quantile (empty case).
+    template <typename T>
+    void quantile_output(std::ostream&, T&&, std::index_sequence<>) {}
+
+    //! @brief Prints the results of aggregation for quantile.
+    template <typename T, size_t i, size_t... is>
+    void quantile_output(std::ostream& os, T&& r, std::index_sequence<i, is...>) {
+        os << std::get<i>(r) << " ";
+        quantile_output(os, r, std::index_sequence<is...>{});
+    }
 }
 //! @endcond
 
@@ -593,6 +706,10 @@ class quantile<T, only_finite, false, qs...> {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = details::quantile_result_type<U, T, only_finite, false, qs...>;
 
     //! @brief Default constructor.
     quantile() = default;
@@ -616,9 +733,17 @@ class quantile<T, only_finite, false, qs...> {
     }
 
     //! @brief The results of aggregation.
-    std::array<T,sizeof...(qs)> result() const {
+    template <typename U>
+    result_type<U> result() const {
         std::vector<T> ev(m_values.begin(), m_values.end());
-        return details::quantiles(ev, m_quantiles);
+        return details::quantiles_tuple<U>(*this, ev, m_quantiles, std::make_index_sequence<sizeof...(qs)>{});
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        std::array<std::string, sizeof...(qs)> v = {details::quant_repr(qs)...};
+        for (size_t i = 1; i < v.size(); ++i) v[0] += "-" + v[i];
+        return v[0];
     }
 
     //! @brief Outputs the aggregator description.
@@ -628,8 +753,7 @@ class quantile<T, only_finite, false, qs...> {
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        for (T x : result())
-            os << x << " ";
+        details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
 
   private:
@@ -643,6 +767,10 @@ class quantile<T, only_finite, true, qs...> {
   public:
     //! @brief The type of values aggregated.
     using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = details::quantile_result_type<U, T, only_finite, true, qs...>;
 
     //! @brief Default constructor.
     quantile() = default;
@@ -665,8 +793,16 @@ class quantile<T, only_finite, true, qs...> {
     }
 
     //! @brief The results of aggregation.
-    std::array<T,sizeof...(qs)> result() {
-        return details::quantiles(m_values, m_quantiles);
+    template <typename U>
+    result_type<U> result() const {
+        return details::quantiles_tuple<U>(*this, (std::vector<T>&)m_values, m_quantiles, std::make_index_sequence<sizeof...(qs)>{});
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        std::array<std::string, sizeof...(qs)> v = {details::quant_repr(qs)...};
+        for (size_t i = 1; i < v.size(); ++i) v[0] += "-" + v[i];
+        return v[0];
     }
 
     //! @brief Outputs the aggregator description.
@@ -676,8 +812,7 @@ class quantile<T, only_finite, true, qs...> {
 
     //! @brief Printed results of aggregation.
     void output(std::ostream& os) const {
-        for (T x : result())
-            os << x << " ";
+        details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
 
   private:
@@ -716,7 +851,12 @@ using quartile = quantile<T,only_finite,insert_only,0,25,50,75,100>;
 template <typename... Ts>
 class combine : public Ts... {
   public:
+    //! @brief The type of values aggregated.
     using type = typename common::type_sequence<Ts...>::front::type;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_cat<typename Ts::template result_type<U>...>;
 
     //! @brief Default constructor.
     combine() = default;
@@ -738,8 +878,18 @@ class combine : public Ts... {
     }
 
     //! @brief The results of aggregation.
-    auto result() const {
-        return std::make_tuple(Ts::result()...);
+    template <typename U>
+    result_type<U> result() const {
+        result_type<U> r;
+        common::details::ignore((r = Ts::template result<U>())...);
+        return r;
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        std::array<std::string, sizeof...(Ts)> v = {Ts::name()...};
+        for (size_t i = 1; i < v.size(); ++i) v[0] += "-" + v[i];
+        return v[0];
     }
 
     //! @brief Outputs the aggregator description.

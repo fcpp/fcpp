@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "lib/common/algorithm.hpp"
 #include "lib/data/field.hpp"
 #include "lib/internal/trace.hpp"
 
@@ -93,12 +94,42 @@ auto get(const field<A>& f) {
 }
 
 
+//! @brief Rounding.
+using std::round;
+
+//! @brief Pointwise rounding.
+inline field<real_t> round(const field<real_t>& f) {
+    return map_hood([](real_t x){
+        return std::round(x);
+    }, f);
+}
+
+//! @brief Floor rounding.
+using std::floor;
+
+//! @brief Pointwise floor rounding.
+inline field<real_t> floor(const field<real_t>& f) {
+    return map_hood([](real_t x){
+        return std::floor(x);
+    }, f);
+}
+
+//! @brief Ceil rounding.
+using std::ceil;
+
+//! @brief Pointwise ceil rounding.
+inline field<real_t> ceil(const field<real_t>& f) {
+    return map_hood([](real_t x){
+        return std::ceil(x);
+    }, f);
+}
+
 //! @brief Natural logarithm.
 using std::log;
 
 //! @brief Pointwise natural logarithm.
-inline field<double> log(const field<double>& f) {
-    return map_hood([](double x){
+inline field<real_t> log(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::log(x);
     }, f);
 }
@@ -107,8 +138,8 @@ inline field<double> log(const field<double>& f) {
 using std::exp;
 
 //! @brief Pointwise natural exponentiation.
-inline field<double> exp(const field<double>& f) {
-    return map_hood([](double x){
+inline field<real_t> exp(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::exp(x);
     }, f);
 }
@@ -117,8 +148,8 @@ inline field<double> exp(const field<double>& f) {
 using std::sqrt;
 
 //! @brief Pointwise square root.
-inline field<double> sqrt(const field<double>& f) {
-    return map_hood([](double x){
+inline field<real_t> sqrt(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::sqrt(x);
     }, f);
 }
@@ -128,18 +159,18 @@ using std::pow;
 
 //! @brief Pointwise power.
 //! @{
-inline field<double> pow(const field<double>& base, const field<double>& exponent) {
-    return map_hood([](double x, double y){
+inline field<real_t> pow(const field<real_t>& base, const field<real_t>& exponent) {
+    return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
-inline field<double> pow(double base, const field<double>& exponent) {
-    return map_hood([](double x, double y){
+inline field<real_t> pow(real_t base, const field<real_t>& exponent) {
+    return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
-inline field<double> pow(const field<double>& base, double exponent) {
-    return map_hood([](double x, double y){
+inline field<real_t> pow(const field<real_t>& base, real_t exponent) {
+    return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
@@ -149,8 +180,8 @@ inline field<double> pow(const field<double>& base, double exponent) {
 using std::isinf;
 
 //! @brief Pointwise check for infinite values.
-inline field<bool> isinf(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isinf(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isinf(x);
     }, f);
 }
@@ -159,8 +190,8 @@ inline field<bool> isinf(const field<double>& f) {
 using std::isnan;
 
 //! @brief Pointwise check for not-a-number values.
-inline field<bool> isnan(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isnan(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isnan(x);
     }, f);
 }
@@ -169,8 +200,8 @@ inline field<bool> isnan(const field<double>& f) {
 using std::isfinite;
 
 //! @brief Pointwise check for finite values.
-inline field<bool> isfinite(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isfinite(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isfinite(x);
     }, f);
 }
@@ -179,8 +210,8 @@ inline field<bool> isfinite(const field<double>& f) {
 using std::isnormal;
 
 //! @brief Pointwise check for normal values (finite, non-zero and not sub-normal).
-inline field<bool> isnormal(const field<double>& f) {
-    return map_hood([](double x){
+inline field<bool> isnormal(const field<real_t>& f) {
+    return map_hood([](real_t x){
         return std::isnormal(x);
     }, f);
 }
@@ -241,24 +272,75 @@ inline to_local<A> sum_hood(node_t& node, trace_t call_point, const A& a, const 
 }
 
 
-//! @brief A counter increasing by a given amount at every round, starting from a given amount.
-template <typename node_t, typename A, typename B>
-inline B counter(node_t& node, trace_t call_point, A&& a, B&& b) {
-    return old(node, call_point, b, [&](B x) -> B{
-        return x+a;
-    });
-}
-
-//! @brief A counter increasing by a given amount at every round.
+//! @brief Reduces a field to a single value by averaging.
 template <typename node_t, typename A>
-inline A counter(node_t& node, trace_t call_point, A&& a) {
-    return counter(node, call_point, a, A{});
+inline to_local<A> mean_hood(node_t& node, trace_t call_point, const A& a) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x + y;
+    }, a) / count_hood(node, call_point);
 }
 
-//! @brief A counter increasing by one at every round.
-template <typename node_t>
-inline int counter(node_t& node, trace_t call_point) {
-    return counter(node, call_point, 1, 0);
+//! @brief Reduces a field to a single value by averaging with a default value for self.
+template <typename node_t, typename A, typename B>
+inline to_local<A> mean_hood(node_t& node, trace_t call_point, const A& a, const B& b) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x + y;
+    }, a, b) / count_hood(node, call_point);
+}
+
+
+//! @brief Namespace of tags for use in aggregate functions.
+namespace tags {
+    //! @brief Struct for indicating a missing argument
+    struct nothing {};
+}
+
+//! @brief Object indicating a missing argument.
+constexpr tags::nothing nothing{};
+
+//! @brief Reduces a field to a container of its constituent values skipping self in device order.
+template <typename node_t, typename C, typename A>
+void list_hood(node_t& node, trace_t call_point, C& c, const A& a, tags::nothing) {
+    fold_hood(node, call_point, [&] (const to_local<A>& x, char) -> char {
+        common::uniform_insert(c, x);
+        return {};
+    }, a, char{});
+}
+template <typename node_t, typename C, typename A>
+inline C list_hood(node_t& node, trace_t call_point, C&& c, const A& a, tags::nothing) {
+    list_hood(node, call_point, c, a, nothing);
+    return std::move(c);
+}
+
+//! @brief Reduces a field to a container of its constituent values with a default value for self in device order.
+template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
+void list_hood(node_t& node, trace_t call_point, C& c, const A& a, const B& b) {
+    bool done = false;
+    fold_hood(node, call_point, [&] (device_t curr, const to_local<A>& x, char) -> char {
+        if (curr > node.uid) {
+            common::uniform_insert(c, self(node, call_point, b));
+            done = true;
+        }
+        common::uniform_insert(c, x);
+        return {};
+    }, a, char{});
+    if (not done) common::uniform_insert(c, self(node, call_point, b));
+}
+template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
+inline C list_hood(node_t& node, trace_t call_point, C&& c, const A& a, const B& b) {
+    list_hood(node, call_point, c, a, b);
+    return std::move(c);
+}
+
+//! @brief Reduces a field to a container of its constituent values in device order.
+template <typename node_t, typename C, typename A>
+inline void list_hood(node_t& node, trace_t call_point, C& c, const A& a) {
+    list_hood(node, call_point, c, a, a);
+}
+template <typename node_t, typename C, typename A>
+inline C list_hood(node_t& node, trace_t call_point, C&& c, const A& a) {
+    list_hood(node, call_point, c, a);
+    return std::move(c);
 }
 
 

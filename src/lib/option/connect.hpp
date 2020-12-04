@@ -54,7 +54,7 @@ class clique {
     clique(G&&, const common::tagged_tuple<S,T>&) {}
 
     //! @brief The maximum radius of connection.
-    double maximum_radius() const {
+    real_t maximum_radius() const {
         return INF;
     }
 
@@ -84,11 +84,11 @@ class fixed {
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
     fixed(G&&, const common::tagged_tuple<S,T>& t) {
-        m_radius = common::get_or<component::tags::radius>(t, ((double)num)/den);
+        m_radius = common::get_or<component::tags::radius>(t, ((real_t)num)/den);
     }
 
     //! @brief The maximum radius of connection.
-    double maximum_radius() const {
+    real_t maximum_radius() const {
         return m_radius;
     }
 
@@ -99,7 +99,7 @@ class fixed {
 
   private:
     //! @brief The connection radius.
-    double m_radius;
+    real_t m_radius;
 };
 
 

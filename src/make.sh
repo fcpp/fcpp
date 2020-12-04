@@ -30,7 +30,7 @@ if [ "$1" == "" ]; then
     usage
 fi
 
-asan="--config=asan"
+asan="--features=asan"
 copts=""
 targets=""
 errored=( )
@@ -39,10 +39,14 @@ folders=( `ls */BUILD | sed 's|/BUILD||'` )
 
 function numformat {
     n=$1
-    n=$[n+0]
     k=$2
-    l=${#n}
-    l=$[k-l]
+    if [ "$n" == "?" ]; then
+	l=$[k-1]
+    else
+        n=$[n+0]
+        l=${#n}
+        l=$[k-l]
+    fi
     for ((x=0; x<l; ++x)); do
         n=" $n"
     done
@@ -108,7 +112,7 @@ function parseopt() {
     i=0
     while [ "${1:0:1}" == "-" ]; do
         if [ "${1:0:2}" == "-O" ]; then
-            asan="--config=opt"
+            asan="--features=opt"
         else
             copts="$copts --copt=$1"
         fi
@@ -181,11 +185,11 @@ while [ "$1" != "" ]; do
         bazel clean
     elif [ "$1" == "here" ]; then
         shift 1
-        export TEST_TMPDIR=`pwd`
+        export TEST_TMPDIR=`pwd`/..
     elif [ "$1" == "gcc" ]; then
         shift 1
-        gcc=$(which $(compgen -c | grep "^gcc-.$" | uniq))
-        gpp=$(which $(compgen -c | grep "^g++-.$" | uniq))
+        gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
+        gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
         export CC="$gcc"
         export CXX="$gpp"
@@ -331,10 +335,14 @@ while [ "$1" != "" ]; do
                 mem=$[(mem+511)/1024]
                 max=$[max > mem ? max : mem]
                 avg=$[((sum+511)/1024 + num/2)/ num]
-                fil=`ls output/raw/$name*.txt | wc -l`
-                row=`cat output/raw/$name*.txt | grep -v "^#" | wc -l`
+                fil=`ls output/raw | grep $"$name.*\.txt" | wc -l`
+                if [ "$fil" -gt 1000 ]; then
+                    row="?"
+                else
+                    row=`cat output/raw/$name*.txt | grep -v "^#" | wc -l`
+                fi
                 echo -e "         `timeformat $tim`s   `ramformat $mem` `ramformat $avg` `ramformat $max` `numformat $fil 7` `numformat $row 7`\n\033[J"
-                ( cat $file | tail -n 10; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 10
+                ( cat $file | tail -n 10 | cut -c 1-`tput cols`; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 10
                 echo -en "\033[12A"
                 sleep 1
             done

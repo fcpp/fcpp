@@ -59,6 +59,7 @@ namespace tags {
  * @brief Component handling exchanges of messages through an hardware interface.
  *
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
+ * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::connector defines the connector class (defaults to \ref os::network "os::network<message_push, node>").
@@ -156,6 +157,7 @@ struct hardware_connector {
                     common::osstream os;
                     typename F::node::message_t m;
                     os << P::node::as_final().send(m_send, P::node::uid, m);
+                    fcpp::details::self(m_nbr_msg_size, P::node::uid) = os.size();
                     m_network.send(std::move(os));
                     P::node::as_final().receive(m_send, P::node::uid, m);
                     m_send = TIME_MAX;
@@ -189,7 +191,7 @@ struct hardware_connector {
             }
 
             //! @brief Perceived distances from neighbours.
-            field<double> const& nbr_dist() const {
+            field<real_t> const& nbr_dist() const {
                 return m_nbr_dist;
             }
 
@@ -223,7 +225,7 @@ struct hardware_connector {
             times_t m_send;
 
             //! @brief Perceived distances from neighbours.
-            field<double> m_nbr_dist;
+            field<real_t> m_nbr_dist;
 
             //! @brief Sizes of messages received from neighbours.
             field<size_t> m_nbr_msg_size;

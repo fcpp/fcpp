@@ -14,7 +14,7 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<int, double>,
+    exports<int, real_t>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -72,18 +72,18 @@ TEST(UtilsTest, BasicFunctions) {
 }
 
 MULTI_TEST(UtilsTest, IsInf, O, 3) {
-    test_net<combo<O>, std::tuple<bool>(double)> n{
-        [&](auto& node, double value){
+    test_net<combo<O>, std::tuple<bool>(real_t)> n{
+        [&](auto& node, real_t value){
             return std::make_tuple(
                 coordination::max_hood(node, 0, isinf(nbr(node, 0, value)))
             );
         }
     };
-    EXPECT_ROUND(n, {0,     1,     1.0/0.0},
+    EXPECT_ROUND(n, {0,     1,     INF},
                     {false, false, true});
-    EXPECT_ROUND(n, {0,     1,     1.0/0.0},
+    EXPECT_ROUND(n, {0,     1,     INF},
                     {false, true,  true});
-    EXPECT_ROUND(n, {0,     1,     1.0/0.0},
+    EXPECT_ROUND(n, {0,     1,     INF},
                     {false, true,  true});
 }
 
@@ -103,16 +103,42 @@ MULTI_TEST(UtilsTest, SumHood, O, 3) {
                     {3, 7, 6});
 }
 
-MULTI_TEST(UtilsTest, Counter, O, 3) {
-    test_net<combo<O>, std::tuple<int>()> n{
-        [&](auto& node){
+MULTI_TEST(UtilsTest, MeanHood, O, 3) {
+    test_net<combo<O>, std::tuple<real_t>(real_t)> n{
+        [&](auto& node, real_t value){
             return std::make_tuple(
-                coordination::counter(node, 0)
+                coordination::mean_hood(node, 0, nbr(node, 0, value))
             );
         }
     };
-    EXPECT_ROUND(n, {1, 1, 1});
-    EXPECT_ROUND(n, {2, 2, 2});
-    EXPECT_ROUND(n, {3, 3, 3});
-    EXPECT_ROUND(n, {4, 4, 4});
+    EXPECT_ROUND(n, {1,   2,   6},
+                    {1,   2,   6});
+    EXPECT_ROUND(n, {1,   2,   6},
+                    {1.5f,3,   4});
+    EXPECT_ROUND(n, {1,   2,   6},
+                    {1.5f,3,   4});
+}
+
+MULTI_TEST(UtilsTest, ListHood, O, 3) {
+    test_net<combo<O>, std::tuple<real_t,real_t>(real_t)> n{
+        [&](auto& node, real_t value){
+            std::vector<real_t> v;
+            v = coordination::list_hood(node, 0, std::vector<real_t>(), nbr(node, 0, value), coordination::nothing);
+            real_t r = 0;
+            for (real_t x : v) r += x;
+            v = coordination::list_hood(node, 0, std::vector<real_t>(), nbr(node, 1, value));
+            real_t s = 0;
+            for (real_t x : v) s += x;
+            return std::make_tuple(r, s);
+        }
+    };
+    EXPECT_ROUND(n, {1,   2,   6},
+                    {0,   0,   0},
+                    {1,   2,   6});
+    EXPECT_ROUND(n, {1,   3,   6},
+                    {2,   7,   2},
+                    {3,   9,   8});
+    EXPECT_ROUND(n, {1,   4,   6},
+                    {3,   7,   3},
+                    {4,   10,  9});
 }

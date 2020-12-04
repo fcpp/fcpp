@@ -143,7 +143,7 @@ namespace details {
  * using data_type = // type for connection power data on nodes
  * using position_type = vec<n>;
  * template <typename G, typename S, typename T> connector_type(G&& gen, const common::tagged_tuple<S,T>& tup);
- * double maximum_radius() const;
+ * real_t maximum_radius() const;
  * bool operator()(const data_type& data1, const position_type& position1, const data_type& data2, const position_type& position2) const;
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
@@ -184,6 +184,7 @@ struct simulated_connector {
         DECLARE_COMPONENT(connector);
         REQUIRE_COMPONENT(connector,positioner);
         CHECK_COMPONENT(randomizer);
+        CHECK_COMPONENT(identifier);
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -289,7 +290,7 @@ struct simulated_connector {
             void set_leave_time(times_t t) {
                 m_leave = TIME_MAX;
                 position_type x = P::node::position(t);
-                double R = P::node::net.connection_radius();
+                real_t R = P::node::net.connection_radius();
                 for (size_t i=0; i<dimension; ++i) {
                     int c = (int)floor(x[i]/R);
                     m_leave = std::min(m_leave, P::node::reach_time(i,  c   *R, t));
@@ -331,6 +332,11 @@ struct simulated_connector {
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
 
+            //! @brief Destructor ensuring that nodes are deleted first.
+            ~net() {
+                maybe_clear(has_identifier<P>{}, *this);
+            }
+
             //! @brief Inserts a new node into its cell.
             void cell_enter(typename F::node& n) {
                 cell_enter_impl(n, n.position());
@@ -356,7 +362,7 @@ struct simulated_connector {
             }
 
             //! @brief The maximum connection radius.
-            inline double connection_radius() const {
+            inline real_t connection_radius() const {
                 return m_connector.maximum_radius();
             }
 
@@ -424,6 +430,16 @@ struct simulated_connector {
             inline crand get_generator(std::false_type, N&) {
                 return {};
             }
+
+            //! @brief Deletes all nodes if parent identifier.
+            template <typename N>
+            inline void maybe_clear(std::true_type, N& n) {
+                return n.node_clear();
+            }
+
+            //! @brief Does nothing otherwise.
+            template <typename N>
+            inline void maybe_clear(std::false_type, N&) {}
 
             //! @brief The map from cell identifiers to cells.
             cell_map_type m_cells;

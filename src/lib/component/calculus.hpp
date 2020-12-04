@@ -101,7 +101,7 @@ namespace tags {
  * Retain classes should (see \ref metric for a list of available ones):
  * - provide a `result_type` type member which has to be totally ordered, for example:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- *   using result_type = double;
+ *   using result_type = real_t;
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  * - be able to build a default `result_type` to be used as threshold:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}

@@ -56,6 +56,19 @@ cc_test(
 )
 
 cc_test(
+    name = "plot",
+    srcs = ["plot.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:plot",
+        "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "profiler",
     srcs = ["profiler.cpp"],
     deps = [

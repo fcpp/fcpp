@@ -57,20 +57,20 @@ TEST(LoggerTest, MakeStream) {
 MULTI_TEST(LoggerTest, Main, O, 1) {
     std::stringstream s;
     {
-        typename combo1<O>::net network{common::make_tagged_tuple<output,tag,gat,oth>(&s,true,42,0.0)};
-        EXPECT_EQ(1.5, network.next());
+        typename combo1<O>::net network{common::make_tagged_tuple<output,tag,gat,oth>(&s,true,42,0.0f)};
+        EXPECT_EQ(1.5f, network.next());
         network.update();
         {
             common::unique_lock<(O & 1) == 1> l;
             network.node_at(42, l).storage(tag{}) = false;
         }
-        EXPECT_EQ(3.5, network.next());
+        EXPECT_EQ(3.5f, network.next());
         network.update();
         {
             common::unique_lock<(O & 1) == 1> l;
             network.node_at(42, l).storage(gat{}) = 10;
         }
-        EXPECT_EQ(5.5, network.next());
+        EXPECT_EQ(5.5f, network.next());
         network.run();
         EXPECT_EQ(TIME_MAX, network.next());
     }

@@ -16,7 +16,7 @@ constexpr hops_t X = std::numeric_limits<hops_t>::max();
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<times_t, hops_t, int, field<int>, tuple<double,double>, tuple<double,int>>,
+    exports<times_t, hops_t, int, real_t, field<int>, tuple<real_t,times_t>, tuple<real_t,int>>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -29,12 +29,12 @@ struct lagdist {
         struct node : public P::node {
             using P::node::node;
 
-            field<double> nbr_dist() {
-                return {1.0};
+            field<real_t> nbr_dist() {
+                return {1};
             }
 
-            field<double> nbr_lag() {
-                return {1.0};
+            field<times_t> nbr_lag() {
+                return {1};
             }
         };
         using net = typename P::net;
@@ -46,7 +46,7 @@ template <int O>
 using combo = calc_dist<options<O>>;
 
 
-field<double> nbr_one() {
+field<real_t> nbr_one() {
     return 1;
 }
 
@@ -70,7 +70,7 @@ MULTI_TEST(SpreadingTest, ABFH, O, 3) {
 }
 
 MULTI_TEST(SpreadingTest, ABFD, O, 3) {
-    test_net<combo<O>, std::tuple<double>(bool)> n{
+    test_net<combo<O>, std::tuple<real_t>(bool)> n{
         [&](auto& node, bool source){
             return std::make_tuple(
                 coordination::abf_distance(node, 0, source)
@@ -88,7 +88,7 @@ MULTI_TEST(SpreadingTest, ABFD, O, 3) {
 }
 
 MULTI_TEST(SpreadingTest, ABFM, O, 3) {
-    test_net<combo<O>, std::tuple<double>(bool)> n{
+    test_net<combo<O>, std::tuple<real_t>(bool)> n{
         [&](auto& node, bool source){
             return std::make_tuple(
                 coordination::abf_distance(node, 0, source, nbr_one)
@@ -106,7 +106,7 @@ MULTI_TEST(SpreadingTest, ABFM, O, 3) {
 }
 
 MULTI_TEST(SpreadingTest, BISD, O, 3) {
-    test_net<combo<O>, std::tuple<double>(bool)> n{
+    test_net<combo<O>, std::tuple<real_t>(bool)> n{
         [&](auto& node, bool source){
             return std::make_tuple(
                 coordination::bis_distance(node, 0, source, 0, 0)
@@ -124,7 +124,7 @@ MULTI_TEST(SpreadingTest, BISD, O, 3) {
 }
 
 MULTI_TEST(SpreadingTest, BISM, O, 3) {
-    test_net<combo<O>, std::tuple<double>(bool)> n{
+    test_net<combo<O>, std::tuple<real_t>(bool)> n{
         [&](auto& node, bool source){
             return std::make_tuple(
                 coordination::bis_distance(node, 0, source, 0, 0, nbr_one)
@@ -142,7 +142,7 @@ MULTI_TEST(SpreadingTest, BISM, O, 3) {
 }
 
 MULTI_TEST(SpreadingTest, FLEXD, O, 3) {
-    test_net<combo<O>, std::tuple<double>(bool)> n{
+    test_net<combo<O>, std::tuple<real_t>(bool)> n{
         [&](auto& node, bool source){
             return std::make_tuple(
                 coordination::flex_distance(node, 0, source, 0, 1, 0, 0)
@@ -160,7 +160,7 @@ MULTI_TEST(SpreadingTest, FLEXD, O, 3) {
 }
 
 MULTI_TEST(SpreadingTest, FLEXM, O, 3) {
-    test_net<combo<O>, std::tuple<double>(bool)> n{
+    test_net<combo<O>, std::tuple<real_t>(bool)> n{
         [&](auto& node, bool source){
             return std::make_tuple(
                 coordination::flex_distance(node, 0, source, 0, 1, 0, 0, nbr_one)

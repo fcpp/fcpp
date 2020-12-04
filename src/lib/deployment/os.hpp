@@ -10,6 +10,7 @@
 
 #include <cassert>
 
+#include <algorithm>
 #include <thread>
 #include <vector>
 
@@ -30,7 +31,7 @@ struct message_type {
     //! @brief UID of the sender device.
     device_t device;
     //! @brief An estimate of the signal power (RSSI).
-    double power;
+    real_t power;
     //! @brief The message content (empty content represent no message).
     std::vector<char> content;
 };
@@ -100,6 +101,7 @@ class network {
     void send(std::vector<char> m) {
         common::lock_guard<true> l(m_mutex);
         m_send = std::move(m);
+        m_send_time = m_node.net.real_time();
         m_attempt = 0;
     }
 
@@ -118,14 +120,20 @@ class network {
         while (m_running) {
             common::lock_guard<true> l(m_mutex);
             if (not m_send.empty()) {
+                m_send.push_back((char)std::min((m_node.net.real_time() - m_send_time)*128, times_t{255}));
                 // sending
-                if (m_transceiver.send(m_node.uid, std::move(m_send), m_attempt))
+                if (m_transceiver.send(m_node.uid, m_send, m_attempt))
                     m_send.clear();
-                else ++m_attempt;
+                else {
+                    m_send.pop_back();
+                    ++m_attempt;
+                }
             }
             // receiving
             message_type m = m_transceiver.receive(m_attempt);
             if (not m.content.empty()) {
+                m.time = m_node.net.realtime_to_internal(m.time + m.content.back() / times_t{128});
+                m.content.pop_back();
                 if (push) {
                     common::unlock_guard<true> u(m_mutex);
                     m_node.receive(m);
@@ -151,6 +159,9 @@ class network {
 
     //! @brief Message to be sent.
     std::vector<char> m_send;
+
+    //! @brief The time of the message to be sent.
+    times_t m_send_time;
 
     //! @brief Number of attempts failed for a send.
     int m_attempt = 0;

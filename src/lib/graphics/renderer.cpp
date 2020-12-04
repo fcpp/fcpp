@@ -55,7 +55,10 @@ Renderer::Renderer() :
     m_camera{},
     m_mouseLastX{ (float)(SCR_DEFAULT_WIDTH / 2) },
     m_mouseLastY{ (float)(SCR_DEFAULT_HEIGHT / 2) },
+    m_mouseRightX{ 0.0f },
+    m_mouseRightY{ 0.0f },
     m_mouseFirst{ 1 },
+    m_mouseRight{ 0 },
     m_deltaTime{ 0.0f },
     m_lastFrame{ 0.0f },
     m_zFar{ 1.0f },
@@ -180,10 +183,29 @@ void Renderer::mousePosCallback(GLFWwindow* window, double xpos, double ypos) {
         m_camera.processMouseMovementFPP(xoffset, yoffset);
     } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
-        m_camera.processMouseMovementEditor(xpos - (m_currentWidth / 2), (float)(m_currentHeight / 2) - ypos, xoffset, yoffset); // need to move (0,0) at the center of the screen
-    } else {
+        if (!m_mouseRight) {
+            m_mouseRight = 1;
+            m_mouseRightX = xpos - (float)(m_currentWidth / 2);
+            m_mouseRightY = (float)(m_currentHeight / 2) - ypos;
+        }
+        m_camera.processMouseMovementEditor(m_mouseRightX, m_mouseRightY, xoffset, yoffset); // need to move (0,0) at the center of the screen
+    }
+    
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+        m_mouseRight = 0;
+        m_mouseRightX = 0.0f;
+        m_mouseRightY = 0.0f;
+    }
+    
+    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
     }
+    
+    std::cout << "----------\n";
+    std::cout << "m_mouseRight = " << m_mouseRight << "\n";
+    std::cout << "m_mouseRightX = " << m_mouseRightX << "\n";
+    std::cout << "m_mouseRightY = " << m_mouseRightY << "\n";
+    std::cout << "----------\n";
 }
 
 void Renderer::mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {

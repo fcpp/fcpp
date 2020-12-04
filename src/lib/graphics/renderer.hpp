@@ -266,9 +266,18 @@ namespace fcpp {
 
             //! @brief Last mouse Y position.
             float m_mouseLastY;
+            
+            //! @brief First mouse X position when the right click is pressed.
+            float m_mouseRightX;
+
+            //! @brief First mouse Y position when the right click is pressed.
+            float m_mouseRightY;
 
             //! @brief It checks if it's the first mouse's input capture.
             bool m_mouseFirst;
+            
+            //! @brief It checks if the right click is pressed.
+            bool m_mouseRight;
 
             //! @brief Time between current frame and last frame.
             float m_deltaTime;

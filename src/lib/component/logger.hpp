@@ -111,7 +111,7 @@ namespace details {
     }
     //! @brief Makes a reference to a plotter.
     template <typename T>
-    std::shared_ptr<T> make_plotter(nullptr_t) {
+    std::shared_ptr<T> make_plotter(std::nullptr_t) {
         return std::shared_ptr<T>(new T());
     }
     //! @brief Computes the row type given a the aggregator tuple (general case).

@@ -152,8 +152,8 @@ struct displayer {
 
             //! @brief Caches the current position for later use.
             void cache_position(times_t t) {
-                /*m_position = to_vec3(P::node::position(t));
-                if (t == 0) P::node::net.viewport_update(m_position);*/
+                m_position = to_vec3(P::node::position(t));
+                if (t == 0) P::node::net.viewport_update(m_position);
             }
 
             //! @brief Accesses the cached position.
@@ -260,7 +260,7 @@ struct displayer {
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
-                if (P::net::next() == TIME_MAX) return TIME_MAX;
+                if (P::net::next() == TIME_MAX and P::net::frequency() > 0) return TIME_MAX;
                 if (m_step == 0) return 0;
                 return std::min(m_refresh, P::net::next());
             }
@@ -273,12 +273,12 @@ struct displayer {
                     times_t t = P::net::realtime_to_internal(m_refresh);
                     auto n_beg = P::net::node_begin();
                     auto n_end = P::net::node_end();
-                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&] (size_t i, size_t) {
+                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                         n_beg[i].second.cache_position(t);
                     });
-                    /*common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&n_beg,this] (size_t i, size_t) {
+                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
                         n_beg[i].second.draw();
-                    });*/
+                    });
                     if (t == 0) {
                         // first frame only: set camera position, rotation, sensitivity
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;

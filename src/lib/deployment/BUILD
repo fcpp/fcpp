@@ -47,6 +47,7 @@ cc_library(
     srcs = ['os.cpp'],
     deps = [
         "//lib:settings",
+        "//lib/common:algorithm",
         "//lib/common:mutex",
     ],
     visibility = [

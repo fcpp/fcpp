@@ -11,10 +11,10 @@
 #include <cassert>
 
 #include <algorithm>
-#include <thread>
 #include <vector>
 
 #include "lib/settings.hpp"
+#include "lib/common/algorithm.hpp"
 #include "lib/common/mutex.hpp"
 
 

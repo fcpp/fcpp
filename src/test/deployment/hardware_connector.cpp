@@ -51,6 +51,7 @@ using combo = component::combine_spec<
         EXPECT_EQ(conn->fake_send().size(), send ? sizeof(int)+1 : 0);  \
         n.update();
 
+#ifndef FCPP_DISABLE_THREADS
 MULTI_TEST(ConnectorTest, Messages, O, 2) {
     bool message_push = (O & 2) == 2;
     typename combo<O>::net n{common::make_tagged_tuple<oth>("foo")};
@@ -79,3 +80,4 @@ MULTI_TEST(ConnectorTest, Messages, O, 2) {
     }
     EXPECT_ROUND(5.5f, false, {10, 12, 17});
 }
+#endif

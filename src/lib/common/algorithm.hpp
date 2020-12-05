@@ -10,13 +10,49 @@
 
 #include <algorithm>
 #include <iterator>
-#include <mutex>
 #include <set>
-#include <thread>
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
-
+#ifndef FCPP_DISABLE_THREADS
+#include <mutex>
+#include <thread>
+#else
+//! @cond INTERNAL
+namespace std {
+    //! @brief Single-threaded thread interface.
+    struct thread {
+        thread() = default;
+        thread(thread&&) = default;
+        thread(thread const&) = delete;
+        template <typename F, typename... As>
+        thread(F&& f, As&&... as) {
+            f(as...);
+        }
+        inline void join() {}
+        static constexpr unsigned int hardware_concurrency() {
+            return 1;
+        }
+    };
+    //! @brief Single-threaded mutex interface.
+    struct mutex {
+        mutex() = default;
+        mutex(const mutex&) = delete;
+        inline bool try_lock() {
+            return true;
+        }
+        inline void lock() {}
+        inline void unlock() {}
+    };
+    //! @brief Single-threaded lock guard interface.
+    template <typename M>
+    struct lock_guard {
+        lock_guard(M const&) {}
+        lock_guard(const lock_guard&) = delete;
+    };
+}
+//! @endcond
+#endif
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.

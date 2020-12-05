@@ -230,8 +230,8 @@ DECLARE_OPTIONS(opt,
         std::cerr << "message size: " << d.connector_data()->fake_send().size() << std::endl; \
         n.update();
 
-//! @brief Main function starting FCPP.
-int main() {
+#ifndef FCPP_DISABLE_THREADS
+TEST(EmbeddedTest, Main) {
     rows_type row_store;
     std::stringstream m_stream;
     component::deployment<opt>::net n{common::make_tagged_tuple<hoodsize,output,plotter>(device_t{DEGREE},&m_stream,&row_store)};
@@ -243,5 +243,5 @@ int main() {
     EXPECT_ROUND(2, 2, 1, 42, 0, true);
     EXPECT_ROUND(2, 3, 1, 42, 0, true);
     row_store.print(std::cerr);
-    return 0;
 }
+#endif

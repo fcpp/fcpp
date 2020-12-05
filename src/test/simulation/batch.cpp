@@ -155,7 +155,11 @@ TEST(BatchTest, Run) {
     EXPECT_EQ(v, w);
     v = {};
     batch::run(combomock{}, common::tags::parallel_execution{7}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0), batch::list<char>(1,2)));
+#ifdef FCPP_DISABLE_THREADS
+    EXPECT_EQ(v, w);
+#else
     EXPECT_NE(v, w);
+#endif
     std::sort(v.begin(), v.end());
     std::sort(w.begin(), w.end());
     EXPECT_EQ(v, w);

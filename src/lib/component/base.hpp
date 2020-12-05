@@ -10,7 +10,6 @@
 
 #include <chrono>
 #include <limits>
-#include <thread>
 
 #include "lib/settings.hpp"
 #include "lib/common/mutex.hpp"

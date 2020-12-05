@@ -13,6 +13,7 @@
 #include <chrono>
 #ifndef FCPP_DISABLE_THREADS
 #include <mutex>
+#include <thread>
 #endif
 #if defined(_OPENMP)
 #include <omp.h>

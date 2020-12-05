@@ -148,12 +148,12 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids(), m_pos_time(-1) {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids() {}
 
             //! @brief Caches the current position for later use.
             void cache_position(times_t t) {
-                m_position = to_vec3(P::node::position(t));
-                if (t == 0) P::node::net.viewport_update(m_position);
+                /*m_position = to_vec3(P::node::position(t));
+                if (t == 0) P::node::net.viewport_update(m_position);*/
             }
 
             //! @brief Accesses the cached position.
@@ -247,7 +247,7 @@ struct displayer {
             template <typename S, typename T>
             net(const common::tagged_tuple<S, T>& t) :
                 P::net{ t },
-                m_threads{ common::get_or<tags::threads>(t, FCPP_THREADS) },
+                m_threads( common::get_or<tags::threads>(t, FCPP_THREADS) ),
                 m_refresh{ 0 },
                 m_step{ common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) },
                 m_viewport_max{ -INF, -INF, -INF },
@@ -273,12 +273,12 @@ struct displayer {
                     times_t t = P::net::realtime_to_internal(m_refresh);
                     auto n_beg = P::net::node_begin();
                     auto n_end = P::net::node_end();
-                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&n_beg,this] (size_t i, size_t) {
+                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&] (size_t i, size_t) {
                         n_beg[i].second.cache_position(t);
                     });
-                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&n_beg,this] (size_t i, size_t) {
+                    /*common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_beg-n_end, [&n_beg,this] (size_t i, size_t) {
                         n_beg[i].second.draw();
-                    });
+                    });*/
                     if (t == 0) {
                         // first frame only: set camera position, rotation, sensitivity
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
@@ -355,11 +355,11 @@ struct displayer {
                 }
                 if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
                     // decelerate simulation
-                    P::net::frequency(0.9*P::net::frequency(), P::net::real_time());
+                    P::net::frequency(0.9*P::net::frequency());
                 }
                 if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
                     // decelerate simulation
-                    P::net::frequency(1.1*P::net::frequency(), P::net::real_time());
+                    P::net::frequency(1.1*P::net::frequency());
                 }
                 if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
                     // play/pause simulation

@@ -111,10 +111,11 @@ namespace fcpp {
     //! @brief Builds a packed color from its HSVA representation (h maxes to 360, the rest to 100).
     constexpr packed_color packed_hsva(int h, int s, int v, int a = 100) {
         h %= 360;
-        int c = s * v;
-        int x = c * (60 - abs(h % 120 - 60)) / 60;
-        int m = v * 100 - c;
-        int r{ 0 }, g{ 0 }, b{ 0 };
+        int k = h%120 - 60;
+        int c = s*v;
+        int x = c*(k > 0 ? 60 - k : 60 + k)/60;
+        int m = v*100-c;
+        int r = 0, g = 0, b = 0;
         if (h >= 0 and h < 60)
             r = c, g = x, b = 0;
         else if (h >= 60 and h < 120)
@@ -127,7 +128,7 @@ namespace fcpp {
             r = x, g = 0, b = c;
         else
             r = c, g = 0, b = x;
-        return packed_rgba((r + m) * 255 / 10000, (g + m) * 255 / 10000, (b + m) * 255 / 10000);
+        return packed_rgba((r+m)*255/10000, (g+m)*255/10000, (b+m)*255/10000, a*255/100);
     }
 
 	namespace internal {

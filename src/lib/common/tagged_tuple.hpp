@@ -180,29 +180,31 @@ namespace details {
         using type = typename tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<Us...>>::type::template push_front<typename type_sequence<Ts...,void>::template get<type_sequence<Ss...,void>::template find<U>>>;
     };
 
-    //! @brief Separator between tuple tags and values.
-    template <typename T>
-    constexpr const char* tag_val_sep = "";
-    template<>
-    constexpr const char* tag_val_sep<tags::dictionary_tuple> = ":";
-    template<>
-    constexpr const char* tag_val_sep<tags::assignment_tuple> = " = ";
-    template<>
-    constexpr const char* tag_val_sep<tags::underscore_tuple> = "-";
-    template<>
-    constexpr const char* tag_val_sep<tags::arrowhead_tuple> = " => ";
+    namespace {
+        //! @brief Separator between tuple tags and values.
+        template <typename T>
+        constexpr const char* tag_val_sep = "";
+        template<>
+        constexpr const char* tag_val_sep<tags::dictionary_tuple> = ":";
+        template<>
+        constexpr const char* tag_val_sep<tags::assignment_tuple> = " = ";
+        template<>
+        constexpr const char* tag_val_sep<tags::underscore_tuple> = "-";
+        template<>
+        constexpr const char* tag_val_sep<tags::arrowhead_tuple> = " => ";
 
-    //! @brief Separator between tuple values and the following tags.
-    template <typename T>
-    constexpr const char* val_tag_sep = "";
-    template<>
-    constexpr const char* val_tag_sep<tags::dictionary_tuple> = ", ";
-    template<>
-    constexpr const char* val_tag_sep<tags::assignment_tuple> = ", ";
-    template<>
-    constexpr const char* val_tag_sep<tags::underscore_tuple> = "_";
-    template<>
-    constexpr const char* val_tag_sep<tags::arrowhead_tuple> = "; ";
+        //! @brief Separator between tuple values and the following tags.
+        template <typename T>
+        constexpr const char* val_tag_sep = "";
+        template<>
+        constexpr const char* val_tag_sep<tags::dictionary_tuple> = ", ";
+        template<>
+        constexpr const char* val_tag_sep<tags::assignment_tuple> = ", ";
+        template<>
+        constexpr const char* val_tag_sep<tags::underscore_tuple> = "_";
+        template<>
+        constexpr const char* val_tag_sep<tags::arrowhead_tuple> = "; ";
+    }
 
     //! @brief Removes the namespaces from a type representation.
     inline std::string strip_namespaces(std::string s) {

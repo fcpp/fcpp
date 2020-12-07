@@ -71,11 +71,6 @@ void Camera::processMouseMovementEditor(float x, float y, float dx, float dy)
     m_view =
 		glm::rotate(glm::radians(a * m_mouseSensitivity), glm::vec3(y, -x, 0.0f)) *
 		glm::rotate(glm::radians(b * m_mouseSensitivity), glm::vec3(0.0f, 0.0f, 1.0f)) * m_view;
-
-    std::cout << "x,y:   (" << x << ", " << y << ")\n" ;
-    std::cout << "dx,dy: (" << dx << ", " << dy << ")\n" ;
-    std::cout << "a,b:   (" << a << ", " << b << ")\n" ;
-    std::cout << "sens:   " << m_mouseSensitivity << "%\n" ;
 }
 
 void Camera::processMouseScroll(float yoffset)

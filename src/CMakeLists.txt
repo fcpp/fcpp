@@ -136,6 +136,7 @@ endif(MINGW)
 #target compile options
 if(UNIX)
 target_compile_options(glad PUBLIC "-fPIC")
+target_compile_options(freetype PUBLIC "-fPIC")
 endif(UNIX)
 
 # defining install rules

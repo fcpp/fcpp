@@ -62,6 +62,11 @@ add_custom_command(TARGET fcppGL PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/src/lib/graphics/shaders/ $<TARGET_FILE_DIR:fcppGL>/shaders/)
 
+#copying fonts into build
+add_custom_command(TARGET fcppGL PRE_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${CMAKE_SOURCE_DIR}/src/lib/graphics/fonts/ $<TARGET_FILE_DIR:fcppGL>/fonts/)
+
 #target compile options
 target_compile_options(fcppGL PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
 #target_compile_options(fcppGL PUBLIC "-DFCPP_REFRESH_RATE=(1.0/144)")

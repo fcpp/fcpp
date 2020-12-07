@@ -3,6 +3,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -10,6 +11,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image/stb_image.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include "lib/graphics/camera.hpp"
 #include "lib/graphics/renderer.hpp"
@@ -29,6 +32,9 @@ using namespace fcpp::internal;
     const std::string Renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
     const std::string Renderer::VERTEX_ORTHO_PATH{ ".\\shaders\\vertex_ortho.glsl" };
     const std::string Renderer::FRAGMENT_ORTHO_PATH{ ".\\shaders\\fragment_ortho.glsl" };
+    const std::string Renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
+    const std::string Renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
+    const std::string Renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
 #else
     const std::string Renderer::VERTEX_PATH{ "./shaders/vertex.glsl" };
     const std::string Renderer::FRAGMENT_PATH{ "./shaders/fragment.glsl" };
@@ -36,6 +42,9 @@ using namespace fcpp::internal;
     const std::string Renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
     const std::string Renderer::VERTEX_ORTHO_PATH{ "./shaders/vertex_ortho.glsl" };
     const std::string Renderer::FRAGMENT_ORTHO_PATH{ "./shaders/fragment_ortho.glsl" };
+    const std::string Renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
+    const std::string Renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
+    const std::string Renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
 #endif
 
     const glm::vec3 Renderer::LIGHT_DEFAULT_POS{ glm::vec3{0.0f, 0.0f, 0.0f} };
@@ -92,6 +101,57 @@ Renderer::Renderer() :
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         throw std::runtime_error("Failed to initialize GLAD.\n");
 
+    // Initialize FreeType
+    FT_Library ftLib;
+    if (FT_Init_FreeType(&ftLib))
+        throw std::runtime_error("Could not init FreeType Library.\n");
+    FT_Face ftFace;
+    if (FT_New_Face(ftLib, FONT_PATH.c_str(), 0, &ftFace))
+        throw std::runtime_error("Failed to load font (" + FONT_PATH + ").\n");
+
+    // Generating glyphs' textures
+    FT_Set_Pixel_Sizes(ftFace, 0, FONT_DEFAULT_SIZE);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+    for (unsigned char c = 0; c < 128; c++) {
+        // load character glyph 
+        if (FT_Load_Char(ftFace, c, FT_LOAD_RENDER)) {
+            std::cout << "Failed to load glyph (" << c << ")\n";
+            continue;
+        }
+        // generate texture
+        unsigned int texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RED,
+            ftFace->glyph->bitmap.width,
+            ftFace->glyph->bitmap.rows,
+            0,
+            GL_RED,
+            GL_UNSIGNED_BYTE,
+            ftFace->glyph->bitmap.buffer
+        );
+        // set texture options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // now store character for later use
+        glyph gl = {
+            texture, 
+            glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
+            glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
+            ftFace->glyph->advance.x
+        };
+        m_glyphs.insert(std::pair<char, glyph>(c, gl));
+    }
+    
+    // Deallocate FreeType structures
+    FT_Done_Face(ftFace);
+    FT_Done_FreeType(ftLib);
+
     // Set viewport
     glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
 
@@ -99,13 +159,14 @@ Renderer::Renderer() :
     m_shaderProgram = Shader{ VERTEX_PATH.c_str(), FRAGMENT_PATH.c_str() };
     m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
     m_shaderProgramOrtho = Shader{ VERTEX_ORTHO_PATH.c_str(), FRAGMENT_ORTHO_PATH.c_str() };
+    m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 
     // Generate VAOs, VBOs and EBOs
-    glGenVertexArrays(5, VAO);
-    glGenBuffers(5, VBO);
-    glGenBuffers(5, EBO);
+    glGenVertexArrays(6, VAO);
+    glGenBuffers(6, VBO);
+    glGenBuffers(6, EBO);
 
-    // Store (static) ortho data 
+    // Allocate (static) ortho buffers
     glBindVertexArray(VAO[(int)vertex::ortho]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::ortho]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_ORTHO), Shapes::VERTEX_ORTHO, GL_STATIC_DRAW);
@@ -116,7 +177,7 @@ Renderer::Renderer() :
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Store (static) cube data 
+    // Allocate (static) cube buffers
     glBindVertexArray(VAO[(int)vertex::cube]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::cube]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_CUBE), Shapes::VERTEX_CUBE, GL_STATIC_DRAW);
@@ -124,6 +185,15 @@ Renderer::Renderer() :
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    
+    // Allocate (dynamic) font buffers
+    glBindVertexArray(VAO[(int)vertex::font]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -144,6 +214,7 @@ Renderer::Renderer() :
     // Set internal callbacks
     setInternalCallbacks();
 
+    // Set initial aspect ratio
 	m_camera.setDiagonal(m_currentWidth, m_currentHeight);
 }
 
@@ -200,12 +271,6 @@ void Renderer::mousePosCallback(GLFWwindow* window, double xpos, double ypos) {
     if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
     }
-    
-    std::cout << "----------\n";
-    std::cout << "m_mouseRight = " << m_mouseRight << "\n";
-    std::cout << "m_mouseRightX = " << m_mouseRightX << "\n";
-    std::cout << "m_mouseRightY = " << m_mouseRightY << "\n";
-    std::cout << "----------\n";
 }
 
 void Renderer::mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
@@ -434,6 +499,51 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
     m_shaderProgram.setMat3("u_normal", normal);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+}
+
+void Renderer::drawText(std::string text, float x, float y, float scale, glm::vec3 color)
+{
+    // activate corresponding render state	
+    m_shaderProgramFont.use();
+    m_shaderProgramFont.setVec3("u_textColor", color);
+    m_shaderProgramFont.setInt("u_text", 0);
+    m_shaderProgramFont.setMat4("u_projection", glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight));
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(VAO[(int)vertex::font]);
+
+    // iterate through all characters
+    std::string::const_iterator c;
+    for (c = text.begin(); c != text.end(); c++) {
+        glyph ch = m_glyphs[*c];
+
+        float xpos = x + ch.bearing.x * scale;
+        float ypos = y - (ch.size.y - ch.bearing.y) * scale;
+
+        float w = ch.size.x * scale;
+        float h = ch.size.y * scale;
+        // update VBO for each character
+        float vertices[6][4] = {
+            { xpos,     ypos + h,   0.0f, 0.0f },            
+            { xpos,     ypos,       0.0f, 1.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+            { xpos + w, ypos + h,   1.0f, 0.0f }           
+        };
+        // render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.textureID);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += (ch.advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 float Renderer::getAspectRatio() {

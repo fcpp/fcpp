@@ -3,12 +3,16 @@
 #ifndef FCPP_GRAPHICS_RENDERER_H_
 #define FCPP_GRAPHICS_RENDERER_H_
 
+#include <map>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image/stb_image.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include "lib/graphics/camera.hpp"
 #include "lib/graphics/shader.hpp"
@@ -130,6 +134,13 @@ namespace fcpp {
             r = c, g = 0, b = x;
         return packed_rgba((r+m)*255/10000, (g+m)*255/10000, (b+m)*255/10000, a*255/100);
     }
+    
+    struct glyph {
+        unsigned int textureID;  // ID handle of the glyph texture
+        glm::ivec2   size;       // size of glyph
+        glm::ivec2   bearing;    // offset from baseline to left/top of glyph
+        unsigned int advance;    // offset to advance to next glyph
+    };
 
 	namespace internal {
         //! @brief Renderer class; it has the responsability of calling OpenGL directives.
@@ -149,7 +160,10 @@ namespace fcpp {
 
             //! @brief It draws a cube, given the information on color(s) and position.
             void drawCube(glm::vec3 p, double d, std::vector<color> c);
-
+            
+            //! @brief It draws the specified text in the specified coordinates, scale and color.
+            void drawText(std::string text, float x, float y, float scale, glm::vec3 color);
+            
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
 
@@ -192,6 +206,18 @@ namespace fcpp {
 
             //! @brief Default path to fragment_ortho shader.
             static const std::string FRAGMENT_ORTHO_PATH;
+            
+            //! @brief Default path to vertex_font shader.
+            static const std::string VERTEX_FONT_PATH;
+
+            //! @brief Default path to fragment_font shader.
+            static const std::string FRAGMENT_FONT_PATH;
+            
+            //! @brief Default path to font.
+            static const std::string FONT_PATH;
+            
+            //! @brief Default font size.
+            static const unsigned int FONT_DEFAULT_SIZE{ 48 };
 
             //! @brief Default width of the window.
             static const unsigned int SCR_DEFAULT_WIDTH{ 800 };
@@ -201,12 +227,6 @@ namespace fcpp {
 
             //! @brief Default size of orthogonal axis.
             static const unsigned int SCR_DEFAULT_ORTHO{ 32 };
-
-            //! @brief Number of vertex buffers.
-            //static const unsigned int BUFF_VERTEX_NUM{ ??? };
-
-            //! @brief Number of index buffers.
-            //static const unsigned int BUFF_INDEX_NUM{ ??? };
 
             //! @brief Default light position.
             static const glm::vec3 LIGHT_DEFAULT_POS;
@@ -223,6 +243,9 @@ namespace fcpp {
             //! @brief Additional shader program used for orthogonal axis.
             Shader m_shaderProgramOrtho;
 
+            //! @brief Additional shader program used for fonts.
+            Shader m_shaderProgramFont;
+
             //! @brief Vertex Array Object(s).
             unsigned int VAO[5];
 
@@ -231,6 +254,9 @@ namespace fcpp {
 
             //! @brief Element Buffer Object(s).
             unsigned int EBO[5];
+            
+            //! @brief Data structure mapping chars with glyphs.
+            std::map<char, glyph> m_glyphs;
 
             //! @brief Current width of the window.
             unsigned int m_currentWidth;

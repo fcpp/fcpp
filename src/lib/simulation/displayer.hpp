@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <string.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -313,6 +314,9 @@ struct displayer {
 
                     // Draw orthogonal axis
                     //m_renderer.drawOrtho();
+                    
+                    // Draw simulation time (t)
+                    m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f, glm::vec3{1.0});
                     
                     // Process displayer's input through custom handlers
                     processDisplayerKeyboardInput();

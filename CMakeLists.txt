@@ -30,13 +30,15 @@ target_include_directories(fcppGL PRIVATE ./src/
                                           ./src/external/mingw-std-threads-master
                                           ./src/external/glad-core-3.3/include/
                                           ./src/external/glm-0.9.9.8/glm
-                                          ./src/external/glfw-3.3.2/include/)
+                                          ./src/external/glfw-3.3.2/include/
+                                          ./src/external/freetype-2.10.4/devel/)
 else()
 target_include_directories(fcppGL PRIVATE ./src/
                                           ./src/external/
                                           ./src/external/glad-core-3.3/include/
                                           ./src/external/glm-0.9.9.8/glm
-                                          ./src/external/glfw-3.3.2/include/)
+                                          ./src/external/glfw-3.3.2/include/
+                                          ./src/external/freetype-2.10.4/devel/)
 endif(MINGW)
 
 # link libraries
@@ -45,12 +47,14 @@ target_link_libraries(fcppGL PRIVATE mingw_stdthreads
                                      fcpp_master
                                      glm
 									 glfw
-									 stb_image)
+									 stb_image
+									 freetype)
 else()
 target_link_libraries(fcppGL PRIVATE fcpp_master
                                      glm
 									 glfw
-									 stb_image)
+									 stb_image
+									 freetype)
 endif(MINGW)
 
 #copying shaders into build

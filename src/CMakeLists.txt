@@ -87,6 +87,7 @@ add_library(stb_image ./external/stb_image/stb_image.h
                       ./external/stb_image/stb_image.cpp)
 add_subdirectory(./external/glm-0.9.9.8/glm/)
 add_subdirectory(./external/glfw-3.3.2)
+add_subdirectory(./external/freetype-2.10.4)
 if(MINGW)
 add_subdirectory(./external/mingw-std-threads-master)
 endif(MINGW)
@@ -100,13 +101,15 @@ target_include_directories(fcpp_master PRIVATE ./
 											   ./external/mingw-std-threads-master
 											   ./external/glad-core-3.3/include/
 											   ./external/glm-0.9.9.8/glm
-											   ./external/glfw-3.3.2/include/)
+											   ./external/glfw-3.3.2/include/
+											   ./external/freetype-2.10.4/devel/)
 else()
 target_include_directories(fcpp_master PRIVATE ./
 											   ./external/
 											   ./external/glad-core-3.3/include/
 											   ./external/glm-0.9.9.8/glm
-											   ./external/glfw-3.3.2/include/)
+											   ./external/glfw-3.3.2/include/
+											   ./external/freetype-2.10.4/devel/)
 endif(MINGW)
 
 # MinGW threads options
@@ -120,12 +123,14 @@ target_link_libraries(fcpp_master PRIVATE mingw_stdthreads
 										  glad
 										  glm
 										  glfw
-                                          stb_image)
+                                          stb_image
+                                          freetype)
 else()
 target_link_libraries(fcpp_master PRIVATE glad
 										  glm
 										  glfw
-                                          stb_image)
+                                          stb_image
+                                          freetype)
 endif(MINGW)
 
 #target compile options

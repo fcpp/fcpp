@@ -99,7 +99,7 @@ class network {
 
     //! @brief Schedules the broadcast of a message.
     void send(std::vector<char> m) {
-        common::lock_guard<true> l(m_mutex);
+        common::lock_guard<true> l(m_send_mutex);
         m_send = std::move(m);
         m_send_time = m_node.net.real_time();
         m_attempt = 0;
@@ -109,7 +109,7 @@ class network {
     std::vector<message_type> receive() {
         assert(not push);
         std::vector<message_type> m;
-        common::lock_guard<true> l(m_mutex);
+        common::lock_guard<true> l(m_receive_mutex);
         std::swap(m, m_receive);
         return m;
     }
@@ -118,8 +118,8 @@ class network {
     //! @brief Manages the send and receive of messages.
     void manage() {
         while (m_running) {
-            common::lock_guard<true> l(m_mutex);
             if (not m_send.empty()) {
+                common::lock_guard<true> l(m_send_mutex);
                 m_send.push_back((char)std::min((m_node.net.real_time() - m_send_time)*128, times_t{255}));
                 // sending
                 if (m_transceiver.send(m_node.uid, m_send, m_attempt))
@@ -129,16 +129,19 @@ class network {
                     ++m_attempt;
                 }
             }
+            std::this_thread::yield();
             // receiving
             message_type m = m_transceiver.receive(m_attempt);
             if (not m.content.empty()) {
                 m.time = m_node.net.realtime_to_internal(m.time + m.content.back() / times_t{128});
                 m.content.pop_back();
-                if (push) {
-                    common::unlock_guard<true> u(m_mutex);
-                    m_node.receive(m);
-                } else m_receive.push_back(std::move(m));
+                if (push) m_node.receive(m);
+                else {
+                    common::lock_guard<true> l(m_receive_mutex);
+                    m_receive.push_back(std::move(m));
+                }
             }
+            std::this_thread::yield();
         }
     }
 
@@ -149,7 +152,7 @@ class network {
     transceiver_t m_transceiver;
 
     //! @brief A mutex for regulating network operations.
-    common::mutex<true> m_mutex;
+    common::mutex<true> m_send_mutex, m_receive_mutex;
 
     //! @brief Whether the object is alive and running.
     bool m_running = true;

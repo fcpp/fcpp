@@ -143,7 +143,7 @@ Renderer::Renderer() :
             texture, 
             glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
             glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
-            static_cast<unsigned int>(ftFace->glyph->advance.x)
+            (unsigned int)(ftFace->glyph->advance.x)
         };
         m_glyphs.insert(std::pair<char, glyph>(c, gl));
     }
@@ -522,14 +522,14 @@ void Renderer::drawText(std::string text, float x, float y, float scale, glm::ve
         float w = ch.size.x * scale;
         float h = ch.size.y * scale;
         // update VBO for each character
-        float vertices[6][4] = {
-            { xpos,     ypos + h,   0.0f, 0.0f },            
-            { xpos,     ypos,       0.0f, 1.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
+        float vertices[24] = {
+            xpos,     ypos + h,   0.0f, 0.0f,            
+            xpos,     ypos,       0.0f, 1.0f,
+            xpos + w, ypos,       1.0f, 1.0f,
 
-            { xpos,     ypos + h,   0.0f, 0.0f },
-            { xpos + w, ypos,       1.0f, 1.0f },
-            { xpos + w, ypos + h,   1.0f, 0.0f }           
+            xpos,     ypos + h,   0.0f, 0.0f,
+            xpos + w, ypos,       1.0f, 1.0f,
+            xpos + w, ypos + h,   1.0f, 0.0f           
         };
         // render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.textureID);

@@ -359,11 +359,11 @@ struct displayer {
                 }
                 if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
                     // decelerate simulation
-                    P::net::frequency(0.9*P::net::frequency());
+                    P::net::frequency(0.98*P::net::frequency());
                 }
                 if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
                     // decelerate simulation
-                    P::net::frequency(1.1*P::net::frequency());
+                    P::net::frequency(1.02*P::net::frequency());
                 }
                 if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
                     // play/pause simulation

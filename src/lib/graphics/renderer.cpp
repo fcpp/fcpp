@@ -143,7 +143,7 @@ Renderer::Renderer() :
             texture, 
             glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
             glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
-            ftFace->glyph->advance.x
+            static_cast<unsigned int>(ftFace->glyph->advance.x)
         };
         m_glyphs.insert(std::pair<char, glyph>(c, gl));
     }

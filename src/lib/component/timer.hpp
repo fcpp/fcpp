@@ -42,6 +42,9 @@ namespace tags {
  * The \ref timer component cannot be a parent of a \ref scheduler otherwise round planning may not work.
  * A \ref physical_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
+ * <b>Declaration flags:</b>
+ * - \ref tags::realtime defines whether running should follow real time (defaults to `FCPP_REALTIME < INF`).
+ *
  * <b>Node initialisation tags:</b>
  * - \ref tags::start associates to a starting time of execution (defaults to \ref TIME_MAX).
  *
@@ -50,6 +53,9 @@ namespace tags {
  */
 template <class... Ts>
 struct timer {
+    //! @brief Whether running should follow real time.
+    constexpr static bool realtime = common::option_flag<tags::realtime, FCPP_REALTIME < INF, Ts...>;
+
     /**
      * @brief The actual component.
      *
@@ -186,6 +192,8 @@ struct timer {
             net(const common::tagged_tuple<S,T>& t) : P::net(t) {
                 m_offs = 0;
                 m_fact = common::get_or<tags::realtime_factor>(t, FCPP_REALTIME < INF ? FCPP_REALTIME : 1);
+                m_last_update = m_next_update = 0;
+                assert(m_fact >= 0);
             }
 
             /**
@@ -194,12 +202,22 @@ struct timer {
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
-                return m_offs < TIME_MAX and m_fact > 0 and P::net::next() < TIME_MAX ? P::net::next()/m_fact + m_offs : TIME_MAX;
+                m_next_update = P::net::next();
+                return m_offs < TIME_MAX and m_fact > 0 and m_next_update < TIME_MAX ? m_next_update/m_fact + m_offs : TIME_MAX;
             }
 
-            //! @brief Converts real time into internal time.
-            times_t realtime_to_internal(times_t t) const {
-                return m_offs < TIME_MAX ? (m_fact < INF and t < TIME_MAX ? (t - m_offs)*m_fact : TIME_MAX) : 0;
+            //! @brief Updates the internal status of net component.
+            void update() {
+                m_last_update = m_next_update;
+                P::net::update();
+            }
+
+            //! @brief A measure of the internal time clock.
+            times_t internal_time() const {
+                if (not realtime or (m_last_update == m_next_update)) return m_last_update;
+                times_t t = P::net::real_time();
+                t = m_offs < TIME_MAX ? (m_fact < INF and t < TIME_MAX ? (t - m_offs)*m_fact : TIME_MAX) : 0;
+                return std::max(std::min(t, m_next_update), m_last_update);
             }
 
             //! @brief Terminate round executions.
@@ -232,6 +250,12 @@ struct timer {
 
             //! @brief Warping factor for the following schedule.
             real_t m_fact;
+
+            //! @brief The internal time of the last update.
+            times_t m_last_update;
+
+            //! @brief The internal time of the next update.
+            mutable times_t m_next_update;
         };
     };
 };

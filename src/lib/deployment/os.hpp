@@ -101,7 +101,7 @@ class network {
     void send(std::vector<char> m) {
         common::lock_guard<true> l(m_send_mutex);
         m_send = std::move(m);
-        m_send_time = m_node.net.real_time();
+        m_send_time = m_node.net.internal_time();
         m_attempt = 0;
     }
 
@@ -120,7 +120,7 @@ class network {
         while (m_running) {
             if (not m_send.empty()) {
                 common::lock_guard<true> l(m_send_mutex);
-                m_send.push_back((char)std::min((m_node.net.real_time() - m_send_time)*128, times_t{255}));
+                m_send.push_back((char)std::min((m_node.net.internal_time() - m_send_time)*128, times_t{255}));
                 // sending
                 if (m_transceiver.send(m_node.uid, m_send, m_attempt))
                     m_send.clear();
@@ -133,7 +133,7 @@ class network {
             // receiving
             message_type m = m_transceiver.receive(m_attempt);
             if (not m.content.empty()) {
-                m.time = m_node.net.realtime_to_internal(m.time + m.content.back() / times_t{128});
+                m.time = m_node.net.internal_time() - m.content.back() / times_t{128};
                 m.content.pop_back();
                 if (push) m_node.receive(m);
                 else {
@@ -163,7 +163,7 @@ class network {
     //! @brief Message to be sent.
     std::vector<char> m_send;
 
-    //! @brief The time of the message to be sent.
+    //! @brief The internal time of the message to be sent.
     times_t m_send_time;
 
     //! @brief Number of attempts failed for a send.

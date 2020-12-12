@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include <string.h>
+#include <iostream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -28,7 +29,7 @@
 #include "lib/data/vec.hpp"
 #include "lib/graphics/renderer.hpp"
 #include "lib/graphics/shapes.hpp"
-
+#include "lib/graphics/input_types.hpp"
 
 
 /**
@@ -253,7 +254,15 @@ struct displayer {
                 m_step{ common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) },
                 m_viewport_max{ -INF, -INF, -INF },
                 m_viewport_min{ +INF, +INF, +INF },
-                m_renderer{} {}
+                m_renderer{},
+                m_mouseLastX{ 0.0f },
+                m_mouseLastY{ 0.0f },
+                m_mouseRightX{ 0.0f },
+                m_mouseRightY{ 0.0f },
+                m_mouseFirst{ 1 },
+                m_mouseRight{ 0 },
+                m_deltaTime{ 0.0f },
+                m_lastFrame{ 0.0f } {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -302,6 +311,7 @@ struct displayer {
                         while (grid_scale * 100 < diagonal) grid_scale *= 10;
                         while (grid_scale * 10 > diagonal) grid_scale /= 10;
                         m_renderer.setGridScale(grid_scale);
+                        setInternalCallbacks(); // call this after m_renderer is initialized
                     }
                     /**
                      * Do whatever global management you need to do here
@@ -318,11 +328,14 @@ struct displayer {
                     // Draw simulation time (t)
                     m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f, glm::vec3{1.0});
                     
-                    // Process displayer's input through custom handlers
-                    processDisplayerKeyboardInput();
-
                     // Swap buffers and prepare for next frame to draw
                     m_renderer.swapAndNext();
+                    
+                    // Update deltaTime
+                    updateDeltaTime();
+                    
+                    // Process keyboard input from the displayer and other classes
+                    keyboardInput(m_renderer.getWindow(), m_deltaTime);
                     
                     // Update m_refresh
                     if (m_step > 0) m_refresh += m_step;
@@ -350,9 +363,71 @@ struct displayer {
             }
 
         private: // implementation details
-            //! @brief Custom keyboard handler for the displayer component.
-            void processDisplayerKeyboardInput() {
-                GLFWwindow* window{ m_renderer.getWindow() };
+            //! @brief It updates m_deltaTime and m_lastFrame
+            void updateDeltaTime() {
+                float currentFrame{ (float)glfwGetTime() };
+                m_deltaTime = currentFrame - m_lastFrame;
+                m_lastFrame = currentFrame;
+            }
+        
+            //! @brief It binds internally-defined callback functions to OpenGL events.
+            void setInternalCallbacks() {
+                // Associates this (the net instance) to m_window
+                glfwSetWindowUserPointer(m_renderer.getWindow(), this);
+
+                // Viewport callback
+                glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
+                    net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                    dspl.m_renderer.viewportResize(width, height);
+                    });
+
+                // Cursor position callback
+                glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
+                        net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                        
+                        if (dspl.m_mouseFirst) {
+                            dspl.m_mouseLastX = (float)xpos;
+                            dspl.m_mouseLastY = (float)ypos;
+                            dspl.m_mouseFirst = false;
+                        }
+                        
+                        float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
+                        float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
+                        dspl.m_mouseLastX = (float)xpos;
+                        dspl.m_mouseLastY = (float)ypos;
+
+                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+                            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide cursor
+                            dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::fpp);
+                        } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
+                            if (!dspl.m_mouseRight) {
+                                dspl.m_mouseRight = 1;
+                                dspl.m_mouseRightX = xpos - (float)(dspl.m_renderer.getCurrentWidth() / 2);
+                                dspl.m_mouseRightY = (float)(dspl.m_renderer.getCurrentHeight() / 2) - ypos;
+                            }
+                            dspl.m_renderer.mouseInput(xoffset, yoffset, dspl.m_mouseRightX, dspl.m_mouseRightY, mouse_type::drag); // need to move (0,0) at the center of the screen
+                        }
+
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+                            dspl.m_mouseRight = 0;
+                            dspl.m_mouseRightX = 0.0f;
+                            dspl.m_mouseRightY = 0.0f;
+                        }
+                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
+                            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
+                    });
+
+                // Cursor scroll callback
+                glfwSetScrollCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xoffset, double yoffset) {
+                        net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                        dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll);
+                    });
+            }
+            
+            //! @brief Given a deltaTime, it manages keyboard input for the displayer and other classes.
+            void keyboardInput(GLFWwindow* window, float deltaTime) {
+                // Process displayer's input
                 if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
                     glfwSetWindowShouldClose(window, true);
                     P::net::terminate();
@@ -370,6 +445,9 @@ struct displayer {
                     real_t f = P::net::frequency();
                     P::net::frequency(f == 0 ? 1 : 0);
                 }
+                
+                // Process renderer's input
+                m_renderer.keyboardInput(window, deltaTime);
             }
 
             //! @brief The number of threads to be used.
@@ -380,6 +458,30 @@ struct displayer {
 
             //! @brief The step between refresh times.
             times_t m_step;
+            
+            //! @brief Last mouse X position.
+            float m_mouseLastX;
+
+            //! @brief Last mouse Y position.
+            float m_mouseLastY;
+            
+            //! @brief First mouse X position when the right click is pressed.
+            float m_mouseRightX;
+
+            //! @brief First mouse Y position when the right click is pressed.
+            float m_mouseRightY;
+
+            //! @brief It checks if it's the first mouse's input capture.
+            bool m_mouseFirst;
+            
+            //! @brief It checks if the right click is pressed.
+            bool m_mouseRight;
+
+            //! @brief Time between current frame and last frame.
+            float m_deltaTime;
+
+            //! @brief Time of last frame.
+            float m_lastFrame;
 
             //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
             fcpp::internal::Renderer m_renderer;

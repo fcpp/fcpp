@@ -17,6 +17,7 @@
 #include "lib/graphics/camera.hpp"
 #include "lib/graphics/shader.hpp"
 #include "lib/graphics/shapes.hpp"
+#include "lib/graphics/input_types.hpp"
 
 
 namespace fcpp {
@@ -170,6 +171,12 @@ namespace fcpp {
             //! @brief Returns the camera's Field of View.
             float getViewAngle();
             
+            //! @brief Returns viewport's current width.
+            int getCurrentWidth();
+            
+            //! @brief Returns viewport's current height.
+            int getCurrentHeight();
+            
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow();
             
@@ -187,6 +194,15 @@ namespace fcpp {
 
             //! @brief Sets the near plane's distance of the projection (perspective) matrix.
             void setNearPlane(float newNear);
+            
+            //! @brief It manages mouse input of the given type.
+            void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type);
+            
+            //! @brief Given a deltaTime, it manages keyboard input for the renderer and other classes.
+            void keyboardInput(GLFWwindow* window, float deltaTime);
+            
+            //! @brief It resizes the viewport, given the new width and height values.
+            void viewportResize(int width, int height);
             
         private:
             //! @brief Default path to vertex shader.
@@ -288,50 +304,11 @@ namespace fcpp {
             //! @brief Camera object of the scene
             Camera m_camera;
 
-            //! @brief Last mouse X position.
-            float m_mouseLastX;
-
-            //! @brief Last mouse Y position.
-            float m_mouseLastY;
-            
-            //! @brief First mouse X position when the right click is pressed.
-            float m_mouseRightX;
-
-            //! @brief First mouse Y position when the right click is pressed.
-            float m_mouseRightY;
-
-            //! @brief It checks if it's the first mouse's input capture.
-            bool m_mouseFirst;
-            
-            //! @brief It checks if the right click is pressed.
-            bool m_mouseRight;
-
-            //! @brief Time between current frame and last frame.
-            float m_deltaTime;
-
-            //! @brief Time of last frame.
-            float m_lastFrame;
-
             //! @brief The far plane's distance of the projection matrix.
             float m_zFar;
 
             //! @brief The near plane's distance of the projection matrix.
             float m_zNear;
-
-            //! @brief Keyboard input updater function (not a proper callback: it has to be called explicitly).
-            void processKeyboardInput();
-
-            //! @brief Mouse input callback function.
-            void mousePosCallback(GLFWwindow* window, double xpos, double ypos);
-
-            //! @brief Mouse scroll callback function.
-            void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
-            //! @brief Window resize callback function.
-            void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-
-            //! @brief Bind internally-defined callback functions to OpenGL events.
-            void setInternalCallbacks();
 		};
 	}
 }

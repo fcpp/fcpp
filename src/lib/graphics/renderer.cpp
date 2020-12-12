@@ -18,6 +18,7 @@
 #include "lib/graphics/renderer.hpp"
 #include "lib/graphics/shader.hpp"
 #include "lib/graphics/shapes.hpp"
+#include "lib/graphics/input_types.hpp"
 
 
 // using namespace fcpp::internal to prevent very verbose code...
@@ -62,14 +63,6 @@ Renderer::Renderer() :
     m_gridNormIndexSize{ 0 },
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_camera{},
-    m_mouseLastX{ (float)(SCR_DEFAULT_WIDTH / 2) },
-    m_mouseLastY{ (float)(SCR_DEFAULT_HEIGHT / 2) },
-    m_mouseRightX{ 0.0f },
-    m_mouseRightY{ 0.0f },
-    m_mouseFirst{ 1 },
-    m_mouseRight{ 0 },
-    m_deltaTime{ 0.0f },
-    m_lastFrame{ 0.0f },
     m_zFar{ 1.0f },
     m_zNear{ 1000.0f }{
     /* DEFINITION */
@@ -93,9 +86,6 @@ Renderer::Renderer() :
 
     // Set newly created window's context as current
     glfwMakeContextCurrent(m_window);
-
-    // Associates this (the Renderer instance) to m_window
-    glfwSetWindowUserPointer(m_window, this);
 
     // Initialize GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -211,96 +201,13 @@ Renderer::Renderer() :
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Set internal callbacks
-    setInternalCallbacks();
-
     // Set initial aspect ratio
 	m_camera.setDiagonal(m_currentWidth, m_currentHeight);
 }
 
 
 /* --- PRIVATE FUNCTIONS --- */
-void Renderer::processKeyboardInput() {
-    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-            m_camera.processKeyboard(FORWARD, m_deltaTime);
-        if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-            m_camera.processKeyboard(BACKWARD, m_deltaTime);
-        if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-            m_camera.processKeyboard(LEFT, m_deltaTime);
-        if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-            m_camera.processKeyboard(RIGHT, m_deltaTime);
-        if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS)
-            m_camera.processKeyboard(FLY_UP, m_deltaTime);
-        if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS)
-            m_camera.processKeyboard(FLY_DOWN, m_deltaTime);
-    }
-}
-
-void Renderer::mousePosCallback(GLFWwindow* window, double xpos, double ypos) {
-    if (m_mouseFirst) {
-        m_mouseLastX = (float)xpos;
-        m_mouseLastY = (float)ypos;
-        m_mouseFirst = false;
-    }
-
-    float xoffset{ (float)(xpos - m_mouseLastX) };
-    float yoffset{ (float)(m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
-    m_mouseLastX = (float)xpos;
-    m_mouseLastY = (float)ypos;
-
-    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide cursor
-        m_camera.processMouseMovementFPP(xoffset, yoffset);
-    } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
-        if (!m_mouseRight) {
-            m_mouseRight = 1;
-            m_mouseRightX = xpos - (float)(m_currentWidth / 2);
-            m_mouseRightY = (float)(m_currentHeight / 2) - ypos;
-        }
-        m_camera.processMouseMovementEditor(m_mouseRightX, m_mouseRightY, xoffset, yoffset); // need to move (0,0) at the center of the screen
-    }
-    
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
-        m_mouseRight = 0;
-        m_mouseRightX = 0.0f;
-        m_mouseRightY = 0.0f;
-    }
-    
-    if (glfwGetKey(m_window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
-    }
-}
-
-void Renderer::mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-    m_camera.processMouseScroll((float)yoffset);
-}
-
-void Renderer::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-    m_currentWidth = width;
-    m_currentHeight = height;
-	m_camera.setDiagonal(width, height);
-}
-
-void Renderer::setInternalCallbacks() {
-    // Set viewport callbacks
-    glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow* window, int width, int height) {
-        Renderer& rend = *((Renderer*)glfwGetWindowUserPointer(window)); // get the Renderer instance from window
-        rend.framebufferSizeCallback(window, width, height);
-        });
-
-    // Enable cursor callbacks
-    glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double xpos, double ypos) {
-        Renderer& rend = *((Renderer*)glfwGetWindowUserPointer(window)); // get the Renderer instance from window
-        rend.mousePosCallback(window, xpos, ypos);
-        });
-    glfwSetScrollCallback(m_window, [](GLFWwindow* window, double xoffset, double yoffset) {
-        Renderer& rend = *((Renderer*)glfwGetWindowUserPointer(window)); // get the Renderer instance from window
-        rend.mouseScrollCallback(window, xoffset, yoffset);
-        });
-}
+/*nope dude*/
 
 
 /* --- PUBLIC FUNCTIONS --- */
@@ -308,14 +215,6 @@ void Renderer::swapAndNext() {
     // Check and call events, swap double buffers
     glfwPollEvents();
     glfwSwapBuffers(m_window);
-
-    // Deltatime
-    float currentFrame{ (float)glfwGetTime() };
-    m_deltaTime = currentFrame - m_lastFrame;
-    m_lastFrame = currentFrame;
-
-    // Input
-    processKeyboardInput();
 
     // Clear frame
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -554,6 +453,14 @@ float Renderer::getViewAngle() {
     return m_camera.getFov();
 }
 
+int Renderer::getCurrentWidth() {
+    return m_currentWidth;
+}
+
+int Renderer::getCurrentHeight() {
+    return m_currentHeight;
+}
+
 GLFWwindow* Renderer::getWindow() {
     return m_window;
 }
@@ -576,4 +483,33 @@ void Renderer::setFarPlane(float newFar) {
 
 void Renderer::setNearPlane(float newNear) {
     m_zNear = newNear;
+}
+
+void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type) {
+    switch (type) {
+        case mouse_type::scroll:
+            m_camera.mouseInput(0.0, y, 0.0, 0.0, type);
+            break;
+        case mouse_type::fpp:
+            m_camera.mouseInput(x, y, 0.0, 0.0, type);
+            break;
+        case mouse_type::drag:
+            m_camera.mouseInput(x, y, xFirst, yFirst, type);
+            break;
+    }
+}
+
+void Renderer::keyboardInput(GLFWwindow* window, float deltaTime) {
+    // Process renderer's input
+    /*no_op*/
+    
+    // Process camera's input
+    m_camera.keyboardInput(window, deltaTime);
+}
+
+void Renderer::viewportResize(int width, int height) {
+    glViewport(0, 0, width, height);
+    m_currentWidth = width;
+    m_currentHeight = height;
+	m_camera.setDiagonal(width, height);
 }

@@ -1,7 +1,7 @@
 // Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 // Thanks to learnopengl.com for the original structure.
 
-#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/transform.hpp> 
@@ -9,6 +9,11 @@
 #include <vector>
 #include <iostream>
 #include "lib/graphics/camera.hpp"
+#include "lib/graphics/input_types.hpp"
+
+// using namespace fcpp to prevent very verbose code...
+using namespace fcpp;
+
 
 Camera::Camera(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch)
 : m_movementSpeed{ CAM_DEFAULT_SPEED },
@@ -16,71 +21,6 @@ Camera::Camera(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch)
   m_fov{ CAM_DEFAULT_FOV }
 {
     setViewDefault(position, worldUp, yaw, pitch);
-}
-
-void Camera::processKeyboard(CameraMovement direction, float deltaTime)
-{
-    glm::mat4 trans;
-    float velocity = m_movementSpeed * deltaTime;
-
-    if (direction == FORWARD) {
-        trans = glm::translate(glm::vec3(0.0f, 0.0f, velocity));
-        m_view = trans * m_view;
-    }
-    if (direction == BACKWARD) {
-        trans = glm::translate(glm::vec3(0.0f, 0.0f, -velocity));
-        m_view = trans * m_view;
-    }
-    if (direction == LEFT) {
-        trans = glm::translate(glm::vec3(velocity, 0.0f, 0.0f));
-        m_view = trans * m_view;
-    }
-    if (direction == RIGHT) {
-        trans = glm::translate(glm::vec3(-velocity, 0.0f, 0.0f));
-        m_view = trans * m_view;
-    }
-    if (direction == FLY_UP) {
-        trans = glm::translate(glm::vec3(0.0f, -velocity, 0.0f));
-        m_view = trans * m_view;
-    }
-    if (direction == FLY_DOWN) {
-        trans = glm::translate(glm::vec3(0.0f, velocity, 0.0f));
-        m_view = trans * m_view;
-    }
-}
-
-void Camera::processMouseMovementFPP(float xoffset, float yoffset)
-{
-    glm::mat4 rot;
-    xoffset *= m_mouseSensitivity;
-    yoffset *= m_mouseSensitivity;
-
-    rot = glm::rotate(glm::radians(xoffset), glm::vec3(0.0f, 1.0f, 0.0f));
-    m_view = rot * m_view;
-    rot = glm::rotate(glm::radians(-yoffset), glm::vec3(1.0f, 0.0f, 0.0f));
-    m_view = rot * m_view;
-}
-
-void Camera::processMouseMovementEditor(float x, float y, float dx, float dy)
-{
-    float a = (x*dx + y*dy) / m_diagonal;
-    float b = (x*dy - y*dx) / m_diagonal;
-	if (std::abs(a) < CAM_THRESHOLD * std::max(std::abs(b), 1.0f)) a = 0;
-	if (std::abs(b) < CAM_THRESHOLD * std::max(std::abs(a), 1.0f)) b = 0;
-
-    m_view =
-		glm::rotate(glm::radians(a * m_mouseSensitivity), glm::vec3(y, -x, 0.0f)) *
-		glm::rotate(glm::radians(b * m_mouseSensitivity), glm::vec3(0.0f, 0.0f, 1.0f)) * m_view;
-}
-
-void Camera::processMouseScroll(float yoffset)
-{
-    m_fov -= (float)yoffset;
-
-    if (m_fov < 1.0f)
-        m_fov = 1.0f;
-    if (m_fov > CAM_DEFAULT_FOV)
-        m_fov = CAM_DEFAULT_FOV;
 }
 
 void Camera::applyViewDefault()
@@ -115,4 +55,70 @@ glm::mat4 Camera::getView()
 float Camera::getFov()
 {
     return m_fov;
+}
+
+void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type)
+{
+    switch (type) {
+        case mouse_type::scroll:
+            m_fov -= (float)y;
+
+            if (m_fov < 1.0f)
+                m_fov = 1.0f;
+            if (m_fov > CAM_DEFAULT_FOV)
+                m_fov = CAM_DEFAULT_FOV;
+            break;
+        case mouse_type::fpp:
+            glm::mat4 rot;
+            x *= m_mouseSensitivity;
+            y *= m_mouseSensitivity;
+
+            rot = glm::rotate((float)glm::radians(x), glm::vec3{0.0f, 1.0f, 0.0f});
+            m_view = rot * m_view;
+            rot = glm::rotate((float)glm::radians(-y), glm::vec3{1.0f, 0.0f, 0.0f});
+            m_view = rot * m_view;
+            break;
+        case mouse_type::drag:
+            float a = (xFirst*x + yFirst*y) / m_diagonal;
+            float b = (xFirst*y - yFirst*x) / m_diagonal;
+	        if (std::abs(a) < CAM_THRESHOLD * std::max(std::abs(b), 1.0f)) a = 0;
+	        if (std::abs(b) < CAM_THRESHOLD * std::max(std::abs(a), 1.0f)) b = 0;
+
+            m_view =
+		        glm::rotate(glm::radians(a * m_mouseSensitivity), glm::vec3{yFirst, -xFirst, 0.0f}) *
+		        glm::rotate(glm::radians(b * m_mouseSensitivity), glm::vec3{0.0f, 0.0f, 1.0f}) * m_view;
+            break;
+    }
+}
+
+void Camera::keyboardInput(GLFWwindow* window, float deltaTime)
+{
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        glm::mat4 trans;
+        float velocity = m_movementSpeed * deltaTime;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            trans = glm::translate(glm::vec3(0.0f, 0.0f, velocity));
+            m_view = trans * m_view;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            trans = glm::translate(glm::vec3(0.0f, 0.0f, -velocity));
+            m_view = trans * m_view;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            trans = glm::translate(glm::vec3(velocity, 0.0f, 0.0f));
+            m_view = trans * m_view;
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            trans = glm::translate(glm::vec3(-velocity, 0.0f, 0.0f));
+            m_view = trans * m_view;
+        }
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            trans = glm::translate(glm::vec3(0.0f, -velocity, 0.0f));
+            m_view = trans * m_view;
+        }
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            trans = glm::translate(glm::vec3(0.0f, velocity, 0.0f));
+            m_view = trans * m_view;
+        }
+    }
 }

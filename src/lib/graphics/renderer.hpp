@@ -247,6 +247,9 @@ namespace fcpp {
             //! @brief Default light position.
             static const glm::vec3 LIGHT_DEFAULT_POS;
 
+            //! @brief Default light color.
+            static const glm::vec3 LIGHT_COLOR;
+
             //! @brief Window object for GLFW; it stores OpenGL context information.
             GLFWwindow* m_window;
 

@@ -91,6 +91,7 @@ constexpr size_t dim = 2;
 #endif
 
 DECLARE_OPTIONS(opt,
+    parallel<true>,
     synchronised<false>,
     program<coordination::main>,
     round_schedule<round_s>,
@@ -114,7 +115,7 @@ DECLARE_OPTIONS(opt,
 );
 
 int main() {
-    component::interactive_simulator<opt>::net network{common::make_tagged_tuple<>()};
+    component::interactive_simulator<opt>::net network{common::make_tagged_tuple<epsilon>(0.1)};
     network.run();
     return 0;
 }

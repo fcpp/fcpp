@@ -48,7 +48,9 @@ using namespace fcpp::internal;
     const std::string Renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
 #endif
 
-    const glm::vec3 Renderer::LIGHT_DEFAULT_POS{ glm::vec3{0.0f, 0.0f, 0.0f} };
+    const glm::vec3 Renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
+
+    const glm::vec3 Renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
 
 
 /* --- CONSTRUCTOR --- */
@@ -379,23 +381,23 @@ void Renderer::drawOrtho() {
 void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
-    glm::mat4 view{ m_camera.getView() };
+    glm::mat4 const& view{ m_camera.getView() };
     glm::mat4 model{ 1.0f };
-    glm::mat3 normal;
+    model = glm::translate(model, p);
+    model = glm::scale(model, glm::vec3(d));
+    glm::mat3 normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
+    glm::vec4 col{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }; // access to first color only is temporary...
 
     // Draw cube
     m_shaderProgram.use();
     glBindVertexArray(VAO[(int)vertex::cube]);
     m_shaderProgram.setVec3("u_lightPos", m_lightPos);
     m_shaderProgram.setFloat("u_ambientStrength", 0.1f);
-    m_shaderProgram.setVec4("u_objectColor", glm::vec4{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }); // access to first color only is temporary...
-    m_shaderProgram.setVec3("u_lightColor", glm::vec3{ 1.0f, 1.0f, 1.0f });
+    m_shaderProgram.setVec4("u_objectColor", col);
+    m_shaderProgram.setVec3("u_lightColor", LIGHT_COLOR);
     m_shaderProgram.setMat4("u_projection", projection);
     m_shaderProgram.setMat4("u_view", view);
-    model = glm::translate(model, p);
-    model = glm::scale(model, glm::vec3(d));
     m_shaderProgram.setMat4("u_model", model);
-    normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
     m_shaderProgram.setMat3("u_normal", normal);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 }

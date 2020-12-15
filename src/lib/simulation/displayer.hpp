@@ -291,7 +291,7 @@ struct displayer {
                             n_beg[i].second.cache_position(t);
                         });
                     }
-                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
+                    common::parallel_for(common::tags::general_execution<false>(m_threads), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
                         n_beg[i].second.draw();
                     });
                     if (rt == 0) {

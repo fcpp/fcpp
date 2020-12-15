@@ -46,8 +46,8 @@ namespace fcpp {
         void setViewDefault(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch);
 
         //! @brief It returns camera's view matrix.
-        glm::mat4 getView();
-        
+        glm::mat4 const& getView();
+
         //! @brief It returns camera's Field of View.
         float getFov();
 

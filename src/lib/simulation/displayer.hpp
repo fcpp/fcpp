@@ -15,7 +15,6 @@
 #include <utility>
 #include <vector>
 #include <string.h>
-#include <iostream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -153,9 +152,8 @@ struct displayer {
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids() {}
 
             //! @brief Caches the current position for later use.
-            void cache_position(times_t t) {
-                m_position = to_vec3(P::node::position(t));
-                if (t == 0) P::node::net.viewport_update(m_position);
+            glm::vec3 const& cache_position(times_t t) {
+                return m_position = to_vec3(P::node::position(t));
             }
 
             //! @brief Accesses the cached position.
@@ -251,7 +249,7 @@ struct displayer {
                 P::net{ t },
                 m_threads( common::get_or<tags::threads>(t, FCPP_THREADS) ),
                 m_refresh{ 0 },
-                m_step{ common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) },
+                m_step( common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) ),
                 m_viewport_max{ -INF, -INF, -INF },
                 m_viewport_min{ +INF, +INF, +INF },
                 m_renderer{},
@@ -262,7 +260,8 @@ struct displayer {
                 m_mouseFirst{ 1 },
                 m_mouseRight{ 0 },
                 m_deltaTime{ 0.0f },
-                m_lastFrame{ 0.0f } {}
+                m_lastFrame{ 0.0f },
+                m_lastPause{ false } {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -270,26 +269,32 @@ struct displayer {
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
-                if (P::net::next() == TIME_MAX and P::net::frequency() > 0) return TIME_MAX;
-                if (m_step == 0) return 0;
-                return std::min(m_refresh, P::net::next());
+                times_t nxt = P::net::next();
+                if (nxt == TIME_MAX and P::net::frequency() > 0) return TIME_MAX;
+                return std::min(std::min(m_refresh, P::net::real_time()), nxt);
             }
 
             //! @brief Updates the internal status of net component.
             void update() {
-                if (m_step == 0 and m_refresh > 0) m_refresh = P::net::real_time();
-                if (m_refresh < P::net::next()) {
+                times_t rt = std::min(m_refresh, P::net::real_time());
+                if (rt < P::net::next()) {
                     PROFILE_COUNT("displayer");
-                    times_t t = P::net::realtime_to_internal(m_refresh);
+                    times_t t = P::net::internal_time();
                     auto n_beg = P::net::node_begin();
                     auto n_end = P::net::node_end();
-                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
-                        n_beg[i].second.cache_position(t);
-                    });
+                    if (rt == 0) {
+                        common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                            viewport_update(n_beg[i].second.cache_position(t));
+                        });
+                    } else {
+                        common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                            n_beg[i].second.cache_position(t);
+                        });
+                    }
                     common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
                         n_beg[i].second.draw();
                     });
-                    if (t == 0) {
+                    if (rt == 0) {
                         // first frame only: set camera position, rotation, sensitivity
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
@@ -338,8 +343,7 @@ struct displayer {
                     keyboardInput(m_renderer.getWindow(), m_deltaTime);
                     
                     // Update m_refresh
-                    if (m_step > 0) m_refresh += m_step;
-                    else m_refresh = P::net::real_time();
+                    m_refresh = rt + m_step;
                 } else P::net::update();
             }
 
@@ -348,6 +352,7 @@ struct displayer {
                 return m_renderer;
             }
 
+        private: // implementation details
             //! @brief Updates the viewport adding a position to it.
             void viewport_update(glm::vec3 pos) {
                 for (int i=0; i<3; ++i) {
@@ -362,7 +367,6 @@ struct displayer {
                 }
             }
 
-        private: // implementation details
             //! @brief It updates m_deltaTime and m_lastFrame
             void updateDeltaTime() {
                 float currentFrame{ (float)glfwGetTime() };
@@ -430,21 +434,25 @@ struct displayer {
                 // Process displayer's input
                 if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
                     glfwSetWindowShouldClose(window, true);
+                    if (P::net::frequency() == 0) P::net::frequency(1);
                     P::net::terminate();
                 }
                 if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
                     // decelerate simulation
-                    P::net::frequency(0.98*P::net::frequency());
+                    P::net::frequency(pow(0.5, deltaTime)*P::net::frequency());
                 }
                 if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
                     // decelerate simulation
-                    P::net::frequency(1.02*P::net::frequency());
+                    P::net::frequency(pow(2.0, deltaTime)*P::net::frequency());
                 }
                 if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
                     // play/pause simulation
-                    real_t f = P::net::frequency();
-                    P::net::frequency(f == 0 ? 1 : 0);
-                }
+                    if (not m_lastPause) {
+                        real_t f = P::net::frequency();
+                        P::net::frequency(f == 0 ? 1 : 0);
+                        m_lastPause = true;
+                    }
+                } else m_lastPause = false;
                 
                 // Process renderer's input
                 m_renderer.keyboardInput(window, deltaTime);
@@ -482,6 +490,9 @@ struct displayer {
 
             //! @brief Time of last frame.
             float m_lastFrame;
+
+            //! @brief Whether pause was pressed last time.
+            bool m_lastPause;
 
             //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
             fcpp::internal::Renderer m_renderer;

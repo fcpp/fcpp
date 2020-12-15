@@ -206,8 +206,8 @@
 #define FCPP_TIME_EPSILON 0.01f
 #endif
 #ifndef FCPP_REFRESH_RATE
-//! @brief Setting defining the refresh rate of graphical representations.
-#define FCPP_REFRESH_RATE (1.0/60)
+//! @brief Setting defining the minimum acceptable refresh rate of graphical representations.
+#define FCPP_REFRESH_RATE 0.1f
 #endif
 
 

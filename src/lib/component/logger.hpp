@@ -110,7 +110,7 @@ namespace details {
     }
     //! @brief Makes a reference to a plotter.
     template <typename T>
-    std::shared_ptr<T> make_plotter(nullptr_t) {
+    std::shared_ptr<T> make_plotter(std::nullptr_t) {
         return std::shared_ptr<T>(new T());
     }
     //! @brief Computes the row type given a the aggregator tuple (general case).
@@ -364,7 +364,7 @@ struct logger {
             //! @brief Collects data actively from nodes if `identifier` is available.
             template <typename N>
             inline void data_puller(common::bool_pack<true>, N& n) {
-                if (m_threads == 1) {
+                if (parallel == false or m_threads == 1) {
                     for (auto it = n.node_begin(); it != n.node_end(); ++it)
                         aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), t_tags());
                     return;

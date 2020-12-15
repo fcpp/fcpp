@@ -237,7 +237,7 @@ struct timer {
                 if (f > 0 and m_fact > 0)
                     m_offs += m_last_update * (m_inv - 1/f);
                 else if (f > 0) // resume
-                    m_offs = P::net::real_time() - m_next_update / f;
+                    m_offs = P::net::as_final().next() - m_next_update / f;
                 m_fact = f;
                 m_inv = 1/f;
             }

@@ -8,9 +8,10 @@
 #ifndef FCPP_COMPONENT_BASE_H_
 #define FCPP_COMPONENT_BASE_H_
 
+#include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <limits>
-#include <thread>
 
 #include "lib/settings.hpp"
 #include "lib/common/mutex.hpp"
@@ -203,14 +204,19 @@ struct base {
 
         //! @brief The global part of the component.
         class net {
+            //! @brief The clock type used for time measurements.
+            using clock_t = std::chrono::high_resolution_clock;
+
           public: // visible by node objects and the main program
             //! @name constructors
             //@{
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>&) {
-                m_realtime_start = std::chrono::high_resolution_clock::now();
-                m_realtime_factor = real_t(std::chrono::high_resolution_clock::period::num) / std::chrono::high_resolution_clock::period::den;
+                m_realtime_start = clock_t::now();
+                m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den;
+                m_last_update = m_next_update = 0;
+                m_warn_delay = FCPP_TIME_EPSILON;
             }
 
             //! @brief Deleted copy constructor.
@@ -234,21 +240,25 @@ struct base {
 
             //! @brief Runs the events until a given end. Should NEVER be overridden.
             void run(times_t end = TIME_MAX) {
-                while (as_final().next() < end) {
-                    maybe_sleep(std::integral_constant<bool, realtime>{});
+                times_t nxt;
+                while ((nxt = as_final().next()) < end) {
+                    m_next_update = nxt;
+                    maybe_sleep(nxt, std::integral_constant<bool, realtime>{});
+                    m_last_update = nxt;
                     as_final().update();
                 }
                 PROFILE_REPORT();
             }
 
-            //! @brief Converts real time into internal time.
-            times_t realtime_to_internal(times_t t) const {
-                return t;
+            //! @brief A measure of the internal time clock.
+            times_t internal_time() const {
+                if (not realtime or (m_last_update == m_next_update)) return m_last_update;
+                return std::max(std::min(real_time(), m_next_update), m_last_update);
             }
 
             //! @brief An estimate of real time elapsed from start. Should NEVER be overridden.
             inline times_t real_time() const {
-                return (std::chrono::high_resolution_clock::now() - m_realtime_start).count() * m_realtime_factor;
+                return (clock_t::now() - m_realtime_start).count() * m_realtime_factor;
             }
 
           protected: // visible by net objects only
@@ -264,19 +274,33 @@ struct base {
 
           private: // implementation details
             //! @brief Does not wait before an update.
-            inline void maybe_sleep(std::false_type) {}
+            inline void maybe_sleep(times_t, std::false_type) {}
 
             //! @brief Waits real time before an update.
-            inline void maybe_sleep(std::true_type) {
-                if (as_final().next() > real_time())
-                    std::this_thread::sleep_until(m_realtime_start + std::chrono::high_resolution_clock::duration((long long)(as_final().next()/m_realtime_factor)));
+            inline void maybe_sleep(times_t nxt, std::true_type) {
+                clock_t::time_point t = m_realtime_start + clock_t::duration((long long)(nxt/m_realtime_factor));
+                if (t > clock_t::now())
+                    std::this_thread::sleep_until(t);
+                else {
+                    times_t delay = (clock_t::now() - t).count() * m_realtime_factor;
+                    if (delay >= m_warn_delay) {
+                        std::cerr << "WARNING: execution delayed (delay = " << delay << "s)" << std::endl;
+                        m_warn_delay = 2*delay;
+                    }
+                }
             }
 
             //! @brief The start time of the program.
-            std::chrono::high_resolution_clock::time_point m_realtime_start;
+            clock_t::time_point m_realtime_start;
 
             //! @brief A conversion factor from clock ticks to real time in seconds.
             real_t m_realtime_factor;
+
+            //! @brief The internal time of the last and next update.
+            times_t m_last_update, m_next_update;
+
+            //! @brief The minimum delay triggering a warning.
+            times_t m_warn_delay;
         };
     };
 };

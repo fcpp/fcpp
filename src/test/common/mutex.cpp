@@ -1,9 +1,5 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include <algorithm>
-#include <mutex>
-#include <thread>
-
 #include "gtest/gtest.h"
 
 #include "lib/common/algorithm.hpp"
@@ -45,6 +41,14 @@ int work_trylock(T&& ex, common::mutex<enabled>&& m) {
     return acc;
 }
 
+#ifdef FCPP_DISABLE_THREADS
+#define EXPECT_NEQ(a, b)    EXPECT_EQ(a, b)
+#define EXPECT_LEQ(a, b)    EXPECT_EQ(a, -1)
+#else
+#define EXPECT_NEQ(a, b)    EXPECT_NE(a, b)
+#define EXPECT_LEQ(a, b)    EXPECT_EQ(a, b)
+#endif
+
 
 TEST(MutexTest, Sequential) {
     int res;
@@ -61,15 +65,11 @@ TEST(MutexTest, Sequential) {
 TEST(MutexTest, Parallel) {
     int res;
     res = work_lock(common::tags::parallel_execution(4), common::mutex<false>());
-    EXPECT_NE(TRIES, res);
+    EXPECT_NEQ(TRIES, res);
     res = work_lock(common::tags::parallel_execution(4), common::mutex<true>());
     EXPECT_EQ(TRIES, res);
-}
-
-TEST(MutexTest, Trying) {
-    int res;
     res = work_trylock(common::tags::parallel_execution(4), common::mutex<false>());
-    EXPECT_NE(TRIES, res);
+    EXPECT_NEQ(TRIES, res);
     res = work_trylock(common::tags::parallel_execution(4), common::mutex<true>());
     EXPECT_EQ(TRIES, res);
 }
@@ -79,19 +79,19 @@ TEST(MutexTest, Locking) {
         constexpr bool enabled = false;
         common::mutex<enabled> m1, m2;
         common::lock_guard<enabled> l(m1);
-        EXPECT_EQ(try_lock(m2, m1), -1);
+        EXPECT_EQ(common::try_lock(m2, m1), -1);
         {
             common::unlock_guard<enabled> u(m1);
-            lock(m1, m2);
-            EXPECT_EQ(try_lock(m1, m2), -1);
-            EXPECT_EQ(try_lock(m2, m1), -1);
+            common::lock(m1, m2);
+            EXPECT_EQ(common::try_lock(m1, m2), -1);
+            EXPECT_EQ(common::try_lock(m2, m1), -1);
             m1.unlock();
             m2.unlock();
         }
         EXPECT_EQ(try_lock(m2, m1), -1);
         {
             common::unlock_guard<enabled> u(m1);
-            EXPECT_EQ(try_lock(m1, m2), -1);
+            EXPECT_EQ(common::try_lock(m1, m2), -1);
             m1.unlock();
             m2.unlock();
         }
@@ -100,19 +100,19 @@ TEST(MutexTest, Locking) {
         constexpr bool enabled = true;
         common::mutex<enabled> m1, m2;
         common::lock_guard<enabled> l(m1);
-        EXPECT_EQ(common::try_lock(m2, m1), 1);
+        EXPECT_LEQ(common::try_lock(m2, m1), 1);
         {
             common::unlock_guard<enabled> u(m1);
             common::lock(m1, m2);
-            EXPECT_EQ(common::try_lock(m1, m2), 0);
-            EXPECT_EQ(common::try_lock(m2, m1), 0);
+            EXPECT_LEQ(common::try_lock(m1, m2), 0);
+            EXPECT_LEQ(common::try_lock(m2, m1), 0);
             m1.unlock();
             m2.unlock();
         }
-        EXPECT_EQ(common::try_lock(m2, m1), 1);
+        EXPECT_LEQ(common::try_lock(m2, m1), 1);
         {
             common::unlock_guard<enabled> u(m1);
-            EXPECT_EQ(common::try_lock(m1, m2), -1);
+            EXPECT_LEQ(common::try_lock(m1, m2), -1);
             m1.unlock();
             m2.unlock();
         }

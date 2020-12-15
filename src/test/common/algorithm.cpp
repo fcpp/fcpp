@@ -1,11 +1,7 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include <algorithm>
-#include <mutex>
 #include <queue>
 #include <random>
-#include <set>
-#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -19,6 +15,12 @@ int workhard(int n=15) {
     if (n <= 1) return 1;
     return (workhard(n-1) + workhard(n-2))/2;
 }
+
+#ifdef FCPP_DISABLE_THREADS
+#define EXPECT_NEQ(a, b)    EXPECT_EQ(a, b)
+#else
+#define EXPECT_NEQ(a, b)    EXPECT_NE(a, b)
+#endif
 
 
 TEST(AlgorithmTest, NthElements) {
@@ -57,13 +59,13 @@ TEST(AlgorithmTest, ParallelFor) {
     EXPECT_EQ(N, acc);
     acc = 0;
     common::parallel_for(common::tags::parallel_execution(4), N, worker);
-    EXPECT_NE(N, acc);
+    EXPECT_NEQ(N, acc);
     acc = 0;
     common::parallel_for(common::tags::general_execution<true>(4), N, worker);
-    EXPECT_NE(N, acc);
+    EXPECT_NEQ(N, acc);
     acc = 0;
     common::parallel_for(common::tags::dynamic_execution(4), N, worker);
-    EXPECT_NE(N, acc);
+    EXPECT_NEQ(N, acc);
     acc = 0;
     std::mutex m;
     common::parallel_for(common::tags::general_execution<true>(4), N, [&acc,&m](size_t,size_t) {
@@ -117,7 +119,7 @@ TEST(AlgorithmTest, ParallelWhile) {
         acc = tmp + workhard();
         return true;
     });
-    EXPECT_NE(N, acc);
+    EXPECT_NEQ(N, acc);
     q = make_queue(N);
     acc = 0;
     common::parallel_while(common::tags::parallel_execution(8), [&q,&m,&acc] (size_t,size_t) {
@@ -141,7 +143,7 @@ TEST(AlgorithmTest, ParallelWhile) {
         acc = tmp + workhard();
         return true;
     });
-    EXPECT_NE(N, acc);
+    EXPECT_NEQ(N, acc);
     q = make_queue(N);
     acc = 0;
     common::parallel_while(common::tags::dynamic_execution(8,5), [&q,&m,&acc] (size_t,size_t) {

@@ -165,9 +165,9 @@ TEST(TimerTest, NetScheduling) {
     network.update();
     EXPECT_EQ(40, network.next());
     network.frequency(4);
-    EXPECT_NEAR(10, network.next(), 1e-2);
+    EXPECT_EQ(25, network.next());
     network.update();
-    EXPECT_NEAR(15, network.next(), 1e-2);
+    EXPECT_EQ(30, network.next());
     network.terminate();
     EXPECT_EQ(TIME_MAX, network.next());
 }

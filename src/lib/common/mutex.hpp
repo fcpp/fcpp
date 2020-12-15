@@ -11,9 +11,34 @@
 #include <cstdint>
 
 #include <chrono>
+#ifndef FCPP_DISABLE_THREADS
 #include <mutex>
+#include <thread>
+#endif
 #if defined(_OPENMP)
 #include <omp.h>
+#endif
+
+#ifdef FCPP_DISABLE_THREADS
+//! @cond INTERNAL
+namespace std {
+    struct adopt_lock_t {};
+    struct defer_lock_t {};
+    struct try_to_lock_t {};
+
+    constexpr adopt_lock_t adopt_lock{};
+    constexpr defer_lock_t defer_lock{};
+    constexpr try_to_lock_t try_to_lock{};
+
+    namespace this_thread {
+        void yield() {}
+        template <typename C, typename D>
+        void sleep_until(chrono::time_point<C,D> const&) {}
+        template <typename R, typename P>
+        void sleep_for(chrono::duration<R,P> const&) {}
+    };
+}
+//! @endcond
 #endif
 
 
@@ -60,7 +85,10 @@ struct mutex<false> {
 };
 
 
-#if defined(_OPENMP)
+#ifdef FCPP_DISABLE_THREADS
+template <>
+struct mutex<true> : public mutex<false> {};
+#elif defined(_OPENMP)
 //! @brief Actual mutex interface when `enabled` is true and OpenMP is available.
 template <>
 struct mutex<true> {
@@ -124,11 +152,18 @@ struct lock_guard<false> {
 };
 
 
+#ifdef FCPP_DISABLE_THREADS
+template <>
+struct lock_guard<true> : public lock_guard<false> {
+    using lock_guard<false>::lock_guard;
+};
+#else
 //! @brief Imported version of `std::lock_guard`.
 template <>
 struct lock_guard<true> : public std::lock_guard<mutex<true>> {
     using std::lock_guard<mutex<true>>::lock_guard;
 };
+#endif
 
 
 //! @brief Bypassable unlocker of a mutex during its lifetime.
@@ -150,6 +185,12 @@ struct unlock_guard<false> {
 };
 
 
+#ifdef FCPP_DISABLE_THREADS
+template <>
+struct unlock_guard<true> : public unlock_guard<false> {
+    using unlock_guard<false>::unlock_guard;
+};
+#else
 //! @brief Active version of `unlock_guard`.
 template <>
 struct unlock_guard<true> {
@@ -172,6 +213,7 @@ struct unlock_guard<true> {
   private:
     mutex<true>& m_mutex;
 };
+#endif
 
 
 //! @brief Bypassable version of `std::unique_lock` (manages a mutex through lifetime).
@@ -248,30 +290,49 @@ struct unique_lock<false> {
 inline void swap(unique_lock<false>&, unique_lock<false>&) noexcept {}
 
 
+#ifdef FCPP_DISABLE_THREADS
+template <>
+struct unique_lock<true> : public unique_lock<false> {
+    using unique_lock<false>::unique_lock;
+};
+#else
 //! @brief Imported version of `std::unique_lock`.
 template <>
 struct unique_lock<true> : std::unique_lock<mutex<true>> {
     using std::unique_lock<common::mutex<true>>::unique_lock;
 };
+#endif
 
 
 template <typename... Ts>
 void lock(mutex<false>&, Ts&...) {}
 
+#ifdef FCPP_DISABLE_THREADS
+template <typename... Ts>
+void lock(mutex<true>&, Ts&...) {}
+#else
 template <typename... Ts>
 void lock(mutex<true>& a, Ts&... ms) {
     std::lock(a, ms...);
 }
+#endif
 
 template <typename... Ts>
 int try_lock(mutex<false>&, Ts&...) {
     return -1;
 }
 
+#ifdef FCPP_DISABLE_THREADS
+template <typename... Ts>
+int try_lock(mutex<true>&, Ts&...) {
+    return -1;
+}
+#else
 template <typename... Ts>
 int try_lock(mutex<true>& a, Ts&... ms) {
     return std::try_lock(a, ms...);
 }
+#endif
 
 
 //! @cond INTERNAL

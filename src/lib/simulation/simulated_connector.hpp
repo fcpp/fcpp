@@ -282,6 +282,7 @@ struct simulated_connector {
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
                 P::node::round_end(t);
+                P::node::net.cell_move(P::node::as_final(), t);
                 set_leave_time(t);
             }
 
@@ -339,7 +340,7 @@ struct simulated_connector {
 
             //! @brief Inserts a new node into its cell.
             void cell_enter(typename F::node& n) {
-                cell_enter_impl(n, n.position());
+                cell_enter_impl<false>(n, n.position());
             }
 
             //! @brief Removes a node from all cells.
@@ -352,8 +353,7 @@ struct simulated_connector {
 
             //! @brief Moves a node across cells.
             void cell_move(typename F::node& n, times_t t) {
-                m_nodes.at(n.uid)->second.erase(n);
-                cell_enter_impl(n, n.position(t));
+                cell_enter_impl<true>(n, n.position(t));
             }
 
             //! @brief Returns the cells in proximity of node `n`.
@@ -392,8 +392,13 @@ struct simulated_connector {
             }
 
             //! @brief Interts a node in the cell correspoding to a given position.
-            void cell_enter_impl(typename F::node& n, const position_type& p) {
+            template <bool move>
+            inline void cell_enter_impl(typename F::node& n, const position_type& p) {
                 cell_id_type c = to_cell(p);
+                if (move) {
+                    if (c == m_nodes.at(n.uid)->first) return;
+                    else m_nodes.at(n.uid)->second.erase(n);
+                }
                 if (m_cells.count(c) == 0) {
                     common::lock_guard<parallel> l(m_mutex);
                     if (m_cells.count(c) == 0) {
@@ -413,10 +418,11 @@ struct simulated_connector {
                     }
                 }
                 m_cells[c].insert(n);
-                if (m_nodes.count(n.uid) == 0) {
+                if (move) m_nodes.at(n.uid) = m_cells.find(c);
+                else {
                     common::lock_guard<parallel> l(m_mutex);
                     m_nodes[n.uid] = m_cells.find(c);
-                } else m_nodes[n.uid] = m_cells.find(c);
+                }
             }
 
             //! @brief Returns the `randomizer` generator if available.

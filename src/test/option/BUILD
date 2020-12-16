@@ -54,6 +54,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/option:sequence",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

@@ -223,6 +223,40 @@ namespace coordination {
 
 //! @brief Reduces a field to a single value by minimum.
 template <typename node_t, typename A>
+inline to_local<A> all_hood(node_t& node, trace_t call_point, const A& a) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x and y;
+    }, a);
+}
+
+//! @brief Reduces a field to a single value by minimum with a default value for self.
+template <typename node_t, typename A, typename B>
+inline to_local<A> all_hood(node_t& node, trace_t call_point, const A& a, const B& b) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x and y;
+    }, a, b);
+}
+
+
+//! @brief Reduces a field to a single value by maximum.
+template <typename node_t, typename A>
+inline to_local<A> any_hood(node_t& node, trace_t call_point, const A& a) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x or y;
+    }, a);
+}
+
+//! @brief Reduces a field to a single value by maximum with a default value for self.
+template <typename node_t, typename A, typename B>
+inline to_local<A> any_hood(node_t& node, trace_t call_point, const A& a, const B& b) {
+    return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
+        return x or y;
+    }, a, b);
+}
+
+
+//! @brief Reduces a field to a single value by minimum.
+template <typename node_t, typename A>
 inline to_local<A> min_hood(node_t& node, trace_t call_point, const A& a) {
     return fold_hood(node, call_point, [] (const to_local<A>& x, const to_local<A>& y) -> to_local<A> {
         return std::min(x, y);

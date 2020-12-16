@@ -133,7 +133,6 @@ struct displayer {
      */
     template <typename F, typename P>
     struct component : public P {
-        DECLARE_COMPONENT(displayer);
         REQUIRE_COMPONENT(displayer,identifier);
         REQUIRE_COMPONENT(displayer,positioner);
         REQUIRE_COMPONENT(displayer,storage);

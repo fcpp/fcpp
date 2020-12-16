@@ -493,6 +493,138 @@ template <typename T>
 using merge_t = common::apply_templates<T, merge>;
 
 
+//! @brief Generates points in a grid given its extremes and the number of steps per axis.
+//! @{
+//! @cond INTERNAL
+namespace details {
+    template <typename L, typename U, typename N>
+    struct grid;
+    template <typename... Ls, typename... Us, typename... Ns>
+    struct grid<common::type_sequence<Ls...>, common::type_sequence<Us...>, common::type_sequence<Ns...>> {
+        //! @brief The dimensionality of the space.
+        static constexpr size_t n = sizeof...(Ls);
+
+        //! @brief The type of results generated.
+        using type = vec<n>;
+
+        //! @brief Default constructor.
+        template <typename G>
+        grid(G&& g) : m_i(0) {
+            m_init = {details::call_distr<Ls>(g)...};
+            m_step = {details::call_distr<Us>(g)...};
+            m_mods = {details::call_distr<Ns>(g)...};
+            for (size_t i=0; i<n; ++i) m_step[i] = (m_step[i]-m_init[i])/std::max(m_mods[i]-1, size_t(1));
+            m_divs[0] = 1;
+            for (size_t i=1; i<n; ++i) m_divs[i] = m_divs[i-1]*m_mods[i-1];
+        }
+
+        //! @brief Tagged tuple constructor.
+        template <typename G, typename S, typename T>
+        grid(G&& g, const common::tagged_tuple<S,T>& tup) : m_i(0) {
+            m_init = {details::call_distr<Ls>(g, tup)...};
+            m_step = {details::call_distr<Us>(g, tup)...};
+            m_mods = {details::call_distr<Ns>(g, tup)...};
+            for (size_t i=0; i<n; ++i) m_step[i] = (m_step[i]-m_init[i])/std::max(m_mods[i]-1, size_t(1));
+            m_divs[0] = 1;
+            for (size_t i=1; i<n; ++i) m_divs[i] = m_divs[i-1]*m_mods[i-1];
+        }
+
+        //! @brief Returns next element, without stepping over.
+        type next() const {
+            vec<n> p = m_init;
+            for (size_t i=0; i<n; ++i) p[i] += m_step[i] * ((m_i/m_divs[i]) % m_mods[i]);
+            return p;
+        }
+
+        //! @brief Steps over to next element, without returning.
+        template <typename G>
+        void step(G&&) {
+            ++m_i;
+        }
+
+        //! @brief Returns next element, stepping over.
+        template <typename G>
+        type operator()(G&& g) {
+            vec<n> p = next();
+            step(g);
+            return p;
+        }
+
+      private:
+        //! @brief The lower point and step of the grid.
+        vec<n> m_init, m_step;
+
+        //! @brief The divisors and modules for each dimension.
+        std::array<size_t, n> m_divs, m_mods;
+
+        //! @brief Number of calls to next remaining.
+        size_t m_i;
+    };
+    template <intmax_t x>
+    struct num_wrap {};
+    template <intmax_t scale, typename L, typename U, typename N>
+    struct grid_n;
+    template <intmax_t scale, intmax_t... ls, intmax_t... us, intmax_t... ns>
+    struct grid_n<scale, common::type_sequence<num_wrap<ls>...>, common::type_sequence<num_wrap<us>...>, common::type_sequence<num_wrap<ns>...>> {
+        using type = grid<
+            common::type_sequence<distribution::constant_n<real_t, ls, scale>...>,
+            common::type_sequence<distribution::constant_n<real_t, us, scale>...>,
+            common::type_sequence<distribution::constant_n<size_t, ns>...>
+        >;
+    };
+    template <intmax_t scale, typename... Ds>
+    using grid_n_splitter = typename grid_n<scale,
+        common::type_slice<0,                sizeof...(Ds)*1/3,1,Ds...>,
+        common::type_slice<sizeof...(Ds)*1/3,sizeof...(Ds)*2/3,1,Ds...>,
+        common::type_slice<sizeof...(Ds)*2/3,sizeof...(Ds),    1,Ds...>
+    >::type;
+    template <typename L, typename U, typename N>
+    struct grid_i;
+    template <typename... l_tags, typename... u_tags, typename... n_tags>
+    struct grid_i<common::type_sequence<l_tags...>, common::type_sequence<u_tags...>, common::type_sequence<n_tags...>> {
+        using type = grid<
+            common::type_sequence<distribution::constant_i<real_t, l_tags>...>,
+            common::type_sequence<distribution::constant_i<real_t, u_tags>...>,
+            common::type_sequence<distribution::constant_i<size_t, n_tags>...>
+        >;
+    };
+}
+//! @endcond
+
+/**
+ * @brief With extremes and numerosities as distributions.
+ *
+ * The first two-thirds of `Ds::type` must be convertible to `real_t`.
+ * The last third must be convertible to `size_t`.
+ *
+ * @param Ds The extremes and numerosities (as distributions).
+ */
+template <typename... Ds>
+using grid = details::grid<
+    common::type_slice<0,                sizeof...(Ds)*1/3,1,Ds...>,
+    common::type_slice<sizeof...(Ds)*1/3,sizeof...(Ds)*2/3,1,Ds...>,
+    common::type_slice<sizeof...(Ds)*2/3,sizeof...(Ds),    1,Ds...>
+>;
+/**
+ * @brief With extremes and numerosities as numeric template parameters.
+ * @param scale A scale factor by which the extremes are divided.
+ * @param x The (integral) extremes.
+ */
+template <intmax_t scale, intmax_t... x>
+using grid_n = details::grid_n_splitter<scale, details::num_wrap<x>...>;
+/**
+ * @brief With extremes and numerosities as initialisation values.
+ * @param x_tag The tags corresponding to extremes and numerosities in initialisation values.
+ */
+template <typename... x_tag>
+using grid_i = typename details::grid_i<
+    common::type_slice<0,                   sizeof...(x_tag)*1/3,1,x_tag...>,
+    common::type_slice<sizeof...(x_tag)*1/3,sizeof...(x_tag)*2/3,1,x_tag...>,
+    common::type_slice<sizeof...(x_tag)*2/3,sizeof...(x_tag),    1,x_tag...>
+>::type;
+//! @}
+
+
 }
 
 

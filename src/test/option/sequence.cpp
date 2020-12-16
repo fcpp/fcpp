@@ -5,6 +5,7 @@
 
 #include "gtest/gtest.h"
 
+#include "test/helper.hpp"
 #include "lib/option/sequence.hpp"
 
 using namespace fcpp;
@@ -167,5 +168,27 @@ TEST(SequenceTest, Merge) {
     {
         sequence::merge<> e(rnd);
         EXPECT_EQ(TIME_MAX, e(rnd));
+    }
+}
+
+TEST(SequenceTest, Grid) {
+    {
+        sequence::grid_n<10, 0, 0, 40, 25, 3, 6> e(nullptr);
+        for (int z=0; z<2; ++z)
+            for (int y=0; y<6; ++y)
+                for (int x=0; x<3; ++x)
+                    EXPECT_EQ(make_vec(2*x,0.5*y), e(nullptr));
+    }
+    {
+        struct lo {};
+        struct hi {};
+        struct nm {};
+        sequence::grid_i<lo, lo, lo, hi, hi, hi, nm, nm, nm> e(nullptr, common::make_tagged_tuple<lo,hi,nm>(0,2,3));
+        for (int z=0; z<3; ++z)
+            for (int y=0; y<3; ++y)
+                for (int x=0; x<3; ++x)
+                    EXPECT_EQ(make_vec(x,y,z), e(nullptr));
+        EXPECT_EQ(make_vec(0,0,0), e(nullptr));
+        EXPECT_EQ(make_vec(1,0,0), e(nullptr));
     }
 }

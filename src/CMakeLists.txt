@@ -46,6 +46,7 @@ add_library(fcpp_master SHARED
 	lib/coordination/geometry.cpp
 	lib/coordination/spreading.cpp
 	lib/coordination/utils.cpp
+	lib/data/color.cpp
 	lib/data/field.cpp
 	lib/data/tuple.cpp
 	lib/data/vec.cpp

@@ -67,6 +67,7 @@ cc_library(
     hdrs = ['data.hpp'],
     srcs = ['data.cpp'],
     deps = [
+        "//lib/data:color",
         "//lib/data:field",
         "//lib/data:tuple",
         "//lib/data:vec",

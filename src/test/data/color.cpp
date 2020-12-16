@@ -22,16 +22,20 @@ TEST(ColorTest, Packed) {
 }
 
 TEST(ColorTest, Color) {
-    color c1, c2, c3;
+    color c1, c2, c3, c4;
 
     c1 = color(229, 229, 45);
     c2 = color::hsva(60, 0.80, 0.90);
     c3 = color(0.9, 0.9, 0.18);
+    c4 = color(0xE5E52DFF);
     EXPECT_EQ(c1, c2);
     EXPECT_EQ(c2, c3);
+    EXPECT_EQ(c3, c4);
     c1 = color(91, 122, 153, 127);
     c2 = color::hsva(210, 0.40, 0.60, 0.50);
     c3 = color(0.36, 0.48, 0.6, 0.5);
+    c4 = color(0x5B7A997F);
     EXPECT_EQ(c1, c2);
     EXPECT_EQ(c2, c3);
+    EXPECT_EQ(c3, c4);
 }

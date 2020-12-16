@@ -3,7 +3,8 @@
 #ifndef FCPP_GRAPHICS_RENDERER_H_
 #define FCPP_GRAPHICS_RENDERER_H_
 
-#include <map>
+#include <mutex>
+#include <unordered_map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -160,7 +161,7 @@ namespace fcpp {
             void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
 
             //! @brief It draws a cube, given the information on color(s) and position.
-            void drawCube(glm::vec3 p, double d, std::vector<color> c);
+            void drawCube(glm::vec3 p, double d, std::vector<color> c) const;
             
             //! @brief It draws the specified text in the specified coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale, glm::vec3 color);
@@ -275,7 +276,7 @@ namespace fcpp {
             unsigned int EBO[5];
             
             //! @brief Data structure mapping chars with glyphs.
-            std::map<char, glyph> m_glyphs;
+            std::unordered_map<char, glyph> m_glyphs;
 
             //! @brief Current width of the window.
             unsigned int m_currentWidth;
@@ -312,6 +313,9 @@ namespace fcpp {
 
             //! @brief The near plane's distance of the projection matrix.
             float m_zNear;
+
+            //! @brief Mutex regulating access to the openGL context.
+            mutable std::mutex m_contextMutex;
 		};
 	}
 }

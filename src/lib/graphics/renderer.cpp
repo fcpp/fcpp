@@ -3,7 +3,6 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
-#include <map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -378,7 +377,7 @@ void Renderer::drawOrtho() {
 }
 */
 
-void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
+void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) const {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
     glm::mat4 const& view{ m_camera.getView() };
@@ -389,6 +388,8 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     glm::vec4 col{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }; // access to first color only is temporary...
 
     // Draw cube
+    std::lock_guard<std::mutex> l(m_contextMutex);
+    glfwMakeContextCurrent(m_window);
     m_shaderProgram.use();
     glBindVertexArray(VAO[(int)vertex::cube]);
     m_shaderProgram.setVec3("u_lightPos", m_lightPos);
@@ -400,6 +401,7 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) {
     m_shaderProgram.setMat4("u_model", model);
     m_shaderProgram.setMat3("u_normal", normal);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+    glfwMakeContextCurrent(NULL);
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale, glm::vec3 color)

@@ -46,10 +46,10 @@ namespace fcpp {
         void setViewDefault(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch);
 
         //! @brief It returns camera's view matrix.
-        glm::mat4 const& getView();
+        glm::mat4 const& getView() const;
 
         //! @brief It returns camera's Field of View.
-        float getFov();
+        float getFov() const;
 
 	    //! @brief Sets the current screen diagonal size given window size.
 	    void setDiagonal(float width, float height) {

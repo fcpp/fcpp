@@ -47,12 +47,12 @@ void Camera::setViewDefault(glm::vec3 position, glm::vec3 worldUp, float yaw, fl
     m_viewDefault = m_view = glm::lookAt(position, position + front, up);
 }
 
-glm::mat4 const& Camera::getView()
+glm::mat4 const& Camera::getView() const
 {
     return m_view;
 }
 
-float Camera::getFov()
+float Camera::getFov() const
 {
     return m_fov;
 }

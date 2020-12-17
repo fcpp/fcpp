@@ -20,6 +20,8 @@ namespace tags {
     struct main {};
     namespace nest {
         struct other {};
+        template <typename... T>
+        struct temp {};
     }
 }
 
@@ -150,11 +152,12 @@ TEST_F(TagTupleTest, Print) {
     s.str("");
     t2.print(s, common::underscore_tuple, common::skip_tags<tags::main>);
     EXPECT_EQ("stuffer-foo", s.str());
-    common::tagged_tuple_t<tags::main,int,double,bool,tags::nest::other,char> t3{42,false,'w'};
+    using nasty_type = tags::nest::temp<tags::nest::temp<tags::stuffer>,tags::nest::other>;
+    common::tagged_tuple_t<tags::main,int,double,bool,nasty_type,char> t3{42,false,'w'};
     s.str("");
     t3.print(s, common::assignment_tuple);
-    EXPECT_EQ("main = 42, double = false, other = 'w'", s.str());
+    EXPECT_EQ("main = 42, double = false, temp<temp<stuffer>,other> = 'w'", s.str());
     s.str("");
-    t3.print(s, common::assignment_tuple, common::skip_tags<double,tags::main,tags::nest::other>);
+    t3.print(s, common::assignment_tuple, common::skip_tags<double,tags::main,nasty_type>);
     EXPECT_EQ("", s.str());
 }

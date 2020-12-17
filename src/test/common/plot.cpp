@@ -14,7 +14,7 @@ struct temps {};
 
 struct tag {};
 struct gat {};
-struct oth {};
+struct oth_but {};
 
 
 #define EXPECT_POINT(q, u, s, v)    \
@@ -143,40 +143,40 @@ TEST(PlotTest, JoinFilterSplitJoinValue) {
     EXPECT_EQ(ss.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 1;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp\", \"\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\n\nshipout(\"experiment\");\n");
 }
 
-using splitjoinfiltersplitjoinvalue = plot::split<oth, joinfiltersplitjoinvalue, std::ratio<10>>;
+using splitjoinfiltersplitjoinvalue = plot::split<oth_but, joinfiltersplitjoinvalue, std::ratio<10>>;
 
 TEST(PlotTest, SplitJoinFilterSplitJoinValue) {
     splitjoinfiltersplitjoinvalue p;
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(0, 10, 0, -2);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(1, 5,  5, +1);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(2, 0, 10, +4);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(2, 10, 0, +6);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(1, 5,  5, +9);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(0, 0, 10, +13);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 10, 0, -2);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +1);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 0, 10, +4);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 10, 0, +6);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +9);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 0, 10, +13);
     std::array<plot::page, 1> pb = p.build();
     std::stringstream ss;
     ss << pb[0];
-    EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-oth0\", \"oth = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth0\", \"oth = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-oth10\", \"oth = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth10\", \"oth = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
+    EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0\", \"oth but = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0\", \"oth but = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10\", \"oth but = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10\", \"oth but = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
     ss.str("");
     plot::file f("experiment", pb);
     ss << f;
-    EXPECT_EQ(ss.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-oth0\", \"oth = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth0\", \"oth = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-oth10\", \"oth = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth10\", \"oth = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n\nshipout(\"experiment\");\n");
+    EXPECT_EQ(ss.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0\", \"oth but = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0\", \"oth but = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10\", \"oth but = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10\", \"oth but = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n\nshipout(\"experiment\");\n");
 }
 
 using joinsplitjoinfiltersplitjoinvalue = plot::join<splitjoinfiltersplitjoinvalue, filtersplitvalue>;
 
 TEST(PlotTest, JoinSplitJoinFilterSplitJoinValue) {
     joinsplitjoinfiltersplitjoinvalue p;
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(0, 10, 0, -2);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(1, 5,  5, +1);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(2, 0, 10, +4);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(2, 10, 0, +6);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(1, 5,  5, +9);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth>(0, 0, 10, +13);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 10, 0, -2);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +1);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 0, 10, +4);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 10, 0, +6);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +9);
+    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 0, 10, +13);
     std::array<plot::page, 2> pb = p.build();
     std::stringstream ss;
     ss << pb[0];
-    EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-oth0\", \"oth = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth0\", \"oth = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-oth10\", \"oth = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-oth10\", \"oth = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
+    EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0\", \"oth but = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0\", \"oth but = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10\", \"oth but = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10\", \"oth but = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
     ss.str("");
     ss << pb[1];
     EXPECT_EQ(ss.str(), "plot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5), (10, 0)}}));\n\n");
@@ -219,11 +219,11 @@ TEST(PlotTest, Rows) {
         EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<>);
         EXPECT_EQ(plot_t::limit_size, size_t{0});
         plot_t p;
-        p << common::make_tagged_tuple<tag,gat,oth>(1, 2.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(1, 3.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(42, 3.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(42, 4.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(42, 5.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(1, 2.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(1, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(42, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(42, 4.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(42, 5.5, true);
         EXPECT_EQ(p.size(), 5ULL);
         EXPECT_EQ(p.byte_size(), sizeof(plot_t) + 5 + sizeof(int)*2 + sizeof(double)*4);
         std::vector<std::string> v = {
@@ -263,24 +263,24 @@ TEST(PlotTest, Rows) {
         }
     }
     {
-        using plot_t = plot::rows<temps<tag, int>, temps<gat, double>, temps<oth, bool>, 50>;
+        using plot_t = plot::rows<temps<tag, int>, temps<gat, double>, temps<oth_but, bool>, 50>;
         EXPECT_SAME(plot_t::compressible_tuple_type, plot::details::delta_tuple<common::tagged_tuple_t<tag, int>>);
         EXPECT_SAME(plot_t::mutable_tuple_type, common::tagged_tuple_t<gat, double>);
-        EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<oth, bool>);
+        EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<oth_but, bool>);
         EXPECT_EQ(plot_t::limit_size, size_t{50});
         plot_t p;
-        p << common::make_tagged_tuple<tag,gat,oth>(1, 2.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(1, 3.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(42, 3.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(42, 4.5, true);
-        p << common::make_tagged_tuple<tag,gat,oth>(42, 5.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(1, 2.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(1, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(42, 3.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(42, 4.5, true);
+        p << common::make_tagged_tuple<tag,gat,oth_but>(42, 5.5, true);
         EXPECT_EQ(p.size(), 4ULL);
         EXPECT_EQ(p.byte_size(), sizeof(plot_t) + 4 + sizeof(int)*2 + sizeof(double)*4);
         std::vector<std::string> v = {
             "########################################################",
             "# FCPP execution started at:  Fri Nov 20 13:34:18 2020 #",
             "########################################################",
-            "# oth = true",
+            "# oth_but = true",
             "#",
             "# The columns have the following meaning:",
             "# gat tag ",

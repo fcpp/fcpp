@@ -593,6 +593,20 @@ class join<P> : public P {};
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Formats a type description.
+    inline std::string& format_type(std::string& s) {
+        for (int i=0; i<s.size(); ++i) if (s[i] == '_') s[i] = ' ';
+        return s;
+    }
+    //! @brief Formats a type description.
+    inline std::string format_type(std::string&& s) {
+        return format_type(s);
+    }
+    //! @brief Formats a type description.
+    inline std::string format_type(std::string const& s) {
+        return format_type(std::string(s));
+    }
+
     //! @brief Checks whether C has a static name method.
     template<typename C>
     struct has_name_method {
@@ -650,6 +664,8 @@ class value {
                 p.source = common::details::strip_namespaces(t);
             }
         }
+        details::format_type(p.unit);
+        details::format_type(p.source);
         std::string ar = A::name(); // row aggregator
         std::string ad = aggregator_name(common::bool_pack<details::has_name_method<S>::value>{}); // device aggregator
         p.source += " (" + ad + ar + ")";
@@ -904,7 +920,7 @@ class split {
     }
     //! @brief Single plot building.
     void build_impl(std::array<plot, 1>& res, std::map<key_type, parent_build_type>& m) const {
-        res[0].xname = common::details::strip_namespaces(common::type_name<S>());
+        res[0].xname = details::format_type(common::details::strip_namespaces(common::type_name<S>()));
         std::set<std::string> units;
         if (m.size()) for (point const& q : m.begin()->second) {
             if (q.unit.size()) units.insert(q.unit);
@@ -925,7 +941,7 @@ class split {
         for (auto& p : m) {
             std::stringstream ss;
             p.first.print(ss, common::assignment_tuple);
-            p.second[0].title = ss.str();
+            p.second[0].title = details::format_type(ss.str());
             res.push_back(std::move(p.second[0]));
         }
     }
@@ -937,7 +953,7 @@ class split {
             std::stringstream ss;
             p.first.print(ss, common::assignment_tuple);
             for (auto& q : p.second) {
-                q.title = ss.str() + (q.title.size() ? ", " : "") + q.title;
+                q.title = details::format_type(ss.str()) + (q.title.size() ? ", " : "") + q.title;
                 res[0].plots.push_back(std::move(q));
             }
         }
@@ -948,7 +964,7 @@ class split {
             std::stringstream ss;
             p.first.print(ss, common::assignment_tuple);
             for (auto& q : p.second) {
-                q.title = ss.str() + (q.title.size() ? ", " : "") + q.title;
+                q.title = details::format_type(ss.str()) + (q.title.size() ? ", " : "") + q.title;
                 res.push_back(std::move(q));
             }
         }

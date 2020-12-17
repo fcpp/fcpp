@@ -10,8 +10,8 @@ add_subdirectory(./src/)
 
 # project name, version and description
 project(fcppGL
-	VERSION 0.1.0
-	DESCRIPTION "FieldCalc++ OpenGL simulator."
+    VERSION 0.1.0
+    DESCRIPTION "FieldCalc++ OpenGL simulator."
 )
 
 # executable target
@@ -31,9 +31,9 @@ target_include_directories(fcppGL PRIVATE ./src/
 # link libraries
 target_link_libraries(fcppGL PRIVATE fcpp
                                      glm
-									 glfw
-									 stb_image
-									 freetype)
+                                     glfw
+                                     stb_image
+                                     freetype)
 
 #copying shaders into build
 add_custom_command(TARGET fcppGL PRE_BUILD
@@ -58,6 +58,6 @@ endif(MINGW)
 # defining install rules
 include(GNUInstallDirs)
 install(TARGETS fcppGL
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )

@@ -65,6 +65,10 @@ namespace tags {
     template <size_t... cs>
     struct color_val {};
 
+    //! @brief Declaration tag associating to the antialiasing factor.
+    template <size_t n>
+    struct antialias {};
+
     //! @brief Declaration flag associating to whether parallelism is enabled.
     template <bool b>
     struct parallel;
@@ -84,11 +88,12 @@ namespace tags {
  *
  * <b>Declaration tags:</b>
  * - \ref tags::shape_tag defines a storage tag regulating the shape of nodes (defaults to none).
- * - \ref tags::shape_val defines the base shape of nodes (defaults to \ref color::sphere).
+ * - \ref tags::shape_val defines the base shape of nodes (defaults to cube).
  * - \ref tags::size_tag defines a storage tag regulating the size of nodes (defaults to none).
  * - \ref tags::size_val defines the base size of nodes (defaults to 1).
  * - \ref tags::color_tag defines storage tags regulating the colors of nodes (defaults to none).
  * - \ref tags::color_val defines the base colors of nodes (defaults to none).
+ * - \ref tags::antialias defines the the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
@@ -103,6 +108,9 @@ template <class... Ts>
 struct displayer {
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Antialiasing factor.
+    constexpr static size_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;
 
     //! @brief Storage tag regulating the shape of nodes.
     using shape_tag = common::option_type<tags::shape_tag, void, Ts...>;
@@ -251,7 +259,7 @@ struct displayer {
                 m_step( common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) ),
                 m_viewport_max{ -INF, -INF, -INF },
                 m_viewport_min{ +INF, +INF, +INF },
-                m_renderer{},
+                m_renderer{antialias},
                 m_mouseLastX{ 0.0f },
                 m_mouseLastY{ 0.0f },
                 m_mouseRightX{ 0.0f },

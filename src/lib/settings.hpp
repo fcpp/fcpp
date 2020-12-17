@@ -208,6 +208,12 @@
 #endif
 
 
+#ifndef FCPP_ANTIALIAS
+//! @brief Setting defining the antialiasing factor (1 to disable).
+#define FCPP_ANTIALIAS 4
+#endif
+
+
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */

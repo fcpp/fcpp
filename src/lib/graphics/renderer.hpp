@@ -35,7 +35,7 @@ namespace fcpp {
         class Renderer {
 		public:
 			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
-			Renderer();
+			Renderer(size_t antialias);
 
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();

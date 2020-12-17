@@ -53,7 +53,7 @@ using namespace fcpp::internal;
 
 
 /* --- CONSTRUCTOR --- */
-Renderer::Renderer() :
+Renderer::Renderer(size_t antialias) :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_orthoSize{ SCR_DEFAULT_ORTHO },
@@ -77,6 +77,9 @@ Renderer::Renderer() :
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+    if (antialias > 1)
+        glfwWindowHint(GLFW_SAMPLES, antialias);
+
     // Create window (and its context)
     m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, "fcppGL", NULL, NULL);
 
@@ -194,6 +197,10 @@ Renderer::Renderer() :
     // Enable blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Enable antialiasing
+    if (antialias > 1)
+        glEnable(GL_MULTISAMPLE);
 
     // Uncomment this call to draw in wireframe polygons
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

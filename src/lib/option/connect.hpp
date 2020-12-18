@@ -44,7 +44,7 @@ template <size_t n = 2>
 class clique {
   public:
     //! @brief Type for representing a position.
-    using position_type = vec<2>;
+    using position_type = vec<n>;
 
     //! @brief The node data type.
     struct data_type {};
@@ -76,7 +76,7 @@ template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
 class fixed {
   public:
     //! @brief Type for representing a position.
-    using position_type = vec<2>;
+    using position_type = vec<n>;
 
     //! @brief The node data type.
     struct data_type {};
@@ -95,6 +95,46 @@ class fixed {
     //! @brief Checks if connection is possible.
     bool operator()(const data_type&, const position_type& position1, const data_type&, const position_type& position2) const {
         return norm(position1 - position2) <= m_radius;
+    }
+
+  private:
+    //! @brief The connection radius.
+    real_t m_radius;
+};
+
+
+/**
+ * Connection predicate which is true within a maximum radius (can be set through tag `radius`)
+ * depending on power data of involved devices. Power is a real number from 0 to 1, and
+ * connection is possible within `radius * node1_power * node2_power`.
+ *
+ * @param num The numerator of the default value for the radius (defaults to 1).
+ * @param den The denominator of the default value for the radius (defaults to 1).
+ * @param n   Dimensionality of the space (defaults to 2).
+ */
+template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
+class powered {
+  public:
+    //! @brief Type for representing a position.
+    using position_type = vec<n>;
+
+    //! @brief The node data type.
+    using data_type = real_t;
+
+    //! @brief Generator and tagged tuple constructor.
+    template <typename G, typename S, typename T>
+    powered(G&&, const common::tagged_tuple<S,T>& t) {
+        m_radius = common::get_or<component::tags::radius>(t, ((real_t)num)/den);
+    }
+
+    //! @brief The maximum radius of connection.
+    real_t maximum_radius() const {
+        return m_radius;
+    }
+
+    //! @brief Checks if connection is possible.
+    bool operator()(const data_type& power1, const position_type& position1, const data_type& power2, const position_type& position2) const {
+        return norm(position1 - position2) <= m_radius * power1 * power2;
     }
 
   private:

@@ -47,7 +47,7 @@ namespace fcpp {
             void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
 
             //! @brief It draws a cube, given the information on color(s) and position.
-            void drawCube(glm::vec3 p, double d, std::vector<color> c) const;
+            void drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin = false) const;
             
             //! @brief It draws the specified text in the specified coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale, glm::vec3 color);
@@ -153,13 +153,13 @@ namespace fcpp {
             Shader m_shaderProgramFont;
 
             //! @brief Vertex Array Object(s).
-            unsigned int VAO[5];
+            unsigned int VAO[7];
 
             //! @brief Vertex Buffer Object(s).
-            unsigned int VBO[5];
+            unsigned int VBO[7];
 
             //! @brief Element Buffer Object(s).
-            unsigned int EBO[5];
+            unsigned int EBO[7];
             
             //! @brief Data structure mapping chars with glyphs.
             std::unordered_map<char, glyph> m_glyphs;

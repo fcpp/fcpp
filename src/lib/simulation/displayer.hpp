@@ -186,7 +186,7 @@ struct displayer {
                 for (device_t d : m_prev_nbr_uids)
                     np.push_back(P::node::net.node_at(d).get_cached_position());
                 // render the node
-                P::node::net.getRenderer().drawCube(p, d, c);
+                P::node::net.getRenderer().drawCube(p, d, c, true);
             }
 
             //! @brief Performs computations at round end with current time `t`.

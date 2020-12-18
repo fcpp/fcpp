@@ -156,9 +156,9 @@ Renderer::Renderer(size_t antialias) :
     m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 
     // Generate VAOs, VBOs and EBOs
-    glGenVertexArrays(6, VAO);
-    glGenBuffers(6, VBO);
-    glGenBuffers(6, EBO);
+    glGenVertexArrays(7, VAO);
+    glGenBuffers(7, VBO);
+    glGenBuffers(7, EBO);
 
     // Allocate (static) ortho buffers
     glBindVertexArray(VAO[(int)vertex::ortho]);
@@ -186,8 +186,17 @@ Renderer::Renderer(size_t antialias) :
     glBindVertexArray(VAO[(int)vertex::font]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    
+    // Allocate (dynamic) single line buffers
+    glBindVertexArray(VAO[(int)vertex::singleLine]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -384,7 +393,7 @@ void Renderer::drawOrtho() {
 }
 */
 
-void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) const {
+void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin) const {
     // Create matrices (used several times)
     glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
     glm::mat4 const& view{ m_camera.getView() };
@@ -394,9 +403,11 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) const {
     glm::mat3 normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
     glm::vec4 col{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }; // access to first color only is temporary...
 
-    // Draw cube
+    // Bind current context
     std::lock_guard<std::mutex> l(m_contextMutex);
     glfwMakeContextCurrent(m_window);
+    
+    // Draw cube
     m_shaderProgram.use();
     glBindVertexArray(VAO[(int)vertex::cube]);
     m_shaderProgram.setVec3("u_lightPos", m_lightPos);
@@ -408,6 +419,27 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c) const {
     m_shaderProgram.setMat4("u_model", model);
     m_shaderProgram.setMat3("u_normal", normal);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+    
+    // Draw pin
+    if (pin) {
+        float pinData[] = {
+            p.x, p.y, p.z,
+            p.x, p.y, 0.0f
+        };
+        
+        m_shaderProgramCol.use();
+        m_shaderProgramCol.setMat4("u_projection", projection);
+        m_shaderProgramCol.setMat4("u_view", view);
+        m_shaderProgramCol.setMat4("u_model", model);
+        m_shaderProgramCol.setVec4("u_color", col);
+        glBindVertexArray(VAO[(int)vertex::singleLine]);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData); 
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glDrawArrays(GL_LINES, 0, 6);
+    }
+    
+    // Unbind current context
     glfwMakeContextCurrent(NULL);
 }
 

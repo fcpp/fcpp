@@ -91,9 +91,9 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
     }
 }
 
-void Camera::keyboardInput(GLFWwindow* window, float deltaTime)
+void Camera::keyboardInput(int key, bool first, float deltaTime)
 {
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+    /*if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         glm::mat4 trans;
         float velocity = m_movementSpeed * deltaTime;
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -120,5 +120,5 @@ void Camera::keyboardInput(GLFWwindow* window, float deltaTime)
             trans = glm::translate(glm::vec3(0.0f, velocity, 0.0f));
             m_view = trans * m_view;
         }
-    }
+    }*/
 }

@@ -497,25 +497,15 @@ void Renderer::setNearPlane(float newNear) {
 }
 
 void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type) {
-    switch (type) {
-        case mouse_type::scroll:
-            m_camera.mouseInput(0.0, y, 0.0, 0.0, type);
-            break;
-        case mouse_type::fpp:
-            m_camera.mouseInput(x, y, 0.0, 0.0, type);
-            break;
-        case mouse_type::drag:
-            m_camera.mouseInput(x, y, xFirst, yFirst, type);
-            break;
-    }
+    m_camera.mouseInput(x, y, xFirst, yFirst, type);
 }
 
-void Renderer::keyboardInput(GLFWwindow* window, float deltaTime) {
+void Renderer::keyboardInput(int key, bool first, float deltaTime) {
     // Process renderer's input
     /*no_op*/
     
     // Process camera's input
-    m_camera.keyboardInput(window, deltaTime);
+    m_camera.keyboardInput(key, first, deltaTime);
 }
 
 void Renderer::viewportResize(int width, int height) {

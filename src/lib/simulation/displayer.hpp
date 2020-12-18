@@ -8,13 +8,14 @@
 #ifndef FCPP_SIMULATION_DISPLAYER_H_
 #define FCPP_SIMULATION_DISPLAYER_H_
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <algorithm>
+#include <string.h>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <vector>
-#include <string.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -348,9 +349,6 @@ struct displayer {
                     // Update deltaTime
                     updateDeltaTime();
                     
-                    // Process keyboard input from the displayer and other classes
-                    keyboardInput(m_renderer.getWindow(), m_deltaTime);
-                    
                     // Update m_refresh
                     m_refresh = rt + m_step;
                 } else P::net::update();
@@ -359,6 +357,11 @@ struct displayer {
             //! @brief Returns net's Renderer object.
             fcpp::internal::Renderer const& getRenderer() {
                 return m_renderer;
+            }
+            
+            //! @brief Returns net's delta time.
+            float const& getDeltaTime() {
+                return m_deltaTime;
             }
 
         private: // implementation details
@@ -394,67 +397,90 @@ struct displayer {
                     dspl.m_renderer.viewportResize(width, height);
                     });
 
+                // Keyboard callback
+                glfwSetKeyCallback(m_renderer.getWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+                    net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                    
+                    if ( action == GLFW_PRESS ) {
+                        // Check if the key is just pressed or it is already
+                        std::unordered_set<int>::const_iterator found = dspl.m_key_stroked.find(key); // find key in stroked list
+                        if (found == dspl.m_key_stroked.end()) {
+                            dspl.m_key_stroked.insert(key); // insert key in list if not previously found
+                            dspl.keyboardInput(key, true, dspl.getDeltaTime());
+                        } else {
+                            dspl.keyboardInput(key, false, dspl.getDeltaTime());
+                        }
+                    } else if ( action == GLFW_RELEASE ) {
+                        dspl.m_key_stroked.erase(key);
+                    }
+                    
+                    /*// Erase not pressed keys from stroked list
+                    for ( std::unordered_set<int>::const_iterator it = myset.begin(); it != myset.end(); ++it ) {
+                        
+                    }*/
+                });
+
                 // Cursor position callback
                 glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
-                        net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                        
-                        if (dspl.m_mouseFirst) {
-                            dspl.m_mouseLastX = (float)xpos;
-                            dspl.m_mouseLastY = (float)ypos;
-                            dspl.m_mouseFirst = false;
-                        }
-                        
-                        float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
-                        float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
+                    net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                    
+                    if (dspl.m_mouseFirst) {
                         dspl.m_mouseLastX = (float)xpos;
                         dspl.m_mouseLastY = (float)ypos;
+                        dspl.m_mouseFirst = false;
+                    }
+                    
+                    float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
+                    float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
+                    dspl.m_mouseLastX = (float)xpos;
+                    dspl.m_mouseLastY = (float)ypos;
 
-                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-                            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide cursor
-                            dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::fpp);
-                        } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-                            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
-                            if (!dspl.m_mouseRight) {
-                                dspl.m_mouseRight = 1;
-                                dspl.m_mouseRightX = xpos - (float)(dspl.m_renderer.getCurrentWidth() / 2);
-                                dspl.m_mouseRightY = (float)(dspl.m_renderer.getCurrentHeight() / 2) - ypos;
-                            }
-                            dspl.m_renderer.mouseInput(xoffset, yoffset, dspl.m_mouseRightX, dspl.m_mouseRightY, mouse_type::drag); // need to move (0,0) at the center of the screen
+                    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide cursor
+                        dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::fpp);
+                    } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
+                        if (!dspl.m_mouseRight) {
+                            dspl.m_mouseRight = 1;
+                            dspl.m_mouseRightX = xpos - (float)(dspl.m_renderer.getCurrentWidth() / 2);
+                            dspl.m_mouseRightY = (float)(dspl.m_renderer.getCurrentHeight() / 2) - ypos;
                         }
+                        dspl.m_renderer.mouseInput(xoffset, yoffset, dspl.m_mouseRightX, dspl.m_mouseRightY, mouse_type::drag); // need to move (0,0) at the center of the screen
+                    }
 
-                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
-                            dspl.m_mouseRight = 0;
-                            dspl.m_mouseRightX = 0.0f;
-                            dspl.m_mouseRightY = 0.0f;
-                        }
-                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-                            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
-                    });
+                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+                        dspl.m_mouseRight = 0;
+                        dspl.m_mouseRightX = 0.0f;
+                        dspl.m_mouseRightY = 0.0f;
+                    }
+                    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
+                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
+                });
 
                 // Cursor scroll callback
                 glfwSetScrollCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xoffset, double yoffset) {
-                        net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                        dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll);
-                    });
+                    net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                    dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll);
+                });
             }
             
-            //! @brief Given a deltaTime, it manages keyboard input for the displayer and other classes.
-            void keyboardInput(GLFWwindow* window, float deltaTime) {
+            //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
+            void keyboardInput(int key, bool first, float deltaTime) {
                 // Process displayer's input
-                if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-                    glfwSetWindowShouldClose(window, true);
+                if (key == GLFW_KEY_ESCAPE and first) {
+                    glfwSetWindowShouldClose(m_renderer.getWindow(), true);
                     if (P::net::frequency() == 0) P::net::frequency(1);
                     P::net::terminate();
                 }
-                if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+                if (key == GLFW_KEY_I and first) {
                     // decelerate simulation
                     P::net::frequency(pow(0.5, deltaTime)*P::net::frequency());
                 }
-                if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+                if (key == GLFW_KEY_O and first) {
                     // decelerate simulation
                     P::net::frequency(pow(2.0, deltaTime)*P::net::frequency());
                 }
-                if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+                if (key == GLFW_KEY_P and first) {
                     // play/pause simulation
                     if (not m_lastPause) {
                         real_t f = P::net::frequency();
@@ -464,7 +490,7 @@ struct displayer {
                 } else m_lastPause = false;
                 
                 // Process renderer's input
-                m_renderer.keyboardInput(window, deltaTime);
+                m_renderer.keyboardInput(key, first, deltaTime);
             }
 
             //! @brief The number of threads to be used.
@@ -475,6 +501,9 @@ struct displayer {
 
             //! @brief The step between refresh times.
             times_t m_step;
+            
+            //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
+            fcpp::internal::Renderer m_renderer;
             
             //! @brief Last mouse X position.
             float m_mouseLastX;
@@ -502,9 +531,9 @@ struct displayer {
 
             //! @brief Whether pause was pressed last time.
             bool m_lastPause;
-
-            //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
-            fcpp::internal::Renderer m_renderer;
+            
+            //! @brief List of currently stroked keys.
+            std::unordered_set<int> m_key_stroked;
 
             //! @brief Boundaries of the viewport.
             glm::vec3 m_viewport_min, m_viewport_max;

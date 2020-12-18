@@ -59,8 +59,8 @@ namespace fcpp {
 	    //! @brief It manages mouse input of the given type.
         void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type);
         
-        //! @brief Given a deltaTime, it manages keyboard input for the camera.
-        void keyboardInput(GLFWwindow* window, float deltaTime);
+        //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the camera.
+        void keyboardInput(int key, bool first, float deltaTime);
 
     private:    
         //! @brief Camera's current movement speed.

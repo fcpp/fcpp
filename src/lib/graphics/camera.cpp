@@ -68,16 +68,6 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
             if (m_fov > CAM_DEFAULT_FOV)
                 m_fov = CAM_DEFAULT_FOV;
             break;
-        case mouse_type::fpp:
-            glm::mat4 rot;
-            x *= m_mouseSensitivity;
-            y *= m_mouseSensitivity;
-
-            rot = glm::rotate((float)glm::radians(x), glm::vec3{0.0f, 1.0f, 0.0f});
-            m_view = rot * m_view;
-            rot = glm::rotate((float)glm::radians(-y), glm::vec3{1.0f, 0.0f, 0.0f});
-            m_view = rot * m_view;
-            break;
         case mouse_type::drag:
             float a = (xFirst*x + yFirst*y) / m_diagonal;
             float b = (xFirst*y - yFirst*x) / m_diagonal;
@@ -93,32 +83,5 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
 
 void Camera::keyboardInput(int key, bool first, float deltaTime)
 {
-    /*if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        glm::mat4 trans;
-        float velocity = m_movementSpeed * deltaTime;
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            trans = glm::translate(glm::vec3(0.0f, 0.0f, velocity));
-            m_view = trans * m_view;
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            trans = glm::translate(glm::vec3(0.0f, 0.0f, -velocity));
-            m_view = trans * m_view;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            trans = glm::translate(glm::vec3(velocity, 0.0f, 0.0f));
-            m_view = trans * m_view;
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            trans = glm::translate(glm::vec3(-velocity, 0.0f, 0.0f));
-            m_view = trans * m_view;
-        }
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-            trans = glm::translate(glm::vec3(0.0f, -velocity, 0.0f));
-            m_view = trans * m_view;
-        }
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-            trans = glm::translate(glm::vec3(0.0f, velocity, 0.0f));
-            m_view = trans * m_view;
-        }
-    }*/
+    /* no_op */
 }

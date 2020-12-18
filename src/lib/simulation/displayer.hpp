@@ -435,11 +435,7 @@ struct displayer {
                     dspl.m_mouseLastX = (float)xpos;
                     dspl.m_mouseLastY = (float)ypos;
 
-                    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide cursor
-                        dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::fpp);
-                    } else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
+                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
                         if (!dspl.m_mouseRight) {
                             dspl.m_mouseRight = 1;
                             dspl.m_mouseRightX = xpos - (float)(dspl.m_renderer.getCurrentWidth() / 2);
@@ -453,8 +449,6 @@ struct displayer {
                         dspl.m_mouseRightX = 0.0f;
                         dspl.m_mouseRightY = 0.0f;
                     }
-                    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-                        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // show cursor
                 });
 
                 // Cursor scroll callback

@@ -5,7 +5,7 @@
 
 namespace fcpp {
 	//! @brief Supported mouse input type.
-	enum class mouse_type { drag, fpp, scroll };
+	enum class mouse_type { drag, scroll };
 }
 
 #endif // FCPP_INPUT_ENUMS_H_

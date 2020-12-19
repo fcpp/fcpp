@@ -327,11 +327,9 @@ struct displayer {
                         m_renderer.setGridScale(grid_scale);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
-                    /**
-                     * Do whatever global management you need to do here
-                     * (drawing the scene, interpreting the user input).
-                     * You may want to display the current simulation time t.
-                     */
+                    // Handle pressed keys
+                    for (int key : m_key_stroked)
+                        keyboardInput(key, false, m_deltaTime);
 
                     // Draw grid
                     m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
@@ -401,14 +399,8 @@ struct displayer {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     
                     if ( action == GLFW_PRESS ) {
-                        // Check if the key is just pressed or it is already
-                        std::unordered_set<int>::const_iterator found = dspl.m_key_stroked.find(key); // find key in stroked list
-                        if (found == dspl.m_key_stroked.end()) {
-                            dspl.m_key_stroked.insert(key); // insert key in list if not previously found
-                            dspl.keyboardInput(key, true, dspl.getDeltaTime());
-                        } else {
-                            dspl.keyboardInput(key, false, dspl.getDeltaTime());
-                        }
+                        dspl.m_key_stroked.insert(key);
+                        dspl.keyboardInput(key, true, dspl.getDeltaTime());
                     } else if ( action == GLFW_RELEASE ) {
                         dspl.m_key_stroked.erase(key);
                     }

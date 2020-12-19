@@ -430,7 +430,7 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin) c
         m_shaderProgramCol.use();
         m_shaderProgramCol.setMat4("u_projection", projection);
         m_shaderProgramCol.setMat4("u_view", view);
-        m_shaderProgramCol.setMat4("u_model", model);
+        m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
         m_shaderProgramCol.setVec4("u_color", col);
         glBindVertexArray(VAO[(int)vertex::singleLine]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);

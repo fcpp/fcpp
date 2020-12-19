@@ -16,7 +16,7 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<vec<2>>,
+    exports<vec<2>, size_t>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -51,7 +51,7 @@ TEST(GeometryTest, Target) {
     EXPECT_LT(distance(p, make_vec(2,2.5f)), 0.1f);
 }
 
-MULTI_TEST(GeometryTest, Follow, O, 3) {
+MULTI_TEST(GeometryTest, FollowTarget, O, 3) {
     {
         test_net<combo<O>, std::tuple<real_t>(real_t), 1> n{
             [&](auto& node, real_t val){
@@ -67,6 +67,26 @@ MULTI_TEST(GeometryTest, Follow, O, 3) {
         EXPECT_ROUND(n, {10}, {0});
         EXPECT_ROUND(n, {10}, {0});
     }
+    {
+        test_net<combo<O>, std::tuple<int>(), 1> n{
+            [&](auto& node){
+                return std::make_tuple(
+                    int(10*coordination::follow_target(node, 0, make_vec(10, 0), 3, 1, 1))
+                );
+            }
+        };
+        EXPECT_ROUND(n, {100});
+        EXPECT_ROUND(n, {95});
+        EXPECT_ROUND(n, {83});
+        EXPECT_ROUND(n, {66});
+        EXPECT_ROUND(n, {46});
+        EXPECT_ROUND(n, {23});
+        EXPECT_ROUND(n, {3});
+        EXPECT_ROUND(n, {4});
+        EXPECT_ROUND(n, {2});
+        EXPECT_ROUND(n, {0});
+        EXPECT_ROUND(n, {0});
+    }
     vec<2> target;
     test_net<combo<O>, std::tuple<real_t>(), 1> n{
         [&](auto& node){
@@ -81,6 +101,33 @@ MULTI_TEST(GeometryTest, Follow, O, 3) {
         for (real_t d = INF; d > 1; d = get<0>(n.full_round({}))[0]) ++c;
         EXPECT_LT(c, 16);
     }
+}
+
+MULTI_TEST(GeometryTest, FollowPath, O, 3) {
+    std::array<vec<2>, 3> path = {make_vec(10, 0), make_vec(10, 10), make_vec(0, 10)};
+    test_net<combo<0>, std::tuple<size_t,real_t>(), 1> n{
+        [&](auto& node) {
+            tuple<size_t,real_t> t = coordination::follow_path(node, 0, path, 3, 1);
+            size_t i = get<0>(t);
+            real_t d = get<1>(t);
+            assert(d == distance(node.position(), path[i]));
+            return std::make_tuple(i, d);
+        }
+    };
+    EXPECT_ROUND(n, {0}, {10});
+    EXPECT_ROUND(n, {0}, {7});
+    EXPECT_ROUND(n, {0}, {4});
+    EXPECT_ROUND(n, {0}, {1});
+    EXPECT_ROUND(n, {1}, {10});
+    EXPECT_ROUND(n, {1}, {7});
+    EXPECT_ROUND(n, {1}, {4});
+    EXPECT_ROUND(n, {1}, {1});
+    EXPECT_ROUND(n, {2}, {10});
+    EXPECT_ROUND(n, {2}, {7});
+    EXPECT_ROUND(n, {2}, {4});
+    EXPECT_ROUND(n, {2}, {1});
+    EXPECT_ROUND(n, {2}, {0});
+    EXPECT_ROUND(n, {2}, {0});
 }
 
 MULTI_TEST(GeometryTest, Walk, O, 3) {

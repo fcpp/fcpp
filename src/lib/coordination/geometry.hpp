@@ -44,6 +44,27 @@ real_t follow_target(node_t& node, trace_t, const vec<n>& target, real_t max_v, 
 }
 
 
+//! @brief Follows a path with a fixed speed, returning the index of the next target and distance to it.
+template <typename node_t, typename T>
+tuple<size_t,real_t> follow_path(node_t& node, trace_t call_point, const T& path, real_t max_v, real_t period) {
+    return old(node, call_point, size_t{0}, [&](size_t i) {
+        real_t dist = follow_target(node, call_point, path[i], max_v, period);
+        size_t ni = i < path.size() - 1 and dist < max_v * period ? i+1 : i;
+        return make_tuple(make_tuple(i,dist), ni);
+    });
+}
+
+//! @brief Follows a path with a fixed acceleration and speed, returning the index of the next target and distance to it.
+template <typename node_t, typename T>
+tuple<size_t,real_t> follow_path(node_t& node, trace_t call_point, const T& path, real_t max_v, real_t max_a, real_t period) {
+    return old(node, call_point, size_t{0}, [&](size_t i) {
+        real_t dist = follow_target(node, call_point, path[i], max_v, max_a, period);
+        size_t ni = i < path.size() - 1 and dist < max_v * period ? i+1 : i;
+        return make_tuple(make_tuple(ni,dist), ni);
+    });
+}
+
+
 //! @cond INTERNAL
 //! @brief Generates a random target in a rectangle, given a sequence of indices.
 template <typename node_t, size_t n, size_t... is>

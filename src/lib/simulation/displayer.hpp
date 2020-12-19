@@ -268,8 +268,7 @@ struct displayer {
                 m_mouseFirst{ 1 },
                 m_mouseRight{ 0 },
                 m_deltaTime{ 0.0f },
-                m_lastFrame{ 0.0f },
-                m_lastPause{ false } {}
+                m_lastFrame{ 0.0f } {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -460,31 +459,34 @@ struct displayer {
             
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
             void keyboardInput(int key, bool first, float deltaTime) {
-                // Process displayer's input
-                if (key == GLFW_KEY_ESCAPE and first) {
-                    glfwSetWindowShouldClose(m_renderer.getWindow(), true);
-                    if (P::net::frequency() == 0) P::net::frequency(1);
-                    P::net::terminate();
-                }
-                if (key == GLFW_KEY_I and first) {
-                    // decelerate simulation
-                    P::net::frequency(pow(0.5, deltaTime)*P::net::frequency());
-                }
-                if (key == GLFW_KEY_O and first) {
-                    // decelerate simulation
-                    P::net::frequency(pow(2.0, deltaTime)*P::net::frequency());
-                }
-                if (key == GLFW_KEY_P and first) {
+                switch (key) {
+                    // terminate program
+                    case GLFW_KEY_ESCAPE:
+                        glfwSetWindowShouldClose(m_renderer.getWindow(), true);
+                        if (P::net::frequency() == 0) P::net::frequency(1);
+                        P::net::terminate();
+                        break;
                     // play/pause simulation
-                    if (not m_lastPause) {
-                        real_t f = P::net::frequency();
-                        P::net::frequency(f == 0 ? 1 : 0);
-                        m_lastPause = true;
-                    }
-                } else m_lastPause = false;
-                
-                // Process renderer's input
-                m_renderer.keyboardInput(key, first, deltaTime);
+                    case GLFW_KEY_P:
+                        if (first) {
+                            // play/pause simulation
+                            real_t f = P::net::frequency();
+                            P::net::frequency(f == 0 ? 1 : 0);
+                        }
+                        break;
+                    // accelerate simulation
+                    case GLFW_KEY_O:
+                        P::net::frequency(pow(2.0, deltaTime)*P::net::frequency());
+                        break;
+                    // decelerate simulation
+                    case GLFW_KEY_I:
+                        P::net::frequency(pow(0.5, deltaTime)*P::net::frequency());
+                        break;
+                    default:
+                        // pass key to renderer
+                        m_renderer.keyboardInput(key, first, deltaTime);
+                        break;
+                }
             }
 
             //! @brief The number of threads to be used.
@@ -522,9 +524,6 @@ struct displayer {
 
             //! @brief Time of last frame.
             float m_lastFrame;
-
-            //! @brief Whether pause was pressed last time.
-            bool m_lastPause;
             
             //! @brief List of currently stroked keys.
             std::unordered_set<int> m_key_stroked;

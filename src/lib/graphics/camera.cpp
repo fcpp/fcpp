@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright ï¿½ 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 // Thanks to learnopengl.com for the original structure.
 
 #include <GLFW/glfw3.h>
@@ -83,5 +83,25 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
 
 void Camera::keyboardInput(int key, bool first, float deltaTime)
 {
-    /* no_op */
+    float velocity = m_movementSpeed * deltaTime;
+    switch (key) {
+        case GLFW_KEY_W:
+            m_view = glm::translate(glm::vec3(0.0f, 0.0f, velocity)) * m_view;
+            break;
+        case GLFW_KEY_S:
+            m_view = glm::translate(glm::vec3(0.0f, 0.0f, -velocity)) * m_view;
+            break;
+        case GLFW_KEY_A:
+            m_view = glm::translate(glm::vec3(velocity, 0.0f, 0.0f)) * m_view;
+            break;
+        case GLFW_KEY_D:
+            m_view = glm::translate(glm::vec3(-velocity, 0.0f, 0.0f)) * m_view;
+            break;
+        case GLFW_KEY_E:
+            m_view = glm::translate(glm::vec3(0.0f, -velocity, 0.0f)) * m_view;
+            break;
+        case GLFW_KEY_Q:
+            m_view = glm::translate(glm::vec3(0.0f, velocity, 0.0f)) * m_view;
+            break;
+    }
 }

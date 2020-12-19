@@ -13,6 +13,8 @@ function usage() {
     echo -e "    \033[1msed\033[0m:                             manipulates patterns in source files (can be chained)"
     echo -e "       <pattern> [replace]"
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation (can be chained)"
+    echo -e "    \033[1mgui\033[0m:                             builds graphical simulations"
+    echo -e "       <targets...>"
     echo -e "    \033[1mbuild\033[0m:                           builds binaries for given targets, skipping tests"
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mtest\033[0m:                            builds binaries and tests for given targets"
@@ -239,6 +241,19 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "doc" ]; then
         shift 1
         mkdoc
+    elif [ "$1" == "gui" ]; then
+        shift 1
+        cmake -S ./ -B ./glbuild -G "Unix Makefiles" -Wno-dev
+        cmake --build ./glbuild/
+        for target in "$@"; do
+            cd glbuild
+            ./$target | tee ../plot/$target.asy
+            cd ../plot
+            sed -i "" -E "s| \(mean-mean\)||g" $target.asy
+            asy $target.asy -f pdf
+            cd ..
+        done
+        quitter
     elif [ "$1" == "build" ]; then
         shift 1
         parseopt "$@"

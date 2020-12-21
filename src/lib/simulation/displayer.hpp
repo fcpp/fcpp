@@ -308,28 +308,23 @@ struct displayer {
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
                         double dz = std::max(viewport_size.x/m_renderer.getAspectRatio(), viewport_size.y);
-                        dz /= tan(m_renderer.getViewAngle() / 2) * 2;
-                        camera_pos.z = m_viewport_max.z + dz;
-                        // roll/pitch angles should be zero (why is there no "roll" angle in your code so far?)
-                        // yaw should be so that the front of the camera is towards negative values of z (not clear to me where the zero angle starts)
-                        double zFar = sqrt(dz * (dz + viewport_size.z)) * 32;
-                        double zNear = zFar / 1024;
-                        // zFar/zNear also regulates the cameraSensitivity to input (speed of changes)
-                        // mousewheel changes zFar & zNear & cameraSensitivity (all proportionally)
+                        dz /= tan(45.0f / 2) * 1.4;
+                        camera_pos.z = dz;
                         m_renderer.setLightPosition(camera_pos);
-                        m_renderer.setDefaultCameraView(camera_pos, glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
-                        m_renderer.setFarPlane((float)zFar);
-                        m_renderer.setNearPlane((float)zNear);
+                        m_renderer.setDefaultCameraView(camera_pos, dz, glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
                         double diagonal = glm::length(viewport_size);
                         double grid_scale = 1;
-                        while (grid_scale * 100 < diagonal) grid_scale *= 10;
-                        while (grid_scale * 10 > diagonal) grid_scale /= 10;
+                        while (grid_scale * 200 < diagonal) grid_scale *= 10;
+                        while (grid_scale * 20 > diagonal) grid_scale /= 10;
                         m_renderer.setGridScale(grid_scale);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
                     // Handle pressed keys
+                    int mods = 0;
+                    if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                        mods |= GLFW_MOD_SHIFT;
                     for (int key : m_key_stroked)
-                        keyboardInput(key, false, m_deltaTime);
+                        keyboardInput(key, false, m_deltaTime, mods);
 
                     // Draw grid
                     m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
@@ -338,7 +333,7 @@ struct displayer {
                     //m_renderer.drawOrtho();
                     
                     // Draw simulation time (t)
-                    m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f, glm::vec3{1.0});
+                    m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
                     
                     // Swap buffers and prepare for next frame to draw
                     m_renderer.swapAndNext();
@@ -400,7 +395,7 @@ struct displayer {
                     
                     if ( action == GLFW_PRESS ) {
                         dspl.m_key_stroked.insert(key);
-                        dspl.keyboardInput(key, true, dspl.getDeltaTime());
+                        dspl.keyboardInput(key, true, dspl.getDeltaTime(), mods);
                     } else if ( action == GLFW_RELEASE ) {
                         dspl.m_key_stroked.erase(key);
                     }
@@ -432,7 +427,10 @@ struct displayer {
                             dspl.m_mouseRightX = xpos - (float)(dspl.m_renderer.getCurrentWidth() / 2);
                             dspl.m_mouseRightY = (float)(dspl.m_renderer.getCurrentHeight() / 2) - ypos;
                         }
-                        dspl.m_renderer.mouseInput(xoffset, yoffset, dspl.m_mouseRightX, dspl.m_mouseRightY, mouse_type::drag); // need to move (0,0) at the center of the screen
+                        int mods = 0;
+                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                            mods |= GLFW_MOD_SHIFT;
+                        dspl.m_renderer.mouseInput(xoffset, yoffset, dspl.m_mouseRightX, dspl.m_mouseRightY, mouse_type::drag, mods);
                     }
 
                     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
@@ -445,12 +443,15 @@ struct displayer {
                 // Cursor scroll callback
                 glfwSetScrollCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xoffset, double yoffset) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                    dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll);
+                    int mods = 0;
+                    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                        mods |= GLFW_MOD_SHIFT;
+                    dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll, mods);
                 });
             }
             
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
-            void keyboardInput(int key, bool first, float deltaTime) {
+            void keyboardInput(int key, bool first, float deltaTime, int mods) {
                 switch (key) {
                     // terminate program
                     case GLFW_KEY_ESCAPE:
@@ -476,7 +477,7 @@ struct displayer {
                         break;
                     default:
                         // pass key to renderer
-                        m_renderer.keyboardInput(key, first, deltaTime);
+                        m_renderer.keyboardInput(key, first, deltaTime, mods);
                         break;
                 }
             }

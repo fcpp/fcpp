@@ -1,5 +1,4 @@
-// Copyright � 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
-// Thanks to learnopengl.com for the original structure.
+// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -15,20 +14,17 @@
 using namespace fcpp;
 
 
-Camera::Camera(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch)
-: m_movementSpeed{ CAM_DEFAULT_SPEED },
-  m_mouseSensitivity{ CAM_DEFAULT_SENSITIVITY },
-  m_fov{ CAM_DEFAULT_FOV }
-{
-    setViewDefault(position, worldUp, yaw, pitch);
-}
+Camera::Camera()
+: m_mouseSensitivity{ CAM_DEFAULT_SENSITIVITY },
+  m_depth{ CAM_DEFAULT_DEPTH },
+  m_depthDefault{ CAM_DEFAULT_DEPTH },
+  m_diagonal{ 1000 },
+  m_aspectRatio{ 4.0f / 3.0f  },
+  m_view{ 1.0f },
+  m_viewDefault{ 1.0f },
+  m_projection{ 1.0f } {}
 
-void Camera::applyViewDefault()
-{
-    m_view = m_viewDefault;
-}
-
-void Camera::setViewDefault(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch)
+void Camera::setViewDefault(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch)
 {
     // Calculate the front vector
     glm::vec3 calcFront;
@@ -45,45 +41,54 @@ void Camera::setViewDefault(glm::vec3 position, glm::vec3 worldUp, float yaw, fl
     
     // Calculate view matrix with all the formerly obtained vectors
     m_viewDefault = m_view = glm::lookAt(position, position + front, up);
+
+    // Sets the default depth
+    m_depthDefault = m_depth = depth;
+    updateProjection();
 }
 
-glm::mat4 const& Camera::getView() const
-{
-    return m_view;
+void Camera::applyViewDefault() {
+    m_view = m_viewDefault;
+    m_depth = m_depthDefault;
+    updateProjection();
 }
 
-float Camera::getFov() const
-{
-    return m_fov;
+void Camera::setScreen(float width, float height) {
+    m_diagonal = std::sqrt(width*width + height*height) / 2;
+    m_aspectRatio = (float)width / (float)height;
+    updateProjection();
 }
 
-void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type)
+void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods)
 {
     switch (type) {
         case mouse_type::scroll:
-            m_fov -= (float)y;
-
-            if (m_fov < 1.0f)
-                m_fov = 1.0f;
-            if (m_fov > CAM_DEFAULT_FOV)
-                m_fov = CAM_DEFAULT_FOV;
+            // to be implemented
             break;
         case mouse_type::drag:
             float a = (xFirst*x + yFirst*y) / m_diagonal;
             float b = (xFirst*y - yFirst*x) / m_diagonal;
 	        if (std::abs(a) < CAM_THRESHOLD * std::max(std::abs(b), 1.0f)) a = 0;
 	        if (std::abs(b) < CAM_THRESHOLD * std::max(std::abs(a), 1.0f)) b = 0;
+            a *= m_mouseSensitivity;
+            b *= m_mouseSensitivity;
+            if ((mods & GLFW_MOD_SHIFT) > 0) {
+                a /= 10;
+                b /= 10;
+            }
 
+            // to add translation with rotation
             m_view =
-		        glm::rotate(glm::radians(a * m_mouseSensitivity), glm::vec3{yFirst, -xFirst, 0.0f}) *
-		        glm::rotate(glm::radians(b * m_mouseSensitivity), glm::vec3{0.0f, 0.0f, 1.0f}) * m_view;
+                glm::translate(glm::normalize(glm::vec3(xFirst, yFirst, 0.0f))*a*m_depth*0.02f) *
+		        glm::rotate(glm::radians(-a), glm::vec3{yFirst, -xFirst, 0.0f}) *
+		        glm::rotate(glm::radians(b), glm::vec3{0.0f, 0.0f, 1.0f}) * m_view;
             break;
     }
 }
 
-void Camera::keyboardInput(int key, bool first, float deltaTime)
+void Camera::keyboardInput(int key, bool first, float deltaTime, int mods)
 {
-    float velocity = m_movementSpeed * deltaTime;
+    float velocity = m_depth * deltaTime * ((mods & GLFW_MOD_SHIFT) > 0 ? 0.05 : 0.5);
     switch (key) {
         case GLFW_KEY_W:
             m_view = glm::translate(glm::vec3(0.0f, 0.0f, velocity)) * m_view;
@@ -104,4 +109,8 @@ void Camera::keyboardInput(int key, bool first, float deltaTime)
             m_view = glm::translate(glm::vec3(0.0f, velocity, 0.0f)) * m_view;
             break;
     }
+}
+
+void Camera::updateProjection() {
+    m_projection = glm::perspective(glm::radians(CAM_DEFAULT_FOV), m_aspectRatio, m_depth / 32, m_depth * 32);
 }

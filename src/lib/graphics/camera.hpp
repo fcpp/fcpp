@@ -1,8 +1,7 @@
-// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
-// Thanks to learnopengl.com for the original structure.
+// Copyright Â© 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
-#ifndef CAMERA_H
-#define CAMERA_H
+#ifndef FCPP_GRAPHICS_CAMERA_H
+#define FCPP_GRAPHICS_CAMERA_H
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -13,73 +12,90 @@
 
 
 namespace fcpp {
-    //! @brief Default camera's yaw
-    const float CAM_DEFAULT_YAW{ -90.0f };
+
+//! @brief Default camera's depth
+constexpr float CAM_DEFAULT_DEPTH{ 10.0f };
+
+//! @brief Default camera's yaw
+constexpr float CAM_DEFAULT_YAW{ -90.0f };
 
     //! @brief Default camera's pitch
-    const float CAM_DEFAULT_PITCH{ 0.0f };
+constexpr float CAM_DEFAULT_PITCH{ 0.0f };
 
     //! @brief Default camera's speed
-    const float CAM_DEFAULT_SPEED{ 50.0f };
+constexpr float CAM_DEFAULT_SPEED{ 50.0f };
 
     //! @brief Default camera's sensitivity
-    const float CAM_DEFAULT_SENSITIVITY{ 0.1f };
+constexpr float CAM_DEFAULT_SENSITIVITY{ 0.3f };
 
     //! @brief Threshold for unintentional camera movement
-    const float CAM_THRESHOLD{ 0.7f };
+constexpr float CAM_THRESHOLD{ 0.7f };
 
     //! @brief Default camera's Field of View
-    const float CAM_DEFAULT_FOV{ 45.0f };
+constexpr float CAM_DEFAULT_FOV{ 45.0f };
 
 
-    //! @brief Camera class with integrated view matrix.
-    class Camera
-    {
-    public:
-        //! @brief Camera's constructor, with default values for the camera's initial vectors.
-        Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = CAM_DEFAULT_YAW, float pitch = CAM_DEFAULT_PITCH);
-        
-        //! @brief It moves camera to its initial position and rotation.
-        void applyViewDefault();
-        
-        //! @brief It sets camera's default view matrix; it also sets the current view matrix to these values.
-        void setViewDefault(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch);
+//! @brief Camera class with integrated view matrix.
+class Camera {
+  public:
+    //! @brief Camera's constructor, with default values for the camera's initial vectors.
+    Camera();
 
-        //! @brief It returns camera's view matrix.
-        glm::mat4 const& getView() const;
+    //! @brief It sets camera's default and current view and projection matrix.
+    void setViewDefault(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), float depth = CAM_DEFAULT_DEPTH, glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = CAM_DEFAULT_YAW, float pitch = CAM_DEFAULT_PITCH);
 
-        //! @brief It returns camera's Field of View.
-        float getFov() const;
+    //! @brief It moves camera to its initial position and rotation.
+    void applyViewDefault();
 
-	    //! @brief Sets the current screen diagonal size given window size.
-	    void setDiagonal(float width, float height) {
-		    m_diagonal = std::sqrt(width*width + height*height) / 2;
-	    }
-	    
-	    //! @brief It manages mouse input of the given type.
-        void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type);
-        
-        //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the camera.
-        void keyboardInput(int key, bool first, float deltaTime);
+    //! @brief It returns camera's view matrix.
+    glm::mat4 const& getView() const {
+        return m_view;
+    }
 
-    private:    
-        //! @brief Camera's current movement speed.
-        float m_movementSpeed;
-        
-        //! @brief Camera's current mouse sensitivity.
-        float m_mouseSensitivity;
-        
-        //! @brief Camera's current Field of View.
-        float m_fov;
-        
-        //! @brief Camera's view matrix; all trasnformations are made on this one.
-        glm::mat4 m_view;
-        
-        //! @brief Camera's default view matrix; it is stored to easily return to the default position.
-        glm::mat4 m_viewDefault;
+    //! @brief It returns camera's projection matrix.
+    glm::mat4 const& getProjection() const {
+        return m_projection;
+    }
 
-	    //! @brief The screen diagonal.
-	    float m_diagonal;
-    };
+    //! @brief Sets the current screen diagonal size given window size.
+    void setScreen(float width, float height);
+
+    //! @brief It manages mouse input of the given type.
+    void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
+
+    //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the camera.
+    void keyboardInput(int key, bool first, float deltaTime, int mods);
+
+private:
+    //! @brief Updates the projection matrix.
+    void updateProjection();
+
+    //! @brief Camera's current mouse sensitivity.
+    float m_mouseSensitivity;
+
+    //! @brief Camera's current view plane (proportional to zNear, zFar and movement speed).
+    float m_depth;
+
+    //! @brief Camera's default view plane (proportional to zNear, zFar and movement speed).
+    float m_depthDefault;
+
+    //! @brief The screen diagonal.
+    float m_diagonal;
+
+    //! @brief The screen aspect ratio.
+    float m_aspectRatio;
+
+    //! @brief Camera's view matrix; all trasnformations are made on this one.
+    glm::mat4 m_view;
+
+    //! @brief Camera's default view matrix.
+    glm::mat4 m_viewDefault;
+
+    //! @brief Camera's view matrix; all trasnformations are made on this one.
+    glm::mat4 m_projection;
+};
+
+
 }
-#endif
+
+#endif // FCPP_GRAPHICS_CAMERA_H

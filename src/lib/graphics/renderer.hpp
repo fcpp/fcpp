@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright Â© 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #ifndef FCPP_GRAPHICS_RENDERER_H_
 #define FCPP_GRAPHICS_RENDERER_H_
@@ -50,13 +50,10 @@ namespace fcpp {
             void drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin = false) const;
             
             //! @brief It draws the specified text in the specified coordinates, scale and color.
-            void drawText(std::string text, float x, float y, float scale, glm::vec3 color);
+            void drawText(std::string text, float x, float y, float scale);
             
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
-
-            //! @brief Returns the camera's Field of View.
-            float getViewAngle();
             
             //! @brief Returns viewport's current width.
             int getCurrentWidth();
@@ -68,25 +65,19 @@ namespace fcpp {
             GLFWwindow* getWindow();
             
             //! @brief It runs m_camera's setViewDefault() with the given attributes.
-            void setDefaultCameraView(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch);
+            void setDefaultCameraView(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch);
 
             //! @brief Sets the light's position.
             void setLightPosition(glm::vec3& newPos);
 
             //! @brief Sets the scale of the grid.
             void setGridScale(double newScale);
-
-            //! @brief Sets the far plane's distance of the projection (perspective) matrix.
-            void setFarPlane(float newFar);
-
-            //! @brief Sets the near plane's distance of the projection (perspective) matrix.
-            void setNearPlane(float newNear);
             
             //! @brief It manages mouse input of the given type.
-            void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type);
+            void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
             
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the renderer and other classes.
-            void keyboardInput(int key, bool first, float deltaTime);
+            void keyboardInput(int key, bool first, float deltaTime, int mods);
             
             //! @brief It resizes the viewport, given the new width and height values.
             void viewportResize(int width, int height);
@@ -120,16 +111,16 @@ namespace fcpp {
             static const std::string FONT_PATH;
             
             //! @brief Default font size.
-            static const unsigned int FONT_DEFAULT_SIZE{ 48 };
+            static constexpr unsigned int FONT_DEFAULT_SIZE{ 48 };
 
             //! @brief Default width of the window.
-            static const unsigned int SCR_DEFAULT_WIDTH{ 800 };
+            static constexpr unsigned int SCR_DEFAULT_WIDTH{ 800 };
 
             //! @brief Default height of the window.
-            static const unsigned int SCR_DEFAULT_HEIGHT{ 600 };
+            static constexpr unsigned int SCR_DEFAULT_HEIGHT{ 600 };
 
             //! @brief Default size of orthogonal axis.
-            static const unsigned int SCR_DEFAULT_ORTHO{ 32 };
+            static constexpr unsigned int SCR_DEFAULT_ORTHO{ 32 };
 
             //! @brief Default light position.
             static const glm::vec3 LIGHT_DEFAULT_POS;
@@ -177,7 +168,7 @@ namespace fcpp {
             double m_gridScale;
 
             //! @brief It checks if it's the first time it drawn the grid.
-            double m_gridFirst;
+            bool m_gridFirst;
 
             //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
             int m_planeIndexSize;
@@ -191,14 +182,14 @@ namespace fcpp {
             //! @brief Current position of light source.
             glm::vec3 m_lightPos;
 
+            //! @brief The background color.
+            glm::vec4 m_background;
+
+            //! @brief The foreground color.
+            glm::vec4 m_foreground;
+
             //! @brief Camera object of the scene
             Camera m_camera;
-
-            //! @brief The far plane's distance of the projection matrix.
-            float m_zFar;
-
-            //! @brief The near plane's distance of the projection matrix.
-            float m_zNear;
 
             //! @brief Mutex regulating access to the openGL context.
             mutable std::mutex m_contextMutex;

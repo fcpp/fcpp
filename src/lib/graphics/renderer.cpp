@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright Â© 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
 #include <stdexcept>
@@ -58,14 +58,15 @@ Renderer::Renderer(size_t antialias) :
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_orthoSize{ SCR_DEFAULT_ORTHO },
     m_gridScale{ 1.0 },
-    m_gridFirst{ 1 },
+    m_gridFirst{ true },
     m_planeIndexSize{ 0 },
     m_gridHighIndexSize{ 0 },
     m_gridNormIndexSize{ 0 },
     m_lightPos{ LIGHT_DEFAULT_POS },
-    m_camera{},
-    m_zFar{ 1.0f },
-    m_zNear{ 1000.0f }{
+    m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
+    m_foreground{ 0.0f, 0.0f, 0.0f, 1.0f },
+    m_camera{}
+{
     /* DEFINITION */
     // Initialize GLFW
     glfwInit();
@@ -215,11 +216,11 @@ Renderer::Renderer(size_t antialias) :
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // Clear first frame
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Set initial aspect ratio
-	m_camera.setDiagonal(m_currentWidth, m_currentHeight);
+	m_camera.setScreen(m_currentWidth, m_currentHeight);
 }
 
 
@@ -234,15 +235,15 @@ void Renderer::swapAndNext() {
     glfwSwapBuffers(m_window);
 
     // Clear frame
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) {
     // Create matrices (used several times)
-    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
-    glm::mat4 view{ m_camera.getView() };
-    glm::mat4 model{ 1.0f };;
+    glm::mat4 const& projection{ m_camera.getProjection() };
+    glm::mat4 const& view{ m_camera.getView() };
+    glm::mat4 model{ 1.0f };
 
     // Set up shader program
     m_shaderProgramCol.use();
@@ -252,15 +253,16 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
 
     // Initialize grid and plane buffers if they are not already
     if (m_gridFirst) {
-        m_gridFirst = 0;
-        int grid_min_x = std::floor(gridMin.x / m_gridScale);
-        int grid_max_x = std::ceil(gridMax.x / m_gridScale);
-        int grid_min_y = std::floor(gridMin.y / m_gridScale);
-        int grid_max_y = std::ceil(gridMax.y / m_gridScale);
+        m_gridFirst = false;
+        int approx = (gridMax.x-gridMin.x)*(gridMax.y-gridMin.y) > 2000*m_gridScale*m_gridScale ? 10 : 1;
+        int grid_min_x = std::floor(gridMin.x / m_gridScale / approx) * approx;
+        int grid_max_x = std::ceil(gridMax.x / m_gridScale / approx) * approx;
+        int grid_min_y = std::floor(gridMin.y / m_gridScale / approx) * approx;
+        int grid_max_y = std::ceil(gridMax.y / m_gridScale / approx) * approx;
         int numX = grid_max_x - grid_min_x + 1;
         int numY = grid_max_y - grid_min_y + 1;
-        int numHighX = numX / 10 + 1;
-        int numHighY = numY / 10 + 1;
+        int numHighX = (grid_max_x - grid_max_x%10 - grid_min_x) / 10 + 1;
+        int numHighY = (grid_max_y - grid_max_y%10 - grid_min_y) / 10 + 1;
         int i = 0; // for putting vertices into gridMesh
         int j = 0; // for putting indices into gridHighMesh
         int k = 0; // for putting indices into gridNormMesh
@@ -346,10 +348,10 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
 
     // Draw grid
     glBindVertexArray(VAO[(int)vertex::grid]);
-    m_shaderProgramCol.setVec4("u_color", glm::vec4{ 1.0f });
+    m_shaderProgramCol.setVec4("u_color", m_foreground);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
     glDrawElements(GL_LINES, m_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
-    m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f });
+    m_shaderProgramCol.setVec4("u_color", m_background);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
     glDrawElements(GL_LINES, m_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -358,7 +360,8 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
 
     // Draw plane
     if (planeAlpha > 0.0f) {
-        m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.3f, 0.3f, 0.3f, planeAlpha });
+        glm::vec4 col{ (m_background[0] + m_foreground[0])/2, (m_background[1] + m_foreground[1])/2, (m_background[2] + m_foreground[2])/2, planeAlpha };
+        m_shaderProgramCol.setVec4("u_color", col);
         glDepthMask(false);
         glBindVertexArray(VAO[(int)vertex::plane]);
         glDrawElements(GL_TRIANGLES, m_planeIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
@@ -395,7 +398,7 @@ void Renderer::drawOrtho() {
 
 void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin) const {
     // Create matrices (used several times)
-    glm::mat4 projection{ glm::perspective(glm::radians(m_camera.getFov()), (float)m_currentWidth / (float)m_currentHeight, m_zNear, m_zFar) };
+    glm::mat4 const& projection{ m_camera.getProjection() };
     glm::mat4 const& view{ m_camera.getView() };
     glm::mat4 model{ 1.0f };
     model = glm::translate(model, p);
@@ -443,11 +446,11 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin) c
     glfwMakeContextCurrent(NULL);
 }
 
-void Renderer::drawText(std::string text, float x, float y, float scale, glm::vec3 color)
+void Renderer::drawText(std::string text, float x, float y, float scale)
 {
     // activate corresponding render state	
     m_shaderProgramFont.use();
-    m_shaderProgramFont.setVec3("u_textColor", color);
+    m_shaderProgramFont.setVec3("u_textColor", m_foreground);
     m_shaderProgramFont.setInt("u_text", 0);
     m_shaderProgramFont.setMat4("u_projection", glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight));
     glActiveTexture(GL_TEXTURE0);
@@ -492,10 +495,6 @@ float Renderer::getAspectRatio() {
     return (float)(m_currentWidth) / (float)(m_currentHeight);
 }
 
-float Renderer::getViewAngle() {
-    return m_camera.getFov();
-}
-
 int Renderer::getCurrentWidth() {
     return m_currentWidth;
 }
@@ -508,8 +507,8 @@ GLFWwindow* Renderer::getWindow() {
     return m_window;
 }
 
-void Renderer::setDefaultCameraView(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch) {
-    m_camera.setViewDefault(position, worldUp, yaw, pitch);
+void Renderer::setDefaultCameraView(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch) {
+    m_camera.setViewDefault(position, depth, worldUp, yaw, pitch);
 }
 
 void Renderer::setLightPosition(glm::vec3& newPos) {
@@ -520,29 +519,21 @@ void Renderer::setGridScale(double newScale) {
     m_gridScale = newScale;
 }
 
-void Renderer::setFarPlane(float newFar) {
-    m_zFar = newFar;
+void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
+    m_camera.mouseInput(x, y, xFirst, yFirst, type, mods);
 }
 
-void Renderer::setNearPlane(float newNear) {
-    m_zNear = newNear;
-}
-
-void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type) {
-    m_camera.mouseInput(x, y, xFirst, yFirst, type);
-}
-
-void Renderer::keyboardInput(int key, bool first, float deltaTime) {
+void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     // Process renderer's input
     /*no_op*/
     
     // Process camera's input
-    m_camera.keyboardInput(key, first, deltaTime);
+    m_camera.keyboardInput(key, first, deltaTime, mods);
 }
 
 void Renderer::viewportResize(int width, int height) {
     glViewport(0, 0, width, height);
     m_currentWidth = width;
     m_currentHeight = height;
-	m_camera.setDiagonal(width, height);
+	m_camera.setScreen(width, height);
 }

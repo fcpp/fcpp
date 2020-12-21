@@ -170,7 +170,7 @@ struct displayer {
             }
 
             //! @brief Updates the internal status of node component.
-            void draw() const {
+            void draw(bool star) const {
                 PROFILE_COUNT("displayer");
                 // gather shape and size
                 shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
@@ -180,13 +180,17 @@ struct displayer {
                 color_val_push(c, color_val{});
                 color_tag_push(c, color_tag{});
                 if (c.empty()) c.emplace_back(1.0f, 1.0f, 1.0f, 1.0f); // white if nothing else
-                // gather personal and neighbours' positions
+                // gather personal position
                 glm::vec3 p = get_cached_position();
-                std::vector<glm::vec3> np;
-                for (device_t d : m_prev_nbr_uids)
-                    np.push_back(P::node::net.node_at(d).get_cached_position());
                 // render the node
-                P::node::net.getRenderer().drawCube(p, d, c, true);
+                P::node::net.getRenderer().drawCube(p, d, c);
+                if (star) {
+                    // gather neighbours' positions
+                    std::vector<glm::vec3> np;
+                    for (device_t d : m_prev_nbr_uids)
+                        np.push_back(P::node::net.node_at(d).get_cached_position());
+                    P::node::net.getRenderer().drawStar(p, np);
+                }
             }
 
             //! @brief Performs computations at round end with current time `t`.
@@ -267,6 +271,7 @@ struct displayer {
                 m_mouseRightY{ 0.0f },
                 m_mouseFirst{ 1 },
                 m_mouseRight{ 0 },
+                m_links{ false },
                 m_deltaTime{ 0.0f },
                 m_lastFrame{ 0.0f } {}
 
@@ -300,7 +305,7 @@ struct displayer {
                     }
                     glfwMakeContextCurrent(NULL);
                     common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
-                        n_beg[i].second.draw();
+                        n_beg[i].second.draw(m_links);
                     });
                     glfwMakeContextCurrent(m_renderer.getWindow());
                     if (rt == 0) {
@@ -331,16 +336,16 @@ struct displayer {
 
                     // Draw orthogonal axis
                     //m_renderer.drawOrtho();
-                    
+
                     // Draw simulation time (t)
                     m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
-                    
+
                     // Swap buffers and prepare for next frame to draw
                     m_renderer.swapAndNext();
-                    
+
                     // Update deltaTime
                     updateDeltaTime();
-                    
+
                     // Update m_refresh
                     m_refresh = rt + m_step;
                 } else P::net::update();
@@ -350,7 +355,7 @@ struct displayer {
             fcpp::internal::Renderer const& getRenderer() {
                 return m_renderer;
             }
-            
+
             //! @brief Returns net's delta time.
             float const& getDeltaTime() {
                 return m_deltaTime;
@@ -377,7 +382,7 @@ struct displayer {
                 m_deltaTime = currentFrame - m_lastFrame;
                 m_lastFrame = currentFrame;
             }
-        
+
             //! @brief It binds internally-defined callback functions to OpenGL events.
             void setInternalCallbacks() {
                 // Associates this (the net instance) to m_window
@@ -392,30 +397,30 @@ struct displayer {
                 // Keyboard callback
                 glfwSetKeyCallback(m_renderer.getWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                    
+
                     if ( action == GLFW_PRESS ) {
                         dspl.m_key_stroked.insert(key);
                         dspl.keyboardInput(key, true, dspl.getDeltaTime(), mods);
                     } else if ( action == GLFW_RELEASE ) {
                         dspl.m_key_stroked.erase(key);
                     }
-                    
+
                     /*// Erase not pressed keys from stroked list
                     for ( std::unordered_set<int>::const_iterator it = myset.begin(); it != myset.end(); ++it ) {
-                        
+
                     }*/
                 });
 
                 // Cursor position callback
                 glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                    
+
                     if (dspl.m_mouseFirst) {
                         dspl.m_mouseLastX = (float)xpos;
                         dspl.m_mouseLastY = (float)ypos;
                         dspl.m_mouseFirst = false;
                     }
-                    
+
                     float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
                     float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
                     dspl.m_mouseLastX = (float)xpos;
@@ -448,16 +453,26 @@ struct displayer {
                         mods |= GLFW_MOD_SHIFT;
                     dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll, mods);
                 });
+
+                // Window close callback
+                glfwSetWindowCloseCallback(m_renderer.getWindow(), [](GLFWwindow* window){
+                    net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                    if (dspl.frequency() == 0) dspl.frequency(1);
+                    dspl.terminate();
+                });
             }
-            
+
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods) {
                 switch (key) {
                     // terminate program
                     case GLFW_KEY_ESCAPE:
-                        glfwSetWindowShouldClose(m_renderer.getWindow(), true);
                         if (P::net::frequency() == 0) P::net::frequency(1);
                         P::net::terminate();
+                        break;
+                    // show/hide links
+                    case GLFW_KEY_L:
+                        if (first) m_links = not m_links;
                         break;
                     // play/pause simulation
                     case GLFW_KEY_P:
@@ -490,16 +505,16 @@ struct displayer {
 
             //! @brief The step between refresh times.
             times_t m_step;
-            
+
             //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
             fcpp::internal::Renderer m_renderer;
-            
+
             //! @brief Last mouse X position.
             float m_mouseLastX;
 
             //! @brief Last mouse Y position.
             float m_mouseLastY;
-            
+
             //! @brief First mouse X position when the right click is pressed.
             float m_mouseRightX;
 
@@ -508,16 +523,19 @@ struct displayer {
 
             //! @brief It checks if it's the first mouse's input capture.
             bool m_mouseFirst;
-            
+
             //! @brief It checks if the right click is pressed.
             bool m_mouseRight;
+
+            //! @brief Whether links between nodes should be displayed.
+            bool m_links;
 
             //! @brief Time between current frame and last frame.
             float m_deltaTime;
 
             //! @brief Time of last frame.
             float m_lastFrame;
-            
+
             //! @brief List of currently stroked keys.
             std::unordered_set<int> m_key_stroked;
 

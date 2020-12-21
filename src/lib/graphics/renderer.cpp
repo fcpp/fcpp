@@ -396,7 +396,7 @@ void Renderer::drawOrtho() {
 }
 */
 
-void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin) const {
+void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& c) const {
     // Create matrices (used several times)
     glm::mat4 const& projection{ m_camera.getProjection() };
     glm::mat4 const& view{ m_camera.getView() };
@@ -424,12 +424,11 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin) c
     glDrawArrays(GL_TRIANGLES, 0, 36);
     
     // Draw pin
-    if (pin) {
+    if (p.z > 0) {
         float pinData[] = {
             p.x, p.y, p.z,
             p.x, p.y, 0.0f
         };
-        
         m_shaderProgramCol.use();
         m_shaderProgramCol.setMat4("u_projection", projection);
         m_shaderProgramCol.setMat4("u_view", view);
@@ -442,6 +441,57 @@ void Renderer::drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin) c
         glDrawArrays(GL_LINES, 0, 6);
     }
     
+    // Unbind current context
+    glfwMakeContextCurrent(NULL);
+}
+
+//! @brief It draws a star of lines, given the center and sides.
+void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const {
+    // Create matrices (used several times)
+    glm::mat4 const& projection{ m_camera.getProjection() };
+    glm::mat4 const& view{ m_camera.getView() };
+
+    float starData[6 * np.size()];
+    for (int i=0; i<np.size(); ++i) {
+        starData[6*i+0] = p[0];
+        starData[6*i+1] = p[1];
+        starData[6*i+2] = p[2];
+        starData[6*i+3] = np[i][0];
+        starData[6*i+4] = np[i][1];
+        starData[6*i+5] = np[i][2];
+    }
+//    VERSION WITH INDEXES:
+//    float starData[3 * np.size() + 3];
+//    starData[0] = p[0];
+//    starData[1] = p[1];
+//    starData[2] = p[2];
+//    for (int i=0; i<np.size(); ++i) {
+//        starData[3*i+3] = np[i][0];
+//        starData[3*i+4] = np[i][1];
+//        starData[3*i+5] = np[i][2];
+//    }
+//    int starIndex[2*np.size];
+//    for (int i=0; i<np.size(); ++i) {
+//        starIndex[2*i+0] = 0;
+//        starIndex[2*i+1] = i+1;
+//    }
+
+    // Bind current context
+    std::lock_guard<std::mutex> l(m_contextMutex);
+    glfwMakeContextCurrent(m_window);
+
+    m_shaderProgramCol.use();
+    m_shaderProgramCol.setMat4("u_projection", projection);
+    m_shaderProgramCol.setMat4("u_view", view);
+    m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
+    glBindVertexArray(VAO[(int)vertex::singleLine]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(starData), starData);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDrawArrays(GL_LINES, 0, 6);
+
+
     // Unbind current context
     glfwMakeContextCurrent(NULL);
 }

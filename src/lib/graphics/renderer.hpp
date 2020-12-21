@@ -47,7 +47,10 @@ namespace fcpp {
             void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
 
             //! @brief It draws a cube, given the information on color(s) and position.
-            void drawCube(glm::vec3 p, double d, std::vector<color> c, bool pin = false) const;
+            void drawCube(glm::vec3 const& p, double d, std::vector<color> const& c) const;
+
+            //! @brief It draws a star of lines, given the center and sides.
+            void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
             
             //! @brief It draws the specified text in the specified coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale);

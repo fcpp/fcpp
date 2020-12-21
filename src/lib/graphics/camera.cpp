@@ -1,12 +1,14 @@
 // Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
+#include <vector>
+#include <iostream>
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/transform.hpp> 
 #include <glm/gtc/matrix_transform.hpp>
-#include <vector>
-#include <iostream>
+
 #include "lib/graphics/camera.hpp"
 #include "lib/graphics/input_types.hpp"
 
@@ -63,8 +65,13 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
 {
     switch (type) {
         case mouse_type::scroll:
-            // to be implemented
+        {
+            float new_depth = m_depth * pow(0.98, (mods & GLFW_MOD_SHIFT) > 0 ? y/10 : y);
+            m_view = glm::translate(glm::vec3(0.0f, 0.0f, m_depth-new_depth)) * m_view;
+            m_depth = new_depth;
+            updateProjection();
             break;
+        }
         case mouse_type::drag:
             float a = (xFirst*x + yFirst*y) / m_diagonal;
             float b = (xFirst*y - yFirst*x) / m_diagonal;

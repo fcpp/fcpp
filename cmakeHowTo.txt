@@ -4,8 +4,8 @@ To build the test application, you'll need:
 	* CMake 3.9 (or higher)
 
 After setting the respective environmental variables, go into the ./fcpp directory through a prompt and type the following commands:
-	* cmake -S ./ -B ./build -G "MinGW Makefiles"
-	* cmake --build ./build/
+	* cmake -S ./ -B ./bin -G "MinGW Makefiles"
+	* cmake --build ./bin/
 
 Wait the application to be built.
 
@@ -20,7 +20,7 @@ To install the X11 package, type the following command:
 	* sudo apt-get  install xorg-dev
 
 After installing X11, go into the ./fcpp directory through the console and type the following commands:
-	* cmake -S ./ -B ./build -G "Unix Makefiles"
-	* cmake --build ./build/
+	* cmake -S ./ -B ./bin -G "Unix Makefiles"
+	* cmake --build ./bin/
 
 Wait the application to be built.

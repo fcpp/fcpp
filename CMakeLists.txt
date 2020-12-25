@@ -11,7 +11,7 @@ project(fcppGL
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# adding fcpp_master
+# adding fcpp
 if(MINGW)
     option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
 endif(MINGW)
@@ -39,7 +39,7 @@ target_include_directories(fcppGL PRIVATE ./src/
 if(MINGW)
 target_link_libraries(fcppGL PRIVATE mingw_stdthreads)
 endif(MINGW)
-target_link_libraries(fcppGL PRIVATE fcpp_master
+target_link_libraries(fcppGL PRIVATE fcpp
                                      glm
 									 glfw
 									 stb_image

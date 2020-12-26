@@ -80,6 +80,8 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         for (int j=0; j<values[i].length; ++j) {
             bminx = min(bminx, values[i][j].x);
             bmaxx = max(bmaxx, values[i][j].x);
+            bminy = min(bminy, values[i][j].y);
+            bmaxy = max(bmaxy, values[i][j].y);
             valy.push(values[i][j].y);
         }
     }
@@ -93,7 +95,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
     }
 
     // scan y values for best area covered using linear plot
-    if (valy.length > 0) {
+    if (bminy < bmaxy && valy.length > 0) {
         int iminy = 0, imaxy = valy.length-1;
         valy = sort(valy);
         for (int i=iminy; i<=imaxy; ++i) {

@@ -3,18 +3,13 @@ cmake_minimum_required(VERSION 3.9)
 
 # project name, version and description
 project(fcpp
-    VERSION 0.6.6
-    DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
+	VERSION 0.6.6
+	DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
 
 # C++14 or higher
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-# add mingw-std-threads plug-in
-if(MINGW)
-    option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
-endif(MINGW)
 
 # library target
 add_library(fcpp SHARED
@@ -101,18 +96,20 @@ add_subdirectory(./external/freetype-2.10.4)
 target_include_directories(glad PRIVATE ./external/glad-core-3.3/include/)
 target_include_directories(stb_image PRIVATE ./external/stb_image/)
 target_include_directories(fcpp PRIVATE ./
-                                        ./external/
-                                        ./external/glad-core-3.3/include/
-                                        ./external/glm-0.9.9.8/glm
-                                        ./external/glfw-3.3.2/include/
-                                        ./external/freetype-2.10.4/devel/)
+											   ./external/
+											   ./external/glad-core-3.3/include/
+											   ./external/glm-0.9.9.8/glm
+											   ./external/glfw-3.3.2/include/
+											   ./external/freetype-2.10.4/devel/)
+
 
 # link libraries to main target fcpp
 target_link_libraries(fcpp PRIVATE glad
-                                   glm
-                                   glfw
-                                   stb_image
-                                   freetype)
+										  glm
+										  glfw
+                                          stb_image
+                                          freetype)
+
 
 #target compile options
 if(UNIX)
@@ -128,9 +125,18 @@ configure_file(fcpp.pc.in fcpp.pc @ONLY)
 
 # define install rules
 install(TARGETS fcpp
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(FILES ${CMAKE_BINARY_DIR}/fcpp.pc
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig
+	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig
 )
+
+
+
+
+
+
+
+
+

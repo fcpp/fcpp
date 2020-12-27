@@ -1,23 +1,18 @@
 # CMake 3.9 or newer
 cmake_minimum_required(VERSION 3.9)
 
+# project name, version and description
+project(fcppGL
+	VERSION 0.1.0
+	DESCRIPTION "FieldCalc++ OpenGL simulator."
+)
+
 # C++14 or higher
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # adding fcpp
-if(MINGW)
-    option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
-endif(MINGW)
 add_subdirectory(./src/)
-
-include(GNUInstallDirs)
-
-# project name, version and description
-project(fcppGL
-    VERSION 0.1.0
-    DESCRIPTION "FieldCalc++ OpenGL simulator."
-)
 
 # executable target
 add_executable(fcppGL ./src/test/simulation/displayer.cpp)
@@ -33,12 +28,14 @@ target_include_directories(fcppGL PRIVATE ./src/
                                           ./src/external/glfw-3.3.2/include/
                                           ./src/external/freetype-2.10.4/devel/)
 
+
 # link libraries
 target_link_libraries(fcppGL PRIVATE fcpp
                                      glm
-                                     glfw
-                                     stb_image
-                                     freetype)
+									 glfw
+									 stb_image
+									 freetype)
+
 
 #copying shaders into build
 add_custom_command(TARGET fcppGL PRE_BUILD
@@ -52,9 +49,21 @@ add_custom_command(TARGET fcppGL PRE_BUILD
 
 #target compile options
 target_compile_options(fcppGL PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
+#target_compile_options(fcppGL PUBLIC "-DFCPP_REFRESH_RATE=(1.0/144)")
 
 # defining install rules
+include(GNUInstallDirs)
 install(TARGETS fcppGL
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+
+
+
+
+
+
+
+
+

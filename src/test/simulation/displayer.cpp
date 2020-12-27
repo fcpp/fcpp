@@ -3,6 +3,27 @@
 #include "lib/fcpp.hpp"
 #include "lib/simulation/displayer.hpp"
 
+#define EXAMPLE_3D
+
+//! @brief Minimum number whose square is at least n.
+constexpr size_t discrete_sqrt(size_t n) {
+    size_t lo = 0, hi = n, mid = 0;
+    while (lo < hi) {
+        mid = (lo + hi)/2;
+        if (mid*mid < n) lo = mid+1;
+        else hi = mid;
+    }
+    return lo;
+}
+
+constexpr size_t devices = 1000;
+constexpr size_t comm = 100;
+constexpr size_t side = discrete_sqrt(devices * 3000);
+constexpr size_t height = 100;
+
+constexpr float hue_scale = 360.0f/(side+height);
+
+
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
@@ -31,13 +52,13 @@ namespace tags {
 //! @brief Main function.
 MAIN() {
 #ifdef EXAMPLE_3D
-    rectangle_walk(CALL, make_vec(0,0,0), make_vec(500,500,200), 30.5, 1);
+    rectangle_walk(CALL, make_vec(0,0,0), make_vec(side,side,height), comm/3, 1);
 #else
-    rectangle_walk(CALL, make_vec(0,0), make_vec(500,500), 30.5, 1);
+    rectangle_walk(CALL, make_vec(0,0), make_vec(side,side), comm/3, 1);
 #endif
     device_t source_id = ((int)node.current_time()) / 50;
     bool is_source = node.uid == source_id;
-    node.storage(tags::size{}) = is_source ? 10 : 5;
+    node.storage(tags::size{}) = is_source ? 20 : 10;
     double dist = abf_distance(CALL, is_source);
     double sdiam = mp_collection(CALL, dist, dist, 0.0, [](double x, double y){
         return max(x, y);
@@ -48,9 +69,9 @@ MAIN() {
     node.storage(tags::my_distance{}) = dist;
     node.storage(tags::source_diameter{}) = sdiam;
     node.storage(tags::diameter{}) = diam;
-    node.storage(tags::distance_c{}) = color::hsva(dist, 1, 1);
-    node.storage(tags::source_diameter_c{}) = color::hsva(sdiam, 1, 1);
-    node.storage(tags::diameter_c{}) = color::hsva(diam, 1, 1);
+    node.storage(tags::distance_c{}) = color::hsva(dist*hue_scale, 1, 1);
+    node.storage(tags::source_diameter_c{}) = color::hsva(sdiam*hue_scale, 1, 1);
+    node.storage(tags::diameter_c{}) = color::hsva(diam*hue_scale, 1, 1);
 }
 
 }
@@ -74,19 +95,16 @@ using namespace fcpp;
 using namespace component::tags;
 using namespace coordination::tags;
 
-#define DEV_NUM 1000
-#define FREQ    1
-
 using round_s = sequence::periodic<
-    distribution::interval_n<times_t, 0, FREQ>,
-    distribution::weibull_n<times_t, FREQ*10, FREQ, 10>
+    distribution::interval_n<times_t, 0, 1>,
+    distribution::weibull_n<times_t, 10, 1, 10>
 >;
 
 #ifdef EXAMPLE_3D
-using rectangle_d = distribution::rect_n<1, 0, 0, 0, 500, 500, 200>;
+using rectangle_d = distribution::rect_n<1, 0, 0, 0, side, side, height>;
 constexpr size_t dim = 3;
 #else
-using rectangle_d = distribution::rect_n<1, 0, 0, 500, 500>;
+using rectangle_d = distribution::rect_n<1, 0, 0, side, side>;
 constexpr size_t dim = 2;
 #endif
 
@@ -97,7 +115,7 @@ DECLARE_OPTIONS(opt,
     round_schedule<round_s>,
     dimension<dim>,
     exports<vec<dim>, double>,
-    log_schedule<sequence::periodic_n<1, 0, 10>>,
+    log_schedule<sequence::periodic_n<1, 0, 1>>,
     tuple_store<
         my_distance,        double,
         source_diameter,    double,
@@ -107,9 +125,9 @@ DECLARE_OPTIONS(opt,
         diameter_c,         color,
         size,               double
     >,
-    spawn_schedule<sequence::multiple_n<DEV_NUM, 0>>,
+    spawn_schedule<sequence::multiple_n<devices, 0>>,
     init<x, rectangle_d>,
-    connector<connect::fixed<100>>,
+    connector<connect::fixed<comm, 1, dim>>,
     size_tag<size>,
     color_tag<distance_c,source_diameter_c,diameter_c>
 );

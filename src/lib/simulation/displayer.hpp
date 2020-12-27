@@ -105,7 +105,7 @@ namespace tags {
  * - \ref tags::refresh_rate associates to the refresh rate (0 for opportunistic frame refreshing, defaults to \ref FCPP_REFRESH_RATE).
  * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).
  *
- * If no color tags or color values are specified, the color defaults to white.
+ * If no color tags or color values are specified, the color defaults to black.
  */
 template <class... Ts>
 struct displayer {
@@ -130,7 +130,7 @@ struct displayer {
     //! @brief Storage tags regulating the colors of nodes.
     using color_tag = common::option_types<tags::color_tag, Ts...>;
 
-    //! @brief Base colors of nodes (defaults to white).
+    //! @brief Base colors of nodes (defaults to black).
     using color_val = common::option_nums<tags::color_val, Ts...>;
 
     /**
@@ -173,19 +173,13 @@ struct displayer {
 
             //! @brief Updates the internal status of node component.
             void draw(bool star) const {
-                PROFILE_COUNT("displayer");
                 // gather shape and size
                 shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
                 double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
-                // gather color list
-                std::vector<color> c;
-                color_val_push(c, color_val{});
-                color_tag_push(c, color_tag{});
-                if (c.empty()) c.emplace_back(1.0f, 1.0f, 1.0f, 1.0f); // white if nothing else
                 // gather personal position
                 glm::vec3 p = get_cached_position();
                 // render the node
-                P::node::net.getRenderer().drawCube(p, d, c);
+                P::node::net.getRenderer().drawCube(p, d, m_colors);
                 if (star) {
                     // gather neighbours' positions
                     std::vector<glm::vec3> np;
@@ -199,6 +193,11 @@ struct displayer {
             void round_end(times_t t) {
                 P::node::round_end(t);
                 PROFILE_COUNT("displayer");
+                // update color list
+                m_colors.clear();
+                color_val_push(m_colors, color_val{});
+                color_tag_push(m_colors, color_tag{});
+                if (m_colors.empty()) m_colors.emplace_back(0.0f, 0.0f, 0.0f, 1.0f); // black if nothing else
                 // update neighbours list
                 std::sort(m_nbr_uids.begin(), m_nbr_uids.end());
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
@@ -252,6 +251,9 @@ struct displayer {
 
             //! @brief The uids of incoming messages during the previous round.
             std::vector<device_t> m_prev_nbr_uids;
+
+            //! @brief The list of colors for the node.
+            std::vector<color> m_colors;
         };
 
         //! @brief The global part of the component.
@@ -296,24 +298,27 @@ struct displayer {
             void update() {
                 times_t rt = std::min(m_refresh, P::net::real_time());
                 if (rt < P::net::next()) {
-                    PROFILE_COUNT("displayer");
                     times_t t = P::net::internal_time();
                     auto n_beg = P::net::node_begin();
                     auto n_end = P::net::node_end();
-                    if (rt == 0) {
-                        common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
-                            viewport_update(n_beg[i].second.cache_position(t));
+                    PROFILE_COUNT("displayer");
+                    {
+                        PROFILE_COUNT("displayer/nodes");
+                        if (rt == 0) {
+                            common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                                viewport_update(n_beg[i].second.cache_position(t));
+                            });
+                        } else {
+                            common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                                n_beg[i].second.cache_position(t);
+                            });
+                        }
+                        glfwMakeContextCurrent(NULL);
+                        common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
+                            n_beg[i].second.draw(m_links);
                         });
-                    } else {
-                        common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
-                            n_beg[i].second.cache_position(t);
-                        });
+                        glfwMakeContextCurrent(m_renderer.getWindow());
                     }
-                    glfwMakeContextCurrent(NULL);
-                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
-                        n_beg[i].second.draw(m_links);
-                    });
-                    glfwMakeContextCurrent(m_renderer.getWindow());
                     if (rt == 0) {
                         // stop simulated time
                         P::net::frequency(0);
@@ -332,31 +337,35 @@ struct displayer {
                         m_renderer.setGridScale(grid_scale);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
-                    // Handle pressed keys
-                    int mods = 0;
-                    if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                        mods |= GLFW_MOD_SHIFT;
-                    for (int key : m_key_stroked)
-                        keyboardInput(key, false, m_deltaTime, mods);
-
-                    // Draw grid
-                    m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
-
-                    // Draw orthogonal axis
-                    //m_renderer.drawOrtho();
-
-                    // Draw simulation time (t) and FPS
-                    m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
-                    m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth()-60.0f, 16.0f, 0.25f);
-
-                    // Swap buffers and prepare for next frame to draw
-                    m_renderer.swapAndNext();
-
-                    // Update deltaTime
-                    updateDeltaTime();
-
-                    // Update m_refresh
-                    m_refresh = rt + m_step;
+                    {
+                        PROFILE_COUNT("displayer/input");
+                        // Handle pressed keys
+                        int mods = 0;
+                        if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                            mods |= GLFW_MOD_SHIFT;
+                        for (int key : m_key_stroked)
+                            keyboardInput(key, false, m_deltaTime, mods);
+                    }
+                    {
+                        PROFILE_COUNT("displayer/grid");
+                        // Draw grid
+                        m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
+                    }
+                    {
+                        PROFILE_COUNT("displayer/text");
+                        // Draw simulation time (t) and FPS
+                        m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
+                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth()-60.0f, 16.0f, 0.25f);
+                    }
+                    {
+                        PROFILE_COUNT("displayer/step");
+                        // Swap buffers and prepare for next frame to draw
+                        m_renderer.swapAndNext();
+                        // Update deltaTime
+                        updateDeltaTime();
+                        // Update m_refresh
+                        m_refresh = rt + m_step;
+                    }
                 } else P::net::update();
             }
 

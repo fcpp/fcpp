@@ -8,10 +8,12 @@
 #ifndef FCPP_SIMULATION_DISPLAYER_H_
 #define FCPP_SIMULATION_DISPLAYER_H_
 
-#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <string.h>
+#include <cstring>
+
+#include <algorithm>
+#include <deque>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
@@ -273,7 +275,11 @@ struct displayer {
                 m_mouseRight{ 0 },
                 m_links{ false },
                 m_deltaTime{ 0.0f },
-                m_lastFrame{ 0.0f } {}
+                m_lastFrame{ 0.0f },
+                m_lastFraction{ 0.0f },
+                m_FPS{ 0 } {
+                    m_frameCounts.push_back(0);
+                }
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -309,6 +315,8 @@ struct displayer {
                     });
                     glfwMakeContextCurrent(m_renderer.getWindow());
                     if (rt == 0) {
+                        // stop simulated time
+                        P::net::frequency(0);
                         // first frame only: set camera position, rotation, sensitivity
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
@@ -337,8 +345,9 @@ struct displayer {
                     // Draw orthogonal axis
                     //m_renderer.drawOrtho();
 
-                    // Draw simulation time (t)
+                    // Draw simulation time (t) and FPS
                     m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
+                    m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth()-60.0f, 16.0f, 0.25f);
 
                     // Swap buffers and prepare for next frame to draw
                     m_renderer.swapAndNext();
@@ -378,9 +387,20 @@ struct displayer {
 
             //! @brief It updates m_deltaTime and m_lastFrame
             void updateDeltaTime() {
-                float currentFrame{ (float)glfwGetTime() };
+                float currentFrame{ (float)P::net::real_time() };
                 m_deltaTime = currentFrame - m_lastFrame;
                 m_lastFrame = currentFrame;
+                constexpr int refresh = 4; // how many FPS refreshes per second
+                while (currentFrame > m_lastFraction + 1.0f/refresh) {
+                    m_FPS += m_frameCounts.back();
+                    m_frameCounts.push_back(0);
+                    m_lastFraction += 1.0f/refresh;
+                }
+                ++m_frameCounts.back();
+                while (m_frameCounts.size() > refresh+1) {
+                    m_FPS -= m_frameCounts.front();
+                    m_frameCounts.pop_front();
+                }
             }
 
             //! @brief It binds internally-defined callback functions to OpenGL events.
@@ -484,11 +504,11 @@ struct displayer {
                         break;
                     // accelerate simulation
                     case GLFW_KEY_O:
-                        P::net::frequency(pow(2.0, deltaTime)*P::net::frequency());
+                        P::net::frequency(pow(4.0, (mods & GLFW_MOD_SHIFT) > 0 ? deltaTime/5 : deltaTime)*P::net::frequency());
                         break;
                     // decelerate simulation
                     case GLFW_KEY_I:
-                        P::net::frequency(pow(0.5, deltaTime)*P::net::frequency());
+                        P::net::frequency(pow(0.25, (mods & GLFW_MOD_SHIFT) > 0 ? deltaTime/5 : deltaTime)*P::net::frequency());
                         break;
                     default:
                         // pass key to renderer
@@ -535,6 +555,15 @@ struct displayer {
 
             //! @brief Time of last frame.
             float m_lastFrame;
+
+            //! @brief Frame counters in the last fractions of second.
+            std::deque<int> m_frameCounts;
+
+            //! @brief Time of the last fraction of second.
+            float m_lastFraction;
+
+            //! @brief The currently estimated FPS.
+            int m_FPS;
 
             //! @brief List of currently stroked keys.
             std::unordered_set<int> m_key_stroked;

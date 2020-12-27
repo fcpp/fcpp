@@ -469,21 +469,6 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
         starData[6*i+4] = np[i][1];
         starData[6*i+5] = np[i][2];
     }
-//    VERSION WITH INDEXES:
-//    float starData[3 * np.size() + 3];
-//    starData[0] = p[0];
-//    starData[1] = p[1];
-//    starData[2] = p[2];
-//    for (int i=0; i<np.size(); ++i) {
-//        starData[3*i+3] = np[i][0];
-//        starData[3*i+4] = np[i][1];
-//        starData[3*i+5] = np[i][2];
-//    }
-//    int starIndex[2*np.size];
-//    for (int i=0; i<np.size(); ++i) {
-//        starIndex[2*i+0] = 0;
-//        starIndex[2*i+1] = i+1;
-//    }
 
     // Bind current context
     std::lock_guard<std::mutex> l(m_contextMutex);

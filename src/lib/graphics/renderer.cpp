@@ -157,9 +157,9 @@ Renderer::Renderer(size_t antialias) :
     m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 
     // Generate VAOs, VBOs and EBOs
-    glGenVertexArrays(7, VAO);
-    glGenBuffers(7, VBO);
-    glGenBuffers(7, EBO);
+    glGenVertexArrays((int)vertex::SIZE, VAO);
+    glGenBuffers((int)vertex::SIZE, VBO);
+    glGenBuffers((int)index::SIZE, EBO);
 
     // Allocate (static) ortho buffers
     glBindVertexArray(VAO[(int)vertex::ortho]);
@@ -195,6 +195,15 @@ Renderer::Renderer(size_t antialias) :
     // Allocate (dynamic) single line buffers
     glBindVertexArray(VAO[(int)vertex::singleLine]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Allocate (dynamic) neighbour star buffers
+    glBindVertexArray(VAO[(int)vertex::star]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::star]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
@@ -485,11 +494,11 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     m_shaderProgramCol.setMat4("u_view", view);
     m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
     m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
-    glBindVertexArray(VAO[(int)vertex::singleLine]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(starData), starData);
+    glBindVertexArray(VAO[(int)vertex::star]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::star]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(starData), starData, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDrawArrays(GL_LINES, 0, 6);
+    glDrawArrays(GL_LINES, 0, 2 * np.size());
 
 
     // Unbind current context

@@ -6,13 +6,13 @@
 namespace fcpp {
 
 	//! @brief Supported shapes for representing nodes.
-	enum class shape { cube, sphere };
+	enum class shape { cube, sphere, SIZE };
 
 	//! @brief Supported pointers to vertex buffers.
-	enum class vertex { font, singleLine, plane, grid, ortho, cube, sphere };
+	enum class vertex { font, singleLine, star, plane, grid, ortho, cube, sphere, SIZE };
 
 	//! @brief Supported pointers to index buffers.
-	enum class index { plane, gridNorm, gridHigh };
+	enum class index { plane, gridNorm, gridHigh, SIZE };
 
 	namespace internal {
 		class Shapes {

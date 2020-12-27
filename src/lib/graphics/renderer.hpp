@@ -147,13 +147,13 @@ namespace fcpp {
             Shader m_shaderProgramFont;
 
             //! @brief Vertex Array Object(s).
-            unsigned int VAO[7];
+            unsigned int VAO[(int)vertex::SIZE];
 
             //! @brief Vertex Buffer Object(s).
-            unsigned int VBO[7];
+            unsigned int VBO[(int)vertex::SIZE];
 
             //! @brief Element Buffer Object(s).
-            unsigned int EBO[7];
+            unsigned int EBO[(int)index::SIZE];
             
             //! @brief Data structure mapping chars with glyphs.
             std::unordered_map<char, glyph> m_glyphs;

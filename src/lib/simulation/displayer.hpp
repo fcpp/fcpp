@@ -338,15 +338,6 @@ struct displayer {
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
                     {
-                        PROFILE_COUNT("displayer/input");
-                        // Handle pressed keys
-                        int mods = 0;
-                        if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                            mods |= GLFW_MOD_SHIFT;
-                        for (int key : m_key_stroked)
-                            keyboardInput(key, false, m_deltaTime, mods);
-                    }
-                    {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
                         m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
@@ -358,11 +349,16 @@ struct displayer {
                         m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth()-60.0f, 16.0f, 0.25f);
                     }
                     {
+                        PROFILE_COUNT("displayer/input");
+                        // Update deltaTime
+                        updateDeltaTime();
+                        // Handle pressed keys
+                        processStroked();
+                    }
+                    {
                         PROFILE_COUNT("displayer/step");
                         // Swap buffers and prepare for next frame to draw
                         m_renderer.swapAndNext();
-                        // Update deltaTime
-                        updateDeltaTime();
                         // Update m_refresh
                         m_refresh = rt + m_step;
                     }
@@ -429,7 +425,7 @@ struct displayer {
 
                     if ( action == GLFW_PRESS ) {
                         dspl.m_key_stroked.insert(key);
-                        dspl.keyboardInput(key, true, dspl.getDeltaTime(), mods);
+                        dspl.keyboardInput(key, true, 0, mods); // set deltaTime to 0?
                     } else if ( action == GLFW_RELEASE ) {
                         dspl.m_key_stroked.erase(key);
                     }
@@ -524,6 +520,16 @@ struct displayer {
                         m_renderer.keyboardInput(key, first, deltaTime, mods);
                         break;
                 }
+            }
+
+            //! @brief It calls keyboardInput for every key in m_key_stroked.
+            void processStroked() {
+                // Handle pressed keys
+                int mods = 0;
+                if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                    mods |= GLFW_MOD_SHIFT;
+                for (int key : m_key_stroked)
+                    keyboardInput(key, false, m_deltaTime, mods);
             }
 
             //! @brief The number of threads to be used.

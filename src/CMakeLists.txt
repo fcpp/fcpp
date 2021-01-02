@@ -95,9 +95,9 @@ add_subdirectory(./external/glfw-3.3.2)
 add_subdirectory(./external/freetype-2.10.4)
 
 # include directories
-target_include_directories(glad PRIVATE ./external/glad-core-3.3/include/)
-target_include_directories(stb_image PRIVATE ./external/stb_image/)
-target_include_directories(fcpp PRIVATE ./
+target_include_directories(glad PUBLIC ./external/glad-core-3.3/include/)
+target_include_directories(stb_image PUBLIC ./external/stb_image/)
+target_include_directories(fcpp PUBLIC ./
                                         ./external/
                                         ./external/glad-core-3.3/include/
                                         ./external/glm-0.9.9.8/glm
@@ -105,11 +105,11 @@ target_include_directories(fcpp PRIVATE ./
                                         ./external/freetype-2.10.4/devel/)
 
 # link libraries to main target fcpp
-target_link_libraries(fcpp PRIVATE glad
-                                   glm
-                                   glfw
-                                   stb_image
-                                   freetype)
+target_link_libraries(fcpp PUBLIC glad
+                                  glm
+                                  glfw
+                                  stb_image
+                                  freetype)
 
 #target compile options
 if(UNIX)

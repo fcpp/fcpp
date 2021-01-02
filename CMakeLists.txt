@@ -22,20 +22,8 @@ add_executable(fcppGL ./src/test/simulation/displayer.cpp)
 # VERSION property
 set_target_properties(fcppGL PROPERTIES VERSION &{PROJECT_VERSION})
 
-# include directories
-target_include_directories(fcppGL PRIVATE ./src/
-                                          ./src/external/
-                                          ./src/external/glad-core-3.3/include/
-                                          ./src/external/glm-0.9.9.8/glm
-                                          ./src/external/glfw-3.3.2/include/
-                                          ./src/external/freetype-2.10.4/devel/)
-
 # link libraries
-target_link_libraries(fcppGL PRIVATE fcpp
-                                     glm
-                                     glfw
-                                     stb_image
-                                     freetype)
+target_link_libraries(fcppGL PRIVATE fcpp)
 
 #copying shaders into build
 add_custom_command(TARGET fcppGL PRE_BUILD

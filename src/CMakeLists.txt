@@ -12,9 +12,11 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+set(BUILD_SHARED_LIBS OFF)
 
 # library target
-add_library(fcpp SHARED
+add_library(fcpp STATIC
     lib/beautify.cpp
     lib/common.cpp
     lib/common/algorithm.cpp
@@ -98,11 +100,11 @@ add_subdirectory(./external/freetype-2.10.4)
 target_include_directories(glad PUBLIC ./external/glad-core-3.3/include/)
 target_include_directories(stb_image PUBLIC ./external/stb_image/)
 target_include_directories(fcpp PUBLIC ./
-                                        ./external/
-                                        ./external/glad-core-3.3/include/
-                                        ./external/glm-0.9.9.8/glm
-                                        ./external/glfw-3.3.2/include/
-                                        ./external/freetype-2.10.4/devel/)
+                                       ./external/
+                                       ./external/glad-core-3.3/include/
+                                       ./external/glm-0.9.9.8/glm
+                                       ./external/glfw-3.3.2/include/
+                                       ./external/freetype-2.10.4/devel/)
 
 # link libraries to main target fcpp
 target_link_libraries(fcpp PUBLIC glad

@@ -191,12 +191,11 @@ add_custom_command(TARGET fcpp POST_BUILD
                        ${PROJECT_SOURCE_DIR}/lib/graphics/fonts/ $<TARGET_FILE_DIR:fcpp>/fonts/)
 endif(FCPP_BUILD_GL)	
 
-# Target fcpp compile options
+# Targets compile options
 if(UNIX)
 target_compile_options(glad PUBLIC "-fPIC")
 target_compile_options(freetype PUBLIC "-fPIC")
 endif(UNIX)
-#target_compile_options(fcpp PUBLIC "-DPROFILER")
 
 # Create install rules
 include(GNUInstallDirs)

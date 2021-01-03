@@ -37,9 +37,9 @@ add_custom_command(TARGET fcppGL POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        $<TARGET_FILE_DIR:fcpp>/fonts/ $<TARGET_FILE_DIR:fcppGL>/fonts/)
 
-# Target fcppGL compile options
-target_compile_options(fcppGL PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
-#target_compile_options(fcppGL PUBLIC "-DPROFILER")
+# Targets compile options
+target_compile_options(fcpp PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
+target_compile_options(fcpp PUBLIC "-DPROFILER")
 
 # Defining install rules
 include(GNUInstallDirs)

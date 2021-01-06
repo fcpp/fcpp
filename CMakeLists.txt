@@ -30,12 +30,7 @@ set_target_properties(fcppGL PROPERTIES VERSION &{PROJECT_VERSION})
 target_link_libraries(fcppGL PRIVATE fcpp)
 
 # Copying shaders and fonts into build
-add_custom_command(TARGET fcppGL POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       $<TARGET_FILE_DIR:fcpp>/shaders/ $<TARGET_FILE_DIR:fcppGL>/shaders/)
-add_custom_command(TARGET fcppGL POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       $<TARGET_FILE_DIR:fcpp>/fonts/ $<TARGET_FILE_DIR:fcppGL>/fonts/)
+copyGraphicsFolders(fcppGL $<TARGET_FILE_DIR:fcpp> $<TARGET_FILE_DIR:fcppGL>)
 
 # Targets compile options
 target_compile_options(fcpp PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")

@@ -1,6 +1,16 @@
 # CMake 3.9 or newer
 cmake_minimum_required(VERSION 3.9)
 
+# Defining functions
+function(copyGraphicsFolders target source dest) # ${PROJECT_SOURCE_DIR}/lib/graphics $<TARGET_FILE_DIR:fcpp>
+	add_custom_command(TARGET ${ARGV0} POST_BUILD
+					   COMMAND ${CMAKE_COMMAND} -E copy_directory
+							${ARGV1}/shaders/ ${ARGV2}/shaders/)
+	add_custom_command(TARGET ${ARGV0} POST_BUILD
+					   COMMAND ${CMAKE_COMMAND} -E copy_directory
+							${ARGV1}/fonts/ ${ARGV2}/fonts/)
+endfunction()
+
 # Project name, version and description
 project(fcpp
 	VERSION 0.6.6
@@ -183,12 +193,7 @@ endif(FCPP_BUILD_GL)
 
 # Copying shaders and fonts into build
 if(FCPP_BUILD_GL)
-add_custom_command(TARGET fcpp POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${PROJECT_SOURCE_DIR}/lib/graphics/shaders/ $<TARGET_FILE_DIR:fcpp>/shaders/)
-add_custom_command(TARGET fcpp POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${PROJECT_SOURCE_DIR}/lib/graphics/fonts/ $<TARGET_FILE_DIR:fcpp>/fonts/)
+copyGraphicsFolders(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics $<TARGET_FILE_DIR:fcpp>)
 endif(FCPP_BUILD_GL)	
 
 # Targets compile options

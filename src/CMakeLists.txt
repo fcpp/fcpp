@@ -207,12 +207,3 @@ include(GNUInstallDirs)
 
 # Import rules from fcpp.pc.in file
 configure_file(fcpp.pc.in fcpp.pc @ONLY)
-
-# Define install rules
-install(TARGETS fcpp
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-install(FILES ${CMAKE_BINARY_DIR}/fcpp.pc
-	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig
-)

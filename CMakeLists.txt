@@ -35,10 +35,3 @@ copyGraphicsFolders(fcppGL $<TARGET_FILE_DIR:fcpp> $<TARGET_FILE_DIR:fcppGL>)
 # Targets compile options
 target_compile_options(fcpp PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
 target_compile_options(fcpp PUBLIC "-DPROFILER")
-
-# Defining install rules
-include(GNUInstallDirs)
-install(TARGETS fcppGL
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)

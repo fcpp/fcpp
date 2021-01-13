@@ -26,137 +26,77 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 set(BUILD_SHARED_LIBS OFF)
 option(FCPP_BUILD_GL "Build OpenGL features.")
 
-# Library target
-if(FCPP_BUILD_GL) # the following source list includes the files with OpenGL features
-add_library(fcpp STATIC
-    lib/beautify.cpp
-    lib/common.cpp
-    lib/common/algorithm.cpp
-    lib/common/multitype_map.cpp
-    lib/common/mutex.cpp
-    lib/common/ostream.cpp
-    lib/common/plot.cpp
-    lib/common/profiler.cpp
-    lib/common/random_access_map.cpp
-    lib/common/serialize.cpp
-    lib/common/tagged_tuple.cpp
-    lib/common/traits.cpp
-    lib/component.cpp
-    lib/component/base.cpp
-    lib/component/calculus.cpp
-    lib/component/identifier.cpp
-    lib/component/logger.cpp
-    lib/component/randomizer.cpp
-    lib/component/scheduler.cpp
-    lib/component/storage.cpp
-    lib/component/timer.cpp
-    lib/coordination.cpp
-    lib/coordination/collection.cpp
-    lib/coordination/election.cpp
-    lib/coordination/geometry.cpp
-    lib/coordination/spreading.cpp
-    lib/coordination/time.cpp
-    lib/coordination/utils.cpp
-    lib/data.cpp
-    lib/data/color.cpp
-    lib/data/field.cpp
-    lib/data/tuple.cpp
-    lib/data/vec.cpp
-    lib/deployment.cpp
-    lib/deployment/hardware_connector.cpp
-    lib/deployment/hardware_identifier.cpp
-    lib/deployment/hardware_logger.cpp
-    lib/deployment/os.cpp
-    lib/fcpp.cpp
-    lib/graphics/camera.cpp
-    lib/graphics/renderer.cpp
-    lib/graphics/shader.cpp
-    lib/graphics/shapes.cpp
-    lib/internal.cpp
-    lib/internal/context.cpp
-    lib/internal/flat_ptr.cpp
-    lib/internal/trace.cpp
-    lib/internal/twin.cpp
-    lib/option.cpp
-    lib/option/aggregator.cpp
-    lib/option/connect.cpp
-    lib/option/distribution.cpp
-    lib/option/metric.cpp
-    lib/option/sequence.cpp
-    lib/settings.cpp
-    lib/simulation.cpp
-    lib/simulation/batch.cpp
-    lib/simulation/displayer.cpp
-    lib/simulation/simulated_connector.cpp
-    lib/simulation/simulated_positioner.cpp
-    lib/simulation/spawner.cpp
+# Source list
+set(SOURCE_LIST lib/beautify.cpp
+                lib/common.cpp
+                lib/common/algorithm.cpp
+                lib/common/multitype_map.cpp
+                lib/common/mutex.cpp
+                lib/common/ostream.cpp
+                lib/common/plot.cpp
+                lib/common/profiler.cpp
+                lib/common/random_access_map.cpp
+                lib/common/serialize.cpp
+                lib/common/tagged_tuple.cpp
+                lib/common/traits.cpp
+                lib/component.cpp
+                lib/component/base.cpp
+                lib/component/calculus.cpp
+                lib/component/identifier.cpp
+                lib/component/logger.cpp
+                lib/component/randomizer.cpp
+                lib/component/scheduler.cpp
+                lib/component/storage.cpp
+                lib/component/timer.cpp
+                lib/coordination.cpp
+                lib/coordination/collection.cpp
+                lib/coordination/election.cpp
+                lib/coordination/geometry.cpp
+                lib/coordination/spreading.cpp
+                lib/coordination/time.cpp
+                lib/coordination/utils.cpp
+                lib/data.cpp
+                lib/data/color.cpp
+                lib/data/field.cpp
+                lib/data/tuple.cpp
+                lib/data/vec.cpp
+                lib/deployment.cpp
+                lib/deployment/hardware_connector.cpp
+                lib/deployment/hardware_identifier.cpp
+                lib/deployment/hardware_logger.cpp
+                lib/deployment/os.cpp
+                lib/fcpp.cpp
+                lib/internal.cpp
+                lib/internal/context.cpp
+                lib/internal/flat_ptr.cpp
+                lib/internal/trace.cpp
+                lib/internal/twin.cpp
+                lib/option.cpp
+                lib/option/aggregator.cpp
+                lib/option/connect.cpp
+                lib/option/distribution.cpp
+                lib/option/metric.cpp
+                lib/option/sequence.cpp
+                lib/settings.cpp
+                lib/simulation.cpp
+                lib/simulation/batch.cpp
+                lib/simulation/simulated_connector.cpp
+                lib/simulation/simulated_positioner.cpp
+                lib/simulation/spawner.cpp
 )
-else() # the following source list doesn't include the files with OpenGL features
-add_library(fcpp STATIC
-    lib/beautify.cpp
-    lib/common.cpp
-    lib/common/algorithm.cpp
-    lib/common/multitype_map.cpp
-    lib/common/mutex.cpp
-    lib/common/ostream.cpp
-    lib/common/plot.cpp
-    lib/common/profiler.cpp
-    lib/common/random_access_map.cpp
-    lib/common/serialize.cpp
-    lib/common/tagged_tuple.cpp
-    lib/common/traits.cpp
-    lib/component.cpp
-    lib/component/base.cpp
-    lib/component/calculus.cpp
-    lib/component/identifier.cpp
-    lib/component/logger.cpp
-    lib/component/randomizer.cpp
-    lib/component/scheduler.cpp
-    lib/component/storage.cpp
-    lib/component/timer.cpp
-    lib/coordination.cpp
-    lib/coordination/collection.cpp
-    lib/coordination/election.cpp
-    lib/coordination/geometry.cpp
-    lib/coordination/spreading.cpp
-    lib/coordination/time.cpp
-    lib/coordination/utils.cpp
-    lib/data.cpp
-    lib/data/color.cpp
-    lib/data/field.cpp
-    lib/data/tuple.cpp
-    lib/data/vec.cpp
-    lib/deployment.cpp
-    lib/deployment/hardware_connector.cpp
-    lib/deployment/hardware_identifier.cpp
-    lib/deployment/hardware_logger.cpp
-    lib/deployment/os.cpp
-    lib/fcpp.cpp
-    lib/internal.cpp
-    lib/internal/context.cpp
-    lib/internal/flat_ptr.cpp
-    lib/internal/trace.cpp
-    lib/internal/twin.cpp
-    lib/option.cpp
-    lib/option/aggregator.cpp
-    lib/option/connect.cpp
-    lib/option/distribution.cpp
-    lib/option/metric.cpp
-    lib/option/sequence.cpp
-    lib/settings.cpp
-    lib/simulation.cpp
-    lib/simulation/batch.cpp
-    lib/simulation/simulated_connector.cpp
-    lib/simulation/simulated_positioner.cpp
-    lib/simulation/spawner.cpp
+if(FCPP_BUILD_GL) # append source files with OpenGL features
+list(APPEND SOURCE_LIST lib/graphics/camera.cpp
+                        lib/graphics/renderer.cpp
+                        lib/graphics/shader.cpp
+                        lib/graphics/shapes.cpp
 )
 endif(FCPP_BUILD_GL)
 
+# Library target
+add_library(fcpp STATIC ${SOURCE_LIST})
+
 # VERSION property
 set_target_properties(fcpp PROPERTIES VERSION &{PROJECT_VERSION})
-
-# Public API declaration
-set_target_properties(fcpp PROPERTIES PUBLIC_HEADER include/fcpp_main.h)
 
 # Add external libraries
 if(FCPP_BUILD_GL)

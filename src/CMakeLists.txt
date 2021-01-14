@@ -18,13 +18,15 @@ project(fcpp
 )
 
 # Compiling options
+option(FCPP_BUILD_GL "Build OpenGL features.")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+if(WIN32)
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 set(BUILD_SHARED_LIBS OFF)
-option(FCPP_BUILD_GL "Build OpenGL features.")
+endif(WIN32)
 
 # Source list
 set(SOURCE_LIST lib/beautify.cpp
@@ -93,7 +95,11 @@ list(APPEND SOURCE_LIST lib/graphics/camera.cpp
 endif(FCPP_BUILD_GL)
 
 # Library target
+if(WIN32)
 add_library(fcpp STATIC ${SOURCE_LIST})
+else(WIN32)
+add_library(fcpp SHARED ${SOURCE_LIST})
+endif(WIN32)
 
 # VERSION property
 set_target_properties(fcpp PROPERTIES VERSION &{PROJECT_VERSION})
@@ -137,10 +143,10 @@ copyGraphicsFolders(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics $<TARGET_FILE_DIR:fc
 endif(FCPP_BUILD_GL)	
 
 # Targets compile options
-if(UNIX)
+if(UNIX AND FCPP_BUILD_GL)
 target_compile_options(glad PUBLIC "-fPIC")
 target_compile_options(freetype PUBLIC "-fPIC")
-endif(UNIX)
+endif(UNIX AND FCPP_BUILD_GL)
 
 # Create install rules
 include(GNUInstallDirs)

@@ -64,6 +64,9 @@ namespace fcpp {
             //! @brief Returns viewport's current height.
             int getCurrentHeight();
             
+            //! @brief  It returns the ID of the defined texture, if loaded.
+            unsigned int getTextureID(std::string path);
+
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow();
             
@@ -75,6 +78,12 @@ namespace fcpp {
 
             //! @brief Sets the scale of the grid.
             void setGridScale(double newScale);
+
+            //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
+            unsigned int loadTexture(std::string path);
+
+            //! @brief It unloads the defined texture, given its path.
+            void unloadTexture(std::string path);
             
             //! @brief It manages mouse input of the given type.
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
@@ -112,6 +121,9 @@ namespace fcpp {
             
             //! @brief Default path to font.
             static const std::string FONT_PATH;
+
+            //! @brief Default path to textures.
+            static const std::string TEXTURE_PATH;
             
             //! @brief Default font size.
             static constexpr unsigned int FONT_DEFAULT_SIZE{ 48 };
@@ -154,6 +166,9 @@ namespace fcpp {
 
             //! @brief Element Buffer Object(s).
             unsigned int EBO[(int)index::SIZE];
+
+            //! @brief Data structure mapping texture names with texture IDs.
+            std::unordered_map<std::string, unsigned int> m_textures;
             
             //! @brief Data structure mapping chars with glyphs.
             std::unordered_map<char, glyph> m_glyphs;

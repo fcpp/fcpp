@@ -35,6 +35,7 @@ using namespace fcpp::internal;
     const std::string Renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
     const std::string Renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
     const std::string Renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
+    const std::string Renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
     const std::string Renderer::VERTEX_PATH{ "./shaders/vertex.glsl" };
     const std::string Renderer::FRAGMENT_PATH{ "./shaders/fragment.glsl" };
@@ -45,10 +46,9 @@ using namespace fcpp::internal;
     const std::string Renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
     const std::string Renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
     const std::string Renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
+    const std::string Renderer::TEXTURE_PATH{ "./textures/" };
 #endif
-
     const glm::vec3 Renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
-
     const glm::vec3 Renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
 
 
@@ -547,6 +547,10 @@ int Renderer::getCurrentHeight() {
     return m_currentHeight;
 }
 
+unsigned int Renderer::getTextureID(std::string path) {
+    return m_textures[path];
+}
+
 GLFWwindow* Renderer::getWindow() {
     return m_window;
 }
@@ -561,6 +565,41 @@ void Renderer::setLightPosition(glm::vec3& newPos) {
 
 void Renderer::setGridScale(double newScale) {
     m_gridScale = newScale;
+}
+
+unsigned int Renderer::loadTexture(std::string path) {
+    unsigned int texture{ 0 };
+    stbi_set_flip_vertically_on_load(true);
+    // load texture data
+    int width, height, nrChannels;
+    unsigned char* data{ stbi_load((TEXTURE_PATH + path).c_str(), &width, &height, &nrChannels, 0) };
+    if (data) {
+        // generate texture
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        GLint inputChannels;
+        if (nrChannels == 3) inputChannels = GL_RGB;
+        else inputChannels = GL_RGBA;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, inputChannels, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        // store texture into map
+        m_textures.insert(std::pair<std::string, unsigned int>(path, texture));
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    else std::cerr << "ERROR::RENDERER::STBIMAGE::TEXTURE_LOAD_FAILED (" << path << ")\n";
+    stbi_image_free(data);
+
+    return texture;
+}
+
+void Renderer::unloadTexture(std::string path) {
+    //unsigned int id{  };
+    glDeleteTextures(1, &m_textures[path]);
+    m_textures.erase(path);
 }
 
 void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {

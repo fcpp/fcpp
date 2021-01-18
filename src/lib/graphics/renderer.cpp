@@ -548,7 +548,14 @@ int Renderer::getCurrentHeight() {
 }
 
 unsigned int Renderer::getTextureID(std::string path) {
-    return m_textures[path];
+    unsigned int r{ 0 };   
+    try {
+        r = m_textures.at(path);
+    } catch (const std::out_of_range& exception) {
+        std::cerr << "ERROR::RENDERER::GET_TEXTURE_ID::TEXTURE_NOT_FOUND (" << path << ")\n";
+    }
+    
+    return r;
 }
 
 GLFWwindow* Renderer::getWindow() {
@@ -597,9 +604,12 @@ unsigned int Renderer::loadTexture(std::string path) {
 }
 
 void Renderer::unloadTexture(std::string path) {
-    //unsigned int id{  };
-    glDeleteTextures(1, &m_textures[path]);
-    m_textures.erase(path);
+    try {
+        glDeleteTextures(1, &m_textures.at(path));
+        m_textures.erase(path);
+    } catch (const std::out_of_range& exception) {
+        std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (" << path << ")\n";
+    }
 }
 
 void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {

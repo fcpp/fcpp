@@ -22,6 +22,11 @@ project(fcpp
 
 # Compiling options
 option(FCPP_BUILD_GL "Build OpenGL features.")
+if(FCPP_BUILD_GL)
+option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
+option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
+option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
+endif(FCPP_BUILD_GL)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")

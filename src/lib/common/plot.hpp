@@ -595,7 +595,7 @@ class join<P> : public P {};
 namespace details {
     //! @brief Formats a type description.
     inline std::string& format_type(std::string& s) {
-        for (int i=0; i<s.size(); ++i) if (s[i] == '_') s[i] = ' ';
+        for (size_t i=0; i<s.size(); ++i) if (s[i] == '_') s[i] = ' ';
         return s;
     }
     //! @brief Formats a type description.

@@ -95,13 +95,13 @@ MULTI_TEST(PhysicalConnectorTest, Connection, O, 1) {
     EXPECT_EQ(1, network.connection_radius());
     typename connect::fixed<1>::data_type data;
     bool connect;
-    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(0.4,0.9));
+    connect = network.connection_success(nullptr, data, make_vec(0.5,1), data, make_vec(0.4,0.9));
     EXPECT_TRUE(connect);
-    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(7,10));
+    connect = network.connection_success(nullptr, data, make_vec(0.5,1), data, make_vec(7,10));
     EXPECT_FALSE(connect);
-    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(0.5,0));
+    connect = network.connection_success(nullptr, data, make_vec(0.5,1), data, make_vec(0.5,0));
     EXPECT_TRUE(connect);
-    connect = network.connection_success(data, make_vec(0.5,1), data, make_vec(0.51,0));
+    connect = network.connection_success(nullptr, data, make_vec(0.5,1), data, make_vec(0.51,0));
     EXPECT_FALSE(connect);
 }
 

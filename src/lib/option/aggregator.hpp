@@ -362,7 +362,7 @@ class moment {
 };
 
 
-//! @brief Aggregates values by mean and standard deviation.
+//! @brief Aggregates values by standard deviation.
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class deviation {
   public:

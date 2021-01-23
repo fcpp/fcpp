@@ -260,12 +260,11 @@ struct simulated_connector {
                         m_send = TIME_MAX;
                         for (auto c : P::node::net.cell_of(P::node::as_final()).linked())
                             for (typename F::node* n : c->content())
-                                if (P::node::net.connection_success(m_data, P::node::position(t), n->m_data, n->position(t))) {
+                                if (P::node::net.connection_success(get_generator(has_randomizer<P>{}, *this), m_data, P::node::position(t), n->m_data, n->position(t))) {
                                     typename F::node::message_t m;
                                     if (n != this) {
-                                        P::node::mutex.unlock();
-                                        common::lock(P::node::mutex, n->mutex);
-                                        common::lock_guard<parallel> l(n->mutex, std::adopt_lock);
+                                        common::unlock_guard<parallel> u(P::node::mutex);
+                                        common::lock_guard<parallel> l(n->mutex);
                                         n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
                                     } else n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
                                 }
@@ -367,8 +366,9 @@ struct simulated_connector {
             }
 
             //! @brief Checks whether connection is possible.
-            inline bool connection_success(const connection_data_type& data1, const position_type& position1, const connection_data_type& data2, const position_type& position2) const {
-                return m_connector(data1, position1, data2, position2);
+            template <typename G>
+            inline bool connection_success(G&& gen, const connection_data_type& data1, const position_type& position1, const connection_data_type& data2, const position_type& position2) const {
+                return m_connector(gen, data1, position1, data2, position2);
             }
 
           private: // implementation details

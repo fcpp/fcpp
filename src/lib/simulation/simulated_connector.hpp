@@ -263,9 +263,8 @@ struct simulated_connector {
                                 if (P::node::net.connection_success(get_generator(has_randomizer<P>{}, *this), m_data, P::node::position(t), n->m_data, n->position(t))) {
                                     typename F::node::message_t m;
                                     if (n != this) {
-                                        P::node::mutex.unlock();
-                                        common::lock(P::node::mutex, n->mutex);
-                                        common::lock_guard<parallel> l(n->mutex, std::adopt_lock);
+                                        common::unlock_guard<parallel> u(P::node::mutex);
+                                        common::lock_guard<parallel> l(n->mutex);
                                         n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
                                     } else n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
                                 }

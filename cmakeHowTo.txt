@@ -7,7 +7,7 @@ After setting the respective environmental variables, go into the ./fcpp directo
 	* cmake -S ./ -B ./bin -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -Wno-dev
 	* cmake --build ./bin/
 
-Wait the application to be built.
+Wait for the application to be built.
 
 
 
@@ -23,4 +23,4 @@ After installing X11, go into the ./fcpp directory through the console and type 
 	* cmake -S ./ -B ./bin -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -Wno-dev
 	* cmake --build ./bin/
 
-Wait the application to be built.
+Wait for the application to be built.

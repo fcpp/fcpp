@@ -152,6 +152,7 @@ endif(FCPP_BUILD_GL)
 
 # Targets compile options
 if(UNIX AND FCPP_BUILD_GL)
+target_compile_options(stb_image PUBLIC "-fPIC")
 target_compile_options(glad PUBLIC "-fPIC")
 target_compile_options(freetype PUBLIC "-fPIC")
 endif(UNIX AND FCPP_BUILD_GL)

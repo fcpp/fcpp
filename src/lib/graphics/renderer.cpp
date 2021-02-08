@@ -234,7 +234,19 @@ Renderer::Renderer(size_t antialias) :
 
 
 /* --- PRIVATE FUNCTIONS --- */
-/*nope dude*/
+int Renderer::euclid(int a, int b) {
+    std::cout << "euclid(" << a << ", " << b << ")";
+    int r;
+    while(b != 0) //repeat until b is 0
+    {
+         r = a % b;
+         a = b; 
+         b = r; //swap a and b
+    }
+    
+    std::cout << a << "\n";
+    return a; //the result is a when b is equal to 0
+}
 
 
 /* --- PUBLIC FUNCTIONS --- */
@@ -263,19 +275,35 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
     // Initialize grid and plane buffers if they are not already
     if (m_gridFirst) {
         m_gridFirst = false;
-        int approx = (gridMax.x-gridMin.x)*(gridMax.y-gridMin.y) > 2000*m_gridScale*m_gridScale ? 10 : 1;
+        int approx{ (gridMax.x-gridMin.x)*(gridMax.y-gridMin.y) > 2000*m_gridScale*m_gridScale ? 10 : 1 };
         int grid_min_x = std::floor(gridMin.x / m_gridScale / approx) * approx;
         int grid_max_x = std::ceil(gridMax.x / m_gridScale / approx) * approx;
         int grid_min_y = std::floor(gridMin.y / m_gridScale / approx) * approx;
         int grid_max_y = std::ceil(gridMax.y / m_gridScale / approx) * approx;
-        int numX = grid_max_x - grid_min_x + 1;
-        int numY = grid_max_y - grid_min_y + 1;
-        int numHighX = (grid_max_x - grid_max_x%10 - grid_min_x) / 10 + 1;
-        int numHighY = (grid_max_y - grid_max_y%10 - grid_min_y) / 10 + 1;
-        int i = 0; // for putting vertices into gridMesh
-        int j = 0; // for putting indices into gridHighMesh
-        int k = 0; // for putting indices into gridNormMesh
-
+        int numX{ grid_max_x - grid_min_x + 1 };
+        int numY{ grid_max_y - grid_min_y + 1 };
+        
+        int highlighter{ 10 }; // the module required by a line to be highlighted
+        /* symmetrical code:
+        if (numX != numY or numX % 10 != 0) {
+            highlighter = euclid(numX - 1, numY - 1);
+            while (highlighter >= 10 and highlighter % 2 == 0)
+                highlighter /= 2;
+        } else highlighter = 10;
+        */
+        
+        int numHighX{ (grid_max_x - grid_max_x % highlighter - grid_min_x) / highlighter + 1 };
+        int numHighY{ (grid_max_y - grid_max_y % highlighter - grid_min_y) / highlighter + 1 };
+        /* symmetrical code:
+        if (highlighter != 1) {
+            numHighX = (grid_max_x - grid_max_x % highlighter - grid_min_x) / highlighter + 1;
+            numHighY = (grid_max_y - grid_max_y % highlighter - grid_min_y) / highlighter + 1;
+        } else numHighX = numHighY = 2;
+        */
+        
+        int i{ 0 }; // for putting vertices into gridMesh
+        int j{ 0 }; // for putting indices into gridHighMesh
+        int k{ 0 }; // for putting indices into gridNormMesh
         float gridMesh[numX * 6 + numY * 6]; // will contain the vertex data of the grid
         int gridNormIndex[(numX - numHighX) * 2 + (numY - numHighY) * 2]; // will contain the index data of the normal lines of the grid
         int gridHighIndex[numHighX * 2 + numHighY * 2]; // will contain the index data of the highlighted lines of the grid
@@ -286,12 +314,11 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
             gridMesh[3 + i * 6] = (float)(x * m_gridScale);
             gridMesh[4 + i * 6] = (float)(grid_max_y * m_gridScale);
             gridMesh[5 + i * 6] = 0.0f;
-            if (x % 10 == 0) {
+            if (x % highlighter == 0) { // symmetrical code: (highlighter != 1 and x % highlighter == 0) or (x == grid_min_x or x == grid_max_x)
                 gridHighIndex[j * 2] = i * 2;
                 gridHighIndex[1 + j * 2] = i * 2 + 1;
                 ++j;
-            }
-            else {
+            } else {
                 gridNormIndex[k * 2] = i * 2;
                 gridNormIndex[1 + k * 2] = i * 2 + 1;
                 ++k;
@@ -305,7 +332,7 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
             gridMesh[3 + i * 6] = (float)(grid_max_x * m_gridScale);
             gridMesh[4 + i * 6] = (float)(y * m_gridScale);
             gridMesh[5 + i * 6] = 0.0f;
-            if (y % 10 == 0) {
+            if (y % highlighter == 0) { //symmetrical code: (highlighter != 1 and y % highlighter == 0) or (y == grid_min_y or y == grid_max_y)
                 gridHighIndex[j * 2] = i * 2;
                 gridHighIndex[1 + j * 2] = i * 2 + 1;
                 ++j;
@@ -381,30 +408,6 @@ void Renderer::drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha) 
     }
 }
 
-/*
-void Renderer::drawOrtho() {
-    // Create matrices (used several times)
-    glm::mat4 projection{ 1.0f };
-    glm::mat4 view{ 1.0f };
-    glm::mat4 model{ 1.0f };
-
-    // Draw ortho
-    glClear(GL_DEPTH_BUFFER_BIT); // Clean depth buffer, in order to draw on top of 3D objects
-    m_shaderProgramOrtho.use();
-    glBindVertexArray(VAO[(int)vertex::ortho]);
-    m_shaderProgramOrtho.setFloat("u_alpha", 1.0f);
-    projection = glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight, -(float)m_orthoSize, (float)m_orthoSize);
-    m_shaderProgramOrtho.setMat4("u_projection", projection);
-    m_shaderProgramOrtho.setMat4("u_view", view);
-    model = glm::translate(model, glm::vec3((float)m_currentWidth - ((float)m_orthoSize * 5.0f / 4.0f), (float)m_orthoSize * 5.0f / 4.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(-m_camera.getPitch()), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(m_camera.getYaw() + 90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3((float)m_orthoSize));
-    m_shaderProgramOrtho.setMat4("u_model", model);
-    glDrawArrays(GL_LINES, 0, sizeof(Shapes::VERTEX_ORTHO) / sizeof(Shapes::VERTEX_ORTHO[0]));
-}
-*/
-
 void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& c) const {
     // Create matrices (used several times)
     glm::mat4 const& projection{ m_camera.getProjection() };
@@ -415,15 +418,17 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
     glm::mat3 normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
     glm::vec4 col{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }; // access to first color only is temporary...
 
+#if FCPP_DRAW_THREADS >= 2
     // Bind current context
     std::lock_guard<std::mutex> l(m_contextMutex);
     glfwMakeContextCurrent(m_window);
+#endif //FCPP_DRAW_THREADS >= 2
     
     // Draw cube
     m_shaderProgram.use();
     glBindVertexArray(VAO[(int)vertex::cube]);
     m_shaderProgram.setVec3("u_lightPos", m_lightPos);
-    m_shaderProgram.setFloat("u_ambientStrength", 0.1f);
+    m_shaderProgram.setFloat("u_ambientStrength", 0.4f);
     m_shaderProgram.setVec4("u_objectColor", col);
     m_shaderProgram.setVec3("u_lightColor", LIGHT_COLOR);
     m_shaderProgram.setMat4("u_projection", projection);
@@ -449,9 +454,11 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_LINES, 0, 6);
     }
-    
+
+#if FCPP_DRAW_THREADS >= 2
     // Unbind current context
     glfwMakeContextCurrent(NULL);
+#endif //FCPP_DRAW_THREADS >= 2
 }
 
 //! @brief It draws a star of lines, given the center and sides.
@@ -470,9 +477,11 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
         starData[6*i+5] = np[i][2];
     }
 
+#if FCPP_DRAW_THREADS >= 2
     // Bind current context
     std::lock_guard<std::mutex> l(m_contextMutex);
     glfwMakeContextCurrent(m_window);
+#endif //FCPP_DRAW_THREADS >= 2
 
     m_shaderProgramCol.use();
     m_shaderProgramCol.setMat4("u_projection", projection);
@@ -485,9 +494,10 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDrawArrays(GL_LINES, 0, 2 * np.size());
 
-
+#if FCPP_DRAW_THREADS >= 2
     // Unbind current context
     glfwMakeContextCurrent(NULL);
+#endif //FCPP_DRAW_THREADS >= 2
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale)

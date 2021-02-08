@@ -16,7 +16,7 @@ constexpr size_t discrete_sqrt(size_t n) {
     return lo;
 }
 
-constexpr size_t devices = 100;
+constexpr size_t devices = 1000;
 constexpr size_t comm = 100;
 constexpr size_t side = discrete_sqrt(devices * 3000);
 constexpr size_t height = 100;

@@ -40,9 +40,6 @@ namespace fcpp {
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();
 
-            //! @brief It draws the orthogonal axis on the screen.
-            //void drawOrtho();
-
             //! @brief It draws the grid on the screen.
             void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
 
@@ -211,6 +208,9 @@ namespace fcpp {
 
             //! @brief Mutex regulating access to the openGL context.
             mutable std::mutex m_contextMutex;
+            
+            //! @brief Euclid's algorithm to get the greatest common divisor.
+            int euclid(int a, int b);
 		};
 	}
 }

@@ -281,7 +281,6 @@ struct displayer {
                 m_lastFraction{ 0.0f },
                 m_FPS{ 0 } {
                     m_frameCounts.push_back(0);
-                    std::cout << "FCPP_DRAW_THREADS = " << FCPP_DRAW_THREADS << "\n";
                 }
 
             /**
@@ -315,15 +314,9 @@ struct displayer {
                             });
                         }
                         
-#if FCPP_DRAW_THREADS >= 2
-                        glfwMakeContextCurrent(NULL);
-#endif //FCPP_DRAW_THREADS >= 2
-                        common::parallel_for(common::tags::general_execution<parallel>(FCPP_DRAW_THREADS), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
+                        common::parallel_for(common::tags::general_execution<parallel>(1), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
                             n_beg[i].second.draw(m_links);
                         });
-#if FCPP_DRAW_THREADS >= 2
-                        glfwMakeContextCurrent(m_renderer.getWindow());
-#endif //FCPP_DRAW_THREADS >= 2
 
                     }
                     if (rt == 0) {

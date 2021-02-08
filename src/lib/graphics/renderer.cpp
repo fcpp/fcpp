@@ -161,17 +161,6 @@ Renderer::Renderer(size_t antialias) :
     glGenBuffers((int)vertex::SIZE, VBO);
     glGenBuffers((int)index::SIZE, EBO);
 
-    // Allocate (static) ortho buffers
-    glBindVertexArray(VAO[(int)vertex::ortho]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::ortho]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_ORTHO), Shapes::VERTEX_ORTHO, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
     // Allocate (static) cube buffers
     glBindVertexArray(VAO[(int)vertex::cube]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::cube]);
@@ -417,12 +406,6 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
     model = glm::scale(model, glm::vec3(d));
     glm::mat3 normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
     glm::vec4 col{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }; // access to first color only is temporary...
-
-#if FCPP_DRAW_THREADS >= 2
-    // Bind current context
-    std::lock_guard<std::mutex> l(m_contextMutex);
-    glfwMakeContextCurrent(m_window);
-#endif //FCPP_DRAW_THREADS >= 2
     
     // Draw cube
     m_shaderProgram.use();
@@ -454,11 +437,6 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_LINES, 0, 6);
     }
-
-#if FCPP_DRAW_THREADS >= 2
-    // Unbind current context
-    glfwMakeContextCurrent(NULL);
-#endif //FCPP_DRAW_THREADS >= 2
 }
 
 //! @brief It draws a star of lines, given the center and sides.
@@ -477,12 +455,6 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
         starData[6*i+5] = np[i][2];
     }
 
-#if FCPP_DRAW_THREADS >= 2
-    // Bind current context
-    std::lock_guard<std::mutex> l(m_contextMutex);
-    glfwMakeContextCurrent(m_window);
-#endif //FCPP_DRAW_THREADS >= 2
-
     m_shaderProgramCol.use();
     m_shaderProgramCol.setMat4("u_projection", projection);
     m_shaderProgramCol.setMat4("u_view", view);
@@ -493,11 +465,6 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glBufferData(GL_ARRAY_BUFFER, sizeof(starData), starData, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDrawArrays(GL_LINES, 0, 2 * np.size());
-
-#if FCPP_DRAW_THREADS >= 2
-    // Unbind current context
-    glfwMakeContextCurrent(NULL);
-#endif //FCPP_DRAW_THREADS >= 2
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale)

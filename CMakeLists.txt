@@ -37,4 +37,3 @@ copyGraphicsFolders(fcppGL $<TARGET_FILE_DIR:fcpp> $<TARGET_FILE_DIR:fcppGL>)
 # Targets compile options
 target_compile_options(fcpp PUBLIC "-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
 target_compile_options(fcpp PUBLIC "-DPROFILER")
-target_compile_options(fcpp PUBLIC "-DFCPP_DRAW_THREADS=1")

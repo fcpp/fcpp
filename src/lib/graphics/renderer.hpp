@@ -205,9 +205,6 @@ namespace fcpp {
 
             //! @brief Camera object of the scene
             Camera m_camera;
-
-            //! @brief Mutex regulating access to the openGL context.
-            mutable std::mutex m_contextMutex;
             
             //! @brief Euclid's algorithm to get the greatest common divisor.
             int euclid(int a, int b);

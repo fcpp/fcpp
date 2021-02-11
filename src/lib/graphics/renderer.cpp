@@ -26,23 +26,23 @@ using namespace fcpp::internal;
 
 /* --- PRIVATE (NON-INTEGRAL) CONSTANTS --- */
 #ifdef _WIN32
-    const std::string Renderer::VERTEX_PATH{ ".\\shaders\\vertex.glsl" };
-    const std::string Renderer::FRAGMENT_PATH{ ".\\shaders\\fragment.glsl" };
+    const std::string Renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_phong.glsl" };
+    const std::string Renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_phong.glsl" };
     const std::string Renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
     const std::string Renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
-    const std::string Renderer::VERTEX_ORTHO_PATH{ ".\\shaders\\vertex_ortho.glsl" };
-    const std::string Renderer::FRAGMENT_ORTHO_PATH{ ".\\shaders\\fragment_ortho.glsl" };
+    const std::string Renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
+    const std::string Renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
     const std::string Renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
     const std::string Renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
     const std::string Renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
     const std::string Renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
-    const std::string Renderer::VERTEX_PATH{ "./shaders/vertex.glsl" };
-    const std::string Renderer::FRAGMENT_PATH{ "./shaders/fragment.glsl" };
+    const std::string Renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_phong.glsl" };
+    const std::string Renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_phong.glsl" };
     const std::string Renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
     const std::string Renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
-    const std::string Renderer::VERTEX_ORTHO_PATH{ "./shaders/vertex_ortho.glsl" };
-    const std::string Renderer::FRAGMENT_ORTHO_PATH{ "./shaders/fragment_ortho.glsl" };
+    const std::string Renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
+    const std::string Renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
     const std::string Renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
     const std::string Renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
     const std::string Renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
@@ -56,8 +56,9 @@ using namespace fcpp::internal;
 Renderer::Renderer(size_t antialias) :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
-    m_orthoSize{ SCR_DEFAULT_ORTHO },
     m_gridFirst{ true },
+    m_gridShow{ true },
+    m_gridTexture{ 0 },
     m_planeIndexSize{ 0 },
     m_gridHighIndexSize{ 0 },
     m_gridNormIndexSize{ 0 },
@@ -85,7 +86,7 @@ Renderer::Renderer(size_t antialias) :
 
     if (m_window == NULL) {
         glfwTerminate();
-        throw std::runtime_error("Failed to create GLFW window.\n");
+        throw std::runtime_error("ERROR::RENDERER::GLFW::WINDOW_CREATION_FAILED\n");
     }
 
     // Set newly created window's context as current
@@ -93,15 +94,15 @@ Renderer::Renderer(size_t antialias) :
 
     // Initialize GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        throw std::runtime_error("Failed to initialize GLAD.\n");
+        throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
 
     // Initialize FreeType
     FT_Library ftLib;
     if (FT_Init_FreeType(&ftLib))
-        throw std::runtime_error("Could not init FreeType Library.\n");
+        throw std::runtime_error("ERROR::RENDERER::FREETYPE::LIB_INIT_FAILED\n");
     FT_Face ftFace;
     if (FT_New_Face(ftLib, FONT_PATH.c_str(), 0, &ftFace))
-        throw std::runtime_error("Failed to load font (" + FONT_PATH + ").\n");
+        throw std::runtime_error("ERROR::RENDERER::FREETYPE::FONT_LOAD_FAILED (" + FONT_PATH + ")\n");
 
     // Generating glyphs' textures
     FT_Set_Pixel_Sizes(ftFace, 0, FONT_DEFAULT_SIZE);
@@ -109,7 +110,7 @@ Renderer::Renderer(size_t antialias) :
     for (unsigned char c = 0; c < 128; c++) {
         // load character glyph 
         if (FT_Load_Char(ftFace, c, FT_LOAD_RENDER)) {
-            std::cout << "Failed to load glyph (" << c << ")\n";
+            std::cerr << "ERROR::RENDERER::FREETYPE::GLYPH_LOAD_FAILED (" << c << ")\n";
             continue;
         }
         // generate texture
@@ -150,9 +151,9 @@ Renderer::Renderer(size_t antialias) :
     glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
 
     // Generate actual shader programs
-    m_shaderProgram = Shader{ VERTEX_PATH.c_str(), FRAGMENT_PATH.c_str() };
+    m_shaderProgramPhong = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
     m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
-    m_shaderProgramOrtho = Shader{ VERTEX_ORTHO_PATH.c_str(), FRAGMENT_ORTHO_PATH.c_str() };
+    m_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
     m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 
     // Generate VAOs, VBOs and EBOs
@@ -236,6 +237,47 @@ int Renderer::euclid(int a, int b) {
     return a; //the result is a when b is equal to 0
 }
 
+unsigned int Renderer::loadTexture(std::string path) {
+    unsigned int texture{ 0 };
+    stbi_set_flip_vertically_on_load(true);
+    // load texture data
+    int width, height, nrChannels;
+    unsigned char* data{ stbi_load((TEXTURE_PATH + path).c_str(), &width, &height, &nrChannels, 0) };
+    if (data) {
+        // generate texture
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        GLint inputChannels;
+        if (nrChannels == 3) inputChannels = GL_RGB;
+        else inputChannels = GL_RGBA;
+        glTexImage2D(GL_TEXTURE_2D, 0, inputChannels, width, height, 0, inputChannels, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    else std::cerr << "ERROR::RENDERER::STBIMAGE::TEXTURE_LOAD_FAILED (" << path << ")\n";
+    stbi_image_free(data);
+
+    return texture;
+}
+
+bool Renderer::unloadTexture(unsigned int id) {
+    bool success{ false };
+    try {
+        glDeleteTextures(1, &id);
+        success = true;
+    }
+    catch (const std::runtime_error& exception) {
+        std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
+        success = false;
+    }
+
+    return success;
+}
+
 
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::swapAndNext() {
@@ -248,10 +290,13 @@ void Renderer::swapAndNext() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) {
+void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, std::string texture) {
     // Initialize grid and plane buffers if they are not already
     if (m_gridFirst) {
+        // The grid is initiated
         m_gridFirst = false;
+
+        // Calculate data for mesh generation
         int approx{ (gridMax.x - gridMin.x) * (gridMax.y - gridMin.y) > 2000 * gridScale * gridScale ? 10 : 1 };
         int grid_min_x = std::floor(gridMin.x / gridScale / approx) * approx;
         int grid_max_x = std::ceil(gridMax.x / gridScale / approx) * approx;
@@ -278,6 +323,7 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         } else numHighX = numHighY = 2;
         */
 
+        // Generating grid mesh
         int i{ 0 }; // for putting vertices into gridMesh
         int j{ 0 }; // for putting indices into gridHighMesh
         int k{ 0 }; // for putting indices into gridNormMesh
@@ -322,6 +368,8 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
             }
             ++i;
         }
+
+        // Storing grid mesh
         glBindVertexArray(VAO[(int)vertex::grid]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::grid]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(gridMesh), gridMesh, GL_STATIC_DRAW);
@@ -337,27 +385,42 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        float planeMesh[12]{
-            (float)(grid_min_x * gridScale), (float)(grid_min_y * gridScale), 0.0f,
-            (float)(grid_min_x * gridScale), (float)(grid_max_y * gridScale), 0.0f,
-            (float)(grid_max_x * gridScale), (float)(grid_max_y * gridScale), 0.0f,
-            (float)(grid_max_x * gridScale), (float)(grid_min_y * gridScale), 0.0f
+        // Generating plane mesh
+        float planeMesh[20]{
+            // vertex coords                                                        // texture coords
+            (float)(grid_min_x * gridScale), (float)(grid_min_y * gridScale), 0.0f, 0.0f, 0.0f,
+            (float)(grid_min_x * gridScale), (float)(grid_max_y * gridScale), 0.0f, 0.0f, 1.0f,
+            (float)(grid_max_x * gridScale), (float)(grid_max_y * gridScale), 0.0f, 1.0f, 1.0f,
+            (float)(grid_max_x * gridScale), (float)(grid_min_y * gridScale), 0.0f, 1.0f, 0.0f
         };
         int planeIndex[6]{
             0, 1, 2,
             2, 3, 0
         };
+
+        // Storing plane mesh
         glBindVertexArray(VAO[(int)vertex::plane]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::plane]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(planeMesh), planeMesh, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::plane]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(planeIndex), planeIndex, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
         m_planeIndexSize = sizeof(planeIndex);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        // Loading texture
+        if (texture.compare("") != 0) {
+            unsigned int loadedId{ loadTexture(texture) };
+            if (loadedId != 0) {
+                m_gridTexture = loadedId;
+                m_gridShow = not m_gridShow;
+            }
+        }
     }
 }
 
@@ -368,28 +431,50 @@ void Renderer::drawGrid(float planeAlpha) {
         glm::mat4 const& view{ m_camera.getView() };
         glm::mat4 model{ 1.0f };
 
-        // Set up shader program
-        m_shaderProgramCol.use();
-        m_shaderProgramCol.setMat4("u_projection", projection);
-        m_shaderProgramCol.setMat4("u_view", view);
-        m_shaderProgramCol.setMat4("u_model", model);
+        if (m_gridShow) {
+            // Set up shader program
+            m_shaderProgramCol.use();
+            m_shaderProgramCol.setMat4("u_projection", projection);
+            m_shaderProgramCol.setMat4("u_view", view);
+            m_shaderProgramCol.setMat4("u_model", model);
 
-        // Draw grid
-        glBindVertexArray(VAO[(int)vertex::grid]);
-        m_shaderProgramCol.setVec4("u_color", m_foreground);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
-        glDrawElements(GL_LINES, m_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
-        m_shaderProgramCol.setVec4("u_color", m_background);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
-        glDrawElements(GL_LINES, m_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            // Draw grid
+            glBindVertexArray(VAO[(int)vertex::grid]);
+            m_shaderProgramCol.setVec4("u_color", m_foreground);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+            glDrawElements(GL_LINES, m_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
+            m_shaderProgramCol.setVec4("u_color", m_background);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+            glDrawElements(GL_LINES, m_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        }
 
         // Draw plane
         if (planeAlpha > 0.0f) {
-            glm::vec4 col{ (m_background[0] + m_foreground[0]) / 2, (m_background[1] + m_foreground[1]) / 2, (m_background[2] + m_foreground[2]) / 2, planeAlpha };
-            m_shaderProgramCol.setVec4("u_color", col);
+            // Set up shader program
+            m_shaderProgramTexture.use();
+            m_shaderProgramTexture.setMat4("u_projection", projection);
+            m_shaderProgramTexture.setMat4("u_view", view);
+            m_shaderProgramTexture.setMat4("u_model", model);
+
+            glm::vec4 col;
+            if (m_gridTexture == 0) {
+                col.x = (m_background[0] + m_foreground[0]) / 2;
+                col.y = (m_background[1] + m_foreground[1]) / 2;
+                col.z = (m_background[2] + m_foreground[2]) / 2;
+                col.w = planeAlpha;
+                m_shaderProgramTexture.setBool("u_drawTexture", false);
+            } else {
+                col.x = col.y = col.z = 1.0f;
+                col.w = planeAlpha;
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, m_gridTexture);
+                m_shaderProgramTexture.setBool("u_drawTexture", true);
+            }
+            m_shaderProgramTexture.setVec4("u_color", col);
+            m_shaderProgramTexture.setInt("u_texture", 0);
             glDepthMask(false);
             glBindVertexArray(VAO[(int)vertex::plane]);
             glDrawElements(GL_TRIANGLES, m_planeIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
@@ -412,16 +497,16 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
     glm::vec4 col{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }; // access to first color only is temporary...
     
     // Draw cube
-    m_shaderProgram.use();
+    m_shaderProgramPhong.use();
     glBindVertexArray(VAO[(int)vertex::cube]);
-    m_shaderProgram.setVec3("u_lightPos", m_lightPos);
-    m_shaderProgram.setFloat("u_ambientStrength", 0.4f);
-    m_shaderProgram.setVec4("u_objectColor", col);
-    m_shaderProgram.setVec3("u_lightColor", LIGHT_COLOR);
-    m_shaderProgram.setMat4("u_projection", projection);
-    m_shaderProgram.setMat4("u_view", view);
-    m_shaderProgram.setMat4("u_model", model);
-    m_shaderProgram.setMat3("u_normal", normal);
+    m_shaderProgramPhong.setVec3("u_lightPos", m_lightPos);
+    m_shaderProgramPhong.setFloat("u_ambientStrength", 0.4f);
+    m_shaderProgramPhong.setVec4("u_objectColor", col);
+    m_shaderProgramPhong.setVec3("u_lightColor", LIGHT_COLOR);
+    m_shaderProgramPhong.setMat4("u_projection", projection);
+    m_shaderProgramPhong.setMat4("u_view", view);
+    m_shaderProgramPhong.setMat4("u_model", model);
+    m_shaderProgramPhong.setMat3("u_normal", normal);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     
     // Draw pin
@@ -473,7 +558,7 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 
 void Renderer::drawText(std::string text, float x, float y, float scale)
 {
-    // activate corresponding render state	
+    // Activate corresponding render state	
     m_shaderProgramFont.use();
     m_shaderProgramFont.setVec3("u_textColor", m_foreground);
     m_shaderProgramFont.setInt("u_text", 0);
@@ -481,7 +566,7 @@ void Renderer::drawText(std::string text, float x, float y, float scale)
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(VAO[(int)vertex::font]);
 
-    // iterate through all characters
+    // Iterate through all characters
     std::string::const_iterator c;
     for (c = text.begin(); c != text.end(); c++) {
         glyph ch = m_glyphs[*c];
@@ -491,7 +576,7 @@ void Renderer::drawText(std::string text, float x, float y, float scale)
 
         float w = ch.size.x * scale;
         float h = ch.size.y * scale;
-        // update VBO for each character
+        // Update VBO for each character
         float vertices[24] = {
             xpos,     ypos + h,   0.0f, 0.0f,            
             xpos,     ypos,       0.0f, 1.0f,
@@ -501,15 +586,15 @@ void Renderer::drawText(std::string text, float x, float y, float scale)
             xpos + w, ypos,       1.0f, 1.0f,
             xpos + w, ypos + h,   1.0f, 0.0f           
         };
-        // render glyph texture over quad
+        // Render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.textureID);
-        // update content of VBO memory
+        // Update content of VBO memory
         glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // render quad
+        // Render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
         x += (ch.advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
     }
     glBindVertexArray(0);
@@ -528,17 +613,6 @@ int Renderer::getCurrentHeight() {
     return m_currentHeight;
 }
 
-unsigned int Renderer::getTextureID(std::string path) {
-    unsigned int r{ 0 };   
-    try {
-        r = m_textures.at(path);
-    } catch (const std::out_of_range& exception) {
-        std::cerr << "ERROR::RENDERER::GET_TEXTURE_ID::TEXTURE_NOT_FOUND (" << path << ")\n";
-    }
-    
-    return r;
-}
-
 GLFWwindow* Renderer::getWindow() {
     return m_window;
 }
@@ -551,51 +625,18 @@ void Renderer::setLightPosition(glm::vec3& newPos) {
     m_lightPos = newPos;
 }
 
-unsigned int Renderer::loadTexture(std::string path) {
-    unsigned int texture{ 0 };
-    stbi_set_flip_vertically_on_load(true);
-    // load texture data
-    int width, height, nrChannels;
-    unsigned char* data{ stbi_load((TEXTURE_PATH + path).c_str(), &width, &height, &nrChannels, 0) };
-    if (data) {
-        // generate texture
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        GLint inputChannels;
-        if (nrChannels == 3) inputChannels = GL_RGB;
-        else inputChannels = GL_RGBA;
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, inputChannels, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        // store texture into map
-        m_textures.insert(std::pair<std::string, unsigned int>(path, texture));
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-    else std::cerr << "ERROR::RENDERER::STBIMAGE::TEXTURE_LOAD_FAILED (" << path << ")\n";
-    stbi_image_free(data);
-
-    return texture;
-}
-
-void Renderer::unloadTexture(std::string path) {
-    try {
-        glDeleteTextures(1, &m_textures.at(path));
-        m_textures.erase(path);
-    } catch (const std::out_of_range& exception) {
-        std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (" << path << ")\n";
-    }
-}
-
 void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
     m_camera.mouseInput(x, y, xFirst, yFirst, type, mods);
 }
 
 void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     // Process renderer's input
-    /*no_op*/
+    switch (key) {
+        // show/hide grid
+        case GLFW_KEY_G:
+            if (first) m_gridShow = not m_gridShow;
+            break;
+    }
     
     // Process camera's input
     m_camera.keyboardInput(key, first, deltaTime, mods);

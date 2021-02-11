@@ -41,7 +41,7 @@ namespace fcpp {
             void swapAndNext();
 
             //! @brief It creates the grid mesh to be drawn.
-            void makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale);
+            void makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, std::string texture = "");
 
             //! @brief It draws the grid on the screen.
             void drawGrid(float planeAlpha);
@@ -63,9 +63,6 @@ namespace fcpp {
             
             //! @brief Returns viewport's current height.
             int getCurrentHeight();
-            
-            //! @brief  It returns the ID of the defined texture, if loaded.
-            unsigned int getTextureID(std::string path);
 
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow();
@@ -75,12 +72,6 @@ namespace fcpp {
 
             //! @brief Sets the light's position.
             void setLightPosition(glm::vec3& newPos);
-
-            //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
-            unsigned int loadTexture(std::string path);
-
-            //! @brief It unloads the defined texture, given its path.
-            void unloadTexture(std::string path);
             
             //! @brief It manages mouse input of the given type.
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
@@ -92,11 +83,11 @@ namespace fcpp {
             void viewportResize(int width, int height);
             
         private:
-            //! @brief Default path to vertex shader.
-            static const std::string VERTEX_PATH;
+            //! @brief Default path to vertex_phong shader.
+            static const std::string VERTEX_PHONG_PATH;
 
-            //! @brief Default path to fragment shader.
-            static const std::string FRAGMENT_PATH;
+            //! @brief Default path to fragment_phong shader.
+            static const std::string FRAGMENT_PHONG_PATH;
 
             //! @brief Default path to vertex_col shader.
             static const std::string VERTEX_COLOR_PATH;
@@ -104,11 +95,11 @@ namespace fcpp {
             //! @brief Default path to fragment_col shader.
             static const std::string FRAGMENT_COLOR_PATH;
 
-            //! @brief Default path to vertex_ortho shader.
-            static const std::string VERTEX_ORTHO_PATH;
+            //! @brief Default path to vertex_texture shader.
+            static const std::string VERTEX_TEXTURE_PATH;
 
-            //! @brief Default path to fragment_ortho shader.
-            static const std::string FRAGMENT_ORTHO_PATH;
+            //! @brief Default path to fragment_texture shader.
+            static const std::string FRAGMENT_TEXTURE_PATH;
             
             //! @brief Default path to vertex_font shader.
             static const std::string VERTEX_FONT_PATH;
@@ -131,9 +122,6 @@ namespace fcpp {
             //! @brief Default height of the window.
             static constexpr unsigned int SCR_DEFAULT_HEIGHT{ 600 };
 
-            //! @brief Default size of orthogonal axis.
-            static constexpr unsigned int SCR_DEFAULT_ORTHO{ 32 };
-
             //! @brief Default light position.
             static const glm::vec3 LIGHT_DEFAULT_POS;
 
@@ -143,14 +131,14 @@ namespace fcpp {
             //! @brief Window object for GLFW; it stores OpenGL context information.
             GLFWwindow* m_window;
 
-            //! @brief Main shader program, with lighting caluclations and color info.
-            Shader m_shaderProgram;
+            //! @brief Main shader program, with phong lighting caluclations and color info.
+            Shader m_shaderProgramPhong;
 
             //! @brief Additional shader program used for simple shapes and uniform color value.
             Shader m_shaderProgramCol;
 
-            //! @brief Additional shader program used for orthogonal axis.
-            Shader m_shaderProgramOrtho;
+            //! @brief Additional shader program used for texture rendering.
+            Shader m_shaderProgramTexture;
 
             //! @brief Additional shader program used for fonts.
             Shader m_shaderProgramFont;
@@ -163,9 +151,6 @@ namespace fcpp {
 
             //! @brief Element Buffer Object(s).
             unsigned int EBO[(int)index::SIZE];
-
-            //! @brief Data structure mapping texture names with texture IDs.
-            std::unordered_map<std::string, unsigned int> m_textures;
             
             //! @brief Data structure mapping chars with glyphs.
             std::unordered_map<char, glyph> m_glyphs;
@@ -176,11 +161,14 @@ namespace fcpp {
             //! @brief Current height of the window.
             unsigned int m_currentHeight;
 
-            //! @brief Current size of orthogonal axis.
-            unsigned int m_orthoSize;
+            //! @brief Texture ID of the (optional) texture map for the grid.
+            unsigned int m_gridTexture;
 
             //! @brief It checks if it's the first time it drawn the grid.
             bool m_gridFirst;
+
+            //! @brief It states if the grid should be drawn.
+            bool m_gridShow;
 
             //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
             int m_planeIndexSize;
@@ -205,6 +193,12 @@ namespace fcpp {
             
             //! @brief Euclid's algorithm to get the greatest common divisor.
             int euclid(int a, int b);
+
+            //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
+            unsigned int loadTexture(std::string path);
+
+            //! @brief It unloads the defined texture, given its path.
+            bool unloadTexture(unsigned int id);
 		};
 	}
 }

@@ -334,13 +334,13 @@ struct displayer {
                         double grid_scale = 1;
                         while (grid_scale * 200 < diagonal) grid_scale *= 10;
                         while (grid_scale * 20 > diagonal) grid_scale /= 10;
-                        m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale);
+                        m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale, "test_texture.png");
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
                     {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
-                        m_renderer.drawGrid(0.3f);
+                        m_renderer.drawGrid(1.0f);
                     }
                     {
                         PROFILE_COUNT("displayer/text");
@@ -486,6 +486,8 @@ struct displayer {
                     dspl.terminate();
                 });
             }
+
+            //void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {}
 
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods) {

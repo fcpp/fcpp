@@ -1,4 +1,4 @@
-//WINDOWS (MinGW-w64)
+// WINDOWS (MinGW-w64)
 To build the test application, you'll need:
 	* MinGW-w64 8.1.0 (posix threads)
 	* CMake 3.9 (or higher)
@@ -11,7 +11,7 @@ Wait for the application to be built.
 
 
 
-//LINUX
+// LINUX
 To build the test application, you'll need:
 	* xorg-dev package (X11)
 	* CMake 3.9 (or higher)

@@ -487,7 +487,7 @@ struct displayer {
                 });
             }
 
-            //void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {}
+            //!!! MOUSE INPUT IS MISHANDLED WITHIN THE CALLBACKS; CREATE THIS: void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {}
 
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods) {

@@ -48,16 +48,15 @@ class Camera {
     void applyViewDefault();
 
     //! @brief It returns camera's view matrix.
-    glm::mat4 const& getView() const {
-        return m_view;
-    }
+    glm::mat4 const& getView() const;
 
-    //! @brief It returns camera's projection matrix.
-    glm::mat4 const& getProjection() const {
-        return m_projection;
-    }
+    //! @brief It returns camera's perspective matrix.
+    glm::mat4 const& getPerspective() const;
 
-    //! @brief Sets the current screen diagonal size given window size.
+    //! @brief It returns camera's orthographic matrix.
+    glm::mat4 const& getOrthographic() const;
+
+    //! @brief Sets the current screen's height, width and diagonal size given window size.
     void setScreen(float width, float height);
 
     //! @brief It manages mouse input of the given type.
@@ -67,9 +66,6 @@ class Camera {
     void keyboardInput(int key, bool first, float deltaTime, int mods);
 
 private:
-    //! @brief Updates the projection matrix.
-    void updateProjection();
-
     //! @brief Camera's current mouse sensitivity.
     float m_mouseSensitivity;
 
@@ -91,8 +87,17 @@ private:
     //! @brief Camera's default view matrix.
     glm::mat4 m_viewDefault;
 
-    //! @brief Camera's view matrix; all trasnformations are made on this one.
-    glm::mat4 m_projection;
+    //! @brief Camera's perspective matrix.
+    glm::mat4 m_perspective;
+
+    //! @brief Camera's orthographic matrix.
+    glm::mat4 m_ortho;
+
+    //! @brief Updates the perspective matrix.
+    void updatePerspective();
+
+    //! @brief Updates the orthographic matrix, given the width and height of the window.
+    void updateOrthographic(float width, float height);
 };
 
 

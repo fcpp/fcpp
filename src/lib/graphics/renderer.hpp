@@ -70,6 +70,9 @@ namespace fcpp {
             //! @brief It runs m_camera's setViewDefault() with the given attributes.
             void setDefaultCameraView(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch);
 
+            //! @brief It loads and sets the new texture to be displayed on the grid's plane.
+            bool setGridTexture(std::string path);
+
             //! @brief Sets the light's position.
             void setLightPosition(glm::vec3& newPos);
             

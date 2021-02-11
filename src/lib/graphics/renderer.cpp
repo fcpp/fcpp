@@ -265,15 +265,9 @@ unsigned int Renderer::loadTexture(std::string path) {
 }
 
 bool Renderer::unloadTexture(unsigned int id) {
-    bool success{ false };
-    try {
-        glDeleteTextures(1, &id);
-        success = true;
-    }
-    catch (const std::runtime_error& exception) {
-        std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
-        success = false;
-    }
+    bool success{ glIsTexture(id) };
+    glDeleteTextures(1, &id); // be aware: glDeleteTextures() silently ignores 0's and names that do not correspond to existing textures
+    if(!success) std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
 
     return success;
 }
@@ -414,20 +408,14 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         // Loading texture
-        if (texture.compare("") != 0) {
-            unsigned int loadedId{ loadTexture(texture) };
-            if (loadedId != 0) {
-                m_gridTexture = loadedId;
-                m_gridShow = not m_gridShow;
-            }
-        }
+        if ((texture.compare("") != 0) and setGridTexture(texture)) m_gridShow = false;
     }
 }
 
 void Renderer::drawGrid(float planeAlpha) {
     if (!m_gridFirst) {
         // Create matrices (used several times)
-        glm::mat4 const& projection{ m_camera.getProjection() };
+        glm::mat4 const& projection{ m_camera.getPerspective() };
         glm::mat4 const& view{ m_camera.getView() };
         glm::mat4 model{ 1.0f };
 
@@ -488,7 +476,7 @@ void Renderer::drawGrid(float planeAlpha) {
 
 void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& c) const {    
     // Create matrices (used several times)
-    glm::mat4 const& projection{ m_camera.getProjection() };
+    glm::mat4 const& projection{ m_camera.getPerspective() };
     glm::mat4 const& view{ m_camera.getView() };
     glm::mat4 model{ 1.0f };
     model = glm::translate(model, p);
@@ -531,7 +519,7 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
 //! @brief It draws a star of lines, given the center and sides.
 void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const {
     // Create matrices (used several times)
-    glm::mat4 const& projection{ m_camera.getProjection() };
+    glm::mat4 const& projection{ m_camera.getPerspective() };
     glm::mat4 const& view{ m_camera.getView() };
 
     float starData[6 * np.size()];
@@ -562,7 +550,7 @@ void Renderer::drawText(std::string text, float x, float y, float scale)
     m_shaderProgramFont.use();
     m_shaderProgramFont.setVec3("u_textColor", m_foreground);
     m_shaderProgramFont.setInt("u_text", 0);
-    m_shaderProgramFont.setMat4("u_projection", glm::ortho(0.0f, (float)m_currentWidth, 0.0f, (float)m_currentHeight));
+    m_shaderProgramFont.setMat4("u_projection", m_camera.getOrthographic());
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(VAO[(int)vertex::font]);
 
@@ -619,6 +607,18 @@ GLFWwindow* Renderer::getWindow() {
 
 void Renderer::setDefaultCameraView(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch) {
     m_camera.setViewDefault(position, depth, worldUp, yaw, pitch);
+}
+
+bool Renderer::setGridTexture(std::string path) {
+    bool success{ false };
+    unsigned int loadedId{ loadTexture(path) };
+    if (loadedId != 0) {
+        if (m_gridTexture != 0) unloadTexture(m_gridTexture);
+        m_gridTexture = loadedId;
+        success = true;
+    }
+
+    return success;
 }
 
 void Renderer::setLightPosition(glm::vec3& newPos) {

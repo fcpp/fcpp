@@ -16,6 +16,7 @@
 using namespace fcpp;
 
 
+/* --- CONSTRUCTOR --- */
 Camera::Camera()
 : m_mouseSensitivity{ CAM_DEFAULT_SENSITIVITY },
   m_depth{ CAM_DEFAULT_DEPTH },
@@ -24,8 +25,11 @@ Camera::Camera()
   m_aspectRatio{ 4.0f / 3.0f  },
   m_view{ 1.0f },
   m_viewDefault{ 1.0f },
-  m_projection{ 1.0f } {}
+  m_perspective{ 1.0f },
+  m_ortho{ 1.0f } {}
 
+
+/* --- PUBLIC FUNCTIONS --- */
 void Camera::setViewDefault(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch)
 {
     // Calculate the front vector
@@ -46,19 +50,32 @@ void Camera::setViewDefault(glm::vec3 position, float depth, glm::vec3 worldUp, 
 
     // Sets the default depth
     m_depthDefault = m_depth = depth;
-    updateProjection();
+    updatePerspective();
 }
 
 void Camera::applyViewDefault() {
     m_view = m_viewDefault;
     m_depth = m_depthDefault;
-    updateProjection();
+    updatePerspective();
+}
+
+glm::mat4 const& Camera::getView() const {
+    return m_view;
+}
+
+glm::mat4 const& Camera::getPerspective() const {
+    return m_perspective;
+}
+
+glm::mat4 const& Camera::getOrthographic() const {
+    return m_ortho;
 }
 
 void Camera::setScreen(float width, float height) {
     m_diagonal = std::sqrt(width*width + height*height) / 2;
-    m_aspectRatio = (float)width / (float)height;
-    updateProjection();
+    m_aspectRatio = width / height;
+    updatePerspective();
+    updateOrthographic(width, height);
 }
 
 void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods)
@@ -69,7 +86,7 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
             float new_depth = m_depth * pow(0.98, (mods & GLFW_MOD_SHIFT) > 0 ? y/10 : y);
             m_view = glm::translate(glm::vec3(0.0f, 0.0f, m_depth-new_depth)) * m_view;
             m_depth = new_depth;
-            updateProjection();
+            updatePerspective();
             break;
         }
         case mouse_type::drag:
@@ -115,9 +132,18 @@ void Camera::keyboardInput(int key, bool first, float deltaTime, int mods)
         case GLFW_KEY_Q:
             m_view = glm::translate(glm::vec3(0.0f, velocity, 0.0f)) * m_view;
             break;
+        case GLFW_KEY_C:
+            if (first) applyViewDefault();
+            break;
     }
 }
 
-void Camera::updateProjection() {
-    m_projection = glm::perspective(glm::radians(CAM_DEFAULT_FOV), m_aspectRatio, m_depth / 32, m_depth * 32);
+
+/* --- PRIVATE METHODS --- */
+void Camera::updatePerspective() {
+    m_perspective = glm::perspective(glm::radians(CAM_DEFAULT_FOV), m_aspectRatio, m_depth / 32, m_depth * 32);
+}
+
+void Camera::updateOrthographic(float width, float height) {
+    m_ortho = glm::ortho(0.0f, width, 0.0f, height);
 }

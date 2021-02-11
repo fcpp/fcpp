@@ -40,8 +40,11 @@ namespace fcpp {
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();
 
+            //! @brief It creates the grid mesh to be drawn.
+            void makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale);
+
             //! @brief It draws the grid on the screen.
-            void drawGrid(glm::vec3 gridMin, glm::vec3 gridMax, float planeAlpha);
+            void drawGrid(float planeAlpha);
 
             //! @brief It draws a cube, given the information on color(s) and position.
             void drawCube(glm::vec3 const& p, double d, std::vector<color> const& c) const;
@@ -72,9 +75,6 @@ namespace fcpp {
 
             //! @brief Sets the light's position.
             void setLightPosition(glm::vec3& newPos);
-
-            //! @brief Sets the scale of the grid.
-            void setGridScale(double newScale);
 
             //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
             unsigned int loadTexture(std::string path);
@@ -178,9 +178,6 @@ namespace fcpp {
 
             //! @brief Current size of orthogonal axis.
             unsigned int m_orthoSize;
-
-            //! @brief The pass from a line to another of the grid.
-            double m_gridScale;
 
             //! @brief It checks if it's the first time it drawn the grid.
             bool m_gridFirst;

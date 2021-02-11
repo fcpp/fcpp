@@ -334,13 +334,13 @@ struct displayer {
                         double grid_scale = 1;
                         while (grid_scale * 200 < diagonal) grid_scale *= 10;
                         while (grid_scale * 20 > diagonal) grid_scale /= 10;
-                        m_renderer.setGridScale(grid_scale);
+                        m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
                     {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
-                        m_renderer.drawGrid(m_viewport_min, m_viewport_max, 0.3f);
+                        m_renderer.drawGrid(0.3f);
                     }
                     {
                         PROFILE_COUNT("displayer/text");

@@ -1,6 +1,7 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include "lib/data/color.hpp"
+#include <iostream>
 
 
 /**
@@ -16,7 +17,7 @@ color::color(packed_color irgba) : color((irgba >> 24) & 255, (irgba >> 16) & 25
 color color::hsva(double h, double s, double v, double a) {
     h -= 360 * floor(h / 360);
     double c = s * v;
-    double x = c * (1 - abs(fmod(h / 60.0, 2) - 1));
+    double x = c * (1 - std::abs(fmod(h / 60.0, 2) - 1.0));
     double m = v - c;
     double r, g, b;
     if (h >= 0 and h < 60)

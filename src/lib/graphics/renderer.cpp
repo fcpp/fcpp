@@ -265,7 +265,8 @@ unsigned int Renderer::loadTexture(std::string path) {
 }
 
 bool Renderer::unloadTexture(unsigned int id) {
-    bool success{ glIsTexture(id) };
+    unsigned char isTexture{ glIsTexture(id) };
+    bool success{ isTexture == GL_TRUE };
     glDeleteTextures(1, &id); // be aware: glDeleteTextures() silently ignores 0's and names that do not correspond to existing textures
     if(!success) std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
 

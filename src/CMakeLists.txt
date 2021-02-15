@@ -9,9 +9,6 @@ function(copyGraphicsFolders target source dest) # ${PROJECT_SOURCE_DIR}/lib/gra
 	add_custom_command(TARGET ${ARGV0} POST_BUILD
 					   COMMAND ${CMAKE_COMMAND} -E copy_directory
 							${ARGV1}/fonts/ ${ARGV2}/fonts/)
-	add_custom_command(TARGET ${ARGV0} POST_BUILD
-					   COMMAND ${CMAKE_COMMAND} -E copy_directory
-							${ARGV1}/textures/ ${ARGV2}/textures/)
 endfunction()
 
 # Project name, version and description

@@ -18,7 +18,7 @@ Otherwise:
 cmake -S ./ -B ./bin -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -Wno-dev
 ```
 
-Type the following command in order to build the library.
+Type the following command in order to build the library:
 ```
 cmake --build ./bin/
 ```
@@ -48,7 +48,7 @@ Otherwise:
 cmake -S ./ -B ./bin -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -Wno-dev
 ```
 
-Type the following command in order to build the library.
+Type the following command in order to build the library:
 ```
 cmake --build ./bin/
 ```

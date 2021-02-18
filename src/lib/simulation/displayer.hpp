@@ -80,7 +80,7 @@ namespace tags {
     struct refresh_rate {};
 
     //! @brief Net initialisation tag associating to the texture to be used for the reference plane.
-    struct texture;
+    struct texture {};
 
     //! @brief Net initialisation tag associating to the number of threads that can be created.
     struct threads;

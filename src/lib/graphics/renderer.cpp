@@ -409,7 +409,7 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         // Loading texture
-        if ((texture.compare("") != 0) and setGridTexture(texture)) m_gridShow = false;
+        if (texture.compare("") != 0) setGridTexture(texture);
     }
 }
 

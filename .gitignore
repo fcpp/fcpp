@@ -5,7 +5,6 @@ bazel-*
 _bazel_*
 build/
 bin/
-src/bin/
 doc/
 .vagrant/
 .DS_Store

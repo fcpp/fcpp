@@ -79,6 +79,9 @@ namespace tags {
     //! @brief Net initialisation tag associating to the refresh rate (0 for opportunistic frame refreshing).
     struct refresh_rate {};
 
+    //! @brief Net initialisation tag associating to the texture to be used for the reference plane.
+    struct texture;
+
     //! @brief Net initialisation tag associating to the number of threads that can be created.
     struct threads;
 }
@@ -103,6 +106,7 @@ namespace tags {
  *
  * <b>Net initialisation tags:</b>
  * - \ref tags::refresh_rate associates to the refresh rate (0 for opportunistic frame refreshing, defaults to \ref FCPP_REFRESH_RATE).
+ * - \ref tags::texture associates to the texture to be used for the reference plane (defaults to none).
  * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).
  *
  * If no color tags or color values are specified, the color defaults to black.
@@ -276,6 +280,7 @@ struct displayer {
                 m_mouseFirst{ 1 },
                 m_mouseRight{ 0 },
                 m_links{ false },
+                m_texture( common::get_or<tags::texture>(t, "") ),
                 m_deltaTime{ 0.0f },
                 m_lastFrame{ 0.0f },
                 m_lastFraction{ 0.0f },
@@ -313,11 +318,7 @@ struct displayer {
                                 n_beg[i].second.cache_position(t);
                             });
                         }
-                        
-                        common::parallel_for(common::tags::general_execution<parallel>(1), n_end-n_beg, [&n_beg,this] (size_t i, size_t) {
-                            n_beg[i].second.draw(m_links);
-                        });
-
+                        for (size_t i = 0; i < n_end-n_beg; ++i) n_beg[i].second.draw(m_links);
                     }
                     if (rt == 0) {
                         // stop simulated time
@@ -334,13 +335,13 @@ struct displayer {
                         double grid_scale = 1;
                         while (grid_scale * 200 < diagonal) grid_scale *= 10;
                         while (grid_scale * 20 > diagonal) grid_scale /= 10;
-                        m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale, "test_texture.png");
+                        m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale, m_texture);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
                     {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
-                        m_renderer.drawGrid(1.0f);
+                        m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
                     }
                     {
                         PROFILE_COUNT("displayer/text");
@@ -566,6 +567,9 @@ struct displayer {
 
             //! @brief Whether links between nodes should be displayed.
             bool m_links;
+
+            //! @brief The texture to be used for the reference plane.
+            std::string m_texture;
 
             //! @brief Time between current frame and last frame.
             float m_deltaTime;

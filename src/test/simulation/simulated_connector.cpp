@@ -38,13 +38,13 @@ template <int O>
 using combo = component::combine_spec<
     exposer,
     component::scheduler<round_schedule<seq_per>>,
-    component::simulated_connector<parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
+    component::simulated_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::simulated_positioner<>,
     component::base<parallel<(O & 1) == 1>>
 >;
 
 
-MULTI_TEST(PhysicalConnectorTest, Cell, O, 1) {
+MULTI_TEST(PhysicalConnectorTest, Cell, O, 2) {
     int n[4]; // 4 nodes
     component::details::cell<(O & 1) == 1, int> c[4]; // 4 cells
     n[0] = n[1] = n[2] = n[3] = 0;
@@ -90,7 +90,7 @@ MULTI_TEST(PhysicalConnectorTest, Cell, O, 1) {
     EXPECT_EQ(3, n[3]);
 }
 
-MULTI_TEST(PhysicalConnectorTest, Connection, O, 1) {
+MULTI_TEST(PhysicalConnectorTest, Connection, O, 2) {
     typename combo<O>::net network{common::make_tagged_tuple<oth>("foo")};
     EXPECT_EQ(1, network.connection_radius());
     typename connect::fixed<1>::data_type data;
@@ -105,7 +105,7 @@ MULTI_TEST(PhysicalConnectorTest, Connection, O, 1) {
     EXPECT_FALSE(connect);
 }
 
-MULTI_TEST(PhysicalConnectorTest, EnterLeave, O, 1) {
+MULTI_TEST(PhysicalConnectorTest, EnterLeave, O, 2) {
     typename combo<O>::net  network{common::make_tagged_tuple<oth>("foo")};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid, x>(0, make_vec(0.5,0.5))};
     typename combo<O>::node d1{network, common::make_tagged_tuple<uid, x>(1, make_vec(0.0,0.0))};
@@ -126,7 +126,7 @@ MULTI_TEST(PhysicalConnectorTest, EnterLeave, O, 1) {
     EXPECT_EQ(target, close);
 }
 
-MULTI_TEST(PhysicalConnectorTest, Messages, O, 1) {
+MULTI_TEST(PhysicalConnectorTest, Messages, O, 2) {
     auto update = [](auto& node) {
         common::lock_guard<(O & 1) == 1> l(node.mutex);
         node.update();

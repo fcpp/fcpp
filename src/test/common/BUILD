@@ -36,6 +36,18 @@ cc_test(
 )
 
 cc_test(
+    name = "option",
+    srcs = ["option.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:option",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "ostream",
     srcs = ["ostream.cpp"],
     deps = [

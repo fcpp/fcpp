@@ -16,7 +16,10 @@ cc_library(
     hdrs = ['simulated_connector.hpp'],
     srcs = ['simulated_connector.cpp'],
     deps = [
+        "//lib/common:option",
+        "//lib/common:serialize",
         "//lib/component:base",
+        "//lib/data:field",
         "//lib/data:vec",
         "//lib/option:connect",
         "//lib/option:distribution",

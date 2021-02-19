@@ -30,6 +30,15 @@ cc_library(
 )
 
 cc_library(
+    name = 'option',
+    hdrs = ['option.hpp'],
+    srcs = ['option.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'ostream',
     hdrs = ['ostream.hpp'],
     srcs = ['ostream.cpp'],

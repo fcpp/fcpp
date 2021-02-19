@@ -12,6 +12,7 @@
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/mutex.hpp"
 #include "lib/common/ostream.hpp"
+#include "lib/common/option.hpp"
 #include "lib/common/profiler.hpp"
 #include "lib/common/random_access_map.hpp"
 #include "lib/common/tagged_tuple.hpp"

@@ -15,6 +15,7 @@ cc_library(
         "//lib/common:algorithm",
         "//lib/common:multitype_map",
         "//lib/common:mutex",
+        "//lib/common:option",
         "//lib/common:ostream",
         "//lib/common:profiler",
         "//lib/common:random_access_map",

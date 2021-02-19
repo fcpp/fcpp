@@ -15,7 +15,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include "lib/common/option.hpp"
+#include "lib/common/serialize.hpp"
 #include "lib/component/base.hpp"
+#include "lib/data/field.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/option/connect.hpp"
 #include "lib/option/distribution.hpp"
@@ -44,6 +47,10 @@ namespace tags {
     //! @brief Declaration tag associating to the dimensionality of the space.
     template <size_t n>
     struct dimension;
+
+    //! @brief Declaration flag associating to whether message sizes should be emulated.
+    template <bool b>
+    struct message_size {};
 
     //! @brief Declaration flag associating to whether parallelism is enabled.
     template <bool b>
@@ -131,6 +138,7 @@ namespace details {
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *
  * <b>Declaration flags:</b>
+ * - \ref tags::message_size defines whether message sizes should be emulated (defaults to false).
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  *
  * <b>Node initialisation tags:</b>
@@ -149,6 +157,9 @@ namespace details {
  */
 template <class... Ts>
 struct simulated_connector {
+    //! @brief Whether message sizes should be emulated.
+    constexpr static bool message_size = common::option_flag<tags::message_size, false, Ts...>;
+
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
@@ -197,7 +208,7 @@ struct simulated_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})) {
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})), m_nbr_msg_size(0) {
                 m_send = m_leave = TIME_MAX;
                 m_epsilon = common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON);
                 P::node::net.cell_enter(P::node::as_final());
@@ -231,6 +242,16 @@ struct simulated_connector {
             //! @brief Disable the next sending of messages (shorthand to `send_time(TIME_MAX)`).
             void disable_send() {
                 m_send = TIME_MAX;
+            }
+
+            //! @brief Size of last message sent.
+            size_t msg_size() const {
+                return fcpp::details::self(m_nbr_msg_size.front(), P::node::uid);
+            }
+
+            //! @brief Sizes of messages received from neighbours.
+            field<size_t> const& nbr_msg_size() const {
+                return m_nbr_msg_size.front();
             }
 
             /**
@@ -285,7 +306,25 @@ struct simulated_connector {
                 set_leave_time(t);
             }
 
+            //! @brief Receives an incoming message (possibly reading values from sensors).
+            template <typename S, typename T>
+            inline void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
+                P::node::receive(t, d, m);
+                receive_size(common::bool_pack<message_size>{}, d, m);
+            }
+
           private: // implementation details
+            //! @brief Stores size of received message (disabled).
+            template <typename S, typename T>
+            void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
+            //! @brief Stores size of received message.
+            template <typename S, typename T>
+            void receive_size(common::bool_pack<true>, device_t d, const common::tagged_tuple<S,T>& m) {
+                common::osstream os;
+                os << m;
+                fcpp::details::self(m_nbr_msg_size.front(), d) = os.size();
+            }
+
             //! @brief Checks when the node will leave the current cell.
             void set_leave_time(times_t t) {
                 m_leave = TIME_MAX;
@@ -320,6 +359,9 @@ struct simulated_connector {
 
             //! @brief Data regulating the connection.
             connection_data_type m_data;
+
+            //! @brief Sizes of messages received from neighbours.
+            common::option<field<size_t>, message_size> m_nbr_msg_size;
         };
 
         //! @brief The global part of the component.

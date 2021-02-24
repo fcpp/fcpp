@@ -1,8 +1,8 @@
-// Copyright © 2020 Luigi Rapetta. All Rights Reserved.
+// Copyright Â© 2021 Luigi Rapetta. All Rights Reserved.
 // Thanks to learnopengl.com for the original structure.
 
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef FCPP_GRAPHICS_SHADER_H
+#define FCPP_GRAPHICS_SHADER_H
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -32,4 +32,4 @@ public:
     void setMat4(const std::string &name, const glm::mat4 &mat) const;
 };
 
-#endif
+#endif // FCPP_GRAPHICS_SHADER_H

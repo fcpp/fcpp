@@ -1,4 +1,4 @@
-// Copyright © 2020 Luigi Rapetta. All Rights Reserved.
+// Copyright Â© 2021 Luigi Rapetta. All Rights Reserved.
 // Thanks to learnopengl.com for the original structure.
 
 #include <fstream>

@@ -31,7 +31,7 @@ struct VertexData {
     //! @brief Raw data of triangles as points and normals.
     std::vector<float> data;
 
-    //! @brief Index of the start of data for all colors.
+    //! @brief Index of the start of data (as floats) for all the three colors; size[3] corresponds to the size of the whole data.
     size_t size[4];
 
     //! @brief Pointer to the start of data for color `i`.
@@ -59,9 +59,6 @@ struct VertexData {
 //! @brief Class holding the collections of vertices for every shape.
 class Shapes {
 public:
-    //! @brief Cube's vertex data. (TO REMOVE)
-    static const float VERTEX_CUBE[216];
-
     //! @brief Constructor.
     inline Shapes() {
         cube(m_vertices[0]);
@@ -72,7 +69,7 @@ public:
         return m_vertices[(size_t)s];
     }
 
-  private:
+private:
     //! @brief Generates vertex data for a cube.
     void cube(VertexData&);
 

@@ -20,7 +20,8 @@
 #include "lib/graphics/input_types.hpp"
 
 
-// using namespace fcpp::internal to prevent very verbose code...
+// using namespace fcpp and fcpp::internal to prevent very verbose code...
+using namespace fcpp;
 using namespace fcpp::internal;
 
 
@@ -52,6 +53,14 @@ using namespace fcpp::internal;
     const glm::vec3 Renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
 
 
+/* --- LOCAL FUNCTIONS --- */
+namespace {
+    inline glm::vec4 color_to_vec(color const& c) {
+        return glm::make_vec4(c.rgba);
+    }
+}
+
+
 /* --- CONSTRUCTOR --- */
 Renderer::Renderer(size_t antialias) :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
@@ -65,8 +74,8 @@ Renderer::Renderer(size_t antialias) :
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
     m_foreground{ 0.0f, 0.0f, 0.0f, 1.0f },
-    m_camera{}
-{
+    m_camera{},
+    m_shapes{} {
     /* DEFINITION */
     // Initialize GLFW
     glfwInit();
@@ -160,44 +169,9 @@ Renderer::Renderer(size_t antialias) :
     glGenVertexArrays((int)vertex::SIZE, VAO);
     glGenBuffers((int)vertex::SIZE, VBO);
     glGenBuffers((int)index::SIZE, EBO);
-
-    // Allocate (static) cube buffers
-    glBindVertexArray(VAO[(int)vertex::cube]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::cube]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Shapes::VERTEX_CUBE), Shapes::VERTEX_CUBE, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
     
-    // Allocate (dynamic) font buffers
-    glBindVertexArray(VAO[(int)vertex::font]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    
-    // Allocate (dynamic) single line buffers
-    glBindVertexArray(VAO[(int)vertex::singleLine]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    // Allocate (dynamic) neighbour star buffers
-    glBindVertexArray(VAO[(int)vertex::star]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::star]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    // Allocate buffers
+    allocateBuffers();
 
     // Enabling depth test
     glEnable(GL_DEPTH_TEST);
@@ -271,6 +245,46 @@ bool Renderer::unloadTexture(unsigned int id) {
     if(!success) std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
 
     return success;
+}
+
+void Renderer::allocateBuffers() {
+    // Allocate (static) cube buffers
+    glBindVertexArray(VAO[(int)vertex::cube]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::cube]);
+    glBufferData(GL_ARRAY_BUFFER, m_shapes[shape::cube].data.size() * sizeof(float), m_shapes[shape::cube].data.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Allocate (dynamic) font buffers
+    glBindVertexArray(VAO[(int)vertex::font]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Allocate (dynamic) single line buffers
+    glBindVertexArray(VAO[(int)vertex::singleLine]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Allocate (dynamic) neighbour star buffers
+    glBindVertexArray(VAO[(int)vertex::star]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::star]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 
@@ -482,21 +496,38 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
     glm::mat4 model{ 1.0f };
     model = glm::translate(model, p);
     model = glm::scale(model, glm::vec3(d));
-    glm::mat3 normal = glm::mat3(glm::transpose(glm::inverse(view * model)));
-    glm::vec4 col{ c[0].red(), c[0].green(), c[0].blue(), c[0].alpha() }; // access to first color only is temporary...
-    
+    glm::mat3 normal{ glm::transpose(glm::inverse(view * model)) };
+
     // Draw cube
     m_shaderProgramPhong.use();
-    glBindVertexArray(VAO[(int)vertex::cube]);
     m_shaderProgramPhong.setVec3("u_lightPos", m_lightPos);
     m_shaderProgramPhong.setFloat("u_ambientStrength", 0.4f);
-    m_shaderProgramPhong.setVec4("u_objectColor", col);
     m_shaderProgramPhong.setVec3("u_lightColor", LIGHT_COLOR);
     m_shaderProgramPhong.setMat4("u_projection", projection);
     m_shaderProgramPhong.setMat4("u_view", view);
     m_shaderProgramPhong.setMat4("u_model", model);
     m_shaderProgramPhong.setMat3("u_normal", normal);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(VAO[(int)vertex::cube]);
+
+    switch (c.size()) {
+    default:
+    case 1:
+        m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
+        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[3] / 6);
+        break;
+    case 2:
+        m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[1]));
+        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[2] / 6);
+        m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
+        glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[2] / 6, m_shapes[shape::cube].size[3] / 6 - m_shapes[shape::cube].size[2] / 6);
+        break;
+    case 3:
+        for (int i = 0; i < 3; i++) {
+            m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[2 - i]));
+            glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[i] / 6, m_shapes[shape::cube].size[i + 1] / 6 - m_shapes[shape::cube].size[i] / 6);
+        }
+        break;
+    }
     
     // Draw pin
     if (p.z > 0) {
@@ -508,7 +539,7 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
         m_shaderProgramCol.setMat4("u_projection", projection);
         m_shaderProgramCol.setMat4("u_view", view);
         m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
-        m_shaderProgramCol.setVec4("u_color", col);
+        m_shaderProgramCol.setVec4("u_color", color_to_vec(c[0]));
         glBindVertexArray(VAO[(int)vertex::singleLine]);
         glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData); 

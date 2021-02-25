@@ -146,6 +146,9 @@ namespace fcpp {
             //! @brief Additional shader program used for fonts.
             Shader m_shaderProgramFont;
 
+            //! @brief It contains all the vertex information of the standard shapes.
+            Shapes m_shapes;
+
             //! @brief Vertex Array Object(s).
             unsigned int VAO[(int)vertex::SIZE];
 
@@ -202,6 +205,9 @@ namespace fcpp {
 
             //! @brief It unloads the defined texture, given its path.
             bool unloadTexture(unsigned int id);
+
+            //! @brief It loads the vertex and index data into their respective buffers (the grid is generated separately with makeGrid()).
+            void allocateBuffers();
 		};
 	}
 }

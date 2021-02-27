@@ -31,12 +31,12 @@ struct VertexData {
     //! @brief Raw data of triangles as points and normals.
     std::vector<float> data;
 
-    //! @brief Index of the start of data (as floats) for all the three colors; size[3] corresponds to the size of the whole data.
+    //! @brief Index of the start of data (as points) for all the three colors; size[3] corresponds to the total number of points.
     size_t size[4];
 
     //! @brief Pointer to the start of data for color `i`.
     inline float const* operator[](size_t i) const {
-        return data.data() + size[i];
+        return data.data() + size[i] * 6;
     }
 
     //! @brief Inserts a point in the raw data.

@@ -14,26 +14,26 @@ void fcpp::internal::VertexData::normalize() {
         float* v = data.data() + i;
         // vector subtraction
         for (int j=6; j<=12; j+=6) for (int k=0; k<3; ++k)
-            data[j + k + 3] = data[j + k] - data[k];
+            v[j + k + 3] = v[j + k] - v[k];
         // cross product
         for (int j=3; j<6; ++j)
-            data[j] = data[9+(j+1)%3] * data[15+(j+2)%3] - data[9+(j+2)%3] * data[15+(j+1)%3];
+            v[j] = v[9+(j+1)%3] * v[15+(j+2)%3] - v[9+(j+2)%3] * v[15+(j+1)%3];
         // calculate norm
         float norm = 0;
         for (int j=3; j<6; ++j)
-            norm += data[j]*data[j];
+            norm += v[j]*v[j];
         norm = sqrt(norm);
         // check cross product sign
         float sign = 0;
         for (int j=0; j<3; ++j)
-            sign += data[j]*data[j+3];
+            sign += v[j]*v[j+3];
         if (sign < 0) norm = -norm;
         // normalise
         for (int j=3; j<6; ++j)
-            data[j] /= norm;
+            v[j] /= norm;
         // propagate
         for (int j=6; j<=12; j+=6) for (int k=3; k<6; ++k)
-            data[j + k] = data[k];
+            v[j + k] = v[k];
     }
 }
 
@@ -43,16 +43,16 @@ void fcpp::internal::VertexData::symmetrize() {
     size_t n = data.size();
     data.resize(n*2);
     // shift center area at end
-    for (size_t i=size[1]; i<n; ++i)
+    for (size_t i=size[1]*6; i<n; ++i)
         data[i+n] = data[i];
     // symmetrise border area
-    for (size_t i=0; i<size[1]; ++i)
-        data[size[1]+i] = -data[i];
+    for (size_t i=0; i<size[1]*6; ++i)
+        data[size[1]*6+i] = -data[i];
     // symmetrise center area
-    for (size_t i=size[1]; i<n; ++i)
-        data[size[1]+i] = -data[i+n];
+    for (size_t i=size[1]*6; i<n; ++i)
+        data[size[1]*6+i] = -data[i+n];
     // adjust sizes
-    size[3] = 2*n;
+    size[3] = n/3;
     size[2] = 2*size[1];
     size[0] = 0;
 }
@@ -91,7 +91,7 @@ void fcpp::internal::Shapes::cube(fcpp::internal::VertexData& v) {
             push_rectangle(v, z, i,
                               +0.25f, -0.50f,
                               +0.50f, +0.50f);
-    v.size[1] = v.data.size();
+    v.size[1] = v.data.size()/6;
     // half center area
     for (size_t i=1; i<3; ++i)
         push_rectangle(v, 0.5f, i,

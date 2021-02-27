@@ -513,18 +513,18 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
     default:
     case 1:
         m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
-        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[3] / 6);
+        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[3]);
         break;
     case 2:
         m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[1]));
-        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[2] / 6);
+        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[2]);
         m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
-        glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[2] / 6, m_shapes[shape::cube].size[3] / 6 - m_shapes[shape::cube].size[2] / 6);
+        glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[2], m_shapes[shape::cube].size[3] - m_shapes[shape::cube].size[2]);
         break;
     case 3:
         for (int i = 0; i < 3; i++) {
             m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[2 - i]));
-            glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[i] / 6, m_shapes[shape::cube].size[i + 1] / 6 - m_shapes[shape::cube].size[i] / 6);
+            glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[i], m_shapes[shape::cube].size[i+1] - m_shapes[shape::cube].size[i]);
         }
         break;
     }

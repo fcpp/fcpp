@@ -46,8 +46,8 @@ namespace fcpp {
             //! @brief It draws the grid on the screen.
             void drawGrid(float planeAlpha);
 
-            //! @brief It draws a cube, given the information on color(s) and position.
-            void drawCube(glm::vec3 const& p, double d, std::vector<color> const& c) const;
+            //! @brief It draws the defined shape, given the information on color(s), dimension and position.
+            void drawShape(shape sh, glm::vec3 const& p, double d, std::vector<color> const& c) const;
 
             //! @brief It draws a star of lines, given the center and sides.
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
@@ -149,14 +149,20 @@ namespace fcpp {
             //! @brief It contains all the vertex information of the standard shapes.
             Shapes m_shapes;
 
-            //! @brief Vertex Array Object(s).
-            unsigned int VAO[(int)vertex::SIZE];
+            //! @brief Vertex Array Objects for standard shapes.
+            unsigned int m_shapeVAO[(int)shape::SIZE];
 
-            //! @brief Vertex Buffer Object(s).
-            unsigned int VBO[(int)vertex::SIZE];
+            //! @brief Vertex Buffer Objects for standard shapes.
+            unsigned int m_shapeVBO[(int)shape::SIZE];
 
-            //! @brief Element Buffer Object(s).
-            unsigned int EBO[(int)index::SIZE];
+            //! @brief Vertex Array Objects for commonly used meshes.
+            unsigned int m_meshVAO[(int)vertex::SIZE];
+
+            //! @brief Vertex Buffer Objects for commonly used meshes.
+            unsigned int m_meshVBO[(int)vertex::SIZE];
+
+            //! @brief Element Buffer Objects for commonly used meshes.
+            unsigned int m_meshEBO[(int)index::SIZE];
             
             //! @brief Data structure mapping chars with glyphs.
             std::unordered_map<char, glyph> m_glyphs;
@@ -206,8 +212,11 @@ namespace fcpp {
             //! @brief It unloads the defined texture, given its path.
             bool unloadTexture(unsigned int id);
 
-            //! @brief It loads the vertex and index data into their respective buffers (the grid is generated separately with makeGrid()).
-            void allocateBuffers();
+            //! @brief It loads the vertex and index data for the commonly used meshes into their respective buffers (the grid is generated separately with makeGrid()).
+            void allocateMeshBuffers();
+
+            //! @brief It loads the vertex and index data for the standard shapes into their respective buffers.
+            void allocateShapeBuffers();
 		};
 	}
 }

@@ -164,14 +164,10 @@ Renderer::Renderer(size_t antialias) :
     m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
     m_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
     m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
-
-    // Generate VAOs, VBOs and EBOs
-    glGenVertexArrays((int)vertex::SIZE, VAO);
-    glGenBuffers((int)vertex::SIZE, VBO);
-    glGenBuffers((int)index::SIZE, EBO);
     
     // Allocate buffers
-    allocateBuffers();
+    allocateMeshBuffers();
+    allocateShapeBuffers();
 
     // Enabling depth test
     glEnable(GL_DEPTH_TEST);
@@ -247,21 +243,15 @@ bool Renderer::unloadTexture(unsigned int id) {
     return success;
 }
 
-void Renderer::allocateBuffers() {
-    // Allocate (static) cube buffers
-    glBindVertexArray(VAO[(int)vertex::cube]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::cube]);
-    glBufferData(GL_ARRAY_BUFFER, m_shapes[shape::cube].data.size() * sizeof(float), m_shapes[shape::cube].data.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+void Renderer::allocateMeshBuffers() {
+    // Generate VAOs, VBOs and EBOs for general meshes
+    glGenVertexArrays((int)vertex::SIZE, m_meshVAO);
+    glGenBuffers((int)vertex::SIZE, m_meshVBO);
+    glGenBuffers((int)index::SIZE, m_meshEBO);
 
     // Allocate (dynamic) font buffers
-    glBindVertexArray(VAO[(int)vertex::font]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
+    glBindVertexArray(m_meshVAO[(int)vertex::font]);
+    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::font]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
@@ -269,8 +259,8 @@ void Renderer::allocateBuffers() {
     glBindVertexArray(0);
 
     // Allocate (dynamic) single line buffers
-    glBindVertexArray(VAO[(int)vertex::singleLine]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
+    glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
+    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::singleLine]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
@@ -278,13 +268,35 @@ void Renderer::allocateBuffers() {
     glBindVertexArray(0);
 
     // Allocate (dynamic) neighbour star buffers
-    glBindVertexArray(VAO[(int)vertex::star]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::star]);
+    glBindVertexArray(m_meshVAO[(int)vertex::star]);
+    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::star]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+void Renderer::allocateShapeBuffers() {
+    // Generate VAOs and VBOs for standard shapes
+    glGenVertexArrays((int)shape::SIZE, m_shapeVAO);
+    glGenBuffers((int)shape::SIZE, m_shapeVBO);
+
+    for (int i = 0; i < (int)shape::SIZE; i++) {
+        // Get actual shape
+        shape sh{ (shape)i };
+
+        // Allocate (static) shape buffers
+        glBindVertexArray(m_shapeVAO[(int)sh]);
+        glBindBuffer(GL_ARRAY_BUFFER, m_shapeVBO[(int)sh]);
+        glBufferData(GL_ARRAY_BUFFER, m_shapes[sh].data.size() * sizeof(float), m_shapes[sh].data.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
 }
 
 
@@ -379,12 +391,12 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, 
         }
 
         // Storing grid mesh
-        glBindVertexArray(VAO[(int)vertex::grid]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::grid]);
+        glBindVertexArray(m_meshVAO[(int)vertex::grid]);
+        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::grid]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(gridMesh), gridMesh, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridHighIndex), gridHighIndex, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridNormIndex), gridNormIndex, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -408,10 +420,10 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, 
         };
 
         // Storing plane mesh
-        glBindVertexArray(VAO[(int)vertex::plane]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::plane]);
+        glBindVertexArray(m_meshVAO[(int)vertex::plane]);
+        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::plane]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(planeMesh), planeMesh, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::plane]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::plane]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(planeIndex), planeIndex, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
@@ -442,12 +454,12 @@ void Renderer::drawGrid(float planeAlpha) {
             m_shaderProgramCol.setMat4("u_model", model);
 
             // Draw grid
-            glBindVertexArray(VAO[(int)vertex::grid]);
+            glBindVertexArray(m_meshVAO[(int)vertex::grid]);
             m_shaderProgramCol.setVec4("u_color", m_foreground);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
             glDrawElements(GL_LINES, m_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
             m_shaderProgramCol.setVec4("u_color", m_background);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
             glDrawElements(GL_LINES, m_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -479,7 +491,7 @@ void Renderer::drawGrid(float planeAlpha) {
             m_shaderProgramTexture.setVec4("u_color", col);
             m_shaderProgramTexture.setInt("u_texture", 0);
             glDepthMask(false);
-            glBindVertexArray(VAO[(int)vertex::plane]);
+            glBindVertexArray(m_meshVAO[(int)vertex::plane]);
             glDrawElements(GL_TRIANGLES, m_planeIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
             glDepthMask(true);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -489,7 +501,7 @@ void Renderer::drawGrid(float planeAlpha) {
     }
 }
 
-void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& c) const {    
+void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<color> const& c) const {
     // Create matrices (used several times)
     glm::mat4 const& projection{ m_camera.getPerspective() };
     glm::mat4 const& view{ m_camera.getView() };
@@ -498,7 +510,7 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
     model = glm::scale(model, glm::vec3(d));
     glm::mat3 normal{ glm::transpose(glm::inverse(view * model)) };
 
-    // Draw cube
+    // Draw shape
     m_shaderProgramPhong.use();
     m_shaderProgramPhong.setVec3("u_lightPos", m_lightPos);
     m_shaderProgramPhong.setFloat("u_ambientStrength", 0.4f);
@@ -507,28 +519,28 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
     m_shaderProgramPhong.setMat4("u_view", view);
     m_shaderProgramPhong.setMat4("u_model", model);
     m_shaderProgramPhong.setMat3("u_normal", normal);
-    glBindVertexArray(VAO[(int)vertex::cube]);
+    glBindVertexArray(m_shapeVAO[(int)sh]);
 
     switch (c.size()) {
     default:
     case 1:
         m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
-        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[3]);
+        glDrawArrays(GL_TRIANGLES, 0, m_shapes[sh].size[3]);
         break;
     case 2:
         m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[1]));
-        glDrawArrays(GL_TRIANGLES, 0, m_shapes[shape::cube].size[2]);
+        glDrawArrays(GL_TRIANGLES, 0, m_shapes[sh].size[2]);
         m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
-        glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[2], m_shapes[shape::cube].size[3] - m_shapes[shape::cube].size[2]);
+        glDrawArrays(GL_TRIANGLES, m_shapes[sh].size[2], m_shapes[sh].size[3] - m_shapes[sh].size[2]);
         break;
     case 3:
         for (int i = 0; i < 3; i++) {
             m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[2 - i]));
-            glDrawArrays(GL_TRIANGLES, m_shapes[shape::cube].size[i], m_shapes[shape::cube].size[i+1] - m_shapes[shape::cube].size[i]);
+            glDrawArrays(GL_TRIANGLES, m_shapes[sh].size[i], m_shapes[sh].size[i+1] - m_shapes[sh].size[i]);
         }
         break;
     }
-    
+
     // Draw pin
     if (p.z > 0) {
         float pinData[] = {
@@ -540,9 +552,9 @@ void Renderer::drawCube(glm::vec3 const& p, double d, std::vector<color> const& 
         m_shaderProgramCol.setMat4("u_view", view);
         m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
         m_shaderProgramCol.setVec4("u_color", color_to_vec(c[0]));
-        glBindVertexArray(VAO[(int)vertex::singleLine]);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::singleLine]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData); 
+        glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
+        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::singleLine]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_LINES, 0, 6);
     }
@@ -555,13 +567,13 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glm::mat4 const& view{ m_camera.getView() };
 
     float starData[6 * np.size()];
-    for (int i=0; i<np.size(); ++i) {
-        starData[6*i+0] = p[0];
-        starData[6*i+1] = p[1];
-        starData[6*i+2] = p[2];
-        starData[6*i+3] = np[i][0];
-        starData[6*i+4] = np[i][1];
-        starData[6*i+5] = np[i][2];
+    for (int i = 0; i < np.size(); ++i) {
+        starData[6 * i + 0] = p[0];
+        starData[6 * i + 1] = p[1];
+        starData[6 * i + 2] = p[2];
+        starData[6 * i + 3] = np[i][0];
+        starData[6 * i + 4] = np[i][1];
+        starData[6 * i + 5] = np[i][2];
     }
 
     m_shaderProgramCol.use();
@@ -569,8 +581,8 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     m_shaderProgramCol.setMat4("u_view", view);
     m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
     m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
-    glBindVertexArray(VAO[(int)vertex::star]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::star]);
+    glBindVertexArray(m_meshVAO[(int)vertex::star]);
+    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::star]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(starData), starData, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDrawArrays(GL_LINES, 0, 2 * np.size());
@@ -584,7 +596,7 @@ void Renderer::drawText(std::string text, float x, float y, float scale)
     m_shaderProgramFont.setInt("u_text", 0);
     m_shaderProgramFont.setMat4("u_projection", m_camera.getOrthographic());
     glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(VAO[(int)vertex::font]);
+    glBindVertexArray(m_meshVAO[(int)vertex::font]);
 
     // Iterate through all characters
     std::string::const_iterator c;
@@ -598,19 +610,19 @@ void Renderer::drawText(std::string text, float x, float y, float scale)
         float h = ch.size.y * scale;
         // Update VBO for each character
         float vertices[24] = {
-            xpos,     ypos + h,   0.0f, 0.0f,            
+            xpos,     ypos + h,   0.0f, 0.0f,
             xpos,     ypos,       0.0f, 1.0f,
             xpos + w, ypos,       1.0f, 1.0f,
 
             xpos,     ypos + h,   0.0f, 0.0f,
             xpos + w, ypos,       1.0f, 1.0f,
-            xpos + w, ypos + h,   1.0f, 0.0f           
+            xpos + w, ypos + h,   1.0f, 0.0f
         };
         // Render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.textureID);
         // Update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, VBO[(int)vertex::font]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); 
+        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::font]);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         // Render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);

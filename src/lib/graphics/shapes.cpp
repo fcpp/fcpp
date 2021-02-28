@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 
 #include "lib/graphics/shapes.hpp"
 

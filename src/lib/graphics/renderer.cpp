@@ -194,7 +194,6 @@ Renderer::Renderer(size_t antialias) :
 
 /* --- PRIVATE FUNCTIONS --- */
 int Renderer::euclid(int a, int b) {
-    std::cout << "euclid(" << a << ", " << b << ")";
     int r;
     while(b != 0) //repeat until b is 0
     {
@@ -202,8 +201,6 @@ int Renderer::euclid(int a, int b) {
          a = b; 
          b = r; //swap a and b
     }
-    
-    std::cout << a << "\n";
     return a; //the result is a when b is equal to 0
 }
 

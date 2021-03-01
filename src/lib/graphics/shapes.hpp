@@ -13,7 +13,7 @@ namespace fcpp {
 
 
 //! @brief Supported shapes for representing nodes.
-enum class shape { tetrahedron, cube, sphere, SIZE };
+enum class shape { cube, tetrahedron, sphere, SIZE };
 
 //! @brief Supported pointers to vertex buffers.
 enum class vertex { font, singleLine, star, plane, grid, SIZE };

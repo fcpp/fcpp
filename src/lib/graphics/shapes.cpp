@@ -58,6 +58,45 @@ void fcpp::internal::VertexData::symmetrize() {
 
 
 namespace {
+    //! @brief Calculates the mid point between two points.
+    inline std::vector<float> midpoint(std::vector<float> p, std::vector<float> q) {
+        return {(p[0]+q[0])/2, (p[1]+q[1])/2, (p[2]+q[2])/2};
+    }
+}
+
+//! @brief Generates vertex data for a cube.
+void fcpp::internal::Shapes::tetrahedron(fcpp::internal::VertexData& v) {
+    float sq2 = sqrt(2);
+    float sq3 = sqrt(3);
+    float sq6 = sq2*sq3;
+    std::vector<std::vector<float>> vx = {
+        {-1, -1/sq3, -1/sq6},
+        {+1, -1/sq3, -1/sq6},
+        {+0, +2/sq3, -1/sq6},
+        {+0, +0/sq3, +3/sq6}
+    };
+    for (size_t i=0; i<4; ++i)
+        for (size_t j=0; j<3; ++j) {
+            v.push_point(vx[i]);
+            v.push_point(midpoint(vx[i], vx[(i+j+1)%4]));
+            v.push_point(midpoint(vx[i], vx[(i+(j+1)%3+1)%4]));
+        }
+    v.size[2] = v.data.size()/6;
+    v.size[1] = v.size[2]/2;
+    for (size_t i=0; i<4; ++i) {
+        v.push_point(midpoint(vx[i], vx[(i+1)%4]));
+        v.push_point(midpoint(vx[i], vx[(i+2)%4]));
+        v.push_point(midpoint(vx[(i+1)%4], vx[(i+2)%4]));
+    }
+    v.size[3] = v.data.size()/6;
+    // normalize volume
+    float f = cbrt(0.75*sq2);
+    for (float& x : v.data) x *= f;
+    // fill missing pieces
+    v.normalize();
+}
+
+namespace {
     //! @brief Pushes a point of a rectangle.
     void push_rectangle_point(fcpp::internal::VertexData& v, float z, size_t i, float x, float y) {
         switch (i) {

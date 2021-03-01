@@ -13,7 +13,7 @@ namespace fcpp {
 
 
 //! @brief Supported shapes for representing nodes.
-enum class shape { cube, sphere, SIZE };
+enum class shape { tetrahedron, cube, sphere, SIZE };
 
 //! @brief Supported pointers to vertex buffers.
 enum class vertex { font, singleLine, star, plane, grid, SIZE };
@@ -49,6 +49,11 @@ struct VertexData {
         data.push_back(0);
     }
 
+    //! @brief Inserts a point in the raw data.
+    inline void push_point(std::vector<float> const& xs) {
+        push_point(xs[0], xs[1], xs[2]);
+    }
+
     //! @brief Compute normals of every triangle.
     void normalize();
 
@@ -61,7 +66,8 @@ class Shapes {
 public:
     //! @brief Constructor.
     inline Shapes() {
-        cube(m_vertices[0]);
+        tetrahedron(m_vertices[0]);
+        cube(m_vertices[1]);
     }
 
     //! @brief Const access.
@@ -70,6 +76,9 @@ public:
     }
 
 private:
+    //! @brief Generates vertex data for a tetrahedron.
+    void tetrahedron(VertexData&);
+
     //! @brief Generates vertex data for a cube.
     void cube(VertexData&);
 

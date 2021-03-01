@@ -183,7 +183,7 @@ struct displayer {
                 // gather personal position
                 glm::vec3 p = get_cached_position();
                 // render the node
-                P::node::net.getRenderer().drawShape(shape::cube, p, d, m_colors);
+                P::node::net.getRenderer().drawShape(s, p, d, m_colors);
                 if (star) {
                     // gather neighbours' positions
                     std::vector<glm::vec3> np;

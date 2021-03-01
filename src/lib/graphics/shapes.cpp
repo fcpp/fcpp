@@ -83,6 +83,7 @@ void fcpp::internal::Shapes::tetrahedron(fcpp::internal::VertexData& v) {
         }
     v.size[2] = v.data.size()/6;
     v.size[1] = v.size[2]/2;
+    v.size[0] = 0;
     for (size_t i=0; i<4; ++i) {
         v.push_point(midpoint(vx[i], vx[(i+1)%4]));
         v.push_point(midpoint(vx[i], vx[(i+2)%4]));

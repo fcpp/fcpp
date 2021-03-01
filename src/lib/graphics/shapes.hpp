@@ -66,8 +66,9 @@ class Shapes {
 public:
     //! @brief Constructor.
     inline Shapes() {
-        tetrahedron(m_vertices[0]);
-        cube(m_vertices[1]);
+        tetrahedron(m_vertices[(size_t)shape::tetrahedron]);
+        cube(m_vertices[(size_t)shape::cube]);
+        tetrahedron(m_vertices[(size_t)shape::sphere]);
     }
 
     //! @brief Const access.

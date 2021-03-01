@@ -75,7 +75,7 @@ public:
         cube(m_vertices[(size_t)shape::cube]);
         octa(m_vertices[(size_t)shape::octahedron]);
         dome(m_vertices[(size_t)shape::icosahedron], 1);
-        dome(m_vertices[(size_t)shape::sphere], 10);
+        dome(m_vertices[(size_t)shape::sphere], FCPP_SPHERICITY);
     }
 
     //! @brief Const access.

@@ -214,6 +214,12 @@
 #endif
 
 
+#ifndef FCPP_SPHERICITY
+//! @brief Setting defining the definition of spheres (1 for icosahedron).
+#define FCPP_SPHERICITY 10
+#endif
+
+
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */

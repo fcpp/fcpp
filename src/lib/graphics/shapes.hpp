@@ -15,7 +15,7 @@ namespace fcpp {
 
 
 //! @brief Supported shapes for representing nodes.
-enum class shape { tetrahedron, cube, icosahedron, sphere, SIZE };
+enum class shape { tetrahedron, cube, octahedron, icosahedron, sphere, SIZE };
 
 //! @brief Supported pointers to vertex buffers.
 enum class vertex { font, singleLine, star, plane, grid, SIZE };
@@ -73,8 +73,9 @@ public:
     inline Shapes() {
         tetr(m_vertices[(size_t)shape::tetrahedron]);
         cube(m_vertices[(size_t)shape::cube]);
+        octa(m_vertices[(size_t)shape::octahedron]);
         dome(m_vertices[(size_t)shape::icosahedron], 1);
-        dome(m_vertices[(size_t)shape::sphere], 3);
+        dome(m_vertices[(size_t)shape::sphere], 10);
     }
 
     //! @brief Const access.
@@ -88,6 +89,9 @@ private:
 
     //! @brief Generates vertex data for a cube.
     void cube(VertexData&);
+
+    //! @brief Generates vertex data for a octahedron.
+    void octa(VertexData&);
 
     //! @brief Generates vertex data for a icosahedron.
     void dome(VertexData&, size_t);

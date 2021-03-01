@@ -91,21 +91,41 @@ void Shapes::tetr(VertexData& v) {
         {+0, +2/sq3, -1/sq6},
         {+0, +0/sq3, +3/sq6}
     };
-    for (size_t i=0; i<4; ++i)
+    std::vector<vec<3>> vxc[3];
+    for (size_t i=0; i<2; ++i) {
+        std::vector<vec<3>> vxr = {
+            vx[2],
+            0.66*vx[2] + 0.34*vx[i],
+            0.50*vx[2] + 0.50*vx[3],
+            0.66*vx[3] + 0.34*vx[i],
+            vx[3]
+        };
         for (size_t j=0; j<3; ++j) {
-            v.push_point(vx[i]);
-            v.push_point(0.5*(vx[i] + vx[(i+j+1)%4]));
-            v.push_point(0.5*(vx[i] + vx[(i+(j+1)%3+1)%4]));
+            vxc[0].push_back(vxr[j+0]);
+            vxc[0].push_back(vxr[j+1]);
+            vxc[0].push_back(vxr[j+2]);
         }
-    v.size[2] = v.data.size()/6;
-    v.size[1] = v.size[2]/2;
-    v.size[0] = 0;
-    for (size_t i=0; i<4; ++i) {
-        v.push_point(0.5*(vx[i] + vx[(i+1)%4]));
-        v.push_point(0.5*(vx[i] + vx[(i+2)%4]));
-        v.push_point(0.5*(vx[(i+1)%4] + vx[(i+2)%4]));
+        vxc[i+1].push_back(vx[i]);
+        vxc[i+1].push_back(0.66*vx[2]+0.34*vx[i]);
+        vxc[i+1].push_back(0.66*vx[3]+0.34*vx[i]);
     }
-    v.size[3] = v.data.size()/6;
+    for (size_t i=2; i<4; ++i) {
+        for (size_t j=0; j<2; ++j)
+            for (size_t k=0; k<2; ++k) {
+                vxc[k*(j+1)].push_back(vx[k?j:i]);
+                vxc[k*(j+1)].push_back(0.66*vx[i]+0.34*vx[j]);
+                vxc[k*(j+1)].push_back(0.67*vx[j]+0.33*vx[1-j]);
+            }
+        vxc[0].push_back(vx[i]);
+        vxc[0].push_back(0.67*vx[0]+0.33*vx[1]);
+        vxc[0].push_back(0.67*vx[1]+0.33*vx[0]);
+    }
+    v.size[0] = 0;
+    for (int i=2; i>=0; --i) {
+        for (auto const& p : vxc[i])
+            v.push_point(p);
+        v.size[3-i] = v.data.size()/6;
+    }
     // normalize volume
     float f = cbrt(0.75*sq2);
     for (float& x : v.data) x *= f;
@@ -157,36 +177,77 @@ void Shapes::cube(VertexData& v) {
     v.symmetrize();
 }
 
+//! @brief Generates vertex data for a octahedron.
+void Shapes::octa(VertexData& v) {
+    // border area
+    std::vector<vec<3>> vx = {
+        {0, 1, 0},
+        {0, 0, 1},
+        {0,-1, 0},
+        {0, 0,-1},
+        {0, 1, 0},
+        {1, 0, 0}
+    };
+    for (size_t i=0; i<4; ++i) {
+        v.push_point(vx[5]);
+        v.push_point(0.65*vx[i+0] + 0.35*vx[5]);
+        v.push_point(0.65*vx[i+1] + 0.35*vx[5]);
+    }
+    v.size[1] = v.data.size()/6;
+    // half center area
+    for (size_t i=0; i<4; ++i) {
+        std::vector<vec<3>> vxr = {
+            vx[i],
+            0.65*vx[i] + 0.35*vx[5],
+            0.5*vx[i]+0.5*vx[i+1],
+            0.65*vx[i+1] + 0.35*vx[5],
+            vx[i+1]
+        };
+        for (size_t j=0; j<3; ++j) {
+            v.push_point(vxr[j+0]);
+            v.push_point(vxr[j+1]);
+            v.push_point(vxr[j+2]);
+        }
+    }
+    // normalize volume
+    float f = cbrt(0.75);
+    for (float& x : v.data) x *= f;
+    // fill missing pieces
+    v.normalize();
+    v.symmetrize();
+}
+
 namespace {
     //! @brief Cartesian coordinates from spherical coordinates.
-    inline vec<3> spherepoint(float lat, float lon) {
-        return {sin(lat), cos(lat)*cos(lon), cos(lat)*sin(lon)};
+    inline vec<3> spherepoint(vec<2> p) {
+        return {sin(p[0]), cos(p[0])*cos(p[1]), cos(p[0])*sin(p[1])};
     }
 
     //! @brief Pushes a (subdivided) triangle.
-    void push_triangles(VertexData& v, vec<3> a, vec<3> b, vec<3> c, size_t k) {
-        std::vector<std::vector<vec<3>>> vx;
+    void push_triangles(VertexData& v, vec<2> as, vec<2> ae, vec<2> b, vec<2> c, size_t k) {
+        std::vector<std::vector<vec<2>>> vx;
+        float pi = 4*atan(1);
         for (size_t i=0; i<=k; ++i) {
             vx.emplace_back();
             float y = i*1.0/k;
             float x = 1-y;
-            vec<3> vs = x*a + y*b;
-            vec<3> ve = x*a + y*c;
+            vec<2> vs = x*as + y*b;
+            vec<2> ve = x*ae + y*c;
             vx.back().push_back(vs);
             for (size_t j=1; j<=i; ++j)
                 vx.back().push_back((vs*(i-j) + j*ve)/i);
         }
         for (size_t i=0; i<k; ++i) {
-            std::vector<vec<3>> vxr;
+            std::vector<vec<2>> vxr;
             for (size_t j=0; j<=i; ++j) {
                 vxr.push_back(vx[i+1][j]);
                 vxr.push_back(vx[i][j]);
             }
             vxr.push_back(vx[i+1].back());
             for (size_t j=0; j<=2*i; ++j) {
-                v.push_point(vxr[j+0]);
-                v.push_point(vxr[j+1]);
-                v.push_point(vxr[j+2]);
+                v.push_point(spherepoint(vxr[j+0]));
+                v.push_point(spherepoint(vxr[j+1]));
+                v.push_point(spherepoint(vxr[j+2]));
             }
         }
     }
@@ -199,17 +260,19 @@ void Shapes::dome(VertexData& v, size_t k) {
     // border area
     for (size_t i=0; i<5; ++i)
         push_triangles(v,
-                       spherepoint(lp, 0),
-                       spherepoint(le, (4*i+1)*lp/5),
-                       spherepoint(le, (4*i+5)*lp/5),
+                       {lp, (4*i+1)*lp/5},
+                       {lp, (4*i+5)*lp/5},
+                       {le, (4*i+1)*lp/5},
+                       {le, (4*i+5)*lp/5},
                        k);
     v.size[1] = v.data.size()/6;
     // half center area
     for (size_t i=0; i<5; ++i)
         push_triangles(v,
-                       spherepoint(+le, (4*i+1)*lp/5),
-                       spherepoint(-le, (4*i+3)*lp/5),
-                       spherepoint(+le, (4*i+5)*lp/5),
+                       {-le, (4*i+3)*lp/5},
+                       {-le, (4*i+3)*lp/5},
+                       {+le, (4*i+1)*lp/5},
+                       {+le, (4*i+5)*lp/5},
                        k);
     // fill missing pieces
     if (k > 1)

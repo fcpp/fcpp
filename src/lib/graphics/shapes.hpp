@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include "lib/data/vec.hpp"
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -13,7 +15,7 @@ namespace fcpp {
 
 
 //! @brief Supported shapes for representing nodes.
-enum class shape { cube, tetrahedron, sphere, SIZE };
+enum class shape { tetrahedron, cube, icosahedron, sphere, SIZE };
 
 //! @brief Supported pointers to vertex buffers.
 enum class vertex { font, singleLine, star, plane, grid, SIZE };
@@ -50,12 +52,15 @@ struct VertexData {
     }
 
     //! @brief Inserts a point in the raw data.
-    inline void push_point(std::vector<float> const& xs) {
+    inline void push_point(vec<3> const& xs) {
         push_point(xs[0], xs[1], xs[2]);
     }
 
     //! @brief Compute normals of every triangle.
     void normalize();
+
+    //! @brief Compute normals spherifying the object.
+    void spherify(float);
 
     //! @brief Adds symmetric triangles (with respect to the origin).
     void symmetrize();
@@ -66,9 +71,10 @@ class Shapes {
 public:
     //! @brief Constructor.
     inline Shapes() {
-        tetrahedron(m_vertices[(size_t)shape::tetrahedron]);
+        tetr(m_vertices[(size_t)shape::tetrahedron]);
         cube(m_vertices[(size_t)shape::cube]);
-        tetrahedron(m_vertices[(size_t)shape::sphere]);
+        dome(m_vertices[(size_t)shape::icosahedron], 1);
+        dome(m_vertices[(size_t)shape::sphere], 3);
     }
 
     //! @brief Const access.
@@ -78,10 +84,13 @@ public:
 
 private:
     //! @brief Generates vertex data for a tetrahedron.
-    void tetrahedron(VertexData&);
+    void tetr(VertexData&);
 
     //! @brief Generates vertex data for a cube.
     void cube(VertexData&);
+
+    //! @brief Generates vertex data for a icosahedron.
+    void dome(VertexData&, size_t);
 
     //! @brief THe collection of vertices for every shape.
     VertexData m_vertices[(size_t)shape::SIZE];

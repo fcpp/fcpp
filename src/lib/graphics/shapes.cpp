@@ -80,6 +80,14 @@ void VertexData::symmetrize() {
 }
 
 
+namespace {
+    //! @brief Pushes a face with vertices in alternated triangulation order.
+    void push_face(VertexData& v, std::vector<vec<3>> vx) {
+        for (size_t i=0; i+2<vx.size(); ++i) for (size_t j=0; j<3; ++j)
+            v.push_point(vx[i+j]);
+    }
+}
+
 //! @brief Generates vertex data for a tetrahedron.
 void Shapes::tetr(VertexData& v) {
     float sq2 = sqrt(2);
@@ -96,11 +104,10 @@ void Shapes::tetr(VertexData& v) {
         std::vector<vec<3>> vxr = {
             vx[2],
             0.66*vx[2] + 0.34*vx[i],
-            0.50*vx[2] + 0.50*vx[3],
-            0.66*vx[3] + 0.34*vx[i],
-            vx[3]
+            vx[3],
+            0.66*vx[3] + 0.34*vx[i]
         };
-        for (size_t j=0; j<3; ++j) {
+        for (size_t j=0; j<2; ++j) {
             vxc[0].push_back(vxr[j+0]);
             vxc[0].push_back(vxr[j+1]);
             vxc[0].push_back(vxr[j+2]);
@@ -196,18 +203,12 @@ void Shapes::octa(VertexData& v) {
     v.size[1] = v.data.size()/6;
     // half center area
     for (size_t i=0; i<4; ++i) {
-        std::vector<vec<3>> vxr = {
+        push_face(v, {
             vx[i],
             0.65*vx[i] + 0.35*vx[5],
-            0.5*vx[i]+0.5*vx[i+1],
-            0.65*vx[i+1] + 0.35*vx[5],
-            vx[i+1]
-        };
-        for (size_t j=0; j<3; ++j) {
-            v.push_point(vxr[j+0]);
-            v.push_point(vxr[j+1]);
-            v.push_point(vxr[j+2]);
-        }
+            vx[i+1],
+            0.65*vx[i+1] + 0.35*vx[5]
+        });
     }
     // normalize volume
     float f = cbrt(0.75);
@@ -238,17 +239,13 @@ namespace {
                 vx.back().push_back((vs*(i-j) + j*ve)/i);
         }
         for (size_t i=0; i<k; ++i) {
-            std::vector<vec<2>> vxr;
+            std::vector<vec<3>> vxr;
             for (size_t j=0; j<=i; ++j) {
-                vxr.push_back(vx[i+1][j]);
-                vxr.push_back(vx[i][j]);
+                vxr.push_back(spherepoint(vx[i+1][j]));
+                vxr.push_back(spherepoint(vx[i][j]));
             }
-            vxr.push_back(vx[i+1].back());
-            for (size_t j=0; j<=2*i; ++j) {
-                v.push_point(spherepoint(vxr[j+0]));
-                v.push_point(spherepoint(vxr[j+1]));
-                v.push_point(spherepoint(vxr[j+2]));
-            }
+            vxr.push_back(spherepoint(vx[i+1].back()));
+            push_face(v, vxr);
         }
     }
 }
@@ -281,6 +278,59 @@ void Shapes::dome(VertexData& v, size_t k) {
         for (float& x : v.data) x *= 0.7332886800270005;
         v.normalize();
     }
+    v.symmetrize();
+}
+
+//! @brief Generates vertex data for a star.
+void Shapes::star(VertexData& v) {
+    float sq05 = sqrt(0.5);
+    // border area
+    for (int z=-1; z<=1; z+=2) {
+        std::vector<vec<3>> vx = {
+            {0.5, -0.5, 0},
+            {1,   +0,   z*sq05},
+            {0.5, +0.5, 0}
+        };
+        vec<3> q{0, 0, z*sq05};
+        for (auto& p : vx) v.push_point(p);
+        for (int y=-1; y<=1; y+=2) {
+            push_face(v, {
+                vx[1],
+                0.75*q + 0.25*vx[1],
+                vx[y+1],
+                0.5*vx[y+1] + 0.5*q,
+                0.5*vx[y+1] + 0.5*make_vec(0, y, z*sq05),
+                0.75*vx[y+1] + 0.25*make_vec(0.5, -0.5*y, 0)
+            });
+        }
+    }
+    v.size[1] = v.data.size()/6;
+    // half center area
+    for (int z=-1; z<=1; z+=2) {
+        std::vector<vec<3>> vx = {
+            {-0.25, 0.5, 0},
+            {+0,    1,   z*sq05},
+            {+0.25, 0.5, 0}
+        };
+        vec<3> q{0, 0, z*sq05};
+        for (auto& p : vx) v.push_point(p);
+        for (int x=-1; x<=1; x+=2) {
+            vec<3> p{x*0.5, 0.5, 0};
+            push_face(v, {
+                0.75*q + 0.25*make_vec(x, 0, z*sq05),
+                0.5*q + 0.5*p,
+                q,
+                0.5*vx[1] + 0.5*p,
+                vx[1],
+                vx[x+1]
+            });
+        }
+    }
+    // normalize volume
+    float f = cbrt(sq05);
+    for (float& x : v.data) x *= f;
+    // fill missing pieces
+    v.normalize();
     v.symmetrize();
 }
 

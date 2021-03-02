@@ -4,6 +4,7 @@
 #define FCPP_GRAPHICS_RENDERER_H_
 
 #include <mutex>
+#include <string>
 #include <unordered_map>
 
 #include <glad/glad.h>
@@ -35,7 +36,7 @@ namespace fcpp {
         class Renderer {
 		public:
 			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
-			Renderer(size_t antialias);
+			Renderer(size_t antialias, std::string name);
 
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();

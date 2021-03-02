@@ -76,6 +76,9 @@ namespace tags {
     template <bool b>
     struct parallel;
 
+    //! @brief Net initialisation tag associating to the main name of a component composition instance.
+    struct name;
+
     //! @brief Net initialisation tag associating to the refresh rate (0 for opportunistic frame refreshing).
     struct refresh_rate {};
 
@@ -122,8 +125,8 @@ struct displayer {
     //! @brief Storage tag regulating the shape of nodes.
     using shape_tag = common::option_type<tags::shape_tag, void, Ts...>;
 
-    //! @brief Base shape of nodes (defaults to sphere).
-    constexpr static shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<size_t>(shape::sphere), Ts...>);
+    //! @brief Base shape of nodes (defaults to cube).
+    constexpr static shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<size_t>(shape::cube), Ts...>);
 
     //! @brief Storage tag regulating the size of nodes.
     using size_tag = common::option_type<tags::size_tag, void, Ts...>;
@@ -272,7 +275,7 @@ struct displayer {
                 m_step( common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) ),
                 m_viewport_max{ -INF, -INF, -INF },
                 m_viewport_min{ +INF, +INF, +INF },
-                m_renderer{antialias},
+                m_renderer{antialias, common::get_or<tags::name>(t, "FCPP")},
                 m_mouseLastX{ 0.0f },
                 m_mouseLastY{ 0.0f },
                 m_mouseRightX{ 0.0f },

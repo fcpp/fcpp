@@ -62,7 +62,7 @@ namespace {
 
 
 /* --- CONSTRUCTOR --- */
-Renderer::Renderer(size_t antialias) :
+Renderer::Renderer(size_t antialias, std::string name) :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_gridFirst{ true },
@@ -91,7 +91,7 @@ Renderer::Renderer(size_t antialias) :
         glfwWindowHint(GLFW_SAMPLES, antialias);
 
     // Create window (and its context)
-    m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, "fcppGL", NULL, NULL);
+    m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, name.c_str(), NULL, NULL);
 
     if (m_window == NULL) {
         glfwTerminate();

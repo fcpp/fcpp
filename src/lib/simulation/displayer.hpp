@@ -14,6 +14,9 @@
 
 #include <algorithm>
 #include <deque>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
@@ -27,6 +30,7 @@
 #include <stb_image/stb_image.h>
 
 #include "lib/common/algorithm.hpp"
+#include "lib/common/ostream.hpp"
 #include "lib/component/base.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/graphics/renderer.hpp"
@@ -88,6 +92,172 @@ namespace tags {
     //! @brief Net initialisation tag associating to the number of threads that can be created.
     struct threads;
 }
+
+
+//! @brief Class displaying detailed node information in a separate window.
+template <typename F>
+class info_window {
+    //! @brief The local part of the component.
+    using node = typename F::node;
+    //! @brief The global part of the component.
+    using net = typename F::net;
+
+  public:
+    //! @brief Constructor.
+    info_window(net& n, device_t uid) :
+        m_net(n),
+        m_uid(uid),
+        m_renderer(0, "node " + std::to_string(uid), false),
+        m_thread(&info_window::draw_cycle, this) {}
+
+    //! @brief Copy constructor.
+    info_window(info_window const&) = delete;
+
+    //! @brief Move constructor.
+    info_window(info_window&&) = delete;
+
+    //! @brief Destructor.
+    ~info_window() {
+        m_running = false;
+        m_thread.join();
+    }
+
+    //! @brief Whether the window should be closed.
+    bool closing() {
+        return glfwWindowShouldClose(m_renderer.getWindow());
+    }
+
+  private:
+    //! @brief Main cycle.
+    void draw_cycle() {
+        while (m_running) {
+            draw();
+            m_renderer.swapAndNext();
+        }
+    }
+
+    //! @brief Updates the node info and draws it into the window.
+    void draw() {
+        bool first = m_keys.empty();
+        if (m_net.node_count(m_uid))
+            update_storage_values(m_net.node_at(m_uid).storage_tuple());
+        if (first) {
+            std::vector<std::string> vk{
+                "",
+                "previous_time",
+                "current_time",
+                "next_time",
+                "frequency",
+                "message_time",
+                "",
+                "position",
+                "velocity",
+                "propulsion",
+                "acceleration",
+                "friction",
+                "nbr_vec"
+            };
+            m_keys.insert(m_keys.end(), vk.begin(), vk.end());
+            for (auto const& s : vk)
+                m_values.emplace_back();
+        }
+        if (m_net.node_count(m_uid))
+            update_base_values(m_net.node_at(m_uid));
+        if (not m_net.node_count(m_uid))
+            glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
+        for (size_t i=0; i<m_keys.size(); ++i) {
+            float y = (i+0.5f) / m_keys.size() * m_renderer.getCurrentHeight();
+            m_renderer.drawText(m_keys[i], 16.0f, y, 0.25f);
+            m_renderer.drawText(m_values[i], 120.0f, y, 0.25f);
+        }
+    }
+
+    //! @brief Compile-time check whether tag S from tuple T is sstream-printable (base case).
+    template <typename T, typename S, typename = void>
+    struct is_printable : std::false_type {};
+
+    //! @brief Compile-time check whether tag S from tuple T is sstream-printable.
+    template <typename T, typename S>
+    struct is_printable<T, S,
+        typename std::enable_if_t<
+            std::is_same<decltype(std::declval<std::stringstream>() << common::get<S>(std::declval<T>())), std::stringstream&>::value
+        >
+    > : std::true_type {};
+
+    //! @brief Converts value to string.
+    template <typename T>
+    std::string to_string(T const& x) {
+        std::stringstream ss;
+        ss << x;
+        return ss.str();
+    }
+
+    //! @brief Updates values from
+    void update_base_values(node const& n) {
+        size_t N = m_values.size();
+        m_values[N-12] = to_string(n.previous_time());
+        m_values[N-11] = to_string(n.current_time());
+        m_values[N-10] = to_string(n.next_time());
+        m_values[N-9]  = to_string(n.frequency());
+        m_values[N-8]  = to_string(n.message_time());
+        m_values[N-6]  = to_string(n.position());
+        m_values[N-5]  = to_string(n.velocity());
+        m_values[N-4]  = to_string(n.propulsion());
+        m_values[N-3]  = to_string(n.acceleration());
+        m_values[N-2]  = to_string(n.friction());
+        m_values[N-1]  = to_string(n.nbr_vec());
+    }
+
+    //! @brief Updates the values from the storage tuple.
+    template <typename S, typename T>
+    void update_storage_values(common::tagged_tuple<S,T> const& t) {
+        update_storage_values(t, S{}, 0);
+    }
+
+    //! @brief Updates the values from the storage tuple (empty case).
+    template <typename T>
+    inline void update_storage_values(T const&, common::type_sequence<>, size_t) {}
+
+    //! @brief Updates the values from the storage tuple (skip case).
+    template <typename T, typename S, typename... Ss>
+    inline std::enable_if_t<not is_printable<T, S>::value>
+    update_storage_values(T const& t, common::type_sequence<S, Ss...>, size_t i) {
+        update_storage_values(t, common::type_sequence<Ss...>{}, i);
+    }
+
+    //! @brief Updates the values from the storage tuple (print case).
+    template <typename T, typename S, typename... Ss>
+    inline std::enable_if_t<is_printable<T, S>::value>
+    update_storage_values(T const& t, common::type_sequence<S, Ss...>, size_t i) {
+        if (m_keys.size() == i) {
+            m_keys.push_back(common::details::strip_namespaces(common::type_name<S>()));
+            m_values.emplace_back();
+        }
+        m_values[i] = to_string(common::get<S>(t));
+        update_values(t, common::type_sequence<Ss...>{}, i+1);
+    }
+
+    //! @brief A reference to the corresponding net object.
+    net& m_net;
+
+    //! @brief The unique identifier of the displayed device.
+    device_t m_uid;
+
+    //! @brief Window Renderer object.
+    internal::Renderer m_renderer;
+
+    //! @brief Whether the window is alive and running.
+    bool m_running = true;
+
+    //! @brief Rendering thread.
+    std::thread m_thread;
+
+    //! @brief Keys to be represented.
+    std::vector<std::string> m_keys;
+
+    //! @brief Values to be represented.
+    std::vector<std::string> m_values;
+};
 
 
 /**
@@ -361,6 +531,13 @@ struct displayer {
                     }
                     {
                         PROFILE_COUNT("displayer/step");
+                        // Destroy closed info windows
+                        for (size_t i=0; i<m_info.size(); ) {
+                            if (m_info[i]->closing()) {
+                                std::swap(m_info[i], m_info.back());
+                                m_info.pop_back();
+                            } else ++i;
+                        }
                         // Swap buffers and prepare for next frame to draw
                         m_renderer.swapAndNext();
                         // Update m_refresh
@@ -370,7 +547,7 @@ struct displayer {
             }
 
             //! @brief Returns net's Renderer object.
-            fcpp::internal::Renderer const& getRenderer() {
+            internal::Renderer const& getRenderer() {
                 return m_renderer;
             }
 
@@ -521,6 +698,10 @@ struct displayer {
                     case GLFW_KEY_I:
                         P::net::frequency(pow(0.25, (mods & GLFW_MOD_SHIFT) > 0 ? deltaTime/5 : deltaTime)*P::net::frequency());
                         break;
+                    // open info window for a random device
+                    case GLFW_KEY_R:
+                        m_info.emplace_back(new info_window<F>(*this, P::net::next_int(P::net::node_size()-1)));
+                        break;
                     default:
                         // pass key to renderer
                         m_renderer.keyboardInput(key, first, deltaTime, mods);
@@ -548,7 +729,10 @@ struct displayer {
             times_t m_step;
 
             //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
-            fcpp::internal::Renderer m_renderer;
+            internal::Renderer m_renderer;
+
+            //! @brief The running node-info windows.
+            std::vector<std::unique_ptr<info_window<F>>> m_info;
 
             //! @brief Last mouse X position.
             float m_mouseLastX;

@@ -62,7 +62,7 @@ namespace {
 
 
 /* --- CONSTRUCTOR --- */
-Renderer::Renderer(size_t antialias, std::string name) :
+Renderer::Renderer(size_t antialias, std::string name, bool master) :
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_gridFirst{ true },

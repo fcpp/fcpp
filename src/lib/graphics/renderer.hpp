@@ -36,7 +36,12 @@ namespace fcpp {
         class Renderer {
 		public:
 			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
-			Renderer(size_t antialias, std::string name);
+			Renderer(size_t antialias, std::string name, bool master = true);
+
+            //! @brief Renderer destructor closing the window.
+            ~Renderer() {
+                glfwDestroyWindow(m_window);
+            }
 
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();

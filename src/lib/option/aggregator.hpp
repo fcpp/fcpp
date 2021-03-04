@@ -915,7 +915,7 @@ class combine : public Ts... {
     template <typename S, typename... Ss>
     void output_impl(std::ostream& os, common::type_sequence<S,Ss...>) const {
         S::output(os);
-        header_impl(os, common::type_sequence<Ss...>());
+        output_impl(os, common::type_sequence<Ss...>());
     }
     void output_impl(std::ostream&, common::type_sequence<>) const {}
 };

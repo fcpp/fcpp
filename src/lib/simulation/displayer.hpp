@@ -611,13 +611,14 @@ struct displayer {
                 glfwSetKeyCallback(m_renderer.getWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
 
-                    if ( action == GLFW_PRESS ) {
+                    if (action == GLFW_PRESS) {
                         dspl.m_key_stroked.insert(key);
                         dspl.keyboardInput(key, true, 0, mods); // set deltaTime to 0?
-                    } else if ( action == GLFW_RELEASE ) {
+                    }
+                    else if (action == GLFW_RELEASE) {
                         dspl.m_key_stroked.erase(key);
                     }
-                });
+                    });
 
                 // Cursor position callback
                 glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
@@ -634,43 +635,75 @@ struct displayer {
                     dspl.m_mouseLastX = (float)xpos;
                     dspl.m_mouseLastY = (float)ypos;
 
-                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-                        if (!dspl.m_mouseRight) {
-                            dspl.m_mouseRight = 1;
-                            dspl.m_mouseRightX = xpos - (float)(dspl.m_renderer.getCurrentWidth() / 2);
-                            dspl.m_mouseRightY = (float)(dspl.m_renderer.getCurrentHeight() / 2) - ypos;
-                        }
-                        int mods = 0;
-                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                            mods |= GLFW_MOD_SHIFT;
-                        dspl.m_renderer.mouseInput(xoffset, yoffset, dspl.m_mouseRightX, dspl.m_mouseRightY, mouse_type::drag, mods);
-                    }
+                    dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::drag, 0);
+                    });
 
-                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
-                        dspl.m_mouseRight = 0;
-                        dspl.m_mouseRightX = 0.0f;
-                        dspl.m_mouseRightY = 0.0f;
-                    }
-                });
+                // Cursor click callback
+                glfwSetMouseButtonCallback(m_renderer.getWindow(), [](GLFWwindow* window, int button, int action, int mods) {
+                    net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                    dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::click, mods);
+                    });
 
                 // Cursor scroll callback
                 glfwSetScrollCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xoffset, double yoffset) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                    int mods = 0;
-                    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                        mods |= GLFW_MOD_SHIFT;
-                    dspl.m_renderer.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll, mods);
-                });
+                    dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll, 0);
+                    });
 
                 // Window close callback
-                glfwSetWindowCloseCallback(m_renderer.getWindow(), [](GLFWwindow* window){
+                glfwSetWindowCloseCallback(m_renderer.getWindow(), [](GLFWwindow* window) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     if (dspl.frequency() == 0) dspl.frequency(1);
                     dspl.terminate();
-                });
+                    });
             }
 
-            //!!! MOUSE INPUT IS MISHANDLED WITHIN THE CALLBACKS; CREATE THIS: void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {}
+            //! @brief It manages mouse input of the given type.
+            void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
+                switch (type) {
+                case mouse_type::click: {
+                    GLFWwindow* window{ m_renderer.getWindow() };
+                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                        float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
+                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
+
+                        // Ray vector goes from screen space to world space ()
+                        glm::vec4 clipRay{ rayX, rayY, -1.0f, 1.0f }; // it's in clip space; camera position at (0,0,0)
+                        glm::vec4 viewRay;
+                    }
+                    break;
+                }
+
+                case mouse_type::drag: {
+                    GLFWwindow* window{ m_renderer.getWindow() };
+                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                        if (!m_mouseRight) {
+                            m_mouseRight = 1;
+                            m_mouseRightX = m_mouseLastX - (float)(m_renderer.getCurrentWidth() / 2);
+                            m_mouseRightY = (float)(m_renderer.getCurrentHeight() / 2) - m_mouseLastY;
+                        }
+                        int mods = 0;
+                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                            mods |= GLFW_MOD_SHIFT;
+                        m_renderer.mouseInput(x, y, m_mouseRightX, m_mouseRightY, mouse_type::drag, mods);
+                    }
+                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+                        m_mouseRight = 0;
+                        m_mouseRightX = 0.0f;
+                        m_mouseRightY = 0.0f;
+                    }
+                    break;
+                }
+
+                case mouse_type::scroll: {
+                    int mods = 0;
+                    if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                        mods |= GLFW_MOD_SHIFT;
+                    m_renderer.mouseInput(x, y, 0.0, 0.0, mouse_type::scroll, mods);
+                    break;
+                }
+                }
+            }
 
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods) {

@@ -73,6 +73,9 @@ namespace fcpp {
             
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
+
+            //! @brief It returns the current position of the camera.
+            glm::vec3 getCameraPosition() const;
             
             //! @brief Returns viewport's current width.
             int getCurrentWidth();

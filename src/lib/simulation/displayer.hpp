@@ -520,9 +520,14 @@ struct displayer {
                     }
                     {
                         PROFILE_COUNT("displayer/text");
-                        // Draw simulation time (t) and FPS
+                        // Draw simulation time (t), camera position and FPS
+                        glm::vec3 pos{ m_renderer.getCameraPosition() };
+                        std::string cameraCoords = "Camera position: (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ", " + std::to_string(pos.z) + ")";
+                        m_renderer.drawText(cameraCoords, 16.0f, m_renderer.getCurrentHeight() - 16.0f, 0.25f);
+                        std::string cursorCoords = "Cursor position: (" + std::to_string(m_mouseLastX) + ", " + std::to_string(m_mouseLastY) + ")";
+                        m_renderer.drawText(cursorCoords, 16.0f, m_renderer.getCurrentHeight() - 32.0f, 0.25f);
                         m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
-                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth()-60.0f, 16.0f, 0.25f);
+                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth() - 60.0f, 16.0f, 0.25f);
                     }
                     {
                         PROFILE_COUNT("displayer/input");

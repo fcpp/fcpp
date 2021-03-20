@@ -674,6 +674,10 @@ float Renderer::getAspectRatio() {
     return (float)(m_currentWidth) / (float)(m_currentHeight);
 }
 
+glm::vec3 Renderer::getCameraPosition() const {
+    return m_camera.getPosition();
+}
+
 int Renderer::getCurrentWidth() {
     return m_currentWidth;
 }

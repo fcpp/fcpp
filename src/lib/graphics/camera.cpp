@@ -8,6 +8,8 @@
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/transform.hpp> 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_access.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 #include "lib/graphics/camera.hpp"
 #include "lib/graphics/input_types.hpp"
@@ -69,6 +71,11 @@ glm::mat4 const& Camera::getPerspective() const {
 
 glm::mat4 const& Camera::getOrthographic() const {
     return m_ortho;
+}
+
+glm::vec3 Camera::getPosition() const {
+    glm::vec4 col{ glm::column(glm::affineInverse(m_view), 3) };
+    return glm::vec3{ col.x, col.y, col.z };
 }
 
 void Camera::setScreen(float width, float height) {

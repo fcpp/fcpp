@@ -56,6 +56,9 @@ class Camera {
     //! @brief It returns camera's orthographic matrix.
     glm::mat4 const& getOrthographic() const;
 
+    //! @brief It returns the world space position of the camera.
+    glm::vec3 getPosition() const;
+
     //! @brief Sets the current screen's height, width and diagonal size given window size.
     void setScreen(float width, float height);
 

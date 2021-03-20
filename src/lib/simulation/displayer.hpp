@@ -107,7 +107,7 @@ class info_window {
     info_window(net& n, device_t uid) :
         m_net(n),
         m_uid(uid),
-        m_renderer(0, "node " + std::to_string(uid), false),
+        m_renderer(0, "node " + std::to_string(uid), false, n.getRenderer().getWindow()),
         m_thread(&info_window::draw_cycle, this) {}
 
     //! @brief Copy constructor.
@@ -127,9 +127,10 @@ class info_window {
         return glfwWindowShouldClose(m_renderer.getWindow());
     }
 
-  private:
+ private:
     //! @brief Main cycle.
     void draw_cycle() {
+        m_renderer.initializeContext(false);
         while (m_running) {
             draw();
             m_renderer.swapAndNext();
@@ -508,7 +509,8 @@ struct displayer {
                         double grid_scale = 1;
                         while (grid_scale * 200 < diagonal) grid_scale *= 10;
                         while (grid_scale * 20 > diagonal) grid_scale /= 10;
-                        m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale, m_texture);
+                        m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale);
+                        m_renderer.setGridTexture(m_texture);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
                     {
@@ -610,11 +612,6 @@ struct displayer {
                     } else if ( action == GLFW_RELEASE ) {
                         dspl.m_key_stroked.erase(key);
                     }
-
-                    /*// Erase not pressed keys from stroked list
-                    for ( std::unordered_set<int>::const_iterator it = myset.begin(); it != myset.end(); ++it ) {
-
-                    }*/
                 });
 
                 // Cursor position callback
@@ -700,7 +697,9 @@ struct displayer {
                         break;
                     // open info window for a random device
                     case GLFW_KEY_R:
+                        glfwMakeContextCurrent(NULL); // temporary
                         m_info.emplace_back(new info_window<F>(*this, P::net::next_int(P::net::node_size()-1)));
+                        glfwMakeContextCurrent(m_renderer.getWindow()); // temporary
                         break;
                     default:
                         // pass key to renderer

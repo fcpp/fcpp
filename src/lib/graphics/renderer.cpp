@@ -3,6 +3,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <thread>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -25,7 +26,7 @@ using namespace fcpp;
 using namespace fcpp::internal;
 
 
-/* --- PRIVATE (NON-INTEGRAL) CONSTANTS --- */
+/* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
     const std::string Renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_phong.glsl" };
     const std::string Renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_phong.glsl" };
@@ -53,6 +54,23 @@ using namespace fcpp::internal;
     const glm::vec3 Renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
 
 
+/* --- PRIVATE STATIC VARIABLES --- */
+int Renderer::s_planeIndexSize{ 0 };
+int Renderer::s_gridNormIndexSize{ 0 };
+int Renderer::s_gridHighIndexSize{ 0 };
+bool Renderer::s_commonIsReady{ false };
+bool Renderer::s_gridIsReady{ false };
+Shader Renderer::s_shaderProgramPhong;     // Am I initializing these Shaders? Memory leak?
+Shader Renderer::s_shaderProgramCol;       // Am I initializing these Shaders? Memory leak?
+Shader Renderer::s_shaderProgramTexture;   // Am I initializing these Shaders? Memory leak?
+Shader Renderer::s_shaderProgramFont;      // Am I initializing these Shaders? Memory leak?
+Shapes Renderer::s_shapes{};
+unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
+unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
+unsigned int Renderer::s_meshEBO[(int)index::SIZE];
+std::unordered_map<char, glyph> Renderer::s_glyphs{};
+
+
 /* --- LOCAL FUNCTIONS --- */
 namespace {
     inline glm::vec4 color_to_vec(color const& c) {
@@ -61,147 +79,77 @@ namespace {
 }
 
 
-/* --- CONSTRUCTOR --- */
-Renderer::Renderer(size_t antialias, std::string name, bool master) :
-    m_currentWidth{ SCR_DEFAULT_WIDTH },
-    m_currentHeight{ SCR_DEFAULT_HEIGHT },
-    m_gridFirst{ true },
-    m_gridShow{ true },
-    m_gridTexture{ 0 },
-    m_planeIndexSize{ 0 },
-    m_gridHighIndexSize{ 0 },
-    m_gridNormIndexSize{ 0 },
-    m_lightPos{ LIGHT_DEFAULT_POS },
-    m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
-    m_foreground{ 0.0f, 0.0f, 0.0f, 1.0f },
-    m_camera{},
-    m_shapes{} {
-    /* DEFINITION */
-    // Initialize GLFW
-    glfwInit();
+/* --- PRIVATE STATIC FUNCTIONS --- */
+void Renderer::initializeCommon() {
+    if (!s_commonIsReady) {
+        // Mark common structures as ready
+        s_commonIsReady = true;
 
-    // Set context options
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-    if (antialias > 1)
-        glfwWindowHint(GLFW_SAMPLES, antialias);
+        // Initialize FreeType
+        FT_Library ftLib;
+        if (FT_Init_FreeType(&ftLib))
+            throw std::runtime_error("ERROR::RENDERER::FREETYPE::LIB_INIT_FAILED\n");
+        FT_Face ftFace;
+        if (FT_New_Face(ftLib, FONT_PATH.c_str(), 0, &ftFace))
+            throw std::runtime_error("ERROR::RENDERER::FREETYPE::FONT_LOAD_FAILED (" + FONT_PATH + ")\n");
 
-    // Create window (and its context)
-    m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, name.c_str(), NULL, NULL);
-
-    if (m_window == NULL) {
-        glfwTerminate();
-        throw std::runtime_error("ERROR::RENDERER::GLFW::WINDOW_CREATION_FAILED\n");
-    }
-
-    // Set newly created window's context as current
-    glfwMakeContextCurrent(m_window);
-
-    // Initialize GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
-
-    // Initialize FreeType
-    FT_Library ftLib;
-    if (FT_Init_FreeType(&ftLib))
-        throw std::runtime_error("ERROR::RENDERER::FREETYPE::LIB_INIT_FAILED\n");
-    FT_Face ftFace;
-    if (FT_New_Face(ftLib, FONT_PATH.c_str(), 0, &ftFace))
-        throw std::runtime_error("ERROR::RENDERER::FREETYPE::FONT_LOAD_FAILED (" + FONT_PATH + ")\n");
-
-    // Generating glyphs' textures
-    FT_Set_Pixel_Sizes(ftFace, 0, FONT_DEFAULT_SIZE);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
-    for (unsigned char c = 0; c < 128; c++) {
-        // load character glyph 
-        if (FT_Load_Char(ftFace, c, FT_LOAD_RENDER)) {
-            std::cerr << "ERROR::RENDERER::FREETYPE::GLYPH_LOAD_FAILED (" << c << ")\n";
-            continue;
+        // Generating glyphs' textures
+        FT_Set_Pixel_Sizes(ftFace, 0, FONT_DEFAULT_SIZE);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+        for (unsigned char c = 0; c < 128; c++) {
+            // load character glyph 
+            if (FT_Load_Char(ftFace, c, FT_LOAD_RENDER)) {
+                std::cerr << "ERROR::RENDERER::FREETYPE::GLYPH_LOAD_FAILED (" << c << ")\n";
+                continue;
+            }
+            // generate texture
+            unsigned int texture;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RED,
+                ftFace->glyph->bitmap.width,
+                ftFace->glyph->bitmap.rows,
+                0,
+                GL_RED,
+                GL_UNSIGNED_BYTE,
+                ftFace->glyph->bitmap.buffer
+            );
+            // set texture options
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            // now store character for later use
+            glyph gl = {
+                texture,
+                glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
+                glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
+                (unsigned int)(ftFace->glyph->advance.x)
+            };
+            s_glyphs.insert(std::pair<char, glyph>(c, gl));
         }
-        // generate texture
-        unsigned int texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RED,
-            ftFace->glyph->bitmap.width,
-            ftFace->glyph->bitmap.rows,
-            0,
-            GL_RED,
-            GL_UNSIGNED_BYTE,
-            ftFace->glyph->bitmap.buffer
-        );
-        // set texture options
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        // now store character for later use
-        glyph gl = {
-            texture, 
-            glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
-            glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
-            (unsigned int)(ftFace->glyph->advance.x)
-        };
-        m_glyphs.insert(std::pair<char, glyph>(c, gl));
+
+        // Deallocate FreeType structures
+        FT_Done_Face(ftFace);
+        FT_Done_FreeType(ftLib);
+
+        /* The following code crashes the program:
+         *  // Delete dummy shader objects
+         *  delete &s_shaderProgramPhong;
+         *  delete &s_shaderProgramCol;
+         *  delete &s_shaderProgramTexture;
+         *  delete &s_shaderProgramFont;
+         */
+
+        // Generate actual shader programs
+        s_shaderProgramPhong = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
+        s_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
+        s_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
+        s_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
     }
-    
-    // Deallocate FreeType structures
-    FT_Done_Face(ftFace);
-    FT_Done_FreeType(ftLib);
-
-    // Set viewport
-    glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
-
-    // Generate actual shader programs
-    m_shaderProgramPhong = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
-    m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
-    m_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
-    m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
-    
-    // Allocate buffers
-    allocateMeshBuffers();
-    allocateShapeBuffers();
-
-    // Enabling depth test
-    glEnable(GL_DEPTH_TEST);
-
-    // Enable blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Enable antialiasing
-    if (antialias > 1)
-        glEnable(GL_MULTISAMPLE);
-
-    // Uncomment this call to draw in wireframe polygons
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    // Clear first frame
-    glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Set initial aspect ratio
-	m_camera.setScreen(m_currentWidth, m_currentHeight);
-}
-
-
-/* --- PRIVATE FUNCTIONS --- */
-int Renderer::euclid(int a, int b) {
-    int r;
-    while(b != 0) //repeat until b is 0
-    {
-         r = a % b;
-         a = b; 
-         b = r; //swap a and b
-    }
-    return a; //the result is a when b is equal to 0
 }
 
 unsigned int Renderer::loadTexture(std::string path) {
@@ -235,21 +183,80 @@ bool Renderer::unloadTexture(unsigned int id) {
     unsigned char isTexture{ glIsTexture(id) };
     bool success{ isTexture == GL_TRUE };
     glDeleteTextures(1, &id); // be aware: glDeleteTextures() silently ignores 0's and names that do not correspond to existing textures
-    if(!success) std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
+    if (!success) std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
 
     return success;
 }
 
-void Renderer::allocateMeshBuffers() {
+
+/* --- CONSTRUCTOR --- */
+Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* masterPtr) :
+    m_currentWidth{ SCR_DEFAULT_WIDTH },
+    m_currentHeight{ SCR_DEFAULT_HEIGHT },
+    m_master{ master },
+    m_gridShow{ true },
+    m_gridTexture{ 0 },
+    m_lightPos{ LIGHT_DEFAULT_POS },
+    m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
+    m_foreground{ 0.0f, 0.0f, 0.0f, 1.0f },
+    m_camera{} {
+    /* DEFINITION */
+    // Initialize GLFW
+    if (m_master) glfwInit();
+
+    // Set context options
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+    if (antialias > 1)
+        glfwWindowHint(GLFW_SAMPLES, antialias);
+
+    // Create window (and its context)
+    m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, name.c_str(), NULL, masterPtr);
+
+    if (m_window == NULL) {
+        glfwTerminate();
+        throw std::runtime_error("ERROR::RENDERER::GLFW::WINDOW_CREATION_FAILED\n");
+    }
+
+    // Set initial aspect ratio
+	m_camera.setScreen(m_currentWidth, m_currentHeight);
+
+    // Initialize context if master
+    if (m_master) initializeContext(true);
+
+    // Run common initialization if master
+    if (m_master and !s_commonIsReady) initializeCommon();
+}
+
+
+/* --- PRIVATE FUNCTIONS --- */
+int Renderer::euclid(int a, int b) {
+    int r;
+    while(b != 0) //repeat until b is 0
+    {
+         r = a % b;
+         a = b; 
+         b = r; //swap a and b
+    }
+    return a; //the result is a when b is equal to 0
+}
+
+void Renderer::allocateMeshBuffers(bool loadVertex) {
     // Generate VAOs, VBOs and EBOs for general meshes
     glGenVertexArrays((int)vertex::SIZE, m_meshVAO);
-    glGenBuffers((int)vertex::SIZE, m_meshVBO);
-    glGenBuffers((int)index::SIZE, m_meshEBO);
+    if (loadVertex) {
+        glGenBuffers((int)vertex::SIZE, s_meshVBO);
+        glGenBuffers((int)index::SIZE, s_meshEBO);
+    }
 
     // Allocate (dynamic) font buffers
     glBindVertexArray(m_meshVAO[(int)vertex::font]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::font]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::font]);
+    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -257,8 +264,8 @@ void Renderer::allocateMeshBuffers() {
 
     // Allocate (dynamic) single line buffers
     glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::singleLine]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
+    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -266,18 +273,18 @@ void Renderer::allocateMeshBuffers() {
 
     // Allocate (dynamic) neighbour star buffers
     glBindVertexArray(m_meshVAO[(int)vertex::star]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::star]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
+    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
-void Renderer::allocateShapeBuffers() {
+void Renderer::allocateShapeBuffers(bool loadVertex) {
     // Generate VAOs and VBOs for standard shapes
     glGenVertexArrays((int)shape::SIZE, m_shapeVAO);
-    glGenBuffers((int)shape::SIZE, m_shapeVBO);
+    if (loadVertex) glGenBuffers((int)shape::SIZE, s_shapeVBO);
 
     for (int i = 0; i < (int)shape::SIZE; i++) {
         // Get actual shape
@@ -285,8 +292,8 @@ void Renderer::allocateShapeBuffers() {
 
         // Allocate (static) shape buffers
         glBindVertexArray(m_shapeVAO[(int)sh]);
-        glBindBuffer(GL_ARRAY_BUFFER, m_shapeVBO[(int)sh]);
-        glBufferData(GL_ARRAY_BUFFER, m_shapes[sh].data.size() * sizeof(float), m_shapes[sh].data.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, s_shapeVBO[(int)sh]);
+        if (loadVertex) glBufferData(GL_ARRAY_BUFFER, s_shapes[sh].data.size() * sizeof(float), s_shapes[sh].data.data(), GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -298,9 +305,46 @@ void Renderer::allocateShapeBuffers() {
 
 
 /* --- PUBLIC FUNCTIONS --- */
+void Renderer::initializeContext(bool master) {
+    // Set window's context as thread's current
+    glfwMakeContextCurrent(m_window);
+
+    // Initialize GLAD
+    if (master and !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+        throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
+
+    // Set viewport
+    glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
+
+    // Enabling V-Sync
+    glfwSwapInterval(1);
+
+    // Enabling depth test
+    glEnable(GL_DEPTH_TEST);
+
+    // Enable blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Enable antialiasing
+    //if (antialias > 1) <----------- fix this later !!!!!!!!!!!!!
+        glEnable(GL_MULTISAMPLE);
+
+    // Uncomment this call to draw in wireframe polygons
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    // Clear first frame
+    glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Allocate buffers
+    allocateMeshBuffers(master);
+    allocateShapeBuffers(master);
+}
+
 void Renderer::swapAndNext() {
     // Check and call events, swap double buffers
-    glfwPollEvents();
+    if (m_master) glfwPollEvents();
     glfwSwapBuffers(m_window);
 
     // Clear frame
@@ -308,11 +352,11 @@ void Renderer::swapAndNext() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, std::string texture) {
+void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) {
     // Initialize grid and plane buffers if they are not already
-    if (m_gridFirst) {
+    if (!s_gridIsReady) {
         // The grid is initiated
-        m_gridFirst = false;
+        s_gridIsReady = true;
 
         // Calculate data for mesh generation
         int approx{ (gridMax.x - gridMin.x) * (gridMax.y - gridMin.y) > 2000 * gridScale * gridScale ? 10 : 1 };
@@ -389,16 +433,16 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, 
 
         // Storing grid mesh
         glBindVertexArray(m_meshVAO[(int)vertex::grid]);
-        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::grid]);
+        glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::grid]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(gridMesh), gridMesh, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridHighIndex), gridHighIndex, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridNormIndex), gridNormIndex, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        m_gridNormIndexSize = sizeof(gridNormIndex);
-        m_gridHighIndexSize = sizeof(gridHighIndex);
+        s_gridNormIndexSize = sizeof(gridNormIndex);
+        s_gridHighIndexSize = sizeof(gridHighIndex);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -418,26 +462,23 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, 
 
         // Storing plane mesh
         glBindVertexArray(m_meshVAO[(int)vertex::plane]);
-        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::plane]);
+        glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::plane]);
         glBufferData(GL_ARRAY_BUFFER, sizeof(planeMesh), planeMesh, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::plane]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::plane]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(planeIndex), planeIndex, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
-        m_planeIndexSize = sizeof(planeIndex);
+        s_planeIndexSize = sizeof(planeIndex);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        // Loading texture
-        if (texture.compare("") != 0) setGridTexture(texture);
     }
 }
 
-void Renderer::drawGrid(float planeAlpha) {
-    if (!m_gridFirst) {
+void Renderer::drawGrid(float planeAlpha) const {
+    if (s_gridIsReady) {
         // Create matrices (used several times)
         glm::mat4 const& projection{ m_camera.getPerspective() };
         glm::mat4 const& view{ m_camera.getView() };
@@ -445,19 +486,19 @@ void Renderer::drawGrid(float planeAlpha) {
 
         if (m_gridShow) {
             // Set up shader program
-            m_shaderProgramCol.use();
-            m_shaderProgramCol.setMat4("u_projection", projection);
-            m_shaderProgramCol.setMat4("u_view", view);
-            m_shaderProgramCol.setMat4("u_model", model);
+            s_shaderProgramCol.use();
+            s_shaderProgramCol.setMat4("u_projection", projection);
+            s_shaderProgramCol.setMat4("u_view", view);
+            s_shaderProgramCol.setMat4("u_model", model);
 
             // Draw grid
             glBindVertexArray(m_meshVAO[(int)vertex::grid]);
-            m_shaderProgramCol.setVec4("u_color", m_foreground);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
-            glDrawElements(GL_LINES, m_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
-            m_shaderProgramCol.setVec4("u_color", m_background);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
-            glDrawElements(GL_LINES, m_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
+            s_shaderProgramCol.setVec4("u_color", m_foreground);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+            glDrawElements(GL_LINES, s_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
+            s_shaderProgramCol.setVec4("u_color", m_background);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+            glDrawElements(GL_LINES, s_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -466,10 +507,10 @@ void Renderer::drawGrid(float planeAlpha) {
         // Draw plane
         if (planeAlpha > 0.0f) {
             // Set up shader program
-            m_shaderProgramTexture.use();
-            m_shaderProgramTexture.setMat4("u_projection", projection);
-            m_shaderProgramTexture.setMat4("u_view", view);
-            m_shaderProgramTexture.setMat4("u_model", model);
+            s_shaderProgramTexture.use();
+            s_shaderProgramTexture.setMat4("u_projection", projection);
+            s_shaderProgramTexture.setMat4("u_view", view);
+            s_shaderProgramTexture.setMat4("u_model", model);
 
             glm::vec4 col;
             if (m_gridTexture == 0) {
@@ -477,19 +518,19 @@ void Renderer::drawGrid(float planeAlpha) {
                 col.y = (m_background[1] + m_foreground[1]) / 2;
                 col.z = (m_background[2] + m_foreground[2]) / 2;
                 col.w = planeAlpha;
-                m_shaderProgramTexture.setBool("u_drawTexture", false);
+                s_shaderProgramTexture.setBool("u_drawTexture", false);
             } else {
                 col.x = col.y = col.z = 1.0f;
                 col.w = planeAlpha;
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, m_gridTexture);
-                m_shaderProgramTexture.setBool("u_drawTexture", true);
+                s_shaderProgramTexture.setBool("u_drawTexture", true);
             }
-            m_shaderProgramTexture.setVec4("u_color", col);
-            m_shaderProgramTexture.setInt("u_texture", 0);
+            s_shaderProgramTexture.setVec4("u_color", col);
+            s_shaderProgramTexture.setInt("u_texture", 0);
             glDepthMask(false);
             glBindVertexArray(m_meshVAO[(int)vertex::plane]);
-            glDrawElements(GL_TRIANGLES, m_planeIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, s_planeIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
             glDepthMask(true);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -508,32 +549,32 @@ void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
     glm::mat3 normal{ glm::transpose(glm::inverse(view * model)) };
 
     // Draw shape
-    m_shaderProgramPhong.use();
-    m_shaderProgramPhong.setVec3("u_lightPos", m_lightPos);
-    m_shaderProgramPhong.setFloat("u_ambientStrength", 0.4f);
-    m_shaderProgramPhong.setVec3("u_lightColor", LIGHT_COLOR);
-    m_shaderProgramPhong.setMat4("u_projection", projection);
-    m_shaderProgramPhong.setMat4("u_view", view);
-    m_shaderProgramPhong.setMat4("u_model", model);
-    m_shaderProgramPhong.setMat3("u_normal", normal);
+    s_shaderProgramPhong.use();
+    s_shaderProgramPhong.setVec3("u_lightPos", m_lightPos);
+    s_shaderProgramPhong.setFloat("u_ambientStrength", 0.4f);
+    s_shaderProgramPhong.setVec3("u_lightColor", LIGHT_COLOR);
+    s_shaderProgramPhong.setMat4("u_projection", projection);
+    s_shaderProgramPhong.setMat4("u_view", view);
+    s_shaderProgramPhong.setMat4("u_model", model);
+    s_shaderProgramPhong.setMat3("u_normal", normal);
     glBindVertexArray(m_shapeVAO[(int)sh]);
 
     switch (c.size()) {
     default:
     case 1:
-        m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
-        glDrawArrays(GL_TRIANGLES, 0, m_shapes[sh].size[3]);
+        s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
+        glDrawArrays(GL_TRIANGLES, 0, s_shapes[sh].size[3]);
         break;
     case 2:
-        m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[1]));
-        glDrawArrays(GL_TRIANGLES, 0, m_shapes[sh].size[2]);
-        m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
-        glDrawArrays(GL_TRIANGLES, m_shapes[sh].size[2], m_shapes[sh].size[3] - m_shapes[sh].size[2]);
+        s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[1]));
+        glDrawArrays(GL_TRIANGLES, 0, s_shapes[sh].size[2]);
+        s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
+        glDrawArrays(GL_TRIANGLES, s_shapes[sh].size[2], s_shapes[sh].size[3] - s_shapes[sh].size[2]);
         break;
     case 3:
         for (int i = 0; i < 3; i++) {
-            m_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[2 - i]));
-            glDrawArrays(GL_TRIANGLES, m_shapes[sh].size[i], m_shapes[sh].size[i+1] - m_shapes[sh].size[i]);
+            s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[2 - i]));
+            glDrawArrays(GL_TRIANGLES, s_shapes[sh].size[i], s_shapes[sh].size[i+1] - s_shapes[sh].size[i]);
         }
         break;
     }
@@ -544,13 +585,13 @@ void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
             p.x, p.y, p.z,
             p.x, p.y, 0.0f
         };
-        m_shaderProgramCol.use();
-        m_shaderProgramCol.setMat4("u_projection", projection);
-        m_shaderProgramCol.setMat4("u_view", view);
-        m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
-        m_shaderProgramCol.setVec4("u_color", color_to_vec(c[0]));
+        s_shaderProgramCol.use();
+        s_shaderProgramCol.setMat4("u_projection", projection);
+        s_shaderProgramCol.setMat4("u_view", view);
+        s_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+        s_shaderProgramCol.setVec4("u_color", color_to_vec(c[0]));
         glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
-        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::singleLine]);
+        glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_LINES, 0, 6);
@@ -573,32 +614,31 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
         starData[6 * i + 5] = np[i][2];
     }
 
-    m_shaderProgramCol.use();
-    m_shaderProgramCol.setMat4("u_projection", projection);
-    m_shaderProgramCol.setMat4("u_view", view);
-    m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
-    m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
+    s_shaderProgramCol.use();
+    s_shaderProgramCol.setMat4("u_projection", projection);
+    s_shaderProgramCol.setMat4("u_view", view);
+    s_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+    s_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
     glBindVertexArray(m_meshVAO[(int)vertex::star]);
-    glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::star]);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(starData), starData, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDrawArrays(GL_LINES, 0, 2 * np.size());
 }
 
-void Renderer::drawText(std::string text, float x, float y, float scale)
-{
+void Renderer::drawText(std::string text, float x, float y, float scale) const {
     // Activate corresponding render state	
-    m_shaderProgramFont.use();
-    m_shaderProgramFont.setVec3("u_textColor", m_foreground);
-    m_shaderProgramFont.setInt("u_text", 0);
-    m_shaderProgramFont.setMat4("u_projection", m_camera.getOrthographic());
+    s_shaderProgramFont.use();
+    s_shaderProgramFont.setVec3("u_textColor", m_foreground);
+    s_shaderProgramFont.setInt("u_text", 0);
+    s_shaderProgramFont.setMat4("u_projection", m_camera.getOrthographic());
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(m_meshVAO[(int)vertex::font]);
 
     // Iterate through all characters
     std::string::const_iterator c;
     for (c = text.begin(); c != text.end(); c++) {
-        glyph ch = m_glyphs[*c];
+        glyph ch = s_glyphs[*c];
 
         float xpos = x + ch.bearing.x * scale;
         float ypos = y - (ch.size.y - ch.bearing.y) * scale;
@@ -618,7 +658,7 @@ void Renderer::drawText(std::string text, float x, float y, float scale)
         // Render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.textureID);
         // Update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, m_meshVBO[(int)vertex::font]);
+        glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::font]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         // Render quad
@@ -642,7 +682,7 @@ int Renderer::getCurrentHeight() {
     return m_currentHeight;
 }
 
-GLFWwindow* Renderer::getWindow() {
+GLFWwindow* Renderer::getWindow() const {
     return m_window;
 }
 
@@ -684,7 +724,11 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
 }
 
 void Renderer::viewportResize(int width, int height) {
+#ifdef __APPLE__
+    glViewport(0, 0, width/4, height/4); // this SHOULD fix the window resize issue on OS-X
+#else
     glViewport(0, 0, width, height);
+#endif
     m_currentWidth = width;
     m_currentHeight = height;
 	m_camera.setScreen(width, height);

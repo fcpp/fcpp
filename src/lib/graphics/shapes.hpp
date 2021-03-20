@@ -17,12 +17,6 @@ namespace fcpp {
 //! @brief Supported shapes for representing nodes.
 enum class shape { tetrahedron, cube, octahedron, icosahedron, sphere, star, SIZE };
 
-//! @brief Supported pointers to vertex buffers.
-enum class vertex { font, singleLine, star, plane, grid, SIZE };
-
-//! @brief Supported pointers to index buffers.
-enum class index { plane, gridNorm, gridHigh, SIZE };
-
 
 //! @brief Namespace containing objects of internal use.
 namespace internal {

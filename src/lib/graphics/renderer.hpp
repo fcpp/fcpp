@@ -25,6 +25,13 @@
 
 namespace fcpp {
 	namespace internal {
+        //! @brief Supported pointers to vertex buffers.
+        enum class vertex { font, singleLine, star, plane, grid, SIZE };
+
+        //! @brief Supported pointers to index buffers.
+        enum class index { plane, gridNorm, gridHigh, SIZE };
+
+        //! @brief Glyph struct.
         struct glyph {
             unsigned int textureID;  // ID handle of the glyph texture
             glm::ivec2   size;       // size of glyph
@@ -36,21 +43,24 @@ namespace fcpp {
         class Renderer {
 		public:
 			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
-			Renderer(size_t antialias, std::string name, bool master = true);
+			Renderer(size_t antialias, std::string name, bool master = true, GLFWwindow* masterPtr = NULL);
 
             //! @brief Renderer destructor closing the window.
             ~Renderer() {
                 glfwDestroyWindow(m_window);
             }
 
+            //! @brief It initializes the context on the current thread.
+            void initializeContext(bool master = true);
+
             //! @brief Swaps the frame buffers and prepares everything for the next frame.
             void swapAndNext();
 
             //! @brief It creates the grid mesh to be drawn.
-            void makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale, std::string texture = "");
+            void makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale);
 
             //! @brief It draws the grid on the screen.
-            void drawGrid(float planeAlpha);
+            void drawGrid(float planeAlpha) const;
 
             //! @brief It draws the defined shape, given the information on color(s), dimension and position.
             void drawShape(shape sh, glm::vec3 const& p, double d, std::vector<color> const& c) const;
@@ -59,7 +69,7 @@ namespace fcpp {
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
             
             //! @brief It draws the specified text in the specified coordinates, scale and color.
-            void drawText(std::string text, float x, float y, float scale);
+            void drawText(std::string text, float x, float y, float scale) const;
             
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
@@ -71,7 +81,7 @@ namespace fcpp {
             int getCurrentHeight();
 
             //! @brief Returns the pointer to the Renderer's m_window
-            GLFWwindow* getWindow();
+            GLFWwindow* getWindow() const;
             
             //! @brief It runs m_camera's setViewDefault() with the given attributes.
             void setDefaultCameraView(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch);
@@ -137,41 +147,68 @@ namespace fcpp {
             //! @brief Default light color.
             static const glm::vec3 LIGHT_COLOR;
 
+            //! @brief Main shader program, with phong lighting caluclations and color info.
+            static Shader s_shaderProgramPhong;
+
+            //! @brief Additional shader program used for simple shapes and uniform color value.
+            static Shader s_shaderProgramCol;
+
+            //! @brief Additional shader program used for texture rendering.
+            static Shader s_shaderProgramTexture;
+
+            //! @brief Additional shader program used for fonts.
+            static Shader s_shaderProgramFont;
+
+            //! @brief It contains all the vertex information of the standard shapes.
+            static Shapes s_shapes;
+
+            //! @brief Vertex Buffer Objects for standard shapes; it can be shared among several contexts.
+            static unsigned int s_shapeVBO[(int)shape::SIZE];
+
+            //! @brief Vertex Buffer Objects for commonly used meshes; it can be shared among several contexts.
+            static unsigned int s_meshVBO[(int)vertex::SIZE];
+
+            //! @brief Element Buffer Objects for commonly used meshes; it can be shared among several contexts.
+            static unsigned int s_meshEBO[(int)index::SIZE];
+
+            //! @brief Data structure mapping chars with glyphs.
+            static std::unordered_map<char, glyph> s_glyphs;
+            
+            //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            static int s_planeIndexSize;
+
+            //! @brief Size (in bytes) of the index data of grid's non-highlighted lines; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            static int s_gridNormIndexSize;
+
+            //! @brief Size (in bytes) of the index data of grid's highlighted lines; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
+            static int s_gridHighIndexSize;
+
+            //! @brief It states whether the static structures and variables have been initialized.
+            static bool s_commonIsReady;
+
+            //! @brief It states whether the grid mesh has been calculated.
+            static bool s_gridIsReady;
+
+            //! @brief It initializes all the static structures and variables, common to the Renderer instances.
+            static void initializeCommon();
+
+            //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
+            static unsigned int loadTexture(std::string path);
+
+            //! @brief It unloads the defined texture, given its path.
+            static bool unloadTexture(unsigned int id);
+
             //! @brief Window object for GLFW; it stores OpenGL context information.
             GLFWwindow* m_window;
 
-            //! @brief Main shader program, with phong lighting caluclations and color info.
-            Shader m_shaderProgramPhong;
+            //! @brief It specifies if the renderer is the main one (master) or not.
+            bool m_master;
 
-            //! @brief Additional shader program used for simple shapes and uniform color value.
-            Shader m_shaderProgramCol;
-
-            //! @brief Additional shader program used for texture rendering.
-            Shader m_shaderProgramTexture;
-
-            //! @brief Additional shader program used for fonts.
-            Shader m_shaderProgramFont;
-
-            //! @brief It contains all the vertex information of the standard shapes.
-            Shapes m_shapes;
-
-            //! @brief Vertex Array Objects for standard shapes.
+            //! @brief Vertex Array Objects for standard shapes; it's per context and it can't be shared with others.
             unsigned int m_shapeVAO[(int)shape::SIZE];
 
-            //! @brief Vertex Buffer Objects for standard shapes.
-            unsigned int m_shapeVBO[(int)shape::SIZE];
-
-            //! @brief Vertex Array Objects for commonly used meshes.
+            //! @brief Vertex Array Objects for commonly used meshes; it's per context and it can't be shared with others.
             unsigned int m_meshVAO[(int)vertex::SIZE];
-
-            //! @brief Vertex Buffer Objects for commonly used meshes.
-            unsigned int m_meshVBO[(int)vertex::SIZE];
-
-            //! @brief Element Buffer Objects for commonly used meshes.
-            unsigned int m_meshEBO[(int)index::SIZE];
-            
-            //! @brief Data structure mapping chars with glyphs.
-            std::unordered_map<char, glyph> m_glyphs;
 
             //! @brief Current width of the window.
             unsigned int m_currentWidth;
@@ -182,20 +219,8 @@ namespace fcpp {
             //! @brief Texture ID of the (optional) texture map for the grid.
             unsigned int m_gridTexture;
 
-            //! @brief It checks if it's the first time it drawn the grid.
-            bool m_gridFirst;
-
             //! @brief It states if the grid should be drawn.
             bool m_gridShow;
-
-            //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
-            int m_planeIndexSize;
-
-            //! @brief Size (in bytes) of the index data of grid's non-highlighted lines; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
-            int m_gridNormIndexSize;
-
-            //! @brief Size (in bytes) of the index data of grid's highlighted lines; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
-            int m_gridHighIndexSize;
 
             //! @brief Current position of light source.
             glm::vec3 m_lightPos;
@@ -212,17 +237,11 @@ namespace fcpp {
             //! @brief Euclid's algorithm to get the greatest common divisor.
             int euclid(int a, int b);
 
-            //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
-            unsigned int loadTexture(std::string path);
-
-            //! @brief It unloads the defined texture, given its path.
-            bool unloadTexture(unsigned int id);
-
             //! @brief It loads the vertex and index data for the commonly used meshes into their respective buffers (the grid is generated separately with makeGrid()).
-            void allocateMeshBuffers();
+            void allocateMeshBuffers(bool loadVertex = true);
 
             //! @brief It loads the vertex and index data for the standard shapes into their respective buffers.
-            void allocateShapeBuffers();
+            void allocateShapeBuffers(bool loadVertex = true);
 		};
 	}
 }

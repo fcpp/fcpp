@@ -73,9 +73,6 @@ namespace fcpp {
             
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
-
-            //! @brief It returns the current position of the camera.
-            glm::vec3 getCameraPosition() const;
             
             //! @brief Returns viewport's current width.
             int getCurrentWidth();
@@ -86,8 +83,11 @@ namespace fcpp {
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow() const;
             
-            //! @brief It runs m_camera's setViewDefault() with the given attributes.
-            void setDefaultCameraView(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch);
+            //! @brief It returns the reference of the camera object.
+            Camera& getCamera();
+
+            //! @brief It returns the (constant) reference of the camera object.
+            Camera const& getCamera() const;
 
             //! @brief It loads and sets the new texture to be displayed on the grid's plane.
             bool setGridTexture(std::string path);

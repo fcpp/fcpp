@@ -504,7 +504,7 @@ struct displayer {
                         dz /= tan(45.0f / 2) * 1.4;
                         camera_pos.z = dz;
                         m_renderer.setLightPosition(camera_pos);
-                        m_renderer.setDefaultCameraView(camera_pos, dz, glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
+                        m_renderer.getCamera().setViewDefault(camera_pos, dz, glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
                         double diagonal = glm::length(viewport_size);
                         double grid_scale = 1;
                         while (grid_scale * 200 < diagonal) grid_scale *= 10;
@@ -521,7 +521,7 @@ struct displayer {
                     {
                         PROFILE_COUNT("displayer/text");
                         // Draw simulation time (t), camera position and FPS
-                        glm::vec3 pos{ m_renderer.getCameraPosition() };
+                        glm::vec3 pos{ m_renderer.getCamera().getPosition() };
                         std::string cameraCoords = "Camera position: (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ", " + std::to_string(pos.z) + ")";
                         m_renderer.drawText(cameraCoords, 16.0f, m_renderer.getCurrentHeight() - 16.0f, 0.25f);
                         std::string cursorCoords = "Cursor position: (" + std::to_string(m_mouseLastX) + ", " + std::to_string(m_mouseLastY) + ")";

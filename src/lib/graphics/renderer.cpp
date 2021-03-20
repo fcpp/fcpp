@@ -674,10 +674,6 @@ float Renderer::getAspectRatio() {
     return (float)(m_currentWidth) / (float)(m_currentHeight);
 }
 
-glm::vec3 Renderer::getCameraPosition() const {
-    return m_camera.getPosition();
-}
-
 int Renderer::getCurrentWidth() {
     return m_currentWidth;
 }
@@ -690,8 +686,12 @@ GLFWwindow* Renderer::getWindow() const {
     return m_window;
 }
 
-void Renderer::setDefaultCameraView(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch) {
-    m_camera.setViewDefault(position, depth, worldUp, yaw, pitch);
+Camera& Renderer::getCamera() {
+    return m_camera;
+}
+
+Camera const& Renderer::getCamera() const {
+    return m_camera;
 }
 
 bool Renderer::setGridTexture(std::string path) {

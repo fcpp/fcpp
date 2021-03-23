@@ -26,6 +26,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image/stb_image.h>
 
@@ -664,12 +665,24 @@ struct displayer {
                 case mouse_type::click: {
                     GLFWwindow* window{ m_renderer.getWindow() };
                     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                        // Raycast caluclation
+                        // (x, y) from screen space coordinates to NDC
                         float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
                         float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
 
-                        // Ray vector goes from screen space to world space ()
-                        glm::vec4 clipRay{ rayX, rayY, -1.0f, 1.0f }; // it's in clip space; camera position at (0,0,0)
-                        glm::vec4 viewRay;
+                        // Ray vector goes from screen space to world space (backwards)
+                        // Ray in clip space; camera position at (0,0,0)
+                        glm::vec4 clipRay{ rayX, rayY, -1.0f, 1.0f };
+
+                        // Applying inverse of projection matrix in order to go into view space
+                        glm::vec4 viewRay{ (glm::vec4)(glm::affineInverse(m_renderer.getCamera().getPerspective()) * clipRay) };
+                        viewRay.z = -1.0f;
+                        viewRay.w = 0.0f;
+
+                        // Applying inverse of view matrix in order to go into world space
+                        glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
+                        glm::vec3 worldRay{ worldRay4.x, worldRay4.y, worldRay4.z };
+                        worldRay = glm::normalize(worldRay);
                     }
                     break;
                 }

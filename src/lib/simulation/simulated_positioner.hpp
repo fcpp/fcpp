@@ -114,6 +114,7 @@ struct simulated_positioner {
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get_or<tags::x>(t, position_type{})), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{INF} {
                 static_assert(common::tagged_tuple<S,T>::tags::template count<tags::x> >= 1, MISSING_TAG_MESSAGE);
                 m_last = TIME_MIN;
+                fcpp::details::self(m_nbr_vec, P::node::uid) = vec<dimension>();
             }
 
             #undef MISSING_TAG_MESSAGE

@@ -447,6 +447,7 @@ struct displayer {
                 m_step( common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) ),
                 m_viewport_max{ -INF, -INF, -INF },
                 m_viewport_min{ +INF, +INF, +INF },
+                m_rayCast{ 0.0, 0.0, 0.0 },
                 m_renderer{antialias, common::get_or<tags::name>(t, "FCPP")},
                 m_mouseLastX{ 0.0f },
                 m_mouseLastY{ 0.0f },
@@ -527,6 +528,8 @@ struct displayer {
                         m_renderer.drawText(cameraCoords, 16.0f, m_renderer.getCurrentHeight() - 16.0f, 0.25f);
                         std::string cursorCoords = "Cursor position: (" + std::to_string(m_mouseLastX) + ", " + std::to_string(m_mouseLastY) + ")";
                         m_renderer.drawText(cursorCoords, 16.0f, m_renderer.getCurrentHeight() - 32.0f, 0.25f);
+                        std::string rayCoords = "Ray cast: (" + std::to_string(m_rayCast.x) + ", " + std::to_string(m_rayCast.y) + ", " + std::to_string(m_rayCast.z) + ")";
+                        m_renderer.drawText(rayCoords, 16.0f, m_renderer.getCurrentHeight() - 48.0f, 0.25f);
                         m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
                         m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth() - 60.0f, 16.0f, 0.25f);
                     }
@@ -659,62 +662,75 @@ struct displayer {
                     });
             }
 
+            //! @brief It checks if the ray of direction d (unit vector) and position p intersects with a sphere of radius r at position c.
+            bool intersectSphere(const glm::vec3& p, const glm::vec3& d, float r) {
+                // Sources: https://stackoverflow.com/questions/20140711/picking-in-3d-with-ray-tracing-using-ninevehgl-or-opengl-i-phone/20143963#20143963
+                //          http://www.lighthouse3d.com/tutorials/maths/ray-sphere-intersection/
+
+                // Define vector from p to c
+                glm::vec3 vpc{ c - p }; 
+
+                // WIP......
+            }
+
             //! @brief It manages mouse input of the given type.
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
                 switch (type) {
-                case mouse_type::click: {
-                    GLFWwindow* window{ m_renderer.getWindow() };
-                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-                        // Raycast caluclation
-                        // (x, y) from screen space coordinates to NDC
-                        float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
-                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
+                    case mouse_type::click: {
+                        GLFWwindow* window{ m_renderer.getWindow() };
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                            // Raycast caluclation
+                            // (x, y) from screen space coordinates to NDC
+                            float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
+                            float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
 
-                        // Ray vector goes from screen space to world space (backwards)
-                        // Ray in clip space; camera position at (0,0,0)
-                        glm::vec4 clipRay{ rayX, rayY, -1.0f, 1.0f };
+                            // Ray vector goes from screen space to world space (backwards)
+                            // Ray in clip space; camera position at (0,0,0)
+                            glm::vec4 clipRay{ rayX, rayY, -1.0f, 1.0f };
 
-                        // Applying inverse of projection matrix in order to go into view space
-                        glm::vec4 viewRay{ (glm::vec4)(glm::affineInverse(m_renderer.getCamera().getPerspective()) * clipRay) };
-                        viewRay.z = -1.0f;
-                        viewRay.w = 0.0f;
+                            // Applying inverse of projection matrix in order to go into view space
+                            glm::vec4 viewRay{ (glm::vec4)(glm::affineInverse(m_renderer.getCamera().getPerspective()) * clipRay) };
+                            viewRay.z = -1.0f;
+                            viewRay.w = 0.0f;
 
-                        // Applying inverse of view matrix in order to go into world space
-                        glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
-                        glm::vec3 worldRay{ worldRay4.x, worldRay4.y, worldRay4.z };
-                        worldRay = glm::normalize(worldRay);
-                    }
-                    break;
-                }
+                            // Applying inverse of view matrix in order to go into world space
+                            glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
+                            m_rayCast.x = worldRay4.x; m_rayCast.y = worldRay4.y; m_rayCast.z = worldRay4.z;
+                            m_rayCast = glm::normalize(m_rayCast);
 
-                case mouse_type::drag: {
-                    GLFWwindow* window{ m_renderer.getWindow() };
-                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-                        if (!m_mouseRight) {
-                            m_mouseRight = 1;
-                            m_mouseRightX = m_mouseLastX - (float)(m_renderer.getCurrentWidth() / 2);
-                            m_mouseRightY = (float)(m_renderer.getCurrentHeight() / 2) - m_mouseLastY;
+
                         }
-                        int mods = 0;
-                        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                            mods |= GLFW_MOD_SHIFT;
-                        m_renderer.mouseInput(x, y, m_mouseRightX, m_mouseRightY, mouse_type::drag, mods);
+                        break;
                     }
-                    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
-                        m_mouseRight = 0;
-                        m_mouseRightX = 0.0f;
-                        m_mouseRightY = 0.0f;
-                    }
-                    break;
-                }
 
-                case mouse_type::scroll: {
-                    int mods = 0;
-                    if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-                        mods |= GLFW_MOD_SHIFT;
-                    m_renderer.mouseInput(x, y, 0.0, 0.0, mouse_type::scroll, mods);
-                    break;
-                }
+                    case mouse_type::drag: {
+                        GLFWwindow* window{ m_renderer.getWindow() };
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                            if (!m_mouseRight) {
+                                m_mouseRight = 1;
+                                m_mouseRightX = m_mouseLastX - (float)(m_renderer.getCurrentWidth() / 2);
+                                m_mouseRightY = (float)(m_renderer.getCurrentHeight() / 2) - m_mouseLastY;
+                            }
+                            int mods = 0;
+                            if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                                mods |= GLFW_MOD_SHIFT;
+                            m_renderer.mouseInput(x, y, m_mouseRightX, m_mouseRightY, mouse_type::drag, mods);
+                        }
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+                            m_mouseRight = 0;
+                            m_mouseRightX = 0.0f;
+                            m_mouseRightY = 0.0f;
+                        }
+                        break;
+                    }
+
+                    case mouse_type::scroll: {
+                        int mods = 0;
+                        if (glfwGetKey(m_renderer.getWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+                            mods |= GLFW_MOD_SHIFT;
+                        m_renderer.mouseInput(x, y, 0.0, 0.0, mouse_type::scroll, mods);
+                        break;
+                    }
                 }
             }
 
@@ -828,6 +844,9 @@ struct displayer {
 
             //! @brief Boundaries of the viewport.
             glm::vec3 m_viewport_min, m_viewport_max;
+
+            //! @brief Vector representing the raycast direction (in world space) generated while clicking the cursor.
+            glm::vec3 m_rayCast;
 
             //! @brief A mutex for regulating access to the viewport boundaries.
             common::mutex<parallel> m_viewport_mutex;

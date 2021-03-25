@@ -79,9 +79,6 @@ struct simulated_positioner {
     //! @brief The dimensionality of the space.
     constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
-    //! @brief Type for representing a position.
-    using position_type = vec<dimension>;
-
     /**
      * @brief The actual component.
      *
@@ -98,6 +95,9 @@ struct simulated_positioner {
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
+            //! @brief Type for representing a position.
+            using position_type = vec<dimension>;
+
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<positioner_tag, position_type>;
 

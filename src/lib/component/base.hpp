@@ -109,6 +109,9 @@ struct base {
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = common::tagged_tuple_t<>;
 
+            //! @brief The mutex type.
+            using mutex_type = common::mutex<parallel>;
+
             #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::uid node initialisation tag\033[0m"
 
             //! @name constructors
@@ -168,7 +171,7 @@ struct base {
             const device_t uid;
 
             //! @brief A mutex for regulating access to the node.
-            common::mutex<parallel> mutex;
+            mutex_type mutex;
 
             //! @brief A reference to the corresponding net object.
             typename F::net& net;

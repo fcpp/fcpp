@@ -79,6 +79,9 @@ struct hardware_identifier {
             //! @brief The type of nodes.
             using node_type = typename F::node;
 
+            //! @brief The type of node locks.
+            using lock_type = common::unique_lock<parallel>;
+
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
@@ -118,9 +121,9 @@ struct hardware_identifier {
             }
 
             //! @brief Access to the node with a given device identifier (given a lock for the node's mutex).
-            node_type& node_at(device_t uid, common::unique_lock<parallel>& l) {
+            node_type& node_at(device_t uid, lock_type& l) {
                 assert(m_node.uid == uid);
-                l = common::unique_lock<parallel>(m_node.mutex);
+                l = lock_type(m_node.mutex);
                 return m_node;
             }
 

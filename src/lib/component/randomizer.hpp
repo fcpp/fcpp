@@ -70,6 +70,9 @@ struct randomizer {
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
+            //! @brief The type of the random number generator.
+            using generator_type = generator_type;
+
             /**
              * @brief Main constructor.
              *
@@ -126,6 +129,9 @@ struct randomizer {
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
+            //! @brief The type of the random number generator.
+            using generator_type = generator_type;
+
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}

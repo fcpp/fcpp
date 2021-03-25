@@ -109,7 +109,12 @@ class info_window {
         m_net(n),
         m_uid(uid),
         m_renderer(0, "node " + std::to_string(uid), false, n.getRenderer().getWindow()),
-        m_thread(&info_window::draw_cycle, this) {}
+        m_thread(&info_window::draw_cycle, this) {
+        if (m_net.node_count(m_uid)) {
+            typename net::lock_type l;
+            m_net.node_at(m_uid, l).highlight(true);
+        }
+    }
 
     //! @brief Copy constructor.
     info_window(info_window const&) = delete;
@@ -121,6 +126,10 @@ class info_window {
     ~info_window() {
         m_running = false;
         m_thread.join();
+        if (m_net.node_count(m_uid)) {
+            typename net::lock_type l;
+            m_net.node_at(m_uid, l).highlight(false);
+        }
     }
 
     //! @brief Whether the window should be closed.
@@ -338,7 +347,7 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_nbr_uids(), m_prev_nbr_uids() {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_highlight(false), m_nbr_uids(), m_prev_nbr_uids() {}
 
             //! @brief Caches the current position for later use.
             glm::vec3 const& cache_position(times_t t) {
@@ -355,6 +364,7 @@ struct displayer {
                 // gather shape and size
                 shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
                 double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
+                if (m_highlight) d *= 1.5;
                 // gather personal position
                 glm::vec3 p = get_cached_position();
                 // render the node
@@ -377,6 +387,7 @@ struct displayer {
                 color_val_push(m_colors, color_val{});
                 color_tag_push(m_colors, color_tag{});
                 if (m_colors.empty()) m_colors.emplace_back(0.0f, 0.0f, 0.0f, 1.0f); // black if nothing else
+                if (m_highlight) for (color& c : m_colors) for (size_t i=0; i<3; ++i) c.rgba[i] = (c.rgba[i]+1)/2;
                 // update neighbours list
                 std::sort(m_nbr_uids.begin(), m_nbr_uids.end());
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
@@ -389,6 +400,15 @@ struct displayer {
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
                 m_nbr_uids.push_back(d);
+            }
+
+            //! @brief Sets the highlighted state for the node.
+            void highlight(bool b) {
+                if (not m_highlight and b)
+                    for (color& c : m_colors) for (size_t i=0; i<3; ++i) c.rgba[i] = (c.rgba[i]+1)/2;
+                if (not b and m_highlight)
+                    for (color& c : m_colors) for (size_t i=0; i<3; ++i) c.rgba[i] = c.rgba[i]*2-1;
+                m_highlight = b;
             }
 
           private: // implementation details
@@ -421,6 +441,9 @@ struct displayer {
                 c.push_back(P::node::storage(S{}));
                 color_tag_push(c, common::type_sequence<Ss...>{});
             }
+
+            //! @brief Whether the node is highlighted.
+            bool m_highlight;
 
             //! @brief The current position of the device.
             glm::vec3 m_position;
@@ -668,7 +691,7 @@ struct displayer {
                 //          http://www.lighthouse3d.com/tutorials/maths/ray-sphere-intersection/
 
                 // Define vector from p to c
-                glm::vec3 vpc{ c - p }; 
+                // glm::vec3 vpc{ c - p };
 
                 // WIP......
             }

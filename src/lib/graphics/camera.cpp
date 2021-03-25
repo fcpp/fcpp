@@ -78,6 +78,10 @@ glm::vec3 Camera::getPosition() const {
     return glm::vec3{ col.x, col.y, col.z };
 }
 
+float Camera::getDepth() const {
+    return m_depth;
+}
+
 void Camera::setScreen(float width, float height) {
     m_diagonal = std::sqrt(width*width + height*height) / 2;
     m_aspectRatio = width / height;

@@ -59,6 +59,9 @@ class Camera {
     //! @brief It returns the world space position of the camera.
     glm::vec3 getPosition() const;
 
+    //! @brief It returns the camera's current view plane (proportional to zNear, zFar and movement speed).
+    float getDepth() const;
+
     //! @brief Sets the current screen's height, width and diagonal size given window size.
     void setScreen(float width, float height);
 

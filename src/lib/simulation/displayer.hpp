@@ -112,7 +112,7 @@ class info_window {
         m_thread(&info_window::draw_cycle, this) {
         if (m_net.node_count(m_uid)) {
             typename net::lock_type l;
-            m_net.node_at(m_uid, l).highlight(true);
+            m_net.node_at(m_uid, l).highlight(2);
         }
     }
 
@@ -128,7 +128,7 @@ class info_window {
         m_thread.join();
         if (m_net.node_count(m_uid)) {
             typename net::lock_type l;
-            m_net.node_at(m_uid, l).highlight(false);
+            m_net.node_at(m_uid, l).highlight(0);
         }
     }
 
@@ -347,7 +347,7 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_highlight(false), m_nbr_uids(), m_prev_nbr_uids() {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_highlight(0), m_nbr_uids(), m_prev_nbr_uids() {}
 
             //! @brief Caches the current position for later use.
             glm::vec3 const& cache_position(times_t t) {
@@ -403,12 +403,22 @@ struct displayer {
             }
 
             //! @brief Sets the highlighted state for the node.
-            void highlight(bool b) {
-                if (not m_highlight and b)
+            void highlight(int highVal) {
+                // Clamp highVal
+                if (highVal < 0) highVal = 0;
+                if (highVal > 2) highVal = 2;
+
+                // Assign highVal
+                if (m_highlight == 0 and highVal)
                     for (color& c : m_colors) for (size_t i=0; i<3; ++i) c.rgba[i] = (c.rgba[i]+1)/2;
-                if (not b and m_highlight)
+                if (highVal == 0 and m_highlight)
                     for (color& c : m_colors) for (size_t i=0; i<3; ++i) c.rgba[i] = c.rgba[i]*2-1;
-                m_highlight = b;
+                m_highlight = highVal;
+            }
+
+            //! @brief It returns the highlight state of the node.
+            int get_highlight() const {
+                return m_highlight;
             }
 
           private: // implementation details
@@ -443,7 +453,10 @@ struct displayer {
             }
 
             //! @brief Whether the node is highlighted.
-            bool m_highlight;
+            //! 0 - not highlighted
+            //! 1 - yes, with cursor hovering
+            //! 2 - yes, with info window open
+            int m_highlight;
 
             //! @brief The current position of the device.
             glm::vec3 m_position;
@@ -513,6 +526,7 @@ struct displayer {
                                 viewport_update(n_beg[i].second.cache_position(t));
                             });
                         } else {
+                            highlightHoveredNode();
                             common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                                 n_beg[i].second.cache_position(t);
                             });
@@ -662,6 +676,7 @@ struct displayer {
                     dspl.m_mouseLastX = (float)xpos;
                     dspl.m_mouseLastY = (float)ypos;
 
+                    dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);
                     dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::drag, 0);
                     });
 
@@ -685,43 +700,88 @@ struct displayer {
                     });
             }
 
-            //! @brief It checks if the ray of direction d (unit vector) and position p intersects with a sphere of radius r at position c.
-            bool intersectSphere(const glm::vec3& p, const glm::vec3& d, float r) {
+            //! @brief It returns the projection of a vector v onto a ray along its direction d (unit vector).
+            glm::vec3 rayProjection(const glm::vec3& v, const glm::vec3& d) {
+                // Source: http://www.euclideanspace.com/maths/geometry/elements/line/projections/
+                return glm::dot<3, float, glm::qualifier::highp>(v, d) * d;
+            }
+
+            //! @brief It checks if the ray of direction d (unit vector) and position p intersects with a sphere of radius r at position c; length of projection of c onto ray is stored into prj.
+            bool intersectSphere(const glm::vec3& p, const glm::vec3& d, float r, const glm::vec3& c, float& prj) {
                 // Sources: https://stackoverflow.com/questions/20140711/picking-in-3d-with-ray-tracing-using-ninevehgl-or-opengl-i-phone/20143963#20143963
                 //          http://www.lighthouse3d.com/tutorials/maths/ray-sphere-intersection/
 
+                bool intersection{ false };
+                
                 // Define vector from p to c
-                // glm::vec3 vpc{ c - p };
+                glm::vec3 vpc{ c - p };
 
-                // WIP......
+                // If the distance to the ray can be computed (the sphere isn't behind the ray)...
+                if (glm::dot<3, float, glm::qualifier::highp>(vpc, d) > 0.0f) {
+                    // Define projection of c on ray
+                    glm::vec3 pc{ rayProjection(vpc, d) }; // there's no need to translate such projection at position p
+                    if (glm::length(vpc - pc) <= r) {
+                        intersection = true;
+                        prj = glm::length(pc);
+                    } else prj = 0.0f;
+                }
+
+                return intersection;
+            }
+
+            //! @brief It highlights the node hovered by the cursor.
+            void highlightHoveredNode() {
+                // Highlighting the right node
+                auto beg{ P::net::node_begin() };
+                auto end{ P::net::node_end() };
+                float minDist{ m_renderer.getCamera().getDepth() * 32 };
+                m_hoveredNode = -1;
+                for (size_t i = 0; i < end - beg; ++i) {
+                    float prj;
+                    float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) / 2.0f };
+                    if (intersectSphere(m_renderer.getCamera().getPosition(), m_rayCast, r, beg[i].second.get_cached_position(), prj)) {
+                        if (prj < minDist) {
+                            if (m_hoveredNode != -1 and beg[m_hoveredNode].second.get_highlight() != 2)
+                                beg[m_hoveredNode].second.highlight(0);
+                            minDist = prj;
+                            m_hoveredNode = i;
+                            if(beg[i].second.get_highlight() != 2) beg[i].second.highlight(1);
+                        }
+                    } else if (beg[i].second.get_highlight() != 2) beg[i].second.highlight(0);
+                }
             }
 
             //! @brief It manages mouse input of the given type.
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
                 switch (type) {
+                    case mouse_type::hover: {
+                        // Raycast caluclation
+                        // (x, y) from screen space coordinates to NDC
+                        float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
+                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
+
+                        // Ray vector goes from screen space to world space (backwards)
+                        // Ray in clip space; camera position at (0,0,0)
+                        glm::vec4 clipRay{ rayX, rayY, -1.0f, 1.0f };
+
+                        // Applying inverse of projection matrix in order to go into view space
+                        glm::vec4 viewRay{ (glm::vec4)(glm::affineInverse(m_renderer.getCamera().getPerspective()) * clipRay) };
+                        viewRay.z = -1.0f;
+                        viewRay.w = 0.0f;
+
+                        // Applying inverse of view matrix in order to go into world space
+                        glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
+                        m_rayCast.x = worldRay4.x; m_rayCast.y = worldRay4.y; m_rayCast.z = worldRay4.z;
+                        m_rayCast = glm::normalize(m_rayCast);
+                        break;
+                    }
+
                     case mouse_type::click: {
                         GLFWwindow* window{ m_renderer.getWindow() };
-                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-                            // Raycast caluclation
-                            // (x, y) from screen space coordinates to NDC
-                            float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
-                            float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
-
-                            // Ray vector goes from screen space to world space (backwards)
-                            // Ray in clip space; camera position at (0,0,0)
-                            glm::vec4 clipRay{ rayX, rayY, -1.0f, 1.0f };
-
-                            // Applying inverse of projection matrix in order to go into view space
-                            glm::vec4 viewRay{ (glm::vec4)(glm::affineInverse(m_renderer.getCamera().getPerspective()) * clipRay) };
-                            viewRay.z = -1.0f;
-                            viewRay.w = 0.0f;
-
-                            // Applying inverse of view matrix in order to go into world space
-                            glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
-                            m_rayCast.x = worldRay4.x; m_rayCast.y = worldRay4.y; m_rayCast.z = worldRay4.z;
-                            m_rayCast = glm::normalize(m_rayCast);
-
-
+                        if (m_hoveredNode != -1 and P::net::node_at(m_hoveredNode).get_highlight() != 2 and glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                            glfwMakeContextCurrent(NULL);
+                            m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
+                            glfwMakeContextCurrent(m_renderer.getWindow());
                         }
                         break;
                     }
@@ -784,12 +844,6 @@ struct displayer {
                     // decelerate simulation
                     case GLFW_KEY_I:
                         P::net::frequency(pow(0.25, (mods & GLFW_MOD_SHIFT) > 0 ? deltaTime/5 : deltaTime)*P::net::frequency());
-                        break;
-                    // open info window for a random device
-                    case GLFW_KEY_R:
-                        glfwMakeContextCurrent(NULL); // temporary
-                        m_info.emplace_back(new info_window<F>(*this, P::net::next_int(P::net::node_size()-1)));
-                        glfwMakeContextCurrent(m_renderer.getWindow()); // temporary
                         break;
                     default:
                         // pass key to renderer
@@ -862,13 +916,16 @@ struct displayer {
             //! @brief The currently estimated FPS.
             int m_FPS;
 
+            //! @brief The node currently hovered by the cursor.
+            int m_hoveredNode;
+
             //! @brief List of currently stroked keys.
             std::unordered_set<int> m_key_stroked;
 
             //! @brief Boundaries of the viewport.
             glm::vec3 m_viewport_min, m_viewport_max;
 
-            //! @brief Vector representing the raycast direction (in world space) generated while clicking the cursor.
+            //! @brief Vector representing the raycast direction (in world space) generated while moving the cursor.
             glm::vec3 m_rayCast;
 
             //! @brief A mutex for regulating access to the viewport boundaries.

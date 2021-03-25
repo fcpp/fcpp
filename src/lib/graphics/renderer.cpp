@@ -728,11 +728,11 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
 }
 
 void Renderer::viewportResize(int width, int height) {
-#ifdef __APPLE__
+/*#ifdef __APPLE__
     glViewport(0, 0, width/4, height/4); // this SHOULD fix the window resize issue on OS-X
-#else
+#else*/
     glViewport(0, 0, width, height);
-#endif
+//#endif
     m_currentWidth = width;
     m_currentHeight = height;
 	m_camera.setScreen(width, height);

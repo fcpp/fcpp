@@ -101,8 +101,8 @@ namespace fcpp {
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the renderer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods);
             
-            //! @brief It resizes the viewport, given the new width and height values.
-            void viewportResize(int width, int height);
+            //! @brief It resizes the viewport, given the new width and height values. <--- UPDATE!!!!!!!!!!!!!!!!!
+            void viewportResize(int width, int height, GLFWwindow* window = NULL);
             
         private:
             //! @brief Default path to vertex_phong shader.

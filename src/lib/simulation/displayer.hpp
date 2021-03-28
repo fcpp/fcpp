@@ -138,9 +138,22 @@ class info_window {
     }
 
  private:
+    //! @brief It sets the window resize callback.
+    void setResizeCallback() {
+        // Associates this (the info_window instance) to m_window
+        glfwSetWindowUserPointer(m_renderer.getWindow(), this);
+
+        // Viewport callback
+        glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
+            info_window& info = *((info_window*)glfwGetWindowUserPointer(window)); // get the info_window instance from window
+            info.m_renderer.viewportResize(width, height, window);
+            });
+    }
+
     //! @brief Main cycle.
     void draw_cycle() {
         m_renderer.initializeContext(false);
+        setResizeCallback();
         while (m_running) {
             draw();
             m_renderer.swapAndNext();

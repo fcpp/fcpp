@@ -306,6 +306,8 @@ void Renderer::allocateShapeBuffers(bool loadVertex) {
 
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::initializeContext(bool master) {
+    std::cout << "initializeContext() on thread #" << std::this_thread::get_id() << "\n";
+
     // Set window's context as thread's current
     glfwMakeContextCurrent(m_window);
 
@@ -727,13 +729,12 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     m_camera.keyboardInput(key, first, deltaTime, mods);
 }
 
-void Renderer::viewportResize(int width, int height) {
-/*#ifdef __APPLE__
-    glViewport(0, 0, width/4, height/4); // this SHOULD fix the window resize issue on OS-X
-#else*/
-    glViewport(0, 0, width, height);
-//#endif
-    m_currentWidth = width;
-    m_currentHeight = height;
-	m_camera.setScreen(width, height);
+void Renderer::viewportResize(int width, int height, GLFWwindow* window) {
+    std::cout << "viewportResize() on thread #" << std::this_thread::get_id() << "\n";
+    if (window == NULL or window == m_window) {
+        glViewport(0, 0, width, height);
+        m_currentWidth = width;
+        m_currentHeight = height;
+        m_camera.setScreen(width, height);
+    }
 }

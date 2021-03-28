@@ -193,7 +193,7 @@ while [ "$1" != "" ]; do
         gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
         gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
-        export CC="$gcc"
+        export CC="$gpp"
         export CXX="$gpp"
     elif [ "$1" == "sed" ]; then
         pattern="$2"

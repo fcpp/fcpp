@@ -146,7 +146,7 @@ class info_window {
         // Viewport callback
         glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
             info_window& info = *((info_window*)glfwGetWindowUserPointer(window)); // get the info_window instance from window
-            info.m_renderer.viewportResize(width, height, window);
+            info.m_renderer.viewportResize(width, height);
             });
     }
 

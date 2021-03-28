@@ -194,6 +194,7 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     m_currentWidth{ SCR_DEFAULT_WIDTH },
     m_currentHeight{ SCR_DEFAULT_HEIGHT },
     m_master{ master },
+    m_resizeOnSwap{ false },
     m_gridShow{ true },
     m_gridTexture{ 0 },
     m_lightPos{ LIGHT_DEFAULT_POS },
@@ -306,7 +307,7 @@ void Renderer::allocateShapeBuffers(bool loadVertex) {
 
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::initializeContext(bool master) {
-    std::cout << "initializeContext() on thread #" << std::this_thread::get_id() << "\n";
+    //std::cout << "initializeContext() on thread #" << std::this_thread::get_id() << "\n";
 
     // Set window's context as thread's current
     glfwMakeContextCurrent(m_window);
@@ -345,9 +346,13 @@ void Renderer::initializeContext(bool master) {
 }
 
 void Renderer::swapAndNext() {
-    // Check and call events, swap double buffers
-    if (m_master) glfwPollEvents();
+    // Swap double buffers, check and call events
     glfwSwapBuffers(m_window);
+    if (m_master) glfwPollEvents();
+    else if (m_resizeOnSwap) {
+        glViewport(0, 0, m_currentWidth, m_currentHeight);
+        m_resizeOnSwap = false;
+    }
 
     // Clear frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
@@ -729,12 +734,11 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     m_camera.keyboardInput(key, first, deltaTime, mods);
 }
 
-void Renderer::viewportResize(int width, int height, GLFWwindow* window) {
-    std::cout << "viewportResize() on thread #" << std::this_thread::get_id() << "\n";
-    if (window == NULL or window == m_window) {
-        glViewport(0, 0, width, height);
-        m_currentWidth = width;
-        m_currentHeight = height;
-        m_camera.setScreen(width, height);
-    }
+void Renderer::viewportResize(int width, int height) {
+    //std::cout << "viewportResize() on thread #" << std::this_thread::get_id() << "\n";
+    if (m_master) glViewport(0, 0, width, height);
+    else m_resizeOnSwap = true;
+    m_currentWidth = width;
+    m_currentHeight = height;
+    m_camera.setScreen(width, height);
 }

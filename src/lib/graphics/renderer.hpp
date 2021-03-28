@@ -101,8 +101,8 @@ namespace fcpp {
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the renderer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods);
             
-            //! @brief It resizes the viewport, given the new width and height values. <--- UPDATE!!!!!!!!!!!!!!!!!
-            void viewportResize(int width, int height, GLFWwindow* window = NULL);
+            //! @brief It resizes the viewport, given the new width and height values.
+            void viewportResize(int width, int height);
             
         private:
             //! @brief Default path to vertex_phong shader.
@@ -206,6 +206,9 @@ namespace fcpp {
 
             //! @brief It specifies if the renderer is the main one (master) or not.
             bool m_master;
+
+            //! @brief It states if the next swapAndNext() call should perform glViewport() with the new screen parameters; it's used by slave renderers only.
+            bool m_resizeOnSwap;
 
             //! @brief Vertex Array Objects for standard shapes; it's per context and it can't be shared with others.
             unsigned int m_shapeVAO[(int)shape::SIZE];

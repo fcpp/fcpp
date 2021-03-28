@@ -174,6 +174,9 @@ namespace fcpp {
             //! @brief Element Buffer Objects for commonly used meshes; it can be shared among several contexts.
             static unsigned int s_meshEBO[(int)index::SIZE];
 
+            //! @brief A mutex for managing VBO access among renderers (slaves and master).
+            static std::mutex s_mutexVBO;
+
             //! @brief Data structure mapping chars with glyphs.
             static std::unordered_map<char, glyph> s_glyphs;
             

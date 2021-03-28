@@ -1,6 +1,7 @@
 // Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
+#include <mutex>
 #include <stdexcept>
 #include <iostream>
 #include <thread>
@@ -68,6 +69,7 @@ Shapes Renderer::s_shapes{};
 unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
 unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
 unsigned int Renderer::s_meshEBO[(int)index::SIZE];
+std::mutex Renderer::s_mutexVBO{};
 std::unordered_map<char, glyph> Renderer::s_glyphs{};
 
 
@@ -634,6 +636,9 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale) const {
+    // Lock access
+    s_mutexVBO.lock();
+
     // Activate corresponding render state	
     s_shaderProgramFont.use();
     s_shaderProgramFont.setVec3("u_textColor", m_foreground);
@@ -675,6 +680,9 @@ void Renderer::drawText(std::string text, float x, float y, float scale) const {
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Unlock access
+    s_mutexVBO.unlock();
 }
 
 float Renderer::getAspectRatio() {

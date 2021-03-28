@@ -71,7 +71,7 @@ struct randomizer {
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief The type of the random number generator.
-            using generator_type = generator_type;
+            using generator_type = randomizer<Ts...>::generator_type;
 
             /**
              * @brief Main constructor.
@@ -130,7 +130,7 @@ struct randomizer {
         class net : public P::net {
           public: // visible by node objects and the main program
             //! @brief The type of the random number generator.
-            using generator_type = generator_type;
+            using generator_type = randomizer<Ts...>::generator_type;
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>

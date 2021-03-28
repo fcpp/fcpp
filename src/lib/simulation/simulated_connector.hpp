@@ -201,7 +201,7 @@ struct simulated_connector {
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief The type of settings data regulating connection.
-            using connection_data_type = connection_data_type;
+            using connection_data_type = simulated_connector<Ts...>::connection_data_type;
 
             //@{
             /**
@@ -374,10 +374,10 @@ struct simulated_connector {
             using cell_type = details::cell<parallel, typename F::node>;
 
             //! @brief Type for representing a position.
-            using position_type = position_type;
+            using position_type = simulated_connector<Ts...>::position_type;
 
             //! @brief The type of settings data regulating connection.
-            using connection_data_type = connection_data_type;
+            using connection_data_type = simulated_connector<Ts...>::connection_data_type;
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>

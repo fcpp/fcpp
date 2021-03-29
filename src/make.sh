@@ -13,18 +13,17 @@ function usage() {
     echo -e "    \033[1msed\033[0m:                             manipulates patterns in source files (can be chained)"
     echo -e "       <pattern> [replace]"
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation (can be chained)"
-    echo -e "    \033[1mgui\033[0m:                             builds graphical simulations"
-    echo -e "       <targets...>"
+    echo -e "    \033[1mgui\033[0m:                             builds graphical simulations (platform can be unix or windows)"
+    echo -e "       <platform> <targets...>"
     echo -e "    \033[1mbuild\033[0m:                           builds binaries for given targets, skipping tests"
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mtest\033[0m:                            builds binaries and tests for given targets"
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mrun\033[0m:                             build and runs a single target"
-    echo -e "       <copts...> <target> <plots...> <arguments...>"
+    echo -e "       <copts...> <target> <arguments...>"
     echo -e "    \033[1mall\033[0m:                             builds all possible targets and documentation"
     echo -e "       <copts...>"
-    echo -e "Targets can be substrings demanding builds for all possible expansions. Syntax for plots is:"
-    $plot_builder | tail -n +6 | head -n 10
+    echo -e "Targets can be substrings demanding builds for all possible expansions."
     exit 1
 }
 
@@ -243,10 +242,24 @@ while [ "$1" != "" ]; do
         mkdoc
     elif [ "$1" == "gui" ]; then
         shift 1
-        cmake -S ./ -B ./glbuild -G "Unix Makefiles" -Wno-dev
-        cmake --build ./glbuild/
+        platform=$1
+        if [ "$platform" == windows ]; then
+            flag=MinGW
+        elif [ "$platform" == unix ]; then
+            flag=Unix
+        else
+            echo -e "\033[4mUnrecognized platform \"$platform\". Available platforms are:\033[0m"
+            echo -e "    \033[1mwindows unix\033[0m"
+            exit 1
+        fi
+        shift 1
+        cmake -S ./ -B ./bin -G "$flag Makefiles" -DCMAKE_BUILD_TYPE=Release -Wno-dev
+        cmake --build ./bin/
+        if [ "$platform" == windows ]; then
+            cp bin/fcpp/src/libfcpp.dll bin/
+        fi
         for target in "$@"; do
-            cd glbuild
+            cd bin
             ./$target | tee ../plot/$target.asy
             cd ../plot
             sed -i "" -E "s| \(mean-mean\)||g" $target.asy

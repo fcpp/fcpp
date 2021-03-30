@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include "lib/data/shape.hpp"
 #include "lib/data/vec.hpp"
 
 
@@ -12,10 +13,6 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-
-
-//! @brief Supported shapes for representing nodes.
-enum class shape { tetrahedron, cube, octahedron, icosahedron, sphere, star, SIZE };
 
 
 //! @brief Namespace containing objects of internal use.

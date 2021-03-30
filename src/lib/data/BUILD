@@ -22,6 +22,15 @@ cc_library(
 )
 
 cc_library(
+    name = 'shape',
+    hdrs = ['shape.hpp'],
+    srcs = ['shape.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'tuple',
     hdrs = ['tuple.hpp'],
     srcs = ['tuple.cpp'],

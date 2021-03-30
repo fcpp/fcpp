@@ -61,16 +61,16 @@ int Renderer::s_gridNormIndexSize{ 0 };
 int Renderer::s_gridHighIndexSize{ 0 };
 bool Renderer::s_commonIsReady{ false };
 bool Renderer::s_gridIsReady{ false };
-Shader Renderer::s_shaderProgramPhong;     // Am I initializing these Shaders? Memory leak?
-Shader Renderer::s_shaderProgramCol;       // Am I initializing these Shaders? Memory leak?
-Shader Renderer::s_shaderProgramTexture;   // Am I initializing these Shaders? Memory leak?
-Shader Renderer::s_shaderProgramFont;      // Am I initializing these Shaders? Memory leak?
+//Shader Renderer::s_shaderProgramPhong;     // Am I initializing these Shaders? Memory leak?
+//Shader Renderer::s_shaderProgramCol;       // Am I initializing these Shaders? Memory leak?
+//Shader Renderer::s_shaderProgramTexture;   // Am I initializing these Shaders? Memory leak?
+//Shader Renderer::s_shaderProgramFont;      // Am I initializing these Shaders? Memory leak?
 Shapes Renderer::s_shapes{};
-unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
-unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
-unsigned int Renderer::s_meshEBO[(int)index::SIZE];
+//unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
+//unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
+//unsigned int Renderer::s_meshEBO[(int)index::SIZE];
 std::mutex Renderer::s_mutexVBO{};
-std::unordered_map<char, glyph> Renderer::s_glyphs{};
+//std::unordered_map<char, glyph> Renderer::s_glyphs{};
 
 
 /* --- LOCAL FUNCTIONS --- */
@@ -83,7 +83,7 @@ namespace {
 
 /* --- PRIVATE STATIC FUNCTIONS --- */
 void Renderer::initializeCommon() {
-    if (!s_commonIsReady) {
+    //if (!s_commonIsReady) {
         // Mark common structures as ready
         s_commonIsReady = true;
 
@@ -151,7 +151,7 @@ void Renderer::initializeCommon() {
         s_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
         s_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
         s_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
-    }
+    //}
 }
 
 unsigned int Renderer::loadTexture(std::string path) {
@@ -232,7 +232,7 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     if (m_master) initializeContext(true);
 
     // Run common initialization if master
-    if (m_master and !s_commonIsReady) initializeCommon();
+    /*if (m_master and !s_commonIsReady)*/ initializeCommon();
 }
 
 

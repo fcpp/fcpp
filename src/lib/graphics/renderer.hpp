@@ -151,34 +151,34 @@ namespace fcpp {
             static const glm::vec3 LIGHT_COLOR;
 
             //! @brief Main shader program, with phong lighting caluclations and color info.
-            static Shader s_shaderProgramPhong;
+            Shader s_shaderProgramPhong;
 
             //! @brief Additional shader program used for simple shapes and uniform color value.
-            static Shader s_shaderProgramCol;
+            Shader s_shaderProgramCol;
 
             //! @brief Additional shader program used for texture rendering.
-            static Shader s_shaderProgramTexture;
+            Shader s_shaderProgramTexture;
 
             //! @brief Additional shader program used for fonts.
-            static Shader s_shaderProgramFont;
+            Shader s_shaderProgramFont;
 
             //! @brief It contains all the vertex information of the standard shapes.
             static Shapes s_shapes;
 
             //! @brief Vertex Buffer Objects for standard shapes; it can be shared among several contexts.
-            static unsigned int s_shapeVBO[(int)shape::SIZE];
+            unsigned int s_shapeVBO[(int)shape::SIZE];
 
             //! @brief Vertex Buffer Objects for commonly used meshes; it can be shared among several contexts.
-            static unsigned int s_meshVBO[(int)vertex::SIZE];
+            unsigned int s_meshVBO[(int)vertex::SIZE];
 
             //! @brief Element Buffer Objects for commonly used meshes; it can be shared among several contexts.
-            static unsigned int s_meshEBO[(int)index::SIZE];
+            unsigned int s_meshEBO[(int)index::SIZE];
 
             //! @brief A mutex for managing VBO access among renderers (slaves and master).
             static std::mutex s_mutexVBO;
 
             //! @brief Data structure mapping chars with glyphs.
-            static std::unordered_map<char, glyph> s_glyphs;
+            std::unordered_map<char, glyph> s_glyphs;
             
             //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
             static int s_planeIndexSize;
@@ -196,13 +196,13 @@ namespace fcpp {
             static bool s_gridIsReady;
 
             //! @brief It initializes all the static structures and variables, common to the Renderer instances.
-            static void initializeCommon();
+            void initializeCommon();
 
             //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
-            static unsigned int loadTexture(std::string path);
+            unsigned int loadTexture(std::string path);
 
             //! @brief It unloads the defined texture, given its path.
-            static bool unloadTexture(unsigned int id);
+            bool unloadTexture(unsigned int id);
 
             //! @brief Window object for GLFW; it stores OpenGL context information.
             GLFWwindow* m_window;

@@ -232,7 +232,7 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     if (m_master) initializeContext(true);
 
     // Run common initialization if master
-    /*if (m_master and !s_commonIsReady)*/ initializeCommon();
+    if (m_master and !s_commonIsReady) initializeCommon();
 }
 
 
@@ -342,9 +342,11 @@ void Renderer::initializeContext(bool master) {
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    initializeCommon(); // <------------ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     // Allocate buffers
-    allocateMeshBuffers(master);
-    allocateShapeBuffers(master);
+    allocateMeshBuffers(true);
+    allocateShapeBuffers(true);
 }
 
 void Renderer::swapAndNext() {
@@ -635,9 +637,9 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glDrawArrays(GL_LINES, 0, 2 * np.size());
 }
 
-void Renderer::drawText(std::string text, float x, float y, float scale) const {
+void Renderer::drawText(std::string text, float x, float y, float scale) /*const*/ {
     // Lock access
-    s_mutexVBO.lock();
+    //s_mutexVBO.lock();
 
     // Activate corresponding render state	
     s_shaderProgramFont.use();
@@ -682,7 +684,7 @@ void Renderer::drawText(std::string text, float x, float y, float scale) const {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Unlock access
-    s_mutexVBO.unlock();
+    //s_mutexVBO.unlock();
 }
 
 float Renderer::getAspectRatio() {

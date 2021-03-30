@@ -69,7 +69,7 @@ namespace fcpp {
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
             
             //! @brief It draws the specified text in the specified coordinates, scale and color.
-            void drawText(std::string text, float x, float y, float scale) const;
+            void drawText(std::string text, float x, float y, float scale) /*const*/;
             
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();

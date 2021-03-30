@@ -108,7 +108,7 @@ class info_window {
     info_window(net& n, device_t uid) :
         m_net(n),
         m_uid(uid),
-        m_renderer(0, "node " + std::to_string(uid), false, n.getRenderer().getWindow()),
+        m_renderer(0, "node " + std::to_string(uid), false, /*n.getRenderer().getWindow()*/NULL),
         m_thread(&info_window::draw_cycle, this) {
         if (m_net.node_count(m_uid)) {
             typename net::lock_type l;

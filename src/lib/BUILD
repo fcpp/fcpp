@@ -70,6 +70,7 @@ cc_library(
     deps = [
         "//lib/data:color",
         "//lib/data:field",
+        "//lib/data:shape",
         "//lib/data:tuple",
         "//lib/data:vec",
     ],

@@ -104,6 +104,8 @@ struct graph_connector {
     //! @brief Whether message sizes should be emulated.
     constexpr static bool message_size = common::option_flag<tags::message_size, false, Ts...>;
 
+    constexpr static bool static_topology = common::option_flag<tags::static_topology, false, Ts...>;
+
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
@@ -238,6 +240,8 @@ struct graph_connector {
             }
 
           private: // implementation details
+            class neighbour_list<false> : public std::unordered_set<device_t> {};
+
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
             void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
@@ -262,13 +266,13 @@ struct graph_connector {
             }
 
             //! @brief A generator for delays in sending messages.
+            neighbour_list<static_topology> m_neighbours;
+
+            //! @brief A generator for delays in sending messages.
             delay_type m_delay;
 
             //! @brief Time of the next send-message event (and epsilon time).
             times_t m_send, m_epsilon;
-
-            //! @brief Data regulating the connection.
-            connection_data_type m_data;
 
             //! @brief Sizes of messages received from neighbours.
             common::option<field<size_t>, message_size> m_nbr_msg_size;

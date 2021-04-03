@@ -1,7 +1,6 @@
 // Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
-#include <mutex>
 #include <stdexcept>
 #include <iostream>
 #include <thread>
@@ -29,8 +28,8 @@ using namespace fcpp::internal;
 
 /* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
-    const std::string Renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_phong.glsl" };
-    const std::string Renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_phong.glsl" };
+    const std::string Renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
+    const std::string Renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
     const std::string Renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
     const std::string Renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
     const std::string Renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
@@ -40,8 +39,8 @@ using namespace fcpp::internal;
     const std::string Renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
     const std::string Renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
-    const std::string Renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_phong.glsl" };
-    const std::string Renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_phong.glsl" };
+    const std::string Renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
+    const std::string Renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
     const std::string Renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
     const std::string Renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
     const std::string Renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
@@ -61,16 +60,11 @@ int Renderer::s_gridNormIndexSize{ 0 };
 int Renderer::s_gridHighIndexSize{ 0 };
 bool Renderer::s_commonIsReady{ false };
 bool Renderer::s_gridIsReady{ false };
-//Shader Renderer::s_shaderProgramPhong;     // Am I initializing these Shaders? Memory leak?
-//Shader Renderer::s_shaderProgramCol;       // Am I initializing these Shaders? Memory leak?
-//Shader Renderer::s_shaderProgramTexture;   // Am I initializing these Shaders? Memory leak?
-//Shader Renderer::s_shaderProgramFont;      // Am I initializing these Shaders? Memory leak?
 Shapes Renderer::s_shapes{};
-//unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
-//unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
-//unsigned int Renderer::s_meshEBO[(int)index::SIZE];
-std::mutex Renderer::s_mutexVBO{};
-//std::unordered_map<char, glyph> Renderer::s_glyphs{};
+unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
+unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
+unsigned int Renderer::s_meshEBO[(int)index::SIZE];
+std::unordered_map<char, glyph> Renderer::s_glyphs{};
 
 
 /* --- LOCAL FUNCTIONS --- */
@@ -83,7 +77,7 @@ namespace {
 
 /* --- PRIVATE STATIC FUNCTIONS --- */
 void Renderer::initializeCommon() {
-    //if (!s_commonIsReady) {
+    if (!s_commonIsReady) {
         // Mark common structures as ready
         s_commonIsReady = true;
 
@@ -138,20 +132,8 @@ void Renderer::initializeCommon() {
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLib);
 
-        /* The following code crashes the program:
-         *  // Delete dummy shader objects
-         *  delete &s_shaderProgramPhong;
-         *  delete &s_shaderProgramCol;
-         *  delete &s_shaderProgramTexture;
-         *  delete &s_shaderProgramFont;
-         */
-
-        // Generate actual shader programs
-        s_shaderProgramPhong = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
-        s_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
-        s_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
-        s_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
-    //}
+        // shaders normally go here
+    }
 }
 
 unsigned int Renderer::loadTexture(std::string path) {
@@ -236,6 +218,14 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 }
 
 
+/* --- DESTRUCTOR --- */
+Renderer::~Renderer() {
+    // We need to deaollcate all the buffers...
+    // Plus, it'd be nice to deallocate shaders by their (instance) destructors
+    glfwDestroyWindow(m_window);
+}
+
+
 /* --- PRIVATE FUNCTIONS --- */
 int Renderer::euclid(int a, int b) {
     int r;
@@ -246,42 +236,6 @@ int Renderer::euclid(int a, int b) {
          b = r; //swap a and b
     }
     return a; //the result is a when b is equal to 0
-}
-
-void Renderer::allocateMeshBuffers(bool loadVertex) {
-    // Generate VAOs, VBOs and EBOs for general meshes
-    glGenVertexArrays((int)vertex::SIZE, m_meshVAO);
-    if (loadVertex) {
-        glGenBuffers((int)vertex::SIZE, s_meshVBO);
-        glGenBuffers((int)index::SIZE, s_meshEBO);
-    }
-
-    // Allocate (dynamic) font buffers
-    glBindVertexArray(m_meshVAO[(int)vertex::font]);
-    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::font]);
-    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    // Allocate (dynamic) single line buffers
-    glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
-    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
-    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    // Allocate (dynamic) neighbour star buffers
-    glBindVertexArray(m_meshVAO[(int)vertex::star]);
-    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
-    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 }
 
 void Renderer::allocateShapeBuffers(bool loadVertex) {
@@ -306,6 +260,74 @@ void Renderer::allocateShapeBuffers(bool loadVertex) {
     }
 }
 
+void Renderer::allocateMeshBuffers(bool loadVertex) {
+    // Generate VAOs, VBOs and EBOs for general meshes
+    glGenVertexArrays((int)vertex::SIZE, m_meshVAO);
+    if (loadVertex) {
+        glGenBuffers((int)vertex::SIZE, s_meshVBO);
+        glGenBuffers((int)index::SIZE, s_meshEBO);
+    }
+
+    // Allocate (dynamic) single line buffers
+    glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
+    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Allocate (dynamic) neighbour star buffers
+    glBindVertexArray(m_meshVAO[(int)vertex::star]);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
+    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void Renderer::allocateFontBuffer() {
+    // Generate VAO and VBO
+    glGenVertexArrays(1, &m_fontVAO);
+    glGenBuffers(1, &m_fontVBO);
+
+    // Allocate (dynamic) font buffer
+    glBindVertexArray(m_fontVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_fontVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void Renderer::allocateFrameBuffer() {
+    // Generate and bind FBO
+    glGenFramebuffers(1, &m_FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+    // Generate RBOs
+    glGenRenderbuffers(2, m_RBO);
+
+    // Allocate and attach color RBO
+    glBindRenderbuffer(GL_RENDERBUFFER, m_RBO[0]);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, m_currentWidth, m_currentHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_RBO[0]);
+
+    // Allocate and attach depth and stencil RBO
+    glBindRenderbuffer(GL_RENDERBUFFER, m_RBO[1]);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_currentWidth, m_currentHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO[1]);
+
+    // Check FBO status
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        throw std::runtime_error("ERROR::RENDERER::FBO::INCOMPLETE\n");
+
+    // Unbind FBO and RBO
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::initializeContext(bool master) {
@@ -317,6 +339,12 @@ void Renderer::initializeContext(bool master) {
     // Initialize GLAD
     if (master and !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
+
+    // Allocate buffers
+    allocateMeshBuffers(master);
+    allocateShapeBuffers(master);
+    allocateFontBuffer();
+    //allocateFrameBuffer();
 
     // Set viewport
     glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
@@ -333,20 +361,30 @@ void Renderer::initializeContext(bool master) {
 
     // Enable antialiasing
     //if (antialias > 1) <----------- fix this later !!!!!!!!!!!!!
-        glEnable(GL_MULTISAMPLE);
+    glEnable(GL_MULTISAMPLE);
 
     // Uncomment this call to draw in wireframe polygons
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    /* The following code crashes the program (we need proper memory leak prevention):
+     *  // Delete dummy shader objects
+     *  delete &m_shaderProgramDiff;
+     *  delete &m_shaderProgramCol;
+     *  delete &m_shaderProgramTexture;
+     *  delete &m_shaderProgramFont;
+     */
+
+    // Generate actual shader programs
+    if (m_master) {
+        m_shaderProgramDiff = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
+        m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
+        m_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
+    }
+    m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
+
     // Clear first frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    initializeCommon(); // <------------ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    // Allocate buffers
-    allocateMeshBuffers(true);
-    allocateShapeBuffers(true);
 }
 
 void Renderer::swapAndNext() {
@@ -497,17 +535,17 @@ void Renderer::drawGrid(float planeAlpha) const {
 
         if (m_gridShow) {
             // Set up shader program
-            s_shaderProgramCol.use();
-            s_shaderProgramCol.setMat4("u_projection", projection);
-            s_shaderProgramCol.setMat4("u_view", view);
-            s_shaderProgramCol.setMat4("u_model", model);
+            m_shaderProgramCol.use();
+            m_shaderProgramCol.setMat4("u_projection", projection);
+            m_shaderProgramCol.setMat4("u_view", view);
+            m_shaderProgramCol.setMat4("u_model", model);
 
             // Draw grid
             glBindVertexArray(m_meshVAO[(int)vertex::grid]);
-            s_shaderProgramCol.setVec4("u_color", m_foreground);
+            m_shaderProgramCol.setVec4("u_color", m_foreground);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
             glDrawElements(GL_LINES, s_gridHighIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
-            s_shaderProgramCol.setVec4("u_color", m_background);
+            m_shaderProgramCol.setVec4("u_color", m_background);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
             glDrawElements(GL_LINES, s_gridNormIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -518,10 +556,10 @@ void Renderer::drawGrid(float planeAlpha) const {
         // Draw plane
         if (planeAlpha > 0.0f) {
             // Set up shader program
-            s_shaderProgramTexture.use();
-            s_shaderProgramTexture.setMat4("u_projection", projection);
-            s_shaderProgramTexture.setMat4("u_view", view);
-            s_shaderProgramTexture.setMat4("u_model", model);
+            m_shaderProgramTexture.use();
+            m_shaderProgramTexture.setMat4("u_projection", projection);
+            m_shaderProgramTexture.setMat4("u_view", view);
+            m_shaderProgramTexture.setMat4("u_model", model);
 
             glm::vec4 col;
             if (m_gridTexture == 0) {
@@ -529,16 +567,16 @@ void Renderer::drawGrid(float planeAlpha) const {
                 col.y = (m_background[1] + m_foreground[1]) / 2;
                 col.z = (m_background[2] + m_foreground[2]) / 2;
                 col.w = planeAlpha;
-                s_shaderProgramTexture.setBool("u_drawTexture", false);
+                m_shaderProgramTexture.setBool("u_drawTexture", false);
             } else {
                 col.x = col.y = col.z = 1.0f;
                 col.w = planeAlpha;
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, m_gridTexture);
-                s_shaderProgramTexture.setBool("u_drawTexture", true);
+                m_shaderProgramTexture.setBool("u_drawTexture", true);
             }
-            s_shaderProgramTexture.setVec4("u_color", col);
-            s_shaderProgramTexture.setInt("u_texture", 0);
+            m_shaderProgramTexture.setVec4("u_color", col);
+            m_shaderProgramTexture.setInt("u_texture", 0);
             glDepthMask(false);
             glBindVertexArray(m_meshVAO[(int)vertex::plane]);
             glDrawElements(GL_TRIANGLES, s_planeIndexSize / sizeof(int), GL_UNSIGNED_INT, 0);
@@ -560,31 +598,31 @@ void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
     glm::mat3 normal{ glm::transpose(glm::inverse(view * model)) };
 
     // Draw shape
-    s_shaderProgramPhong.use();
-    s_shaderProgramPhong.setVec3("u_lightPos", m_lightPos);
-    s_shaderProgramPhong.setFloat("u_ambientStrength", 0.4f);
-    s_shaderProgramPhong.setVec3("u_lightColor", LIGHT_COLOR);
-    s_shaderProgramPhong.setMat4("u_projection", projection);
-    s_shaderProgramPhong.setMat4("u_view", view);
-    s_shaderProgramPhong.setMat4("u_model", model);
-    s_shaderProgramPhong.setMat3("u_normal", normal);
+    m_shaderProgramDiff.use();
+    m_shaderProgramDiff.setVec3("u_lightPos", m_lightPos);
+    m_shaderProgramDiff.setFloat("u_ambientStrength", 0.4f);
+    m_shaderProgramDiff.setVec3("u_lightColor", LIGHT_COLOR);
+    m_shaderProgramDiff.setMat4("u_projection", projection);
+    m_shaderProgramDiff.setMat4("u_view", view);
+    m_shaderProgramDiff.setMat4("u_model", model);
+    m_shaderProgramDiff.setMat3("u_normal", normal);
     glBindVertexArray(m_shapeVAO[(int)sh]);
 
     switch (c.size()) {
     default:
     case 1:
-        s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
+        m_shaderProgramDiff.setVec4("u_objectColor", color_to_vec(c[0]));
         glDrawArrays(GL_TRIANGLES, 0, s_shapes[sh].size[3]);
         break;
     case 2:
-        s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[1]));
+        m_shaderProgramDiff.setVec4("u_objectColor", color_to_vec(c[1]));
         glDrawArrays(GL_TRIANGLES, 0, s_shapes[sh].size[2]);
-        s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[0]));
+        m_shaderProgramDiff.setVec4("u_objectColor", color_to_vec(c[0]));
         glDrawArrays(GL_TRIANGLES, s_shapes[sh].size[2], s_shapes[sh].size[3] - s_shapes[sh].size[2]);
         break;
     case 3:
         for (int i = 0; i < 3; i++) {
-            s_shaderProgramPhong.setVec4("u_objectColor", color_to_vec(c[2 - i]));
+            m_shaderProgramDiff.setVec4("u_objectColor", color_to_vec(c[2 - i]));
             glDrawArrays(GL_TRIANGLES, s_shapes[sh].size[i], s_shapes[sh].size[i+1] - s_shapes[sh].size[i]);
         }
         break;
@@ -596,11 +634,11 @@ void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
             p.x, p.y, p.z,
             p.x, p.y, 0.0f
         };
-        s_shaderProgramCol.use();
-        s_shaderProgramCol.setMat4("u_projection", projection);
-        s_shaderProgramCol.setMat4("u_view", view);
-        s_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
-        s_shaderProgramCol.setVec4("u_color", color_to_vec(c[0]));
+        m_shaderProgramCol.use();
+        m_shaderProgramCol.setMat4("u_projection", projection);
+        m_shaderProgramCol.setMat4("u_view", view);
+        m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+        m_shaderProgramCol.setVec4("u_color", color_to_vec(c[0]));
         glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
         glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData);
@@ -625,11 +663,11 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
         starData[6 * i + 5] = np[i][2];
     }
 
-    s_shaderProgramCol.use();
-    s_shaderProgramCol.setMat4("u_projection", projection);
-    s_shaderProgramCol.setMat4("u_view", view);
-    s_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
-    s_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
+    m_shaderProgramCol.use();
+    m_shaderProgramCol.setMat4("u_projection", projection);
+    m_shaderProgramCol.setMat4("u_view", view);
+    m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setVec4("u_color", glm::vec4{ 0.0f, 0.0f, 0.0f, 1.0f });
     glBindVertexArray(m_meshVAO[(int)vertex::star]);
     glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(starData), starData, GL_DYNAMIC_DRAW);
@@ -637,17 +675,14 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glDrawArrays(GL_LINES, 0, 2 * np.size());
 }
 
-void Renderer::drawText(std::string text, float x, float y, float scale) /*const*/ {
-    // Lock access
-    //s_mutexVBO.lock();
-
+void Renderer::drawText(std::string text, float x, float y, float scale) const {
     // Activate corresponding render state	
-    s_shaderProgramFont.use();
-    s_shaderProgramFont.setVec3("u_textColor", m_foreground);
-    s_shaderProgramFont.setInt("u_text", 0);
-    s_shaderProgramFont.setMat4("u_projection", m_camera.getOrthographic());
+    m_shaderProgramFont.use();
+    m_shaderProgramFont.setVec3("u_textColor", m_foreground);
+    m_shaderProgramFont.setInt("u_text", 0);
+    m_shaderProgramFont.setMat4("u_projection", m_camera.getOrthographic());
     glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(m_meshVAO[(int)vertex::font]);
+    glBindVertexArray(m_fontVAO);
 
     // Iterate through all characters
     std::string::const_iterator c;
@@ -672,7 +707,7 @@ void Renderer::drawText(std::string text, float x, float y, float scale) /*const
         // Render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.textureID);
         // Update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::font]);
+        glBindBuffer(GL_ARRAY_BUFFER, m_fontVBO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         // Render quad
@@ -682,9 +717,6 @@ void Renderer::drawText(std::string text, float x, float y, float scale) /*const
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Unlock access
-    //s_mutexVBO.unlock();
 }
 
 float Renderer::getAspectRatio() {

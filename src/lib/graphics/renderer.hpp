@@ -26,7 +26,7 @@
 namespace fcpp {
 	namespace internal {
         //! @brief Supported pointers to vertex buffers.
-        enum class vertex { font, singleLine, star, plane, grid, SIZE };
+        enum class vertex { singleLine, star, plane, grid, SIZE };
 
         //! @brief Supported pointers to index buffers.
         enum class index { plane, gridNorm, gridHigh, SIZE };
@@ -46,9 +46,7 @@ namespace fcpp {
 			Renderer(size_t antialias, std::string name, bool master = true, GLFWwindow* masterPtr = NULL);
 
             //! @brief Renderer destructor closing the window.
-            ~Renderer() {
-                glfwDestroyWindow(m_window);
-            }
+            ~Renderer();
 
             //! @brief It initializes the context on the current thread.
             void initializeContext(bool master = true);
@@ -69,7 +67,7 @@ namespace fcpp {
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
             
             //! @brief It draws the specified text in the specified coordinates, scale and color.
-            void drawText(std::string text, float x, float y, float scale) /*const*/;
+            void drawText(std::string text, float x, float y, float scale) const;
             
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
@@ -150,35 +148,20 @@ namespace fcpp {
             //! @brief Default light color.
             static const glm::vec3 LIGHT_COLOR;
 
-            //! @brief Main shader program, with phong lighting caluclations and color info.
-            Shader s_shaderProgramPhong;
-
-            //! @brief Additional shader program used for simple shapes and uniform color value.
-            Shader s_shaderProgramCol;
-
-            //! @brief Additional shader program used for texture rendering.
-            Shader s_shaderProgramTexture;
-
-            //! @brief Additional shader program used for fonts.
-            Shader s_shaderProgramFont;
-
             //! @brief It contains all the vertex information of the standard shapes.
             static Shapes s_shapes;
 
             //! @brief Vertex Buffer Objects for standard shapes; it can be shared among several contexts.
-            unsigned int s_shapeVBO[(int)shape::SIZE];
+            static unsigned int s_shapeVBO[(int)shape::SIZE];
 
             //! @brief Vertex Buffer Objects for commonly used meshes; it can be shared among several contexts.
-            unsigned int s_meshVBO[(int)vertex::SIZE];
+            static unsigned int s_meshVBO[(int)vertex::SIZE];
 
             //! @brief Element Buffer Objects for commonly used meshes; it can be shared among several contexts.
-            unsigned int s_meshEBO[(int)index::SIZE];
-
-            //! @brief A mutex for managing VBO access among renderers (slaves and master).
-            static std::mutex s_mutexVBO;
+            static unsigned int s_meshEBO[(int)index::SIZE];
 
             //! @brief Data structure mapping chars with glyphs.
-            std::unordered_map<char, glyph> s_glyphs;
+            static std::unordered_map<char, glyph> s_glyphs;
             
             //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
             static int s_planeIndexSize;
@@ -196,13 +179,13 @@ namespace fcpp {
             static bool s_gridIsReady;
 
             //! @brief It initializes all the static structures and variables, common to the Renderer instances.
-            void initializeCommon();
+            static void initializeCommon();
 
             //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
-            unsigned int loadTexture(std::string path);
+            static unsigned int loadTexture(std::string path);
 
             //! @brief It unloads the defined texture, given its path.
-            bool unloadTexture(unsigned int id);
+            static bool unloadTexture(unsigned int id);
 
             //! @brief Window object for GLFW; it stores OpenGL context information.
             GLFWwindow* m_window;
@@ -218,6 +201,30 @@ namespace fcpp {
 
             //! @brief Vertex Array Objects for commonly used meshes; it's per context and it can't be shared with others.
             unsigned int m_meshVAO[(int)vertex::SIZE];
+
+            //! @brief Vertex Array Object dedicated to font rendering; it's per context and it can't be shared with others.
+            unsigned int m_fontVAO;
+
+            //! @brief Vertex Buffer Object dedicated to font rendering; it's per Renderer and it shouldn't be shared with others.
+            unsigned int m_fontVBO;
+
+            //! @brief Renderer's Frame Buffer Object. All rendering calls will output on it.
+            unsigned int m_FBO;
+
+            //! @brief Render Buffer Objects attached to Renderer's FBO; the first is the color buffer, the second is the depth and stencil buffer.
+            unsigned int m_RBO[2];
+
+            //! @brief Main shader program, with diffuse lighting caluclations and color info; it's per context and it shouldn't be shared with others.
+            Shader m_shaderProgramDiff;
+
+            //! @brief Additional shader program used for simple shapes and uniform color value; it's per context and it shouldn't be shared with others.
+            Shader m_shaderProgramCol;
+
+            //! @brief Additional shader program used for texture rendering; it's per context and it shouldn't be shared with others.
+            Shader m_shaderProgramTexture;
+
+            //! @brief Additional shader program used for fonts; it's per context and it shouldn't be shared with others.
+            Shader m_shaderProgramFont;
 
             //! @brief Current width of the window.
             unsigned int m_currentWidth;
@@ -246,11 +253,17 @@ namespace fcpp {
             //! @brief Euclid's algorithm to get the greatest common divisor.
             int euclid(int a, int b);
 
+            //! @brief It loads the vertex and index data for the standard shapes into their respective buffers.
+            void allocateShapeBuffers(bool loadVertex = true);
+
             //! @brief It loads the vertex and index data for the commonly used meshes into their respective buffers (the grid is generated separately with makeGrid()).
             void allocateMeshBuffers(bool loadVertex = true);
 
-            //! @brief It loads the vertex and index data for the standard shapes into their respective buffers.
-            void allocateShapeBuffers(bool loadVertex = true);
+            //! @brief It allocates the buffer dedicated to the font rendering.
+            void allocateFontBuffer();
+
+            //! @brief It allocates the rendering framebuffer.
+            void allocateFrameBuffer();
 		};
 	}
 }

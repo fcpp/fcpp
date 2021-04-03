@@ -220,8 +220,8 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 
 /* --- DESTRUCTOR --- */
 Renderer::~Renderer() {
-    // We need to deaollcate all the buffers...
-    // Plus, it'd be nice to deallocate shaders by their (instance) destructors
+    // We need to unbind and deaollcate all the buffers...
+    // Plus, it'd be nice to deallocate shaders by their (instance) destructors.
     glfwDestroyWindow(m_window);
 }
 
@@ -323,10 +323,6 @@ void Renderer::allocateFrameBuffer() {
     // Check FBO status
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         throw std::runtime_error("ERROR::RENDERER::FBO::INCOMPLETE\n");
-
-    // Unbind FBO and RBO
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /* --- PUBLIC FUNCTIONS --- */

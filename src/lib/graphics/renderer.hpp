@@ -208,12 +208,6 @@ namespace fcpp {
             //! @brief Vertex Buffer Object dedicated to font rendering; it's per Renderer and it shouldn't be shared with others.
             unsigned int m_fontVBO;
 
-            //! @brief Renderer's Frame Buffer Object. All rendering calls will output on it.
-            unsigned int m_FBO;
-
-            //! @brief Render Buffer Objects attached to Renderer's FBO; the first is the color buffer, the second is the depth and stencil buffer.
-            unsigned int m_RBO[2];
-
             //! @brief Main shader program, with diffuse lighting caluclations and color info; it's per context and it shouldn't be shared with others.
             Shader m_shaderProgramDiff;
 
@@ -261,9 +255,6 @@ namespace fcpp {
 
             //! @brief It allocates the buffer dedicated to the font rendering.
             void allocateFontBuffer();
-
-            //! @brief It allocates the rendering framebuffer.
-            void allocateFrameBuffer();
 		};
 	}
 }

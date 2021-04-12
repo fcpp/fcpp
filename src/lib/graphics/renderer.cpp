@@ -131,19 +131,17 @@ void Renderer::initializeCommon() {
         // Deallocate FreeType structures
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLib);
-
-        // shaders normally go here
     }
 }
 
 unsigned int Renderer::loadTexture(std::string path) {
     unsigned int texture{ 0 };
     stbi_set_flip_vertically_on_load(true);
-    // load texture data
+    // Load texture data
     int width, height, nrChannels;
     unsigned char* data{ stbi_load((TEXTURE_PATH + path).c_str(), &width, &height, &nrChannels, 0) };
     if (data) {
-        // generate texture
+        // Generate texture
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -302,29 +300,6 @@ void Renderer::allocateFontBuffer() {
     glBindVertexArray(0);
 }
 
-void Renderer::allocateFrameBuffer() {
-    // Generate and bind FBO
-    glGenFramebuffers(1, &m_FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-
-    // Generate RBOs
-    glGenRenderbuffers(2, m_RBO);
-
-    // Allocate and attach color RBO
-    glBindRenderbuffer(GL_RENDERBUFFER, m_RBO[0]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, m_currentWidth, m_currentHeight);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_RBO[0]);
-
-    // Allocate and attach depth and stencil RBO
-    glBindRenderbuffer(GL_RENDERBUFFER, m_RBO[1]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_currentWidth, m_currentHeight);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO[1]);
-
-    // Check FBO status
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        throw std::runtime_error("ERROR::RENDERER::FBO::INCOMPLETE\n");
-}
-
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::initializeContext(bool master) {
     //std::cout << "initializeContext() on thread #" << std::this_thread::get_id() << "\n";
@@ -340,7 +315,6 @@ void Renderer::initializeContext(bool master) {
     allocateMeshBuffers(master);
     allocateShapeBuffers(master);
     allocateFontBuffer();
-    //allocateFrameBuffer();
 
     // Set viewport
     glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);

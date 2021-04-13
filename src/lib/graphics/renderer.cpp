@@ -81,56 +81,12 @@ void Renderer::initializeCommon() {
         // Mark common structures as ready
         s_commonIsReady = true;
 
-        // Initialize FreeType
-        FT_Library ftLib;
-        if (FT_Init_FreeType(&ftLib))
-            throw std::runtime_error("ERROR::RENDERER::FREETYPE::LIB_INIT_FAILED\n");
-        FT_Face ftFace;
-        if (FT_New_Face(ftLib, FONT_PATH.c_str(), 0, &ftFace))
-            throw std::runtime_error("ERROR::RENDERER::FREETYPE::FONT_LOAD_FAILED (" + FONT_PATH + ")\n");
+        // Allocate glyphs' texture buffers
+        allocateGlyphTextures();
 
-        // Generating glyphs' textures
-        FT_Set_Pixel_Sizes(ftFace, 0, FONT_DEFAULT_SIZE);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
-        for (unsigned char c = 0; c < 128; c++) {
-            // load character glyph 
-            if (FT_Load_Char(ftFace, c, FT_LOAD_RENDER)) {
-                std::cerr << "ERROR::RENDERER::FREETYPE::GLYPH_LOAD_FAILED (" << c << ")\n";
-                continue;
-            }
-            // generate texture
-            unsigned int texture;
-            glGenTextures(1, &texture);
-            glBindTexture(GL_TEXTURE_2D, texture);
-            glTexImage2D(
-                GL_TEXTURE_2D,
-                0,
-                GL_RED,
-                ftFace->glyph->bitmap.width,
-                ftFace->glyph->bitmap.rows,
-                0,
-                GL_RED,
-                GL_UNSIGNED_BYTE,
-                ftFace->glyph->bitmap.buffer
-            );
-            // set texture options
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            // now store character for later use
-            glyph gl = {
-                texture,
-                glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
-                glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
-                (unsigned int)(ftFace->glyph->advance.x)
-            };
-            s_glyphs.insert(std::pair<char, glyph>(c, gl));
-        }
-
-        // Deallocate FreeType structures
-        FT_Done_Face(ftFace);
-        FT_Done_FreeType(ftLib);
+        // Allocate VBOs and EBOs for meshes and shapes
+        allocateShapeVertex();
+        allocateMeshVertex();
     }
 }
 
@@ -168,6 +124,91 @@ bool Renderer::unloadTexture(unsigned int id) {
     if (!success) std::cerr << "ERROR::RENDERER::TEXTURE::TEXTURE_NOT_FOUND (id = " << id << ")\n";
 
     return success;
+}
+
+void Renderer::allocateGlyphTextures() {
+    // Initialize FreeType
+    FT_Library ftLib;
+    if (FT_Init_FreeType(&ftLib))
+        throw std::runtime_error("ERROR::RENDERER::FREETYPE::LIB_INIT_FAILED\n");
+    FT_Face ftFace;
+    if (FT_New_Face(ftLib, FONT_PATH.c_str(), 0, &ftFace))
+        throw std::runtime_error("ERROR::RENDERER::FREETYPE::FONT_LOAD_FAILED (" + FONT_PATH + ")\n");
+
+    // Generating glyphs' textures
+    FT_Set_Pixel_Sizes(ftFace, 0, FONT_DEFAULT_SIZE);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+    for (unsigned char c = 0; c < 128; c++) {
+        // load character glyph 
+        if (FT_Load_Char(ftFace, c, FT_LOAD_RENDER)) {
+            std::cerr << "ERROR::RENDERER::FREETYPE::GLYPH_LOAD_FAILED (" << c << ")\n";
+            continue;
+        }
+        // generate texture
+        unsigned int texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RED,
+            ftFace->glyph->bitmap.width,
+            ftFace->glyph->bitmap.rows,
+            0,
+            GL_RED,
+            GL_UNSIGNED_BYTE,
+            ftFace->glyph->bitmap.buffer
+        );
+        // set texture options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // now store character for later use
+        glyph gl = {
+            texture,
+            glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
+            glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
+            (unsigned int)(ftFace->glyph->advance.x)
+        };
+        s_glyphs.insert(std::pair<char, glyph>(c, gl));
+    }
+
+    // Deallocate FreeType structures
+    FT_Done_Face(ftFace);
+    FT_Done_FreeType(ftLib);
+}
+
+void Renderer::allocateShapeVertex() {
+    // Generate VBOs for standard shapes
+    glGenBuffers((int)shape::SIZE, s_shapeVBO);
+
+    for (int i = 0; i < (int)shape::SIZE; i++) {
+        // Get actual shape
+        shape sh{ (shape)i };
+
+        // Allocate (static) shape VBO
+        glBindBuffer(GL_ARRAY_BUFFER, s_shapeVBO[(int)sh]);
+        glBufferData(GL_ARRAY_BUFFER, s_shapes[sh].data.size() * sizeof(float), s_shapes[sh].data.data(), GL_STATIC_DRAW);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Renderer::allocateMeshVertex() {
+    // Generate VBOs and EBOs for general meshes
+    glGenBuffers((int)vertex::SIZE, s_meshVBO);
+    glGenBuffers((int)index::SIZE, s_meshEBO);
+
+    // Allocate (dynamic) single line VBO
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+
+    // Allocate (dynamic) neighbour star VBO
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
+
+    // Unbind current VBO
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 
@@ -210,9 +251,6 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 
     // Initialize context if master
     if (m_master) initializeContext(true);
-
-    // Run common initialization if master
-    if (m_master and !s_commonIsReady) initializeCommon();
 }
 
 
@@ -236,19 +274,17 @@ int Renderer::euclid(int a, int b) {
     return a; //the result is a when b is equal to 0
 }
 
-void Renderer::allocateShapeBuffers(bool loadVertex) {
+void Renderer::generateShapeAttributePointers() {
     // Generate VAOs and VBOs for standard shapes
     glGenVertexArrays((int)shape::SIZE, m_shapeVAO);
-    if (loadVertex) glGenBuffers((int)shape::SIZE, s_shapeVBO);
 
     for (int i = 0; i < (int)shape::SIZE; i++) {
         // Get actual shape
         shape sh{ (shape)i };
 
-        // Allocate (static) shape buffers
+        // Allocate shape attribute pointers
         glBindVertexArray(m_shapeVAO[(int)sh]);
         glBindBuffer(GL_ARRAY_BUFFER, s_shapeVBO[(int)sh]);
-        if (loadVertex) glBufferData(GL_ARRAY_BUFFER, s_shapes[sh].data.size() * sizeof(float), s_shapes[sh].data.data(), GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -258,39 +294,33 @@ void Renderer::allocateShapeBuffers(bool loadVertex) {
     }
 }
 
-void Renderer::allocateMeshBuffers(bool loadVertex) {
-    // Generate VAOs, VBOs and EBOs for general meshes
+void Renderer::generateMeshAttributePointers() {
+    // Generate VAOs for general meshes
     glGenVertexArrays((int)vertex::SIZE, m_meshVAO);
-    if (loadVertex) {
-        glGenBuffers((int)vertex::SIZE, s_meshVBO);
-        glGenBuffers((int)index::SIZE, s_meshEBO);
-    }
 
-    // Allocate (dynamic) single line buffers
+    // Allocate single line attribute pointers
     glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
     glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
-    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    // Allocate (dynamic) neighbour star buffers
+    // Allocate neighbour star attribute pointers
     glBindVertexArray(m_meshVAO[(int)vertex::star]);
     glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
-    if (loadVertex) glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
-void Renderer::allocateFontBuffer() {
+void Renderer::generateFontBuffers() {
     // Generate VAO and VBO
     glGenVertexArrays(1, &m_fontVAO);
     glGenBuffers(1, &m_fontVBO);
 
-    // Allocate (dynamic) font buffer
+    // Allocate (dynamic) font buffers
     glBindVertexArray(m_fontVAO);
     glBindBuffer(GL_ARRAY_BUFFER, m_fontVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
@@ -302,19 +332,12 @@ void Renderer::allocateFontBuffer() {
 
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::initializeContext(bool master) {
-    //std::cout << "initializeContext() on thread #" << std::this_thread::get_id() << "\n";
-
     // Set window's context as thread's current
     glfwMakeContextCurrent(m_window);
 
     // Initialize GLAD
     if (master and !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
-
-    // Allocate buffers
-    allocateMeshBuffers(master);
-    allocateShapeBuffers(master);
-    allocateFontBuffer();
 
     // Set viewport
     glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
@@ -333,8 +356,15 @@ void Renderer::initializeContext(bool master) {
     //if (antialias > 1) <----------- fix this later !!!!!!!!!!!!!
     glEnable(GL_MULTISAMPLE);
 
-    // Uncomment this call to draw in wireframe polygons
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // Initialize common resources
+    initializeCommon();
+
+    // Generate VAO for meshes and shapes
+    generateMeshAttributePointers();
+    generateShapeAttributePointers();
+
+    // Generate VAO and VBO for fonts
+    generateFontBuffers();
 
     /* The following code crashes the program (we need proper memory leak prevention):
      *  // Delete dummy shader objects

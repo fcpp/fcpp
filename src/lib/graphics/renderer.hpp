@@ -187,6 +187,15 @@ namespace fcpp {
             //! @brief It unloads the defined texture, given its path.
             static bool unloadTexture(unsigned int id);
 
+            //! @brief It loads glyphs' texture buffers.
+            static void allocateGlyphTextures();
+
+            //! @brief It loads the VBOs and EBOs for the standard shapes into their respective buffers.
+            static void allocateShapeVertex();
+
+            //! @brief It loads the VBOs and EBOs for the commonly used meshes into their respective buffers (the grid is generated separately with makeGrid()).
+            static void allocateMeshVertex();
+
             //! @brief Window object for GLFW; it stores OpenGL context information.
             GLFWwindow* m_window;
 
@@ -247,14 +256,14 @@ namespace fcpp {
             //! @brief Euclid's algorithm to get the greatest common divisor.
             int euclid(int a, int b);
 
-            //! @brief It loads the vertex and index data for the standard shapes into their respective buffers.
-            void allocateShapeBuffers(bool loadVertex = true);
+            //! @brief It loads the VAOs for the standard shapes into their respective buffers.
+            void generateShapeAttributePointers();
 
-            //! @brief It loads the vertex and index data for the commonly used meshes into their respective buffers (the grid is generated separately with makeGrid()).
-            void allocateMeshBuffers(bool loadVertex = true);
+            //! @brief It loads the VAOs for the commonly used meshes into their respective buffers (the grid is generated separately with makeGrid()).
+            void generateMeshAttributePointers();
 
-            //! @brief It allocates the buffer dedicated to the font rendering.
-            void allocateFontBuffer();
+            //! @brief It allocates the VAO and VBO dedicated to the font rendering.
+            void generateFontBuffers();
 		};
 	}
 }

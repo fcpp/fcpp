@@ -330,6 +330,24 @@ void Renderer::generateFontBuffers() {
     glBindVertexArray(0);
 }
 
+void Renderer::generateShaderPrograms() {
+    /* The following code crashes the program (we need proper memory leak prevention):
+     *  // Delete dummy shader objects
+     *  delete &m_shaderProgramDiff;
+     *  delete &m_shaderProgramCol;
+     *  delete &m_shaderProgramTexture;
+     *  delete &m_shaderProgramFont;
+     */
+
+    // Generate actual shader programs
+    if (m_master) {
+        m_shaderProgramDiff = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
+        m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
+        m_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
+    }
+    m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
+}
+
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::initializeContext(bool master) {
     // Set window's context as thread's current
@@ -366,21 +384,8 @@ void Renderer::initializeContext(bool master) {
     // Generate VAO and VBO for fonts
     generateFontBuffers();
 
-    /* The following code crashes the program (we need proper memory leak prevention):
-     *  // Delete dummy shader objects
-     *  delete &m_shaderProgramDiff;
-     *  delete &m_shaderProgramCol;
-     *  delete &m_shaderProgramTexture;
-     *  delete &m_shaderProgramFont;
-     */
-
-    // Generate actual shader programs
-    if (m_master) {
-        m_shaderProgramDiff = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
-        m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
-        m_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
-    }
-    m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
+    // Generate shader programs
+    generateShaderPrograms();
 
     // Clear first frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);

@@ -264,6 +264,9 @@ namespace fcpp {
 
             //! @brief It allocates the VAO and VBO dedicated to the font rendering.
             void generateFontBuffers();
+
+            //! @brief It compiles the shader programs.
+            void generateShaderPrograms();
 		};
 	}
 }

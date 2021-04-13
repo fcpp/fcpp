@@ -70,6 +70,30 @@ namespace tags {
     struct radius {};
 }
 
+//! @cond INTERNAL
+namespace details {
+    /**
+     * @brief List of neighbours of a node.
+     *
+     * @param static_topology Whether the topology is static or can change
+     */
+    template <bool b> class neighbour_list;
+
+    //! @brief Specialisation for dynamic topology.
+    template<> class neighbour_list<false> : public std::unordered_set<device_t> {
+        using std::unordered_set<device_t>::unordered_set;
+        using std::unordered_set<device_t>::operator=;
+    };
+
+    //! @brief Specialisation for static topology.
+    template<> class neighbour_list<true> : public std::vector<device_t> {
+    public:
+        iterator insert (iterator position, const value_type& val) {
+            return position;
+        }
+    };
+}
+
 /**
  * @brief Component handling message exchanges between nodes of a graph net.
  *
@@ -115,9 +139,6 @@ struct graph_connector {
     //! @brief Type for representing a position.
     using position_type = vec<dimension>;
 
-    //! @brief The type of settings data regulating connection.
-    using connection_data_type = typename connector_type::data_type;
-
     //! @brief Delay generator for sending messages after rounds.
     using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
 
@@ -147,23 +168,13 @@ struct graph_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})), m_nbr_msg_size(0) {
-                m_send = m_leave = TIME_MAX;
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_nbr_msg_size(0) {
+                m_send = TIME_MAX;
                 m_epsilon = common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON);
             }
 
             //! @brief Destructor leaving the corresponding cell.
             ~node() {
-            }
-
-            //! @brief Connector data.
-            connection_data_type& connector_data() {
-                return m_data;
-            }
-
-            //! @brief Connector data (const access).
-            const connection_data_type& connector_data() const {
-                return m_data;
             }
 
             //! @brief Returns the time of the next sending of messages.
@@ -197,7 +208,7 @@ struct graph_connector {
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
-                return std::min(std::min(m_send, m_leave), P::node::next());
+                return std::min(m_send, P::node::next());
             }
 
             //! @brief Updates the internal status of node component.
@@ -209,7 +220,7 @@ struct graph_connector {
                     m_send = TIME_MAX;
                     for (auto c : P::node::net.cell_of(P::node::as_final()).linked())
                         for (typename F::node* n : c->content())
-                            if (P::node::net.connection_success(get_generator(has_randomizer<P>{}, *this), m_data, P::node::position(t), n->m_data, n->position(t))) {
+                            if (true) {
                                 typename F::node::message_t m;
                                 if (n != this) {
                                     common::unlock_guard<parallel> u(P::node::mutex);
@@ -229,7 +240,6 @@ struct graph_connector {
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
                 P::node::round_end(t);
-                set_leave_time(t);
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
@@ -240,8 +250,6 @@ struct graph_connector {
             }
 
           private: // implementation details
-            class neighbour_list<false> : public std::unordered_set<device_t> {};
-
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
             void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
@@ -266,7 +274,7 @@ struct graph_connector {
             }
 
             //! @brief A generator for delays in sending messages.
-            neighbour_list<static_topology> m_neighbours;
+            details::neighbour_list<static_topology> m_neighbours;
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;
@@ -283,23 +291,18 @@ struct graph_connector {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
+            net(const common::tagged_tuple<S,T>& t) : P::net(t) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {
                 maybe_clear(has_identifier<P>{}, *this);
             }
 
-            //! @brief The maximum connection radius.
-            inline real_t connection_radius() const {
-                return m_connector.maximum_radius();
-            }
-
-            //! @brief Checks whether connection is possible.
-            template <typename G>
-            inline bool connection_success(G&& gen, const connection_data_type& data1, const position_type& position1, const connection_data_type& data2, const position_type& position2) const {
-                return m_connector(gen, data1, position1, data2, position2);
-            }
+            // //! @brief Checks whether connection is possible.
+            // template <typename G>
+            // inline bool connection_success(G&& gen, const connection_data_type& data1, const position_type& position1, const connection_data_type& data2, const position_type& position2) const {
+            //     return m_connector(gen, data1, position1, data2, position2);
+            // }
 
           private: // implementation details
             //! @brief Returns the `randomizer` generator if available.

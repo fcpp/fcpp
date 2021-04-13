@@ -55,15 +55,6 @@ namespace tags {
  */
 template <class... Ts>
 struct graph_spawner {
-    //! @brief Sequence of node initialisation tags and generating distributions.
-    using init_type = common::option_multitypes<tags::init, Ts...>;
-
-    //! @brief Node initialisation tags and generating distributions as tuple of tagged tuples.
-    using tuple_type = common::apply_templates<init_type, std::tuple, common::tagged_tuple_t>;
-
-    //! @brief Node initialisation tags and generating distributions as sequence of tagged tuples.
-    using inert_type = common::apply_templates<init_type, common::type_sequence, common::tagged_tuple_t>;
-
     //! @brief Sequence generator type scheduling spawning of nodes.
     using schedule_type = sequence::merge_t<common::option_types<tags::spawn_schedule, Ts...>>;
 
@@ -91,7 +82,7 @@ struct graph_spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
+            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t) {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -109,7 +100,7 @@ struct graph_spawner {
                     times_t t = m_schedule.next();
                     size_t i = m_schedule.next_sequence();
                     m_schedule.step(get_generator(has_randomizer<P>{}, *this));
-                    call_distribution(i, t, inert_type{});
+                    //call_distribution(i, t, inert_type{});
                 } else P::net::update();
             }
 
@@ -126,19 +117,6 @@ struct graph_spawner {
                 return {};
             }
 
-            //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
-            template <typename S, typename T, typename... Us>
-            tuple_type build_distributions_tuple(const common::tagged_tuple<S,T>& t, common::type_sequence<Us...>) {
-                return {build_distributions(t, typename Us::tags(), typename Us::types())...};
-            }
-
-            //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
-            template <typename S, typename T, typename... Ss, typename... Us>
-            common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>
-            build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
-                return {Us{get_generator(has_randomizer<P>{}, *this),t}...};
-            }
-
             //! @brief Adds a `start` time to a given tagged tuple.
             template <typename S, typename T>
             auto push_time(const common::tagged_tuple<S,T>& tup, times_t t) {
@@ -148,33 +126,15 @@ struct graph_spawner {
                 return tt;
             }
 
-            //! @brief Emplaces a node generated through the j-th distribution.
-            template <size_t i>
-            inline void call_distribution(size_t j, times_t t, std::index_sequence<i>) {
-                assert(i == j);
-                P::net::node_emplace(push_time(std::get<i>(m_distributions)(get_generator(has_randomizer<P>{}, *this)), t));
-            }
-
-            //! @brief Emplaces a node generated through the j-th distribution.
-            template <size_t i1, size_t i2, size_t... is>
-            inline void call_distribution(size_t j, times_t t, std::index_sequence<i1, i2, is...>) {
-                if (i1 == j)
-                    call_distribution(j, t, std::index_sequence<i1>{});
-                else
-                    call_distribution(j, t, std::index_sequence<i2, is...>{});
-            }
-
-            //! @brief Emplaces a node generated through the j-th distribution.
-            template <typename... Us>
-            void call_distribution(size_t j, times_t t, common::type_sequence<Us...>) {
-                return call_distribution(j, t, std::make_index_sequence<sizeof...(Us)>{});
-            }
+            // //! @brief Emplaces a node generated through the j-th distribution.
+            // template <size_t i>
+            // inline void call_distribution(size_t j, times_t t, std::index_sequence<i>) {
+            //     assert(i == j);
+            //     P::net::node_emplace(push_time(std::get<i>(m_distributions)(get_generator(has_randomizer<P>{}, *this)), t));
+            // }
 
             //! @brief The scheduling of spawning events.
             schedule_type m_schedule;
-
-            //! @brief The generator tuple.
-            tuple_type m_distributions;
         };
     };
 };

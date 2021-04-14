@@ -87,9 +87,18 @@ namespace details {
 
     //! @brief Specialisation for static topology.
     template<> class neighbour_list<true> : public std::vector<device_t> {
+        using std::vector<device_t>::vector;
+        using std::vector<device_t>::operator=;
+
     public:
-        iterator insert (iterator position, const value_type& val) {
-            return position;
+        iterator insert (const_iterator position, const device_t& val) {
+            return std::vector<device_t>::insert(std::lower_bound(begin(), end(), val), val);
+        }
+
+        iterator erase (const device_t& val) {
+           iterator it = std::lower_bound(begin(), end(), val);
+           if (*it == val) return std::vector<device_t>::erase(it);
+           return end();
         }
     };
 }
@@ -175,6 +184,14 @@ struct graph_connector {
 
             //! @brief Destructor leaving the corresponding cell.
             ~node() {
+            }
+
+            void connect(device_t i) {
+                m_neighbours.insert(i);
+            }
+
+            void disconnect(device_t i) {
+                m_neighbours.erase(i);
             }
 
             //! @brief Returns the time of the next sending of messages.

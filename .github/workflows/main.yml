@@ -11,10 +11,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Run tests
+      - name: Checkout repository...
+        uses: actions/checkout@v2
+      - name: Run tests...
         uses: ./.github/action-test
-      - name: Deploy documentation
+      - name: Deploy documentation...
         uses: dswistowski/surge-sh-action@v1
         with:
           domain: 'fcpp-doc.surge.sh'

@@ -1,0 +1,13 @@
+name: 'action-test'
+description: 'Run tests when pull-requests are opened, or commits pushed.'
+author: 'Giorgio Audrito'
+branding:
+  icon: eye
+  color: black
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - './src'
+    - './make.sh'
+    - 'all'

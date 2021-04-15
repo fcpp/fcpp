@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository...
+        uses: actions/checkout@v2
+      - name: Run tests...
+        uses: ./.github/action-test
+      - name: Deploy documentation...
+        uses: dswistowski/surge-sh-action@v1
+        with:
+          domain: 'fcpp-doc.surge.sh'
+          project: './src/doc/html'
+          login: 'giorgio.audrito@gmail.com'
+          token: '7b9d2aeb0869be7b9e381ae29c69dacc'

@@ -12,4 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/action-test
+      - name: Run tests
+        uses: ./.github/action-test
+      - name Deploy documentation
+        uses: dswistowski/surge-sh-action@v1
+        with:
+          domain: 'fcpp-doc.surge.sh'
+          project: './src/doc/html'
+          login: 'giorgio.audrito@gmail.com'
+          token: '7b9d2aeb0869be7b9e381ae29c69dacc'

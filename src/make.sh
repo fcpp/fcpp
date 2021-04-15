@@ -14,7 +14,7 @@ function usage() {
     echo -e "       <pattern> [replace]"
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation (can be chained)"
     echo -e "    \033[1mgui\033[0m:                             builds graphical simulations (platform can be unix or windows)"
-    echo -e "       <platform> <targets...>"
+    echo -e "       [-g] <platform> <targets...>"
     echo -e "    \033[1mbuild\033[0m:                           builds binaries for given targets, skipping tests"
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mtest\033[0m:                            builds binaries and tests for given targets"
@@ -242,6 +242,11 @@ while [ "$1" != "" ]; do
         mkdoc
     elif [ "$1" == "gui" ]; then
         shift 1
+        btype="Release"
+        if [ "$1" == "-g" ]; then
+            btype="Debug"
+            shift 1
+        fi
         platform=$1
         if [ "$platform" == windows ]; then
             flag=MinGW
@@ -253,7 +258,9 @@ while [ "$1" != "" ]; do
             exit 1
         fi
         shift 1
-        cmake -S ./ -B ./bin -G "$flag Makefiles" -DCMAKE_BUILD_TYPE=Release -Wno-dev
+        echo -e "\033[4mcmake -S ./ -B ./bin -G \"$flag Makefiles\" -DCMAKE_BUILD_TYPE=$btype -Wno-dev\033[0m"
+        cmake -S ./ -B ./bin -G "$flag Makefiles" -DCMAKE_BUILD_TYPE=$btype -Wno-dev
+        echo -e "\033[4mcmake --build ./bin/\033[0m"
         cmake --build ./bin/
         if [ "$platform" == windows ]; then
             cp bin/fcpp/src/libfcpp.dll bin/

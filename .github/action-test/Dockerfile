@@ -1,4 +1,4 @@
-FROM ubuntu:19.10
+FROM ubuntu:latest
 MAINTAINER giorgio.audrito@gmail.com
 
 # Install needed libraries

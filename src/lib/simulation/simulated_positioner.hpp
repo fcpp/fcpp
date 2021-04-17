@@ -115,6 +115,7 @@ struct simulated_positioner {
                 static_assert(common::tagged_tuple<S,T>::tags::template count<tags::x> >= 1, MISSING_TAG_MESSAGE);
                 m_last = TIME_MIN;
                 fcpp::details::self(m_nbr_vec, P::node::uid) = vec<dimension>();
+                fcpp::details::self(m_nbr_dist, P::node::uid) = 0;
             }
 
             #undef MISSING_TAG_MESSAGE
@@ -276,8 +277,10 @@ struct simulated_positioner {
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
                 position_type v = common::get<positioner_tag>(m) - position(t);
-                fcpp::details::self(m_nbr_vec, d) = v;
-                fcpp::details::self(m_nbr_dist, d) = norm(v);
+                if (d != P::node::uid) {
+                    fcpp::details::self(m_nbr_vec, d) = v;
+                    fcpp::details::self(m_nbr_dist, d) = norm(v);
+                }
             }
 
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.

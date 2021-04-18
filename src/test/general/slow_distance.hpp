@@ -32,6 +32,9 @@ real_t slow_distance(node_t& node, trace_t call_point, bool source, G&& metric) 
     });
 }
 
+//! @brief Export list for slow_distance.
+using slow_distance_t = common::export_list<real_t>;
+
 //! @brief Counts the number of communications with each neighbour.
 template <typename node_t>
 field<int> connection(node_t& node, trace_t call_point) {
@@ -40,6 +43,8 @@ field<int> connection(node_t& node, trace_t call_point) {
     });
 }
 
+//! @brief Export list for connection.
+using connection_t = common::export_list<field<int>>;
 
 
 namespace tags {
@@ -77,6 +82,9 @@ void distance_compare(node_t& node, trace_t call_point) {
     node.storage(tags::fasterr{})   = std::abs(fastd - ideal);
     node.storage(tags::slowerr{})   = std::abs(slowd - ideal);
 }
+
+//! @brief Export list for distance_compare.
+using distance_compare_t = common::export_list<abf_distance_t, slow_distance_t>;
 
 
 }

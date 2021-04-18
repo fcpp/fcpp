@@ -46,6 +46,12 @@
 //! @brief Macro inserting the default code at function start.
 #define CODE            internal::trace_call trace_caller(node.stack_trace, call_point);
 
+//! @brief Macro defining a non-generic aggregate function.
+#define FUN_EXPORT      using
+
+//! @brief Macro defining the type arguments of an aggregate function.
+#define GEN_EXPORT(...) template <MACRO_MAPPER(__TYPE_ARG__, __VA_ARGS__)> using
+
 /**
  * @brief Macro for defining a main class to be used in the calculus component. Usage:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}

@@ -56,6 +56,18 @@ T gossip_mean(node_t& node, trace_t call_point, T value) {
     });
 }
 
+//! @brief Export list for gossip.
+template <typename T> using gossip_t = common::export_list<T>;
+
+//! @brief Export list for gossip_min.
+template <typename T> using gossip_min_t = gossip_t<T>;
+
+//! @brief Export list for gossip_max.
+template <typename T> using gossip_max_t = gossip_t<T>;
+
+//! @brief Export list for gossip_mean.
+template <typename T> using gossip_mean_t = gossip_t<T>;
+
 
 //! @brief Collects distributed data with a single-path strategy.
 template <typename node_t, typename P, typename T, typename U, typename G, typename = common::if_signature<G, T(T,T)>>
@@ -63,10 +75,13 @@ T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& va
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, (T)null, [&](field<T> x){
-        device_t parent = get<1>(min_hood( node, 0, make_tuple(nbr(node, 1, distance), nbr(node, 2, node.uid)) ));
-        return fold_hood(node, 0, accumulate, mux(nbr(node, 3, parent) == node.uid, x, (T)null), value);
+        device_t parent = get<1>(min_hood( node, 0, make_tuple(nbr(node, 1, distance), nbr_uid(node, 0)) ));
+        return fold_hood(node, 0, accumulate, mux(nbr(node, 2, parent) == node.uid, x, (T)null), value);
     });
 }
+
+//! @brief Export list for sp_collection.
+template <typename P, typename T, typename U = T> using sp_collection_t = common::export_list<T,P,device_t>;
 
 //! @brief Collects distributed data with a multi-path strategy.
 template <typename node_t, typename P, typename T, typename U, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,size_t)>>
@@ -75,11 +90,14 @@ T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& va
 
     return nbr(node, 0, (T)null, [&](field<T> x){
         field<P> nbrdist = nbr(node, 1, distance);
-        T v = fold_hood(node, 1, accumulate, mux(nbrdist > distance, x, (T)null), value);
-        int n = sum_hood(node, 1, mux(nbrdist < distance, 1, 0), 0);
+        T v = fold_hood(node, 0, accumulate, mux(nbrdist > distance, x, (T)null), value);
+        int n = sum_hood(node, 0, mux(nbrdist < distance, 1, 0), 0);
         return make_tuple(divide(v, max(n, 1)), v);
     });
 }
+
+//! @brief Export list for mp_collection.
+template <typename P, typename T, typename U = T> using mp_collection_t = common::export_list<T,P>;
 
 //! @brief Collects distributed data with a weighted multi-path strategy.
 template <typename node_t, typename T, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,real_t)>>
@@ -92,11 +110,14 @@ T wmp_collection(node_t& node, trace_t call_point, real_t distance, real_t radiu
     field<real_t> out_w = max(d * p, field<real_t>{0});
     real_t factor = sum_hood(node, 0, out_w, real_t{0});
     if (factor == 0) factor = 1;
-    field<real_t> in_w = nbr(node, 1, out_w / factor);
-    return nbr(node, 2, value, [&](field<T> x){
-        return fold_hood(node, 2, accumulate, map_hood(multiply, x, in_w), value);
+    field<real_t> in_w = nbr(node, 0, out_w / factor);
+    return nbr(node, 1, value, [&](field<T> x){
+        return fold_hood(node, 0, accumulate, map_hood(multiply, x, in_w), value);
     });
 }
+
+//! @brief Export list for wmp_collection.
+template <typename T> using wmp_collection_t = common::export_list<T,field<real_t>,real_t>;
 
 
 }

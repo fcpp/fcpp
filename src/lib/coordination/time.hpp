@@ -46,6 +46,9 @@ inline int counter(node_t& node, trace_t call_point) {
     return counter(node, call_point, 1, 0);
 }
 
+//! @brief Export list for counter.
+template <typename A = int, typename B = A> using counter_t = common::export_list<A>;
+
 
 //! @brief Number of rounds elapsed since the last true `value`.
 template <typename node_t>
@@ -53,11 +56,17 @@ inline int round_since(node_t& node, trace_t call_point, bool value) {
     return value ? 0 : counter(node, call_point);
 }
 
+//! @brief Export list for round_since.
+using round_since_t = common::export_list<int>;
+
 //! @brief Time elapsed since the last true `value`.
 template <typename node_t>
 inline times_t time_since(node_t& node, trace_t call_point, bool value) {
     return value ? 0 : counter(node, call_point, node.current_time() - node.previous_time(), 0);
 }
+
+//! @brief Export list for time_since.
+using time_since_t = common::export_list<times_t>;
 
 
 //! @brief Makes a varying value constant after a given time `t`.
@@ -68,6 +77,9 @@ inline T constant_after(node_t& node, trace_t call_point, T value, times_t t) {
     });
 }
 
+//! @brief Export list for constant_after.
+template <typename T> using constant_after_t = common::export_list<T>;
+
 //! @brief Makes a varying value constant.
 template <typename node_t, typename T>
 inline T constant(node_t& node, trace_t call_point, T value) {
@@ -75,6 +87,9 @@ inline T constant(node_t& node, trace_t call_point, T value) {
         return o;
     });
 }
+
+//! @brief Export list for constant.
+template <typename T> using constant_t = common::export_list<T>;
 
 
 //! @brief Toggles a variable with a starting point when `change` holds.
@@ -85,6 +100,9 @@ bool toggle(node_t& node, trace_t call_point, bool change, bool start = false) {
     });
 }
 
+//! @brief Export list for toggle.
+using toggle_t = common::export_list<bool>;
+
 //! @brief Toggles a variable with a starting point whenever `change` becomes true.
 template <typename node_t>
 inline bool toggle_filter(node_t& node, trace_t call_point, bool change, bool start = false) {
@@ -92,6 +110,9 @@ inline bool toggle_filter(node_t& node, trace_t call_point, bool change, bool st
         return (((o&1) == 1) != (change and not ((o&2) == 2))) + 2 * change;
     })&1) == 1;
 }
+
+//! @brief Export list for toggle_filter.
+using toggle_filter_t = common::export_list<int8_t>;
 
 
 //! @brief Delays a value by `n` rounds (or as much as possibile given the last output value).
@@ -104,6 +125,9 @@ T delay(node_t& node, trace_t call_point, T value, size_t n) {
     }
     return value;
 }
+
+//! @brief Export list for delay.
+template <typename T> using delay_t = common::export_list<T>;
 
 
 //! @brief An exponential filter dampening changes of a value across time.
@@ -119,6 +143,9 @@ template <typename node_t, typename T>
 inline T exponential_filter(node_t& node, trace_t call_point, T value, real_t factor) {
     return exponential_filter(node, call_point, value, value, factor);
 }
+
+//! @brief Export list for exponential_filter.
+template <typename T, typename U = T> using exponential_filter_t = common::export_list<T>;
 
 
 //! @brief An exponential filter dampening changes of a value across time and space.
@@ -137,6 +164,9 @@ inline T shared_filter(node_t& node, trace_t call_point, T value, real_t factor)
     return shared_filter(node, call_point, value, value, factor);
 }
 
+//! @brief Export list for shared_filter.
+template <typename T, typename U = T> using shared_filter_t = common::export_list<T>;
+
 //! @brief An exponential decay fading from initial to value across time and space.
 template <typename node_t, typename U, typename T>
 T shared_decay(node_t& node, trace_t call_point, U initial, T value, real_t factor) {
@@ -147,6 +177,9 @@ T shared_decay(node_t& node, trace_t call_point, U initial, T value, real_t fact
     });
 }
 
+//! @brief Export list for shared_decay.
+template <typename T, typename U = T> using shared_decay_t = common::export_list<T>;
+
 
 //! @brief Maintains a shared clock across the network.
 template <typename node_t>
@@ -155,6 +188,9 @@ inline times_t shared_clock(node_t& node, trace_t call_point) {
         return max_hood(node, call_point, node.previous_time() == TIME_MIN ? node.current_time() : x + node.nbr_lag());
     });
 }
+
+//! @brief Export list for shared_clock.
+using shared_clock_t = common::export_list<times_t>;
 
 
 }

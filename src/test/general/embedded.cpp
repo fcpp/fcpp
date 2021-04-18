@@ -75,12 +75,18 @@ FUN void time_tracking(ARGS) { CODE
     node.storage(global_clock{}) = coordination::shared_clock(CALL);
 }
 
+//! @brief Export list for time_tracking.
+FUN_EXPORT time_tracking_t = common::export_list<coordination::counter_t<uint16_t>, coordination::shared_clock_t>;
+
 //! @brief Tracks the maximum consumption of memory and message resources.
 FUN void resource_tracking(ARGS) { CODE
     node.storage(max_stack{}) = coordination::gossip_max(CALL, usedStack());
     node.storage(max_heap{}) = uint32_t{2} * coordination::gossip_max(CALL, usedHeap());
     node.storage(max_msg{}) = coordination::gossip_max(CALL, (int8_t)min(node.msg_size(), size_t{127}));
 }
+
+//! @brief Export list for resource_tracking.
+FUN_EXPORT resource_tracking_t = common::export_list<coordination::gossip_max_t<uint16_t>, coordination::gossip_max_t<int8_t>>;
 
 //! @brief Records the set of neighbours connected at least 50% of the time.
 FUN void topology_recording(ARGS) { CODE
@@ -102,10 +108,16 @@ FUN void topology_recording(ARGS) { CODE
     node.storage(strongest_link{}) = (int8_t)round(c);
 }
 
+//! @brief Export list for topology_recording.
+FUN_EXPORT topology_recording_t = common::export_list<std::unordered_map<device_t,times_t>>;
+
 //! @brief Checks whether to terminate the execution.
 FUN void termination_check(ARGS) { CODE
     if (coordination::round_since(CALL, not buttonPressed()) >= PRESS_TIME) node.terminate();
 }
+
+//! @brief Export list for termination_check.
+FUN_EXPORT termination_check_t = common::export_list<coordination::round_since_t>;
 
 
 // AGGREGATE CASE STUDIES
@@ -118,6 +130,9 @@ FUN void vulnerability_detection(ARGS, int diameter) { CODE
     });
     node.storage(some_weak{}) = coordination::broadcast(CALL, node.storage(hop_dist{}), collect_weak);
 }
+
+//! @brief Export list for vulnerability_detection.
+FUN_EXPORT vulnerability_detection_t = common::export_list<coordination::diameter_election_distance_t<>, coordination::sp_collection_t<hops_t, bool>, coordination::broadcast_t<hops_t, bool>>;
 
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
 FUN void contact_tracing(ARGS, times_t window) { CODE
@@ -154,6 +169,9 @@ FUN void contact_tracing(ARGS, times_t window) { CODE
         if (contacts.count(c.first))
             node.storage(infected{}) = true;
 }
+
+//! @brief Export list for contact_tracing.
+FUN_EXPORT contact_tracing_t = common::export_list<coordination::toggle_filter_t, std::unordered_map<device_t, times_t>>;
 
 
 // AGGREGATE MAIN AND SETTINGS
@@ -197,8 +215,12 @@ DECLARE_OPTIONS(opt,
     retain<metric::retain<5, 1>>, // messages are thrown away after 5/1 secs
     round_schedule<sequence::periodic_n<1, ROUND_PERIOD, ROUND_PERIOD>>, // rounds are happening every 1 secs (den, start, period)
     exports< // types that may appear in messages
-        bool, hops_t, device_t, int8_t, uint16_t, int, times_t, tuple<device_t, hops_t>,
-        field<device_t>, std::unordered_map<device_t, times_t>
+        time_tracking_t,
+        vulnerability_detection_t,
+        contact_tracing_t,
+        resource_tracking_t,
+        topology_recording_t,
+        termination_check_t
     >,
     tuple_store< // tag/type that can appear in node.storage(tag{}) = type{}, are printed in output
         round_count,    uint16_t,

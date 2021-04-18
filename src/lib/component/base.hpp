@@ -115,7 +115,7 @@ struct base {
             #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::uid node initialisation tag\033[0m"
 
             //! @name constructors
-            //@{
+            //! @{
             /**
              * @brief Main constructor.
              *
@@ -134,7 +134,7 @@ struct base {
 
             //! @brief Deleted copy assignment.
             node& operator=(const node&) = delete;
-            //@}
+            //! @}
 
             /**
              * @brief Returns next event to schedule for the node component.
@@ -212,7 +212,7 @@ struct base {
 
           public: // visible by node objects and the main program
             //! @name constructors
-            //@{
+            //! @{
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>&) {
@@ -227,7 +227,7 @@ struct base {
 
             //! @brief Deleted copy assignment.
             net& operator=(const net&) = delete;
-            //@}
+            //! @}
 
             /**
              * @brief Returns next event to schedule for the net component.

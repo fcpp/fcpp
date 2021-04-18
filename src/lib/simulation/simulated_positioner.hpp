@@ -103,7 +103,7 @@ struct simulated_positioner {
 
             #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::x node initialisation tag\033[0m"
 
-            //@{
+            //! @{
             /**
              * @brief Main constructor.
              *

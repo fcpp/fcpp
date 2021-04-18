@@ -45,7 +45,7 @@ namespace common {
  * Helper empty class encapsulating a sequence of types.
  * Mimics operations in standard stl containers.
  */
-//{@
+//! @{
 //! @brief General form.
 template <typename... Ts>
 struct type_sequence;
@@ -365,7 +365,7 @@ struct type_sequence<> {
     
     static constexpr size_t size = 0;
 };
-//@}
+//! @}
 
 
 /**
@@ -373,7 +373,7 @@ struct type_sequence<> {
  *
  * Constexpr computing boolean combinations of their arguments.
  */
-//@{
+//! @{
 //! @brief Helper class holding arbitrary boolean template parameters.
 template <bool...> struct bool_pack {};
 
@@ -392,7 +392,7 @@ constexpr bool some_true = not all_false<v...>;
 //! @brief Checks if some argument is `false`.
 template <bool... v>
 constexpr bool some_false = not all_true<v...>;
-//@}
+//! @}
 
 
 /**
@@ -473,7 +473,7 @@ using ifn_class_template = std::enable_if_t<not is_class_template<T, A>, B>;
  * Constant which is true if and only if the second (type) parameter is built through array-like
  * and tuple-like classes from specializations of the first (template) parameter.
  */
-//@{
+//! @{
 //! @brief False in general.
 template <template<class...> class T, class A>
 constexpr bool has_template = false;

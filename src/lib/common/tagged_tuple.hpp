@@ -77,7 +77,7 @@ struct tagged_tuple;
  * Function getting elements of a tagged tuple by tag.
  * @param S The tag to be extracted.
  */
-//@{
+//! @{
 //! @brief Write access.
 template <typename S, typename... Ss, typename... Ts>
 type_get<type_find<S, Ss...>, Ts...>&
@@ -96,7 +96,7 @@ const type_get<type_find<S, Ss...>, Ts...>&
 get(const tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
     return std::get<type_find<S, Ss...>>(t);
 }
-//@}
+//! @}
 
 
 //! @cond INTERNAL

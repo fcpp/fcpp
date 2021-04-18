@@ -40,7 +40,7 @@ class flat_ptr<T, false> {
     
   public:
     //! @name constructors
-    //@{
+    //! @{
     //! @brief Default constructor.
     flat_ptr() {
         m_data.reset(new T());
@@ -61,10 +61,10 @@ class flat_ptr<T, false> {
     
     //! @brief Move constructor.
     flat_ptr(flat_ptr<T, false>&&) = default;
-    //@}
+    //! @}
 
     //! @name assignment operators
-    //@{
+    //! @{
     //! @brief Default copying assignment.
     flat_ptr<T, false>& operator=(const T& d) {
         m_data.reset(new T(d));
@@ -82,7 +82,7 @@ class flat_ptr<T, false> {
     
     //! @brief Move assignment.
     flat_ptr<T, false>& operator=(flat_ptr<T, false>&&) = default;
-    //@}
+    //! @}
 
     //! @brief Equality operator.
     bool operator==(const flat_ptr<T, false>& o) const {
@@ -130,7 +130,7 @@ class flat_ptr<T, true> {
     
   public:
     //! @name constructors
-    //@{
+    //! @{
     //! @brief Default constructor.
     flat_ptr() = default;
     
@@ -145,10 +145,10 @@ class flat_ptr<T, true> {
     
     //! @brief Move constructor.
     flat_ptr(flat_ptr<T, true>&&) = default;
-    //@}
+    //! @}
 
     //! @name assignment operators
-    //@{
+    //! @{
     //! @brief Default copying assignment.
     flat_ptr<T, true>& operator=(const T& d) {
         m_data = d;
@@ -166,7 +166,7 @@ class flat_ptr<T, true> {
     
     //! @brief Move assignment.
     flat_ptr<T, true>& operator=(flat_ptr<T, true>&&) = default;
-    //@}
+    //! @}
 
     //! @brief Equality operator.
     bool operator==(const flat_ptr<T, true>& o) const {

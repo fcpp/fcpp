@@ -68,7 +68,7 @@ namespace tags {
 template <typename node_t>
 void distance_compare(node_t& node, trace_t call_point) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
-    
+
     bool source = node.uid == 0;
     auto metric = [&](){
         return node.nbr_dist();

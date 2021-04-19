@@ -29,12 +29,12 @@ class profiler {
   public:
     //! @brief Constructor given a counter name.
     profiler(std::string n) : name{n}, start{std::clock()} {}
-    
+
     //! @brief Destructor accumulating the CPU elapsed.
     ~profiler() {
         clock_counters[name] += std::clock() - start;
     }
-    
+
     //! @brief Produces a final report for all counters.
     static void report(std::ostream& o = std::cerr) {
         std::clock_t tot = std::clock() - program_start;
@@ -84,7 +84,7 @@ class profiler {
         size_t x = s.rfind('/');
         return x == std::string::npos ? "" : s.substr(0, x);
     }
-    
+
     //! @brief Stores the counter name.
     std::string name;
     //! @brief Stores the clock during construction.

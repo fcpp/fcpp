@@ -82,7 +82,7 @@ FUN_EXPORT device_counting_t = common::export_list<sp_collection_t<real_t, real_
 FUN void progress_tracking(ARGS, bool is_source, device_t source_id, real_t dist) { CODE
     real_t value = distance(node.net.node_at(source_id).position(), node.position()) + (500 - node.current_time());
     real_t threshold = 3.5f / count_hood(CALL);
-    
+
     auto adder = [](real_t x, real_t y) {
         return max(x,y);
     };
@@ -107,12 +107,12 @@ FUN_EXPORT progress_tracking_t = common::export_list<sp_collection_t<real_t, rea
 //! @brief Main function.
 MAIN() {
     rectangle_walk(CALL, make_vec(0,0), make_vec(2000,200), 30.5f, 1);
-    
+
     device_t source_id = node.current_time() < 250 ? 0 : 1;
     bool is_source = node.uid == source_id;
     int dist_algo = node.storage(tags::algorithm{});
     real_t dist = generic_distance(CALL, dist_algo, is_source);
-    
+
     device_counting(CALL, is_source, dist);
     progress_tracking(CALL, is_source, source_id, dist);
 }

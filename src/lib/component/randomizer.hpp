@@ -91,7 +91,7 @@ struct randomizer {
             inline generator_type& generator() {
                 return m_generator;
             }
-            
+
             //! @brief Generates an `int` value between 0 and `b`.
             inline int next_int(int b = std::numeric_limits<int>::max()) {
                 return next_int(0,b);
@@ -102,7 +102,7 @@ struct randomizer {
                 std::uniform_int_distribution<int> dist(a,b);
                 return dist(generator());
             }
-            
+
             //! @brief Generates a `real_t` value between zero and `b`.
             inline real_t next_real(real_t b = 1) {
                 return next_real(0,b);
@@ -113,19 +113,19 @@ struct randomizer {
                 std::uniform_real_distribution<real_t> dist(a,b);
                 return dist(generator());
             }
-            
+
             //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
             template <template<typename> class D>
             real_t random_error(real_t v, real_t r, real_t a = 0) {
                 D<real_t> dist = distribution::make<D>(v, r*v+a);
                 return dist(m_generator);
             }
-            
+
           private: // implementation details
             //! @brief The random number generator.
             generator_type m_generator;
         };
-        
+
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
@@ -135,7 +135,7 @@ struct randomizer {
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
-            
+
           protected: // visible by net objects only
             //! @brief Gives access to the random number generator.
             inline generator_type& generator() {
@@ -152,7 +152,7 @@ struct randomizer {
                 std::uniform_int_distribution<int> dist(a,b);
                 return dist(m_generator);
             }
-            
+
             //! @brief Generates a `real_t` value between zero and `b`.
             inline real_t next_real(real_t b = 1) {
                 return next_real(0,b);
@@ -163,14 +163,14 @@ struct randomizer {
                 std::uniform_real_distribution<real_t> dist(a,b);
                 return dist(m_generator);
             }
-            
+
             //! @brief Applies a random relative `r` and absolute `a` deviation to a value `v` with distribution `D` from header `<random>`.
             template <template<typename> class D>
             real_t random_error(real_t v, real_t r, real_t a = 0) {
                 D<real_t> dist = distribution::make<D>(v, r*v+a);
                 return dist(m_generator);
             }
-            
+
           private: // implementation details
             //! @brief The random number generator.
             generator_type m_generator;

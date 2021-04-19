@@ -30,7 +30,7 @@ class TagTupleTest : public ::testing::Test {
   protected:
     virtual void SetUp() {
     }
-    
+
     common::tagged_tuple_t<tag, int, gat, bool> t{2, true};
 };
 

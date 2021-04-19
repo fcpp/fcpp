@@ -18,7 +18,7 @@ struct worker {
     struct component : public P {
         struct node : public P::node {
             using P::node::node;
-            
+
             void round_main(times_t) {
                 result += workhard();
             }
@@ -27,7 +27,7 @@ struct worker {
                 if (n <= 1) return 1;
                 return (workhard(n-1) + workhard(n-2))/2;
             }
-            
+
             int result = 0;
         };
         using net = typename P::net;

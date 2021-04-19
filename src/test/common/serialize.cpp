@@ -124,3 +124,17 @@ TEST(SerializeTest, FCPP) {
     e->insert(3, details::make_field<bool>({2, 4}, {false, true, true}));
     SERIALIZE_CHECK(e, {});
 }
+
+TEST(SerializeTest, Error) {
+    std::string s = "hello world";
+    std::vector<char> v;
+    for (size_t i=0; i<s.size(); ++i) v.push_back(s[i]);
+    common::isstream is(v);
+    common::multitype_map<trace_t, bool, char, int> m;
+    try {
+        is >> m;
+        EXPECT_TRUE(false);
+    } catch (common::format_error& e) {
+        EXPECT_STREQ(e.what(), "format error in deserialisation");
+    }
+}

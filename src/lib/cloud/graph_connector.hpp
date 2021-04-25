@@ -235,16 +235,14 @@ struct graph_connector {
                     times_t t = next();
                     PROFILE_COUNT("connector/send");
                     m_send = TIME_MAX;
-                    for (auto c : P::node::net.cell_of(P::node::as_final()).linked())
-                        for (typename F::node* n : c->content())
-                            if (true) {
-                                typename F::node::message_t m;
-                                if (n != this) {
-                                    common::unlock_guard<parallel> u(P::node::mutex);
-                                    common::lock_guard<parallel> l(n->mutex);
-                                    n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
-                                } else n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
-                            }
+                    for (typename F::node* n : m_neighbours) {
+                        typename F::node::message_t m;
+                        if (n != this) {
+                            common::unlock_guard<parallel> u(P::node::mutex);
+                            common::lock_guard<parallel> l(n->mutex);
+                            n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
+                        } else n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
+                    }
                 } else P::node::update();
             }
 

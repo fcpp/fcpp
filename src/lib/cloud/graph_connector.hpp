@@ -70,39 +70,6 @@ namespace tags {
     struct radius {};
 }
 
-//! @cond INTERNAL
-namespace details {
-    /**
-     * @brief List of neighbours of a node.
-     *
-     * @param static_topology Whether the topology is static or can change
-     */
-    template <bool b> class neighbour_list;
-
-    //! @brief Specialisation for dynamic topology.
-    template<> class neighbour_list<false> : public std::unordered_set<device_t> {
-        using std::unordered_set<device_t>::unordered_set;
-        using std::unordered_set<device_t>::operator=;
-    };
-
-    //! @brief Specialisation for static topology.
-    template<> class neighbour_list<true> : public std::vector<device_t> {
-        using std::vector<device_t>::vector;
-        using std::vector<device_t>::operator=;
-
-    public:
-        iterator insert (const_iterator position, const device_t& val) {
-            return std::vector<device_t>::insert(std::lower_bound(begin(), end(), val), val);
-        }
-
-        iterator erase (const device_t& val) {
-           iterator it = std::lower_bound(begin(), end(), val);
-           if (*it == val) return std::vector<device_t>::erase(it);
-           return end();
-        }
-    };
-}
-
 /**
  * @brief Component handling message exchanges between nodes of a graph net.
  *
@@ -137,7 +104,7 @@ struct graph_connector {
     //! @brief Whether message sizes should be emulated.
     constexpr static bool message_size = common::option_flag<tags::message_size, false, Ts...>;
 
-    constexpr static bool static_topology = common::option_flag<tags::static_topology, false, Ts...>;
+    //    constexpr static bool static_topology = common::option_flag<tags::static_topology, false, Ts...>;
 
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
@@ -186,8 +153,8 @@ struct graph_connector {
             ~node() {
             }
 
-            void connect(device_t i) {
-                m_neighbours.insert(i);
+            void connect(device_t i, typename F::node *n) {
+                m_neighbours.insert(std::make_pair(i,n));
             }
 
             void disconnect(device_t i) {
@@ -235,7 +202,8 @@ struct graph_connector {
                     times_t t = next();
                     PROFILE_COUNT("connector/send");
                     m_send = TIME_MAX;
-                    for (typename F::node* n : m_neighbours) {
+                    for (std::pair<device_t, typename F::node*> p : m_neighbours) {
+                        typename F::node *n = p.second;
                         typename F::node::message_t m;
                         if (n != this) {
                             common::unlock_guard<parallel> u(P::node::mutex);
@@ -265,6 +233,9 @@ struct graph_connector {
             }
 
           private: // implementation details
+            //! @brief
+            using neighbour_list = std::unordered_map<device_t, typename F::node*>;
+
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
             void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
@@ -289,7 +260,7 @@ struct graph_connector {
             }
 
             //! @brief A generator for delays in sending messages.
-            details::neighbour_list<static_topology> m_neighbours;
+            neighbour_list m_neighbours;
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;

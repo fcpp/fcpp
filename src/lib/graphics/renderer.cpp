@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2020-2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
 #include <stdexcept>
@@ -256,9 +256,10 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 
 /* --- DESTRUCTOR --- */
 Renderer::~Renderer() {
-    // We need to unbind and deaollcate all the buffers...
-    // Plus, it'd be nice to deallocate shaders by their (instance) destructors.
+    // Destroy window and all associated resources (to do on main thread).
     glfwDestroyWindow(m_window);
+
+    // Camera's, shapes' and shaders' destructors will be executed after this one.
 }
 
 
@@ -331,14 +332,6 @@ void Renderer::generateFontBuffers() {
 }
 
 void Renderer::generateShaderPrograms() {
-    /* The following code crashes the program (we need proper memory leak prevention):
-     *  // Delete dummy shader objects
-     *  delete &m_shaderProgramDiff;
-     *  delete &m_shaderProgramCol;
-     *  delete &m_shaderProgramTexture;
-     *  delete &m_shaderProgramFont;
-     */
-
     // Generate actual shader programs
     if (m_master) {
         m_shaderProgramDiff = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };

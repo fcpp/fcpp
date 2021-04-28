@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2020-2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file displayer.hpp
@@ -714,7 +714,7 @@ struct displayer {
             }
 
             //! @brief It returns the projection of a vector v onto a ray along its direction d (unit vector).
-            glm::vec3 rayProjection(const glm::vec3& v, const glm::vec3& d) {
+            inline glm::vec3 rayProjection(const glm::vec3& v, const glm::vec3& d) {
                 // Source: http://www.euclideanspace.com/maths/geometry/elements/line/projections/
                 return glm::dot<3, float, glm::qualifier::highp>(v, d) * d;
             }

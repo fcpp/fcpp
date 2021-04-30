@@ -259,6 +259,14 @@ Renderer::~Renderer() {
     // Destroy window and all associated resources (to do on main thread).
     glfwDestroyWindow(m_window);
 
+    // Reset static members if master is closed
+    if (m_master) {
+        glfwTerminate();
+        s_glyphs.erase(s_glyphs.begin(), s_glyphs.end()); // a new insertion is ignored if its key is already used
+        s_gridIsReady = false;
+        s_commonIsReady = false;
+    }
+
     // Camera's, shapes' and shaders' destructors will be executed after this one.
 }
 
@@ -775,7 +783,6 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
 }
 
 void Renderer::viewportResize(int width, int height) {
-    //std::cout << "viewportResize() on thread #" << std::this_thread::get_id() << "\n";
     if (m_master) glViewport(0, 0, width, height);
     else m_resizeOnSwap = true;
     m_currentWidth = width;

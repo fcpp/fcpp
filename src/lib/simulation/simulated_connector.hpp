@@ -203,7 +203,7 @@ struct simulated_connector {
             //! @brief The type of settings data regulating connection.
             using connection_data_type = simulated_connector<Ts...>::connection_data_type;
 
-            //@{
+            //! @{
             /**
              * @brief Main constructor.
              *

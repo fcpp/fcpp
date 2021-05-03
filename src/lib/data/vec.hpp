@@ -30,12 +30,12 @@ template <size_t n>
 struct vec {
     //! @brief The dimensionality of the vectors.
     constexpr static size_t dimension = n;
-    
+
     //! @brief Pointer to beginning.
     real_t* begin() {
         return data;
     }
-    
+
     //! @brief Const pointer to beginning.
     real_t const* begin() const {
         return data;
@@ -55,18 +55,18 @@ struct vec {
     real_t& operator[](size_t i) {
         return data[i];
     }
-    
+
     //! @brief Const access to components of the vector.
     real_t operator[](size_t i) const {
         return data[i];
     }
-    
+
     //! @brief Equality operator.
     bool operator==(vec const& o) const {
         for (size_t i=0; i<n; ++i) if (data[i] != o.data[i]) return false;
         return true;
     }
-    
+
     //! @brief Inequality operator.
     bool operator!=(vec const& o) const {
         for (size_t i=0; i<n; ++i) if (data[i] != o.data[i]) return true;
@@ -78,7 +78,7 @@ struct vec {
     S& serialize(S& s) {
         return s & data;
     }
-    
+
     //! @brief The internal data as C array.
     real_t data[n];
 };

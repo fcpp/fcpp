@@ -157,7 +157,7 @@ struct trace_reset {
     ~trace_reset() {
         m_trace.clear();
     }
-    
+
   private:
     //! @brief Reference trace object.
     trace& m_trace;

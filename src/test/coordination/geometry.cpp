@@ -16,7 +16,10 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<vec<2>, size_t>,
+    exports<
+        coordination::follow_path_t,
+        coordination::rectangle_walk_t<2>
+    >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

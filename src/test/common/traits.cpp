@@ -101,6 +101,17 @@ TEST(TraitsTest, SearchOp) {
     EXPECT_EQ(2, t);
 }
 
+TEST(TraitsTest, ExportList) {
+    EXPECT_SAME(common::export_list<>,
+                common::type_sequence<>);
+    EXPECT_SAME(common::export_list<int, double, double, bool>,
+                common::type_sequence<int, double, bool>);
+    EXPECT_SAME(common::export_list<int, double, common::type_sequence<void, int, char>, double, bool>,
+                common::type_sequence<int, double, void, char, bool>);
+    EXPECT_SAME(common::export_list<int, double, common::type_sequence<void, int, char, common::type_sequence<bool, float, bool>>, double, common::type_sequence<>, bool>,
+                common::type_sequence<int, double, void, char, bool, float>);
+}
+
 TEST(TraitsTest, BoolPack) {
     bool val;
     val = common::all_true<>;

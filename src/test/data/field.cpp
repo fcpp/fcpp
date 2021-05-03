@@ -46,12 +46,12 @@ class FieldTest : public ::testing::Test {
         fb1 = build_field(true, {{2,false},{3,true}});
         fb2 = build_field(false,{{1,true}, {2,true}});
     }
-    
+
     template <typename T>
     const T& constify(T& x) {
         return static_cast<const T&>(x);
     }
-    
+
     template <typename T>
     T copy(T const& x) {
         return x;

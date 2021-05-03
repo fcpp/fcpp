@@ -133,7 +133,7 @@ function filter() {
         else
             name=""
         fi
-        if [ -f $build -a `cat $build | tr -s ' \n' ' ' | grep "$rule( name = $name" | wc -l` -gt 0 ]; then
+        if [ -f $build -a `cat $build | tr -s ' \r\n' ' ' | grep "$rule( name = $name" | wc -l` -gt 0 ]; then
             echo -n "$target "
         fi
     done
@@ -198,9 +198,14 @@ while [ "$1" != "" ]; do
         pattern="$2"
         replace=""
         videoreplace=`echo -e "\033[7m&\033[0m"`
+        replacing=0
         shift 2
         if [ "$1" != "" -a `echo $1 | grep "clean\|here\|gcc\|sed\|doc\|build\|test\|run\|all" | wc -l` -eq 0 ]; then
             replace="$1"
+            if [ "$replace" == "del" ]; then
+                replace=""
+            fi
+            replacing=1
             videoreplace=`echo -e "\033[31m[-&-]\033[32m{+$replace+}\033[0m"`
             shift 1
         fi
@@ -224,7 +229,7 @@ while [ "$1" != "" ]; do
             done
         done
         echo "$totn occurrences found across $totf files."
-        if [ "$replace" != "" ]; then
+        if [ $replacing -eq 1 ]; then
             echo -n "Proceed with substitution? (y/N) "
             read x
             if [ "$x" == "y" ]; then

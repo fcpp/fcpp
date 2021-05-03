@@ -140,7 +140,7 @@ struct calculus {
     using retain_type = common::option_type<tags::retain, metric::once, Ts...>;
 
     //! @brief Sequence of types to be used in exports.
-    using exports_type = common::option_types<tags::exports, Ts...>;
+    using exports_type = common::export_list<common::option_types<tags::exports, Ts...>>;
 
     //! @brief Whether exports are wrapped in smart pointers.
     constexpr static bool export_pointer = common::option_flag<tags::export_pointer, FCPP_EXPORT_PTR, Ts...>;
@@ -396,7 +396,7 @@ size_t count_hood(node_t& node, trace_t call_point) {
     return details::get_context(node).second().align(t, node.uid).size();
 }
 
-//! @brief Computes the number of neighbours aligned to the current call point.
+//! @brief Computes the identifiers of neighbours aligned to the current call point.
 template <typename node_t>
 field<device_t> nbr_uid(node_t& node, trace_t call_point) {
     trace_t t = node.stack_trace.hash(call_point);

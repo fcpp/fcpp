@@ -21,7 +21,7 @@ class MultitypeMapTest : public ::testing::Test {
         data.insert(3);
         data.insert(3);
     }
-    
+
     common::multitype_map<short, int, double, char> data;
 };
 

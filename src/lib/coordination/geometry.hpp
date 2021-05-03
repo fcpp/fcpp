@@ -64,6 +64,9 @@ tuple<size_t,real_t> follow_path(node_t& node, trace_t call_point, const T& path
     });
 }
 
+//! @brief Export list for follow_path.
+using follow_path_t = common::export_list<size_t>;
+
 
 //! @cond INTERNAL
 //! @brief Generates a random target in a rectangle, given a sequence of indices.
@@ -114,6 +117,9 @@ inline vec<n> rectangle_walk(node_t& node, trace_t call_point, const vec<n>& low
         return dist > max_v * period ? t : target;
     });
 }
+
+//! @brief Export list for rectangle_walk.
+template <size_t n> using rectangle_walk_t = common::export_list<vec<n>>;
 
 
 }

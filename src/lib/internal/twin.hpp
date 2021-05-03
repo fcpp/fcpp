@@ -34,23 +34,23 @@ class twin<T, true> {
   public:
     //! @brief The type of the content.
     typedef T value_type;
-    
+
   private:
     //! @brief The content of the class.
     T m_data;
-    
+
   public:
     //! @name constructors
     //! @{
     //! @brief Default constructor.
     twin() = default;
-    
+
     //! @brief Copy constructor.
     twin(const twin<T, true>&) = default;
-    
+
     //! @brief Move constructor.
     twin(twin<T, true>&&) = default;
-    
+
     //! @brief Initialising constructor.
     template <typename... Ts, typename = std::enable_if_t<not std::is_same<std::tuple<std::decay_t<Ts>...>, std::tuple<twin>>::value>>
     twin(Ts&&... xs) : m_data(std::forward<Ts>(xs)...) {}
@@ -60,7 +60,7 @@ class twin<T, true> {
     //! @{
     //! @brief Copy assignment.
     twin<T, true>& operator=(const twin<T, true>&) = default;
-    
+
     //! @brief Move assignment.
     twin<T, true>& operator=(twin<T, true>&&) = default;
     //! @}
@@ -69,7 +69,7 @@ class twin<T, true> {
     bool operator==(const twin<T, true>& o) const {
         return m_data == o.m_data;
     }
-    
+
     //! @brief Access to the first element.
     T& first() {
         return m_data;
@@ -98,23 +98,23 @@ class twin<T, false> {
   public:
     //! @brief The type of the content.
     typedef T value_type;
-    
+
   private:
     //! @brief The content of the class.
     T m_data1, m_data2;
-    
+
   public:
     //! @name constructors
     //! @{
     //! @brief Default constructor.
     twin() = default;
-    
+
     //! @brief Copy constructor.
     twin(const twin<T, false>&) = default;
-    
+
     //! @brief Move constructor.
     twin(twin<T, false>&&) = default;
-    
+
     //! @brief Initialising constructor.
     template <typename... Ts, typename = std::enable_if_t<not std::is_same<std::tuple<std::decay_t<Ts>...>, std::tuple<twin>>::value>>
     twin(Ts&&... xs) : m_data1(std::forward<Ts>(xs)...), m_data2(std::forward<Ts>(xs)...) {}
@@ -124,7 +124,7 @@ class twin<T, false> {
     //! @{
     //! @brief Copy assignment.
     twin<T, false>& operator=(const twin<T, false>&) = default;
-    
+
     //! @brief Move assignment.
     twin<T, false>& operator=(twin<T, false>&&) = default;
     //! @}
@@ -133,7 +133,7 @@ class twin<T, false> {
     bool operator==(const twin<T, false>& o) const {
         return m_data1 == o.m_data1 && m_data2 == o.m_data2;
     }
-    
+
     //! @brief Access to the first element.
     T& first() {
         return m_data1;

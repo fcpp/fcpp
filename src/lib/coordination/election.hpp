@@ -57,6 +57,12 @@ inline device_t diameter_election(node_t& node, trace_t call_point, hops_t diame
     return diameter_election(node, call_point, node.uid, diameter);
 }
 
+//! @brief Export list for diameter_election_distance.
+template <typename T = device_t> using diameter_election_distance_t = common::export_list<tuple<T,hops_t>>;
+
+//! @brief Export list for diameter_election.
+template <typename T = device_t> using diameter_election_t = diameter_election_distance_t<T>;
+
 
 //! @brief Finds the minimum value, hop distance to it and other internal data, without any additional knowledge, and following a given expansion function.
 template <typename node_t, typename T, typename G, typename = common::if_signature<G, hops_t(hops_t)>>
@@ -119,6 +125,12 @@ template <typename node_t>
 inline device_t wave_election(node_t& node, trace_t call_point) {
     return wave_election(node, call_point, node.uid);
 }
+
+//! @brief Export list for wave_election_distance.
+template <typename T = device_t> using wave_election_distance_t = common::export_list<tuple<T,hops_t,hops_t,hops_t>>;
+
+//! @brief Export list for wave_election.
+template <typename T = device_t> using wave_election_t = wave_election_distance_t<T>;
 
 
 //! @brief Finds the minimum value, without any additional knowledge, through alternating colors.
@@ -210,6 +222,12 @@ template <typename node_t>
 inline device_t color_election(node_t& node, trace_t call_point) {
     return color_election(node, call_point, node.uid);
 }
+
+//! @brief Export list for color_election_distance.
+template <typename T = device_t> using color_election_distance_t = common::export_list<tuple<bool,T,hops_t,device_t>>;
+
+//! @brief Export list for color_election.
+template <typename T = device_t> using color_election_t = color_election_distance_t<T>;
 
 
 }

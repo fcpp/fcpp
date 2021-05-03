@@ -11,7 +11,7 @@ struct tag {};
 
 struct mock_node {
     mock_node(device_t id, times_t c, times_t n, vec<2> p) : uid(id), ct(c), nt(n), pos(p) {}
-    
+
     vec<2> position(times_t) const {
         return pos;
     }

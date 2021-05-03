@@ -106,7 +106,7 @@ struct hardware_connector {
             //! @brief The type of settings data regulating connection.
             using connection_data_type = typename connector_type::data_type;
 
-            //@{
+            //! @{
             /**
              * @brief Main constructor.
              *

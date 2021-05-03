@@ -15,7 +15,18 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<bool, int8_t, int, real_t, times_t>,
+    exports<
+        coordination::counter_t<>,
+        coordination::round_since_t,
+        coordination::constant_t<int>,
+        coordination::toggle_t,
+        coordination::toggle_filter_t,
+        coordination::delay_t<int>,
+        coordination::exponential_filter_t<real_t>,
+        coordination::shared_filter_t<real_t>,
+        coordination::shared_decay_t<real_t>,
+        coordination::shared_clock_t
+    >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

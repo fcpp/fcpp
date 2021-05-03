@@ -82,7 +82,7 @@ struct scheduler {
             times_t next() const {
                 return std::min(m_schedule.next(), P::node::next());
             }
-            
+
             //! @brief Updates the internal status of node component.
             void update() {
                 if (m_schedule.next() < P::node::next()) {
@@ -91,7 +91,7 @@ struct scheduler {
                     P::node::round(t);
                 } else P::node::update();
             }
-            
+
           private: // implementation details
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
@@ -104,11 +104,11 @@ struct scheduler {
             inline crand get_generator(std::false_type, N&) {
                 return {};
             }
-            
+
             //! @brief The sequence generator.
             schedule_type m_schedule;
         };
-        
+
         //! @brief The global part of the component.
         using net = typename P::net;
     };

@@ -17,10 +17,10 @@ DECLARE_OPTIONS(options,
     program<coordination::main>,
     round_schedule<sequence::list<distribution::constant_n<times_t, 100>>>,
     log_schedule<sequence::list<distribution::constant_n<times_t, 100>>>,
-    exports<
-        device_t, real_t, field<real_t>, vec<2>,
-        tuple<real_t,device_t>, tuple<real_t,int>, tuple<real_t,real_t>
-    >,
+    exports<coordination::main_t>,
+//        device_t, real_t, field<real_t>, vec<2>,
+//        tuple<real_t,device_t>, tuple<real_t,int>, tuple<real_t,real_t>
+//    >,
     tuple_store<
         algorithm,  int,
         spc_sum,    real_t,

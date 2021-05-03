@@ -45,7 +45,7 @@ namespace common {
  * Helper empty class encapsulating a sequence of types.
  * Mimics operations in standard stl containers.
  */
-//{@
+//! @{
 //! @brief General form.
 template <typename... Ts>
 struct type_sequence;
@@ -75,7 +75,7 @@ namespace details {
     struct type_slice {
         using type = type_sequence<>;
     };
-    
+
     // Recursive form.
     template<int start, int end, int stride, typename T, typename... Ts>
     struct type_slice<start, end, stride, T, Ts...> {
@@ -101,7 +101,7 @@ namespace details {
             typename type_intersect<type_sequence<Ts...>, type_sequence<Ss...>>::type
         >;
     };
-    
+
     // General form.
     template <typename, typename>
     struct type_unite;
@@ -121,7 +121,7 @@ namespace details {
     struct type_unite<type_sequence<Ts...>, type_sequence<>> {
         using type = type_sequence<Ts...>;
     };
-    
+
     // General form.
     template <typename, typename>
     struct type_subtract;
@@ -141,13 +141,13 @@ namespace details {
     struct type_subtract<type_sequence<>, type_sequence<Ss...>> {
         using type = type_sequence<>;
     };
-    
+
     // General form.
     template <typename...>
     struct type_repeated {
         using type = type_sequence<>;
     };
-    
+
     // Recursive form.
     template <typename T, typename... Ts>
     struct type_repeated<T, Ts...> {
@@ -157,13 +157,13 @@ namespace details {
             typename type_repeated<Ts...>::type::template push_front<T>
         >;
     };
-    
+
     // General form.
     template <typename...>
     struct type_uniq {
         using type = type_sequence<>;
     };
-    
+
     // Recursive form.
     template <typename T, typename... Ts>
     struct type_uniq<T, Ts...> {
@@ -226,7 +226,7 @@ namespace details {
 }
 //! @endcond
 
-    
+
 /**
  * @brief Extracts a subsequence from the type sequence.
  * @param start  first element extracted
@@ -284,45 +284,45 @@ struct type_sequence<T, Ts...> {
      */
     template <int start, int end = -1, int stride = 1>
     using slice = type_slice<start, end, stride, T, Ts...>;
-    
+
     //! @brief The first type of the sequence.
     using front = T;
-    
+
     //! @brief The last type of the sequence.
     using back = get<sizeof...(Ts)>;
-    
+
     //! @brief Removes the first type of the sequence.
     using pop_front = type_sequence<Ts...>;
-    
+
     //! @brief Removes the last type of the sequence.
     using pop_back = slice<0, sizeof...(Ts)>;
-    
+
     //! @brief Adds types at the front of the sequence.
     template <typename... Ss>
     using push_front = type_sequence<Ss..., T, Ts...>;
-    
+
     //! @brief Adds types at the back of the sequence.
     template <typename... Ss>
     using push_back = type_sequence<T, Ts..., Ss...>;
-    
+
     //! @brief Set intersection with other sequence.
     template<typename... Ss>
     using intersect = type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>>;
-    
+
     //! @brief Set union with other sequence.
     template<typename... Ss>
     using unite = type_unite<type_sequence<T, Ts...>, type_sequence<Ss...>>;
-    
+
     //! @brief Set difference with other sequence.
     template<typename... Ss>
     using subtract = type_subtract<type_sequence<T, Ts...>, type_sequence<Ss...>>;
-    
+
     //! @brief Extract the types that are repeated more than once.
     using repeated = type_repeated<T, Ts...>;
 
     //! @brief Extract the subsequence in which each type appears once (opposite of repeated).
     using uniq = type_uniq<T, Ts...>;
-    
+
     //! @brief Constant equal to the index of `S` among the sequence. Fails to compile if not present, indices start from 0.
     template <typename S>
     static constexpr size_t find = type_find<S, T, Ts...>;
@@ -330,7 +330,7 @@ struct type_sequence<T, Ts...> {
     //! @brief Constant which is true if and only if the type parameter is in the sequence.
     template <typename S>
     static constexpr size_t count = type_count<S, T, Ts...>;
-    
+
     //! @brief The length of the sequence.
     static constexpr size_t size = 1 + sizeof...(Ts);
 };
@@ -340,32 +340,53 @@ template <>
 struct type_sequence<> {
     template <int start, int end, int stride = 1>
     using slice = type_sequence<>;
-    
+
     template <typename... Ss>
     using push_front = type_sequence<Ss...>;
-    
+
     template <typename... Ss>
     using push_back = type_sequence<Ss...>;
-    
+
     template<typename... Ss>
     using intersect = type_sequence<>;
-    
+
     template<typename... Ss>
     using unite = type_sequence<Ss...>;
-    
+
     template<typename... Ss>
     using subtract = type_sequence<>;
-    
+
     using repeated = type_sequence<>;
-    
+
     using uniq = type_sequence<>;
 
     template <typename S>
     static constexpr size_t count = 0;
-    
+
     static constexpr size_t size = 0;
 };
-//@}
+//! @}
+
+
+//! @cond INTERNAL
+namespace details {
+    // General form.
+    template <typename... Ts>
+    struct export_list {
+        using type = type_sequence<>;
+    };
+    // Type argument.
+    template <typename T, typename... Ts>
+    struct export_list<T,Ts...> : public type_unite<type_sequence<T>, typename export_list<Ts...>::type> {};
+    // Type sequence argument.
+    template <typename... Ts, typename... Ss>
+    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
+}
+//! @endcond
+
+//! @brief Merges export lists and types into a single type sequence.
+template <typename... Ts>
+using export_list = typename details::export_list<Ts...>::type;
 
 
 /**
@@ -373,7 +394,7 @@ struct type_sequence<> {
  *
  * Constexpr computing boolean combinations of their arguments.
  */
-//@{
+//! @{
 //! @brief Helper class holding arbitrary boolean template parameters.
 template <bool...> struct bool_pack {};
 
@@ -392,7 +413,7 @@ constexpr bool some_true = not all_false<v...>;
 //! @brief Checks if some argument is `false`.
 template <bool... v>
 constexpr bool some_false = not all_true<v...>;
-//@}
+//! @}
 
 
 /**
@@ -473,7 +494,7 @@ using ifn_class_template = std::enable_if_t<not is_class_template<T, A>, B>;
  * Constant which is true if and only if the second (type) parameter is built through array-like
  * and tuple-like classes from specializations of the first (template) parameter.
  */
-//@{
+//! @{
 //! @brief False in general.
 template <template<class...> class T, class A>
 constexpr bool has_template = false;
@@ -601,7 +622,7 @@ namespace details {
     struct extract_template<T, U<A, N>, true> {
         using type = U<typename extract_template<T, common::partial_decay<A>>::type, N>;
     };
-    
+
     //! @brief If the second parameter is of the form T<A>.
     template <template<class> class T, class A>
     struct extract_template<T, T<A>, true> {
@@ -664,7 +685,7 @@ namespace details {
     struct template_args<T<A, N>> {
         using type = type_sequence<A>;
     };
-    
+
     //! @brief const array-like case.
     template <template<class,size_t> class T, class A, size_t N>
     struct template_args<const T<A, N>> {
@@ -676,7 +697,7 @@ namespace details {
     struct template_args<T<A, N>&> {
         using type = type_sequence<A&>;
     };
-    
+
     //! @brief const& array-like case.
     template <template<class,size_t> class T, class A, size_t N>
     struct template_args<const T<A, N>&> {
@@ -688,7 +709,7 @@ namespace details {
     struct template_args<T<A, N>&&> {
         using type = type_sequence<A&&>;
     };
-    
+
     //! @brief const&& array-like case.
     template <template<class,size_t> class T, class A, size_t N>
     struct template_args<const T<A, N>&&> {

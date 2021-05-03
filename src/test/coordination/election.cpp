@@ -14,7 +14,11 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<tuple<int,hops_t>, tuple<int,hops_t,hops_t,hops_t>, tuple<bool,int,hops_t,device_t>>,
+    exports<
+        coordination::diameter_election_t<int>,
+        coordination::wave_election_t<int>,
+        coordination::color_election_t<int>
+    >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

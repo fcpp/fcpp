@@ -55,7 +55,7 @@ class multitype_map {
     using map_types = type_uniq<std::unordered_map<T, Ts>...>;
 
     //! @name constructors
-    //@{
+    //! @{
     /**
      * @brief Default constructor (creates an empty structure).
      */
@@ -66,16 +66,16 @@ class multitype_map {
 
     //! @brief Move constructor.
     multitype_map(multitype_map&&) = default;
-    //@}
+    //! @}
 
     //! @name assignment operators
-    //@{
+    //! @{
     //! @brief Copy assignment.
     multitype_map& operator=(multitype_map const&) = default;
 
     //! @brief Move assignment.
     multitype_map& operator=(multitype_map&&) = default;
-    //@}
+    //! @}
 
     //! @brief Equality operator.
     bool operator==(multitype_map const& o) const {

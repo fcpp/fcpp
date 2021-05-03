@@ -26,7 +26,7 @@ int workhard(int n=15) {
 TEST(AlgorithmTest, NthElements) {
     std::mt19937 rnd(42);
     std::vector<int> ev, iv, inum = {1, 3, 10, 30, 100, 300, 1000};
-    
+
     for (int i=0; i<10000; ++i) ev.push_back(i);
     for (int n : inum) {
         std::shuffle(ev.begin(), ev.end(), rnd);
@@ -35,7 +35,7 @@ TEST(AlgorithmTest, NthElements) {
         for (int i=0; i<n; ++i) iv.push_back(distr(rnd));
         std::sort(iv.begin(), iv.end());
         for (int i=0; i<n; ++i) iv[i] += i;
-        
+
         common::nth_elements(ev.begin(), ev.end(), iv.begin(), iv.end());
         for (int i : iv)
             EXPECT_EQ(i, ev[i]);

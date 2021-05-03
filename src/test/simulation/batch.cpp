@@ -28,7 +28,7 @@ struct combomock {
             common::lock_guard<true> l(m);
             v.push_back(s.str());
         }
-        
+
         void run() {}
     };
 };

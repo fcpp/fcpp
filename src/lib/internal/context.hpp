@@ -61,7 +61,7 @@ class context<true, pointer, M, Ts...> {
     typedef M metric_type;
 
     //! @name constructors
-    //@{
+    //! @{
     //! @brief Default constructor creating an empty context.
     context() = default;
 
@@ -70,16 +70,16 @@ class context<true, pointer, M, Ts...> {
 
     //! @brief Move constructor.
     context(context&&) = default;
-    //@}
+    //! @}
 
     //! @name assignment operators
-    //@{
+    //! @{
     //! @brief Copy assignment.
     context& operator=(context const&) = default;
 
     //! @brief Move assignment.
     context& operator=(context&&) = default;
-    //@}
+    //! @}
 
     //! @brief Equality operator.
     bool operator==(context const& o) const {
@@ -223,7 +223,7 @@ class context<false, pointer, M, Ts...> {
     typedef M metric_type;
 
     //! @name constructors
-    //@{
+    //! @{
     //! @brief Default constructor creating an empty context.
     context() = default;
 
@@ -232,16 +232,16 @@ class context<false, pointer, M, Ts...> {
 
     //! @brief Move constructor.
     context(context&&) = default;
-    //@}
+    //! @}
 
     //! @name assignment operators
-    //@{
+    //! @{
     //! @brief Copy assignment.
     context& operator=(context const&) = default;
 
     //! @brief Move assignment.
     context& operator=(context&&) = default;
-    //@}
+    //! @}
 
     //! @brief Equality operator.
     bool operator==(context const& o) const {

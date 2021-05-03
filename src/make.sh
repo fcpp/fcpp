@@ -132,7 +132,7 @@ function filter() {
         else
             name=""
         fi
-        if [ -f $build -a `cat $build | tr -s ' \n' ' ' | grep "$rule( name = $name" | wc -l` -gt 0 ]; then
+        if [ -f $build -a `cat $build | tr -s ' \r\n' ' ' | grep "$rule( name = $name" | wc -l` -gt 0 ]; then
             echo -n "$target "
         fi
     done

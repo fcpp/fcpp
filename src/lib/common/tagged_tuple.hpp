@@ -179,31 +179,48 @@ namespace details {
         using type = typename tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<Us...>>::type::template push_front<typename type_sequence<Ts...,void>::template get<type_sequence<Ss...,void>::template find<U>>>;
     };
 
-    //! @brief Separator between tuple tags and values.
+    //! @brief Struct holding separators between tags and values in tuples.
     template <typename T>
-    constexpr const char* tag_val_sep = "";
-    template<>
-    constexpr const char* tag_val_sep<tags::dictionary_tuple> = ":";
-    template<>
-    constexpr const char* tag_val_sep<tags::assignment_tuple> = " = ";
-    template<>
-    constexpr const char* tag_val_sep<tags::underscore_tuple> = "-";
-    template<>
-    constexpr const char* tag_val_sep<tags::arrowhead_tuple> = " => ";
+    struct separators;
 
-    //! @brief Separator between tuple values and the following tags.
-    template <typename T>
-    constexpr const char* val_tag_sep = "";
-    template<>
-    constexpr const char* val_tag_sep<tags::dictionary_tuple> = ", ";
-    template<>
-    constexpr const char* val_tag_sep<tags::assignment_tuple> = ", ";
-    template<>
-    constexpr const char* val_tag_sep<tags::underscore_tuple> = "_";
-    template<>
-    constexpr const char* val_tag_sep<tags::arrowhead_tuple> = "; ";
+    //! @brief Struct holding separators between tags and values in tuples in dictionary format.
+    template <>
+    struct separators<tags::dictionary_tuple> {
+        //! @brief Separator between tuple tags and values.
+        static constexpr const char* tag_val = ":";
+        //! @brief Separator between tuple values and the following tags.
+        static constexpr const char* val_tag = ", ";
+    };
 
-    std::string strip_namespaces_type(std::string s) {
+    //! @brief Struct holding separators between tags and values in tuples in assignment format.
+    template <>
+    struct separators<tags::assignment_tuple> {
+        //! @brief Separator between tuple tags and values.
+        static constexpr const char* tag_val = " = ";
+        //! @brief Separator between tuple values and the following tags.
+        static constexpr const char* val_tag = ", ";
+    };
+
+    //! @brief Struct holding separators between tags and values in tuples in underscore format.
+    template <>
+    struct separators<tags::underscore_tuple> {
+        //! @brief Separator between tuple tags and values.
+        static constexpr const char* tag_val = "-";
+        //! @brief Separator between tuple values and the following tags.
+        static constexpr const char* val_tag = "_";
+    };
+
+    //! @brief Struct holding separators between tags and values in tuples in arrowhead format.
+    template <>
+    struct separators<tags::arrowhead_tuple> {
+        //! @brief Separator between tuple tags and values.
+        static constexpr const char* tag_val = " => ";
+        //! @brief Separator between tuple values and the following tags.
+        static constexpr const char* val_tag = "; ";
+    };
+
+    //! @brief Strips the namespaces from a non-templated type.
+    inline std::string strip_namespaces_type(std::string s) {
         size_t pos = s.rfind("::");
         if (pos == std::string::npos) return s;
         return s.substr(pos+2);
@@ -247,14 +264,14 @@ namespace details {
     //! @brief Prints one tag from a tagged tuple.
     template<typename S, typename T, typename F, typename S1>
     void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F, type_sequence<S1>) {
-        o << strip_namespaces(type_name<S1>()) << tag_val_sep<F> << tt_val_print(get<S1>(t), F{});
+        o << strip_namespaces(type_name<S1>()) << separators<F>::tag_val << tt_val_print(get<S1>(t), F{});
     }
 
     //! @brief Prints multiple tags from a tagged tuple.
     template<typename S, typename T, typename F, typename S1, typename S2, typename... Ss>
     void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F f, type_sequence<S1,S2,Ss...>) {
         tt_print(t, o, f, type_sequence<S1>());
-        o << val_tag_sep<F>;
+        o << separators<F>::val_tag;
         tt_print(t, o, f, type_sequence<S2,Ss...>());
     }
 }

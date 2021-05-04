@@ -786,6 +786,7 @@ struct displayer {
                         glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
                         m_rayCast.x = worldRay4.x; m_rayCast.y = worldRay4.y; m_rayCast.z = worldRay4.z;
                         m_rayCast = glm::normalize(m_rayCast);
+
                         break;
                     }
 
@@ -796,6 +797,7 @@ struct displayer {
                             m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
                             glfwMakeContextCurrent(m_renderer.getWindow());
                         }
+                        m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;
                     }
 

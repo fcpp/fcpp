@@ -65,6 +65,9 @@ unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
 unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
 unsigned int Renderer::s_meshEBO[(int)index::SIZE];
 std::unordered_map<char, glyph> Renderer::s_glyphs{};
+GLFWcursor* Renderer::s_cursorArrow;
+GLFWcursor* Renderer::s_cursorCross;
+GLFWcursor* Renderer::s_cursorHand;
 
 
 /* --- LOCAL FUNCTIONS --- */
@@ -87,6 +90,11 @@ void Renderer::initializeCommon() {
         // Allocate VBOs and EBOs for meshes and shapes
         allocateShapeVertex();
         allocateMeshVertex();
+
+        // Create cursor objects
+        s_cursorArrow = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+        s_cursorCross = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
+        s_cursorHand = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
     }
 }
 
@@ -766,6 +774,13 @@ void Renderer::setLightPosition(glm::vec3& newPos) {
 }
 
 void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
+    // Set proper cursor shape
+    if (type == mouse_type::click) {
+        if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) glfwSetCursor(m_window, s_cursorHand);
+        else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) glfwSetCursor(m_window, s_cursorArrow);
+    }
+
+    // Call camera's mouse input handler
     m_camera.mouseInput(x, y, xFirst, yFirst, type, mods);
 }
 

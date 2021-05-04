@@ -178,6 +178,15 @@ namespace fcpp {
             //! @brief It states whether the grid mesh has been calculated.
             static bool s_gridIsReady;
 
+            //! @brief The pointer to the arrow-shaped cursor object.
+            static GLFWcursor* s_cursorArrow;
+
+            //! @brief The pointer to the cross-shaped cursor object.
+            static GLFWcursor* s_cursorCross;
+
+            //! @brief The pointer to the hand-shaped cursor object.
+            static GLFWcursor* s_cursorHand;
+
             //! @brief It initializes all the static structures and variables, common to the Renderer instances.
             static void initializeCommon();
 

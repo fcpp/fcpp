@@ -1077,6 +1077,12 @@ inline T const& escape(T const& x) {
 }
 //! @}
 
+/**
+ * @brief Declares that the type @param T is usable as an output stream. 
+ * Enabled by default for all subtypes of std::ostream.
+ */
+template <typename T>
+struct is_ostream : public std::is_base_of<std::ostream, T> {};
 
 }
 

@@ -258,18 +258,18 @@ namespace details {
     }
 
     //! @brief Prints no tags from a tagged tuple.
-    template<typename S, typename T, typename F>
-    void tt_print(const tagged_tuple<S, T>&, std::ostream&, F, type_sequence<>) {}
+    template<typename S, typename T, typename O, typename F>
+    void tt_print(const tagged_tuple<S, T>&, O&, F, type_sequence<>) {}
 
     //! @brief Prints one tag from a tagged tuple.
-    template<typename S, typename T, typename F, typename S1>
-    void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F, type_sequence<S1>) {
+    template<typename S, typename T, typename O, typename F, typename S1>
+    void tt_print(const tagged_tuple<S, T>& t, O& o, F, type_sequence<S1>) {
         o << strip_namespaces(type_name<S1>()) << separators<F>::tag_val << tt_val_print(get<S1>(t), F{});
     }
 
     //! @brief Prints multiple tags from a tagged tuple.
-    template<typename S, typename T, typename F, typename S1, typename S2, typename... Ss>
-    void tt_print(const tagged_tuple<S, T>& t, std::ostream& o, F f, type_sequence<S1,S2,Ss...>) {
+    template<typename S, typename T, typename O, typename F, typename S1, typename S2, typename... Ss>
+    void tt_print(const tagged_tuple<S, T>& t, O& o, F f, type_sequence<S1,S2,Ss...>) {
         tt_print(t, o, f, type_sequence<S1>());
         o << separators<F>::val_tag;
         tt_print(t, o, f, type_sequence<S2,Ss...>());
@@ -344,19 +344,20 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
     }
 
     //! @brief Prints the content of the tagged tuple in a given format, skipping a given set of tags.
-    template <typename F, typename... OSs>
-    void print(std::ostream& o, F f, common::tags::skip_tags<OSs...>) const {
+    template <typename O, typename F, typename... OSs>
+    void print(O& o, F f, common::tags::skip_tags<OSs...>) const {
         details::tt_print(*this, o, f, typename tags::template subtract<OSs...>());
     }
 
     //! @brief Prints the content of the tagged tuple in a given format.
-    template <typename F>
-    void print(std::ostream& o, F f) const {
+    template <typename O, typename F>
+    void print(O& o, F f) const {
         print(o, f, common::tags::skip_tags<>());
     }
 
     //! @brief Prints the content of the tagged tuple in dictionary format.
-    void print(std::ostream& o) const {
+    template <typename O>
+    void print(O& o) const {
         print(o, arrowhead_tuple);
     }
 };

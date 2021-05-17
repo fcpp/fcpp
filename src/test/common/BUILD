@@ -110,6 +110,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:multitype_map",
+        "//lib/common:ostream",
         "//lib/common:serialize",
         "//lib/common:tagged_tuple",
         "//lib/data:field",

@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/common/multitype_map.hpp"
+#include "lib/common/ostream.hpp"
 #include "lib/common/serialize.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/data/field.hpp"

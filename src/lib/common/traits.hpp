@@ -25,6 +25,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <ostream>
 
 
 /**
@@ -1077,6 +1078,16 @@ inline T const& escape(T const& x) {
 }
 //! @}
 
+/**
+ * @brief Declares that the type @param T is usable as an output stream. 
+ * Enabled by default for all subtypes of std::ostream.
+ */
+template <typename T>
+struct is_ostream : public std::is_base_of<std::ostream, T> {};
+
+//! @brief Corresponds to T only if A is an output stream according to fcpp::common::is_ostream.
+template <typename A, typename T = void>
+using if_ostream = std::enable_if_t<fcpp::common::is_ostream<A>::value, T>;
 
 }
 

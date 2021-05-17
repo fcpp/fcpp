@@ -74,6 +74,9 @@ struct hardware_logger {
     //! @brief Type of the plotter object.
     using plot_type = common::option_type<tags::plot_type, plot::none, Ts...>;
 
+    //! @brief Type of the output stream.
+    using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
+
     //! @brief Sequence of tags and types for storing persistent data.
     using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;
 
@@ -179,7 +182,7 @@ struct hardware_logger {
             inline void data_plotter(std::true_type, times_t) const {}
 
             //! @brief The stream where data is exported.
-            std::shared_ptr<std::ostream> m_stream;
+            std::shared_ptr<ostream_type> m_stream;
 
             //! @brief A reference to a plotter object.
             std::shared_ptr<plot_type> m_plotter;

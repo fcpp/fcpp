@@ -383,3 +383,17 @@ TEST(TraitsTest, Options) {
                 >, std::tuple, typeopt>,
                 std::tuple<bool,typeopt<char,int>,double>);
 }
+
+struct custom_stream_type {};
+template <>
+struct common::is_ostream<custom_stream_type> : public std::true_type {};
+
+TEST(TraitsTest, IsOStream) {
+    bool b;
+    b = common::is_ostream<std::ostream>::value;
+    EXPECT_TRUE(b);
+    b = common::is_ostream<int>::value;
+    EXPECT_FALSE(b);
+    b = common::is_ostream<custom_stream_type>::value;
+    EXPECT_TRUE(b);
+}

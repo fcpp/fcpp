@@ -55,6 +55,10 @@ namespace tags {
     template <typename T>
     struct plot_type {};
 
+    //! @brief Declaration tag associating to an output stream type
+    template <typename T>
+    struct ostream_type {};
+
     //! @brief Declaration flag associating to whether parallelism is enabled.
     template <bool b>
     struct parallel;
@@ -99,9 +103,9 @@ namespace details {
         return make_stream(std::string(s), t);
     }
     //! @brief Makes a stream reference from a stream pointer.
-    template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(std::ostream* o, const common::tagged_tuple<S,T>&) {
-        return std::shared_ptr<std::ostream>(o, [] (void*) {});
+    template <typename O, typename S, typename T>
+    std::shared_ptr<O> make_stream(O* o, const common::tagged_tuple<S,T>&) {
+        return std::shared_ptr<O>(o, [] (void*) {});
     }
     //! @brief Makes a reference to a plotter.
     template <typename T>
@@ -167,6 +171,9 @@ struct logger {
 
     //! @brief Type of the plotter object.
     using plot_type = common::option_type<tags::plot_type, plot::none, Ts...>;
+
+    //! @brief Type of the output stream.
+    using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
 
     //! @brief Sequence generator type scheduling writing of data.
     using schedule_type = common::option_type<tags::log_schedule, sequence::never, Ts...>;
@@ -397,7 +404,7 @@ struct logger {
             inline void data_plotter(std::true_type, U) const {}
 
             //! @brief The stream where data is exported.
-            std::shared_ptr<std::ostream> m_stream;
+            std::shared_ptr<ostream_type> m_stream;
 
             //! @brief A reference to a plotter object.
             std::shared_ptr<plot_type> m_plotter;

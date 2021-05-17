@@ -181,7 +181,8 @@ class context<true, pointer, M, Ts...> {
     }
 
     //! @brief Prints the context in a stream.
-    void print(std::ostream& o) const {
+    template <typename O>
+    void print(O& o) const {
         bool first = true;
         for (const auto& x : m_metrics) {
             if (first) first = false;
@@ -348,7 +349,8 @@ class context<false, pointer, M, Ts...> {
     }
 
     //! @brief Prints the context in a stream.
-    void print(std::ostream& o) const {
+    template <typename O>
+    void print(O& o) const {
         bool first = true;
         for (const auto& x : m_data) {
             if (first) first = false;

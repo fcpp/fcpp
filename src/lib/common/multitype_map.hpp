@@ -140,8 +140,8 @@ class multitype_map {
     }
 
     //! @brief Prints the content of the multitype map.
-    template <typename... Ss>
-    void print(std::ostream& o, Ss... xs) const {
+    template <typename O, typename... Ss>
+    void print(O& o, Ss... xs) const {
         m_data.print(o, xs...);
     }
 

@@ -56,7 +56,7 @@ namespace tags {
     struct plot_type {};
 
     //! @brief Declaration tag associating to an output stream type
-    template <typename O>
+    template <typename T>
     struct ostream_type {};
 
     //! @brief Declaration flag associating to whether parallelism is enabled.

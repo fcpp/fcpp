@@ -140,50 +140,49 @@ namespace details {
  */
 namespace std {
     //! @brief Printing arrays.
-    template <typename O, typename T, size_t n>
+    template <typename O, typename T, size_t n, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::array<T, n>& v) {
         return fcpp::details::iterable_print(o, "[]", v);
     }
 
     //! @brief Printing pairs.
-    template <typename O, typename T, typename U>
+    template <typename O, typename T, typename U, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::pair<T, U>& p) {
         return fcpp::details::indexed_print(o, "()", p, std::make_index_sequence<2>{}, fcpp::details::std_tag{});
     }
 
     //! @brief Printing tuples.
-    template <typename O, typename... Ts>
-    std::enable_if_t<fcpp::common::is_ostream<O>::value, O&>
-    operator<<(O& o, const std::tuple<Ts...>& t) {
+    template <typename O, typename... Ts, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::tuple<Ts...>& t) {
         return fcpp::details::indexed_print(o, "()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::std_tag{});
     }
 
     //! @brief Printing vectors.
-    template <typename O, typename T>
+    template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::vector<T>& v) {
         return fcpp::details::iterable_print(o, "[]", v);
     }
 
     //! @brief Printing ordered sets.
-    template <typename O, typename T>
+    template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::set<T>& s) {
         return fcpp::details::iterable_print(o, "{}", s);
     }
 
     //! @brief Printing unordered sets.
-    template <typename O, typename T>
+    template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::unordered_set<T>& s) {
         return fcpp::details::iterable_print(o, "{}", s);
     }
 
     //! @brief Printing ordered maps.
-    template <typename O, typename K, typename V>
+    template <typename O, typename K, typename V, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::map<K,V>& m) {
         return fcpp::details::pair_iterable_print(o, "{}", m);
     }
 
     //! @brief Printing unordered maps.
-    template <typename O, typename K, typename V>
+    template <typename O, typename K, typename V, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::unordered_map<K,V>& m) {
         return fcpp::details::pair_iterable_print(o, "{}", m);
     }
@@ -195,7 +194,7 @@ namespace std {
  */
 namespace fcpp {
     //! @brief Printing fields.
-    template <typename O, typename T>
+    template <typename O, typename T, typename = common::if_ostream<O>>
     O& operator<<(O& o, const field<T>& x) {
         o << "{";
         for (size_t i = 0; i < details::get_ids(x).size(); ++i) {
@@ -206,13 +205,13 @@ namespace fcpp {
     }
 
     //! @brief Printing tuples.
-    template <typename O, typename... Ts>
+    template <typename O, typename... Ts, typename = common::if_ostream<O>>
     O& operator<<(O& o, const tuple<Ts...>& t) {
         return fcpp::details::indexed_print(o, "()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::fcpp_tag{});
     }
 
     //! @brief Printing vectors.
-    template <typename O, size_t n>
+    template <typename O, size_t n, typename = common::if_ostream<O>>
     O& operator<<(O& o, const vec<n>& p) {
         return fcpp::details::iterable_print(o, "[]", p);
     }
@@ -220,21 +219,20 @@ namespace fcpp {
     //! @brief Namespace containing objects of common use.
     namespace common {
         //! @brief Printing multitype maps in arrowhead format.
-        template <typename O, typename T, typename... Ts>
+        template <typename O, typename T, typename... Ts, typename = if_ostream<O>>
         O& operator<<(O& o, const multitype_map<T, Ts...>& m) {
             return fcpp::details::printable_print(o, "()", m);
         }
 
         //! @brief Printing random access maps.
-        template <typename O, typename K, typename T, typename H, typename P, typename A>
+        template <typename O, typename K, typename T, typename H, typename P, typename A, typename = if_ostream<O>>
         O& operator<<(O& o, const random_access_map<K,T,H,P,A>& m) {
             return fcpp::details::pair_iterable_print(o, "{}", m);
         }
 
         //! @brief Printing tagged tuples in arrowhead format.
-        template <typename O, typename S, typename T>
-        std::enable_if_t<fcpp::common::is_ostream<O>::value, O&>
-        operator<<(O& o, const tagged_tuple<S,T>& t) {
+        template <typename O, typename S, typename T, typename = if_ostream<O>>
+        O& operator<<(O& o, const tagged_tuple<S,T>& t) {
             return fcpp::details::printable_print(o, "()", t);
         }
     }
@@ -242,27 +240,27 @@ namespace fcpp {
     //! @brief Namespace containing objects of internal use.
     namespace internal {
         //! @brief Printing calculus contexts.
-        template <typename O, bool b, bool d, typename... Ts>
+        template <typename O, bool b, bool d, typename... Ts, typename = common::if_ostream<O>>
         O& operator<<(O& o, const context<b, d, Ts...>& c) {
             return fcpp::details::printable_print(o, "()", c);
         }
 
         //! @brief Printing content of flat pointers.
-        template <typename O, typename T, bool is_flat>
+        template <typename O, typename T, bool is_flat, typename = common::if_ostream<O>>
         O& operator<<(O& o, const flat_ptr<T, is_flat>& p) {
             o << common::escape(*p);
             return o;
         }
 
         //! @brief Printing identical twin objects.
-        template <typename O, typename T>
+        template <typename O, typename T, typename = common::if_ostream<O>>
         O& operator<<(O& o, const twin<T,true>& t) {
             o << "(" << common::escape(t.first()) << ")";
             return o;
         }
 
         //! @brief Printing different twin objects.
-        template <typename O, typename T>
+        template <typename O, typename T, typename = common::if_ostream<O>>
         O& operator<<(O& o, const twin<T,false>& t) {
             o << "(" << common::escape(t.first()) << "; " << common::escape(t.second()) << ")";
             return o;

@@ -643,7 +643,7 @@ void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
     }
 
     // Draw pin
-    if (p.z > 0) {
+    if (p.z > 0 and m_gridShow) {
         float pinData[] = {
             p.x, p.y, p.z,
             p.x, p.y, 0.0f

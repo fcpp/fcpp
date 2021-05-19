@@ -580,6 +580,7 @@ struct displayer {
                 m_mouseFirst{ 1 },
                 m_mouseRight{ 0 },
                 m_links{ false },
+                m_pointer{ true },
                 m_texture( common::get_or<tags::texture>(t, "") ),
                 m_deltaTime{ 0.0f },
                 m_lastFrame{ 0.0f },
@@ -614,7 +615,7 @@ struct displayer {
                                 viewport_update(n_beg[i].second.cache_position(t));
                             });
                         } else {
-                            highlightHoveredNode();
+                            if (m_pointer) highlightHoveredNode();
                             common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                                 n_beg[i].second.cache_position(t);
                             });
@@ -811,20 +812,25 @@ struct displayer {
                 // Highlighting the right node
                 auto beg{ P::net::node_begin() };
                 auto end{ P::net::node_end() };
-                float minDist{ m_renderer.getCamera().getDepth() * 32 };
+                float minDist{ INF };
+                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
+                    typename P::net::lock_type l;
+                    P::net::node_at(m_hoveredNode, l).highlight(0);
+                }
                 m_hoveredNode = -1;
                 for (size_t i = 0; i < end - beg; ++i) {
                     float prj;
-                    float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) * 2.0f };
+                    float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) * 1.5f };
                     if (intersectSphere(m_renderer.getCamera().getPosition(), m_rayCast, r, beg[i].second.get_cached_position(), prj)) {
                         if (prj < minDist) {
-                            if (m_hoveredNode != -1 and beg[m_hoveredNode].second.get_highlight() != 2)
-                                beg[m_hoveredNode].second.highlight(0);
                             minDist = prj;
-                            m_hoveredNode = i;
-                            if(beg[i].second.get_highlight() != 2) beg[i].second.highlight(1);
+                            m_hoveredNode = beg[i].second.uid;
                         }
-                    } else if (beg[i].second.get_highlight() != 2) beg[i].second.highlight(0);
+                    }
+                }
+                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 0) {
+                    typename P::net::lock_type l;
+                    P::net::node_at(m_hoveredNode, l).highlight(1);
                 }
             }
 
@@ -856,7 +862,7 @@ struct displayer {
 
                     case mouse_type::click: {
                         GLFWwindow* window{ m_renderer.getWindow() };
-                        if (m_hoveredNode != -1 and P::net::node_at(m_hoveredNode).get_highlight() != 2 and glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                        if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1 and glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
                             glfwMakeContextCurrent(NULL);
                             m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
                             glfwMakeContextCurrent(m_renderer.getWindow());
@@ -907,6 +913,19 @@ struct displayer {
                     // show/hide links
                     case GLFW_KEY_L:
                         if (first) m_links = not m_links;
+                        break;
+                    // enable/disable marker pointer
+                    case GLFW_KEY_M:
+                        if (first) {
+                            if (m_pointer) {
+                                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
+                                    typename P::net::lock_type l;
+                                    P::net::node_at(m_hoveredNode, l).highlight(0);
+                                }
+                                m_hoveredNode = -1;
+                            }
+                            m_pointer = not m_pointer;
+                        }
                         break;
                     // play/pause simulation
                     case GLFW_KEY_P:
@@ -977,6 +996,9 @@ struct displayer {
             //! @brief Whether links between nodes should be displayed.
             bool m_links;
 
+            //! @brief Whether nodes can be selected with mouse click.
+            bool m_pointer;
+
             //! @brief The texture to be used for the reference plane.
             std::string m_texture;
 
@@ -996,7 +1018,7 @@ struct displayer {
             int m_FPS;
 
             //! @brief The node currently hovered by the cursor.
-            int m_hoveredNode;
+            device_t m_hoveredNode;
 
             //! @brief List of currently stroked keys.
             std::unordered_set<int> m_key_stroked;

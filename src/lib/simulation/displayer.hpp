@@ -172,8 +172,14 @@ class info_window {
         return glfwWindowShouldClose(m_renderer.getWindow());
     }
 
+    //! @brief Sets the window as modified.
+    void set_modified() {
+        m_modified = true;
+    }
+
     //! @brief Updates values.
     void update_values(node& n) {
+        m_modified = true;
         update_values(
             fcpp::details::get_context(n).second().align(n.uid),
             n.storage_tuple(),
@@ -204,19 +210,22 @@ class info_window {
         glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
             info_window& info = *((info_window*)glfwGetWindowUserPointer(window)); // get the info_window instance from window
             info.m_renderer.viewportResize(width, height);
-            });
+            info.set_modified();
+        });
     }
 
     //! @brief Main cycle.
     void draw_cycle() {
         m_renderer.initializeContext(false);
         setResizeCallback();
-        for (int i=0; m_running; ++i) {
-            if (i%4 == 0) {
+        while (m_running) {
+            if (m_modified) {
                 draw();
+                m_modified = false;
                 m_renderer.swapAndNext();
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            else std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 
@@ -322,6 +331,9 @@ class info_window {
 
     //! @brief Whether the window is alive and running.
     bool m_running = true;
+
+    //! @brief Whether the contents of the window have been modified.
+    bool m_modified = true;
 
     //! @brief Rendering thread.
     std::thread m_thread;

@@ -202,6 +202,12 @@
 #endif
 
 
+#ifndef FCPP_FIELD_DRAW_LIMIT
+//! @brief Setting defining the maximum number of elements displayed for a field.
+#define FCPP_FIELD_DRAW_LIMIT 8
+#endif
+
+
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */

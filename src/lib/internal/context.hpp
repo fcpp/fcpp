@@ -141,6 +141,19 @@ class context<true, pointer, M, Ts...> {
         }
     }
 
+    //! @brief Returns list of all devices.
+    std::vector<device_t> align(device_t self) const {
+        std::vector<device_t> v;
+        auto it = m_sorted_data.begin();
+        for (; it != m_sorted_data.end() and it->first < self; ++it)
+            v.push_back(it->first);
+        v.push_back(self);
+        if (it != m_sorted_data.end() and it->first == self) ++it;
+        for (; it != m_sorted_data.end(); ++it)
+            v.push_back(it->first);
+        return v;
+    }
+
     //! @brief Returns list of devices with specified trace.
     std::vector<device_t> align(trace_t trace, device_t self) const {
         std::vector<device_t> v;
@@ -309,6 +322,19 @@ class context<false, pointer, M, Ts...> {
             }
         }
         m_data.resize(w);
+    }
+
+    //! @brief Returns list of all devices.
+    std::vector<device_t> align(device_t self) const {
+        std::vector<device_t> v;
+        size_t i = 0;
+        for (; i < m_self; ++i)
+            v.push_back(get<0>(m_data[i]));
+        v.push_back(self);
+        if (i < m_data.size() and get<0>(m_data[i]) == self) ++i;
+        for (; i < m_data.size(); ++i)
+            v.push_back(get<0>(m_data[i]));
+        return v;
     }
 
     //! @brief Returns list of devices with specified trace.

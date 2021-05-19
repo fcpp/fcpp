@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cmath>
 
+#include <string>
 #include <type_traits>
 
 
@@ -208,7 +209,7 @@ struct color {
     }
 
     //! @brief Color constructor from a packed integral RGBA value.
-    color(packed_color irgba);
+    explicit color(packed_color irgba);
 
     //! @brief Compares colors.
     bool operator==(const color& o) const;
@@ -253,12 +254,30 @@ struct color {
         return rgba[3];
     }
 
+    //! @brief Prints the content on a stream.
+    template <typename O>
+    void print(O& o) const {
+        o << "rgba(" << 100*rgba[0] << "%," << 100*rgba[1] << "%," << 100*rgba[2] << "%," << 100*rgba[3] << "%)";
+    }
+
     //! @brief Builds a color from its HSVA representation (h maxes to 360, the rest is normalised).
     static color hsva(double h, double s, double v, double a = 1);
 
     //! @brief The float RGBA components of the color.
     float rgba[4];
 };
+
+
+//! @brief Printing colors.
+template <typename O>
+O& operator<<(O& o, const color& c) {
+    c.print(o);
+    return o;
+}
+
+
+//! @brief Conversion to string.
+std::string to_string(color const&);
 
 
 }

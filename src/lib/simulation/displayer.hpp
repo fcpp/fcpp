@@ -13,6 +13,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <sstream>
@@ -32,7 +33,8 @@
 
 #include "lib/common/algorithm.hpp"
 #include "lib/common/ostream.hpp"
-#include "lib/component/base.hpp"
+#include "lib/component/calculus.hpp"
+#include "lib/data/field.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/graphics/renderer.hpp"
 #include "lib/graphics/shapes.hpp"
@@ -110,9 +112,40 @@ class info_window {
         m_uid(uid),
         m_renderer(0, "node " + std::to_string(uid), false, n.getRenderer().getWindow()),
         m_thread(&info_window::draw_cycle, this) {
+        using U = std::decay_t<decltype(m_net.node_at(0).storage_tuple())>;
+        init_storage_values(m_keys, (typename U::tags){});
+        init_storage_values(m_types, (typename U::types){});
+        std::vector<std::string> vk{
+            "",
+            "previous_time",
+            "current_time",
+            "next_time",
+            "frequency",
+            "message_time",
+            "",
+            "position",
+            "velocity",
+            "propulsion",
+            "acceleration",
+            "friction",
+            "nbr_dist",
+            "nbr_vec"
+        };
+        m_keys.insert(m_keys.end(), vk.begin(), vk.end());
+        size_t ml = 0;
+        for (auto const& s : m_keys) {
+            ml = std::max(ml, s.size());
+            m_values.emplace_back();
+        }
+        for (auto& s : m_keys) while (s.size() <= ml) s.push_back(' ');
+        for (auto const& s : vk)
+            m_types.emplace_back();
         if (m_net.node_count(m_uid)) {
             typename net::lock_type l;
-            m_net.node_at(m_uid, l).highlight(2);
+            node& n = m_net.node_at(m_uid, l);
+            update_values(n);
+            n.highlight(2);
+            n.set_window(this);
         }
     }
 
@@ -128,13 +161,37 @@ class info_window {
         m_thread.join();
         if (m_net.node_count(m_uid)) {
             typename net::lock_type l;
-            m_net.node_at(m_uid, l).highlight(0);
+            node& n = m_net.node_at(m_uid, l);
+            n.highlight(0);
+            n.set_window(nullptr);
         }
     }
 
     //! @brief Whether the window should be closed.
     bool closing() {
         return glfwWindowShouldClose(m_renderer.getWindow());
+    }
+
+    //! @brief Updates values.
+    void update_values(node& n) {
+        update_values(
+            fcpp::details::get_context(n).second().align(n.uid),
+            n.storage_tuple(),
+            "",
+            n.previous_time(),
+            n.current_time(),
+            n.next_time(),
+            n.frequency(),
+            n.message_time(),
+            "",
+            n.position(),
+            n.velocity(),
+            n.propulsion(),
+            n.acceleration(),
+            n.friction(),
+            n.nbr_dist(),
+            n.nbr_vec()
+        );
     }
 
  private:
@@ -154,111 +211,104 @@ class info_window {
     void draw_cycle() {
         m_renderer.initializeContext(false);
         setResizeCallback();
-        while (m_running) {
-            draw();
-            m_renderer.swapAndNext();
+        for (int i=0; m_running; ++i) {
+            if (i%4 == 0) {
+                draw();
+                m_renderer.swapAndNext();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
 
     //! @brief Updates the node info and draws it into the window.
     void draw() {
-        bool first = m_keys.empty();
-        if (m_net.node_count(m_uid))
-            update_storage_values(m_net.node_at(m_uid).storage_tuple());
-        if (first) {
-            std::vector<std::string> vk{
-                "",
-                "previous_time",
-                "current_time",
-                "next_time",
-                "frequency",
-                "message_time",
-                "",
-                "position",
-                "velocity",
-                "propulsion",
-                "acceleration",
-                "friction",
-                "nbr_vec"
-            };
-            m_keys.insert(m_keys.end(), vk.begin(), vk.end());
-            for (auto const& s : vk)
-                m_values.emplace_back();
-        }
-        if (m_net.node_count(m_uid))
-            update_base_values(m_net.node_at(m_uid));
-        if (not m_net.node_count(m_uid))
+        if (m_net.node_count(m_uid) == 0)
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
         for (size_t i=0; i<m_keys.size(); ++i) {
-            float y = (i+0.5f) / m_keys.size() * m_renderer.getCurrentHeight();
-            m_renderer.drawText(m_keys[i], 16.0f, y, 0.25f);
-            m_renderer.drawText(m_values[i], 120.0f, y, 0.25f);
+            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getCurrentHeight();
+            m_renderer.drawText(m_keys[i] + m_values[i], 16.0f, y, 0.25f);
         }
     }
 
-    //! @brief Compile-time check whether tag S from tuple T is sstream-printable (base case).
-    template <typename T, typename S, typename = void>
-    struct is_printable : std::false_type {};
+    //! @brief Writes the tags from the tagged tuple.
+    inline void init_storage_values(std::vector<std::string>&, common::type_sequence<>) {}
+    template <typename S, typename... Ss>
+    inline void init_storage_values(std::vector<std::string>& v, common::type_sequence<S, Ss...>) {
+        v.push_back(common::details::strip_namespaces(common::type_name<S>()));
+        init_storage_values(v, common::type_sequence<Ss...>{});
+    }
 
-    //! @brief Compile-time check whether tag S from tuple T is sstream-printable.
-    template <typename T, typename S>
-    struct is_printable<T, S,
+    //! @brief Compile-time check whether type T is convertible to string (base case).
+    template <typename T, typename = void>
+    struct is_stringable : std::is_convertible<T,std::string> {};
+
+    //! @brief Compile-time check whether type T is convertible to string.
+    template <typename T>
+    struct is_stringable<T,
         typename std::enable_if_t<
-            std::is_same<decltype(std::declval<std::stringstream>() << common::get<S>(std::declval<T>())), std::stringstream&>::value
+            std::is_same<std::decay_t<decltype(to_string(std::declval<T>()))>, std::string>::value
         >
     > : std::true_type {};
 
-    //! @brief Converts value to string.
+    //! @brief Compile-time check whether type T is printable (base case).
+    template <typename T, typename = void>
+    struct is_printable : is_stringable<T> {};
+
+    //! @brief Compile-time check whether type T is printable.
     template <typename T>
-    std::string to_string(T const& x) {
+    struct is_printable<T,
+        typename std::enable_if_t<
+            std::is_base_of<std::decay_t<decltype(std::declval<std::stringstream&>() << std::declval<T>())>, std::stringstream>::value
+        >
+    > : std::true_type {};
+
+    //! @brief Converts value to string (string case).
+    inline std::string stringify(std::string const& x, std::string const&) {
+        return x;
+    }
+
+    //! @brief Converts value to string (stringable case).
+    template <typename T>
+    inline std::enable_if_t<is_stringable<T>::value and not std::is_convertible<T,std::string>::value, std::string>
+    stringify(T const& x, std::string const&) {
+        return to_string(x);
+    }
+
+    //! @brief Converts value to string (printable case).
+    template <typename T>
+    inline std::enable_if_t<is_printable<T>::value and not is_stringable<T>::value, std::string>
+    stringify(T const& x, std::string const&) {
         std::stringstream ss;
         ss << x;
         return ss.str();
     }
 
-    //! @brief Updates values from
-    void update_base_values(node const& n) {
-        size_t N = m_values.size();
-        m_values[N-12] = to_string(n.previous_time());
-        m_values[N-11] = to_string(n.current_time());
-        m_values[N-10] = to_string(n.next_time());
-        m_values[N-9]  = to_string(n.frequency());
-        m_values[N-8]  = to_string(n.message_time());
-        m_values[N-6]  = to_string(n.position());
-        m_values[N-5]  = to_string(n.velocity());
-        m_values[N-4]  = to_string(n.propulsion());
-        m_values[N-3]  = to_string(n.acceleration());
-        m_values[N-2]  = to_string(n.friction());
-        m_values[N-1]  = to_string(n.nbr_vec());
-    }
-
-    //! @brief Updates the values from the storage tuple.
-    template <typename S, typename T>
-    void update_storage_values(common::tagged_tuple<S,T> const& t) {
-        update_storage_values(t, S{}, 0);
-    }
-
-    //! @brief Updates the values from the storage tuple (empty case).
+    //! @brief Converts value to string (non-printable case).
     template <typename T>
-    inline void update_storage_values(T const&, common::type_sequence<>, size_t) {}
-
-    //! @brief Updates the values from the storage tuple (skip case).
-    template <typename T, typename S, typename... Ss>
-    inline std::enable_if_t<not is_printable<T, S>::value>
-    update_storage_values(T const& t, common::type_sequence<S, Ss...>, size_t i) {
-        update_storage_values(t, common::type_sequence<Ss...>{}, i);
+    inline std::enable_if_t<not is_printable<T>::value, std::string>
+    stringify(T const& x, std::string s) {
+        s.push_back('(');
+        s.push_back('0');
+        s.push_back('x');
+        size_t y = (size_t)(&x);
+        for (int i = sizeof(size_t)*CHAR_BIT-4; i >= 0; i-=4) {
+            char z = (y>>i)&15;
+            s.push_back(z < 10 ? z+'0' : z-10+'a');
+        }
+        s.push_back(')');
+        return s;
     }
 
-    //! @brief Updates the values from the storage tuple (print case).
-    template <typename T, typename S, typename... Ss>
-    inline std::enable_if_t<is_printable<T, S>::value>
-    update_storage_values(T const& t, common::type_sequence<S, Ss...>, size_t i) {
-        if (m_keys.size() == i) {
-            m_keys.push_back(common::details::strip_namespaces(common::type_name<S>()));
-            m_values.emplace_back();
-        }
-        m_values[i] = to_string(common::get<S>(t));
-        update_values(t, common::type_sequence<Ss...>{}, i+1);
+    //! @brief Updates values (internal).
+    template <typename... Ss, typename T, typename... Ts>
+    void update_values(std::vector<device_t> n, common::tagged_tuple<common::type_sequence<Ss...>,T> const& t, Ts const&... xs) {
+        update_values(n, 0, common::get<Ss>(t)..., xs...);
+    }
+    inline void update_values(std::vector<device_t> const&, size_t) {}
+    template <typename T, typename... Ts>
+    inline void update_values(std::vector<device_t> const& n, size_t i, T const& x, Ts const&... xs) {
+        m_values[i] = stringify(fcpp::details::align(x, n), m_types[i]);
+        update_values(n, i+1, xs...);
     }
 
     //! @brief A reference to the corresponding net object.
@@ -281,6 +331,9 @@ class info_window {
 
     //! @brief Values to be represented.
     std::vector<std::string> m_values;
+
+    //! @brief Types of the values represented.
+    std::vector<std::string> m_types;
 };
 
 
@@ -360,7 +413,7 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_highlight(0), m_nbr_uids(), m_prev_nbr_uids() {}
+            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {}
 
             //! @brief Caches the current position for later use.
             glm::vec3 const& cache_position(times_t t) {
@@ -393,6 +446,8 @@ struct displayer {
 
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
+                // update info window
+                if (m_window != nullptr) m_window->update_values(*this);
                 P::node::round_end(t);
                 PROFILE_COUNT("displayer");
                 // update color list
@@ -434,6 +489,11 @@ struct displayer {
                 return m_highlight;
             }
 
+            //! @brief Sets the info window for the node.
+            void set_window(info_window<F>* w = nullptr) {
+                m_window = w;
+            }
+
           private: // implementation details
             //! @brief Conversion to 3D vector (trivial case).
             glm::vec3 to_vec3(vec<3> p) const {
@@ -451,7 +511,7 @@ struct displayer {
             //! @brief Pushes colors in an index sequence into a vector (inductive case).
             template <size_t i, size_t... is>
             void color_val_push(std::vector<color>& c, common::index_sequence<i, is...>) const {
-                c.push_back(i);
+                c.emplace_back(i);
                 color_val_push(c, common::index_sequence<is...>{});
             }
 
@@ -461,7 +521,7 @@ struct displayer {
             //! @brief Pushes colors from storage tags into a vector (inductive case).
             template <typename S, typename... Ss>
             void color_tag_push(std::vector<color>& c, common::type_sequence<S, Ss...>) const {
-                c.push_back(P::node::storage(S{}));
+                c.emplace_back(P::node::storage(S{}));
                 color_tag_push(c, common::type_sequence<Ss...>{});
             }
 
@@ -470,6 +530,9 @@ struct displayer {
             //! 1 - yes, with cursor hovering
             //! 2 - yes, with info window open
             int m_highlight;
+
+            //! @brief Reference to the info window (if present).
+            info_window<F>* m_window;
 
             //! @brief The current position of the device.
             glm::vec3 m_position;
@@ -573,13 +636,6 @@ struct displayer {
                     {
                         PROFILE_COUNT("displayer/text");
                         // Draw simulation time (t) and FPS
-                        //glm::vec3 pos{ m_renderer.getCamera().getPosition() };
-                        //std::string cameraCoords = "Camera position: (" + std::to_string(pos.x) + ", " + std::to_string(pos.y) + ", " + std::to_string(pos.z) + ")";
-                        //m_renderer.drawText(cameraCoords, 16.0f, m_renderer.getCurrentHeight() - 16.0f, 0.25f);
-                        //std::string cursorCoords = "Cursor position: (" + std::to_string(m_mouseLastX) + ", " + std::to_string(m_mouseLastY) + ")";
-                        //m_renderer.drawText(cursorCoords, 16.0f, m_renderer.getCurrentHeight() - 32.0f, 0.25f);
-                        //std::string rayCoords = "Ray cast: (" + std::to_string(m_rayCast.x) + ", " + std::to_string(m_rayCast.y) + ", " + std::to_string(m_rayCast.z) + ")";
-                        //m_renderer.drawText(rayCoords, 16.0f, m_renderer.getCurrentHeight() - 48.0f, 0.25f);
                         m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
                         m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth() - 60.0f, 16.0f, 0.25f);
                     }
@@ -715,15 +771,11 @@ struct displayer {
 
             //! @brief It returns the projection of a vector v onto a ray along its direction d (unit vector).
             inline glm::vec3 rayProjection(const glm::vec3& v, const glm::vec3& d) {
-                // Source: http://www.euclideanspace.com/maths/geometry/elements/line/projections/
                 return glm::dot<3, float, glm::qualifier::highp>(v, d) * d;
             }
 
             //! @brief It checks if the ray of direction d (unit vector) and position p intersects with a sphere of radius r at position c; length of projection of c onto ray is stored into prj.
             bool intersectSphere(const glm::vec3& p, const glm::vec3& d, float r, const glm::vec3& c, float& prj) {
-                // Sources: https://stackoverflow.com/questions/20140711/picking-in-3d-with-ray-tracing-using-ninevehgl-or-opengl-i-phone/20143963#20143963
-                //          http://www.lighthouse3d.com/tutorials/maths/ray-sphere-intersection/
-
                 bool intersection{ false };
                 
                 // Define vector from p to c
@@ -751,7 +803,7 @@ struct displayer {
                 m_hoveredNode = -1;
                 for (size_t i = 0; i < end - beg; ++i) {
                     float prj;
-                    float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) / 2.0f };
+                    float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) * 2.0f };
                     if (intersectSphere(m_renderer.getCamera().getPosition(), m_rayCast, r, beg[i].second.get_cached_position(), prj)) {
                         if (prj < minDist) {
                             if (m_hoveredNode != -1 and beg[m_hoveredNode].second.get_highlight() != 2)

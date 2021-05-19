@@ -1,7 +1,6 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include "lib/data/color.hpp"
-#include <iostream>
 
 
 /**
@@ -41,6 +40,24 @@ bool color::operator==(const color& o) const {
         if (abs(rgba[i] - o.rgba[i]) > 0.01) return false;
     }
     return true;
+}
+
+
+//! @brief Conversion to string.
+std::string to_string(color const& c) {
+    std::string s = "rgba(";
+    for (size_t i=0; i<4; ++i) {
+        if (i > 0) s.push_back(',');
+        if (std::isfinite(c.rgba[i])) {
+            int x = 100*c.rgba[i];
+            s.push_back(x < 100 ? ' ' : '1');
+            s.push_back(x < 10 ? ' ' : '0' + (x/10)%10);
+            s.push_back('0' + x%10);
+        } else s += std::isnan(c.rgba[i]) ? "nan" : "inf";
+        s.push_back('%');
+    }
+    s.push_back(')');
+    return s;
 }
 
 

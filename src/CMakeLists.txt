@@ -70,6 +70,7 @@ set(SOURCE_LIST lib/beautify.cpp
                 lib/data.cpp
                 lib/data/color.cpp
                 lib/data/field.cpp
+                lib/data/shape.cpp
                 lib/data/tuple.cpp
                 lib/data/vec.cpp
                 lib/deployment.cpp

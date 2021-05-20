@@ -357,6 +357,7 @@ void Renderer::generateShaderPrograms() {
     m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 }
 
+
 /* --- PUBLIC FUNCTIONS --- */
 void Renderer::initializeContext(bool master) {
     // Set window's context as thread's current
@@ -773,11 +774,18 @@ void Renderer::setLightPosition(glm::vec3& newPos) {
     m_lightPos = newPos;
 }
 
+void Renderer::setStandardCursor(bool selection, bool setNow) {
+    if (selection) m_standardCursor = s_cursorCross;
+    else m_standardCursor = s_cursorArrow;
+    
+    if (setNow) glfwSetCursor(m_window, m_standardCursor);
+}
+
 void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
     // Set proper cursor shape
     if (type == mouse_type::click) {
         if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) glfwSetCursor(m_window, s_cursorHand);
-        else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) glfwSetCursor(m_window, s_cursorArrow);
+        else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) glfwSetCursor(m_window, m_standardCursor);
     }
 
     // Call camera's mouse input handler

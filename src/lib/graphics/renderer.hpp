@@ -92,6 +92,9 @@ namespace fcpp {
 
             //! @brief Sets the light's position.
             void setLightPosition(glm::vec3& newPos);
+
+            //! @brief It changes the idle shape of the cursor; boolean 'selection' states whether mouse picking is active or not; boolean 'setNow' states whether the call should immediately apply the change to the actual cursor.
+            void setStandardCursor(bool selection, bool setNow = true);
             
             //! @brief It manages mouse input of the given type.
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
@@ -249,6 +252,9 @@ namespace fcpp {
 
             //! @brief It states if the grid should be drawn.
             bool m_gridShow;
+
+            //! @brief It's the cursor's standard shape, in idle.
+            GLFWcursor* m_standardCursor;
 
             //! @brief Current position of light source.
             glm::vec3 m_lightPos;

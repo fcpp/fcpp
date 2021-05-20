@@ -632,6 +632,7 @@ struct displayer {
                         dz /= tan(45.0f / 2) * 1.4;
                         camera_pos.z = dz;
                         m_renderer.setLightPosition(camera_pos);
+                        m_renderer.setStandardCursor(m_pointer);
                         m_renderer.getCamera().setViewDefault(camera_pos, dz, glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
                         double diagonal = glm::length(viewport_size);
                         double grid_scale = 1;
@@ -812,7 +813,7 @@ struct displayer {
                 // Highlighting the right node
                 auto beg{ P::net::node_begin() };
                 auto end{ P::net::node_end() };
-                float minDist{ INF };
+                float minDist{ (float)INF };
                 if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
                     typename P::net::lock_type l;
                     P::net::node_at(m_hoveredNode, l).highlight(0);
@@ -925,6 +926,7 @@ struct displayer {
                                 m_hoveredNode = -1;
                             }
                             m_pointer = not m_pointer;
+                            m_renderer.setStandardCursor(m_pointer, !m_mouseRight);
                         }
                         break;
                     // play/pause simulation

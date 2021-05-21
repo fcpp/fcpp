@@ -1,4 +1,4 @@
-    cc_library(
+cc_library(
     name = 'fake_os',
     hdrs = ['fake_os.hpp'],
     srcs = ['fake_os.cpp'],

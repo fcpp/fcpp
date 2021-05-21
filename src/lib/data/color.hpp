@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 #ifndef FCPP_DATA_COLOR_H_
 #define FCPP_DATA_COLOR_H_

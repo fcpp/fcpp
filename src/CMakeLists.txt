@@ -159,9 +159,3 @@ target_compile_options(stb_image PUBLIC "-fPIC")
 target_compile_options(glad PUBLIC "-fPIC")
 target_compile_options(freetype PUBLIC "-fPIC")
 endif(UNIX AND FCPP_BUILD_GL)
-
-# Create install rules
-include(GNUInstallDirs)
-
-# Import rules from fcpp.pc.in file
-configure_file(fcpp.pc.in fcpp.pc @ONLY)

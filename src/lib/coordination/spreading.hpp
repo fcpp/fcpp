@@ -47,6 +47,9 @@ hops_t abf_hops(node_t& node, trace_t call_point, bool source) {
     });
 }
 
+//! @brief Export list for abf_hops.
+using abf_hops_t = common::export_list<hops_t>;
+
 //! @brief Computes the distance from a source with a custom metric through adaptive bellmann-ford.
 template <typename node_t, typename G, typename = common::if_signature<G, field<real_t>()>>
 real_t abf_distance(node_t& node, trace_t call_point, bool source, G&& metric) {
@@ -64,6 +67,9 @@ real_t abf_distance(node_t& node, trace_t call_point, bool source) {
         return node.nbr_dist();
     });
 }
+
+//! @brief Export list for abf_distance.
+using abf_distance_t = common::export_list<real_t>;
 
 
 //! @brief Computes the distance from a source with a custom metric through bounded information speeds.
@@ -86,6 +92,9 @@ inline real_t bis_distance(node_t& node, trace_t call_point, bool source, times_
         return node.nbr_dist();
     });
 }
+
+//! @brief Export list for bis_distance.
+using bis_distance_t = common::export_list<tuple<real_t,times_t>>;
 
 
 //! @brief Computes the distance from a source with a custom metric through flexible gradients.
@@ -119,6 +128,9 @@ inline real_t flex_distance(node_t& node, trace_t call_point, bool source, real_
     });
 }
 
+//! @brief Export list for flex_distance.
+using flex_distance_t = common::export_list<tuple<real_t,int>>;
+
 
 //! @brief Broadcasts a value following given distances from sources.
 template <typename node_t, typename P, typename T>
@@ -135,6 +147,9 @@ template <typename node_t, typename P, typename T>
 inline T broadcast(node_t& node, trace_t call_point, const P& distance, const T& value, bool source, const T& null) {
     return broadcast(node, call_point, distance, source ? value : null);
 }
+
+//! @brief Export list for broadcast.
+template <typename P, typename T> using broadcast_t = common::export_list<P, T>;
 
 
 }

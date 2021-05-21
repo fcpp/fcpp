@@ -74,14 +74,14 @@ namespace tags {
  */
 template <class... Ts>
 struct hardware_connector {
-    //! @brief Delay generator for sending messages after rounds.
-    using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
-
     //! @brief Whether incoming messages are pushed or pulled.
     constexpr static bool message_push = common::option_flag<tags::message_push, FCPP_MESSAGE_PUSH, Ts...>;
 
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Delay generator for sending messages after rounds.
+    using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
 
     /**
      * @brief The actual component.
@@ -106,7 +106,7 @@ struct hardware_connector {
             //! @brief The type of settings data regulating connection.
             using connection_data_type = typename connector_type::data_type;
 
-            //@{
+            //! @{
             /**
              * @brief Main constructor.
              *

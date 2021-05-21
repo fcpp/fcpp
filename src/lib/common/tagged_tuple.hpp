@@ -77,7 +77,7 @@ struct tagged_tuple;
  * Function getting elements of a tagged tuple by tag.
  * @param S The tag to be extracted.
  */
-//@{
+//! @{
 //! @brief Write access.
 template <typename S, typename... Ss, typename... Ts>
 type_get<type_find<S, Ss...>, Ts...>&
@@ -96,7 +96,7 @@ const type_get<type_find<S, Ss...>, Ts...>&
 get(const tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>& t) {
     return std::get<type_find<S, Ss...>>(t);
 }
-//@}
+//! @}
 
 
 //! @cond INTERNAL
@@ -144,12 +144,12 @@ namespace details {
     // Helper function ignoring its arguments.
     template <class... Ts>
     void ignore(const Ts&...) {}
-    
+
     template <class... Ts>
     std::tuple<Ts...> capture_as_tuple(Ts&&... xs) {
         return {xs...};
     }
-    
+
     // Extracts elements from a tagged tuple as a tuple.
     template <class T, class... Ss, class... Ts>
     auto tt_capture(T&& t, type_sequence<Ss...>, type_sequence<Ts...>) {
@@ -179,36 +179,34 @@ namespace details {
         using type = typename tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<Us...>>::type::template push_front<typename type_sequence<Ts...,void>::template get<type_sequence<Ss...,void>::template find<U>>>;
     };
 
-    namespace {
-        //! @brief Separator between tuple tags and values.
-        template <typename T>
-        constexpr const char* tag_val_sep = "";
-        template<>
-        constexpr const char* tag_val_sep<tags::dictionary_tuple> = ":";
-        template<>
-        constexpr const char* tag_val_sep<tags::assignment_tuple> = " = ";
-        template<>
-        constexpr const char* tag_val_sep<tags::underscore_tuple> = "-";
-        template<>
-        constexpr const char* tag_val_sep<tags::arrowhead_tuple> = " => ";
+    //! @brief Separator between tuple tags and values.
+    template <typename T>
+    constexpr const char* tag_val_sep = "";
+    template<>
+    constexpr const char* tag_val_sep<tags::dictionary_tuple> = ":";
+    template<>
+    constexpr const char* tag_val_sep<tags::assignment_tuple> = " = ";
+    template<>
+    constexpr const char* tag_val_sep<tags::underscore_tuple> = "-";
+    template<>
+    constexpr const char* tag_val_sep<tags::arrowhead_tuple> = " => ";
 
-        //! @brief Separator between tuple values and the following tags.
-        template <typename T>
-        constexpr const char* val_tag_sep = "";
-        template<>
-        constexpr const char* val_tag_sep<tags::dictionary_tuple> = ", ";
-        template<>
-        constexpr const char* val_tag_sep<tags::assignment_tuple> = ", ";
-        template<>
-        constexpr const char* val_tag_sep<tags::underscore_tuple> = "_";
-        template<>
-        constexpr const char* val_tag_sep<tags::arrowhead_tuple> = "; ";
+    //! @brief Separator between tuple values and the following tags.
+    template <typename T>
+    constexpr const char* val_tag_sep = "";
+    template<>
+    constexpr const char* val_tag_sep<tags::dictionary_tuple> = ", ";
+    template<>
+    constexpr const char* val_tag_sep<tags::assignment_tuple> = ", ";
+    template<>
+    constexpr const char* val_tag_sep<tags::underscore_tuple> = "_";
+    template<>
+    constexpr const char* val_tag_sep<tags::arrowhead_tuple> = "; ";
 
-        std::string strip_namespaces_type(std::string s) {
-            size_t pos = s.rfind("::");
-            if (pos == std::string::npos) return s;
-            return s.substr(pos+2);
-        }
+    std::string strip_namespaces_type(std::string s) {
+        size_t pos = s.rfind("::");
+        if (pos == std::string::npos) return s;
+        return s.substr(pos+2);
     }
 
     //! @brief Removes the namespaces from a type representation.
@@ -272,13 +270,13 @@ namespace details {
 template<typename... Ss, typename... Ts>
 struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tuple<Ts...> {
     static_assert(type_repeated<Ss...>::size == 0, "repeated tags in tuple");
-    
+
     //! @brief The type sequence of tags.
     using tags = type_sequence<Ss...>;
-    
+
     //! @brief The type sequence of data types.
     using types = type_sequence<Ts...>;
-    
+
     //! @brief Gets the types corresponding to multiple tags.
     template <typename... Us>
     using tag_types = typename details::tag_to_type<type_sequence<Ss...>, type_sequence<Ts...>, type_sequence<Us...>>::type;
@@ -286,7 +284,7 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
     //! @brief Gets the type corresponding to a tag.
     template <typename S>
     using tag_type = typename tag_types<S>::front;
-    
+
     //! @brief Type obtained by prepending a tagged element to the tuple.
     template <typename S, typename T>
     using push_front = tagged_tuple<type_sequence<S, Ss...>, type_sequence<T, Ts...>>;
@@ -297,49 +295,49 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
 
     //! @brief Constructors inherited from `tuple`.
     using std::tuple<Ts...>::tuple;
-    
+
     //! @brief Copy constructor from another `tagged_tuple`.
     template <class... OSs, class... OTs>
     tagged_tuple(const tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>& t) :
         std::tuple<Ts...>(details::tt_capture(t, type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
-    
+
     //! @brief Move constructor from another `tagged_tuple`.
     template <class... OSs, class... OTs>
     tagged_tuple(tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>&& t) :
         std::tuple<Ts...>(details::tt_capture(std::move(t), type_sequence<Ss...>{}, type_sequence<Ts...>{})) {}
-    
+
     //! @brief Copy assignment from another `tagged_tuple`.
     template <class... OSs, class... OTs>
     tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>&
     operator=(const tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>& t) {
         return details::tt_assign(*this, t, typename type_sequence<Ss...>::template intersect<OSs...>());
     }
-    
+
     //! @brief Move assignment from another `tagged_tuple`.
     template <class... OSs, class... OTs>
     tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>&
     operator=(tagged_tuple<type_sequence<OSs...>, type_sequence<OTs...>>&& t) {
         return details::tt_assign(*this, std::move(t), typename type_sequence<Ss...>::template intersect<OSs...>());
     }
-    
+
     //! @brief Call operator returning a tagged tuple of call results.
     template <typename T>
     tagged_tuple<type_sequence<Ss...>, type_sequence<std::result_of_t<Ts(T&&)>...>> operator()(T&& v) {
         return make_tagged_tuple<Ss...>(get<Ss>(*this)(std::forward<T>(v))...);
     }
-    
+
     //! @brief Prints the content of the tagged tuple in a given format, skipping a given set of tags.
     template <typename F, typename... OSs>
     void print(std::ostream& o, F f, common::tags::skip_tags<OSs...>) const {
         details::tt_print(*this, o, f, typename tags::template subtract<OSs...>());
     }
-    
+
     //! @brief Prints the content of the tagged tuple in a given format.
     template <typename F>
     void print(std::ostream& o, F f) const {
         print(o, f, common::tags::skip_tags<>());
     }
-    
+
     //! @brief Prints the content of the tagged tuple in dictionary format.
     void print(std::ostream& o) const {
         print(o, arrowhead_tuple);
@@ -371,17 +369,17 @@ namespace details {
     // General form.
     template <typename... Ts>
     struct tagged_tuple_cat;
-    
+
     // No tuple to concatenate.
     template <>
     struct tagged_tuple_cat<> {
         using type = tagged_tuple<type_sequence<>, type_sequence<>>;
     };
-    
+
     // The first tuple is empty.
     template <typename... Ts>
     struct tagged_tuple_cat<tagged_tuple<type_sequence<>, type_sequence<>>, Ts...> : tagged_tuple_cat<Ts...> {};
-    
+
     // The first tuple is not empty.
     template <typename S, typename... Ss, typename T, typename... Ts, typename... Us>
     struct tagged_tuple_cat<tagged_tuple<type_sequence<S, Ss...>, type_sequence<T, Ts...>>, Us...> {

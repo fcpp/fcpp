@@ -30,7 +30,7 @@ class tuple {
     //! @cond INTERNAL
     template <typename... Us> friend class tuple;
     //! @endcond
-    
+
   public:
     //! @brief constructors
     //! @{
@@ -52,7 +52,7 @@ class tuple {
     template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(Us&&... xs) : m_tuple(std::forward<Us>(xs)...) {}
     //! @}
-    
+
     //! @brief assignment
     //! @{
     //! @brief Copy assignment.
@@ -72,7 +72,7 @@ class tuple {
         return *this;
     }
     //! @}
-    
+
     //! @brief Exchanges the content of the `tuple` objects.
     void swap(tuple& t) {
         m_tuple.swap(t.m_tuple);
@@ -83,7 +83,7 @@ class tuple {
     S& serialize(S& s) {
         return s & m_tuple;
     }
-    
+
   private:
     std::tuple<Ts...> m_tuple;
 };
@@ -94,7 +94,7 @@ class tuple<> {
     //! @cond INTERNAL
     template <typename... Us> friend class tuple;
     //! @endcond
-    
+
   public:
     //! @brief constructors
     //! @{
@@ -105,7 +105,7 @@ class tuple<> {
     //! @brief Move constructor.
     tuple(tuple&&) = default;
     //! @}
-    
+
     //! @brief assignment
     //! @{
     //! @brief Copy assignment.
@@ -113,7 +113,7 @@ class tuple<> {
     //! @brief Move assignment.
     tuple& operator=(tuple&& t) = default;
     //! @}
-    
+
     //! @brief Exchanges the content of the `tuple` objects.
     void swap(tuple&) {}
 };
@@ -246,17 +246,17 @@ namespace details {
     struct tuple_wrapper {
         //! @brief Constructor from a reference.
         tuple_wrapper(T t) : m_tuple(static_cast<T>(t)) {}
-        
+
         //! @brief Accesses the tuple.
         T tuple() const {
             return static_cast<T>(m_tuple);
         }
-        
+
       private:
         //! @brief The internal reference.
         T m_tuple;
     };
-    
+
     //! @brief Wraps a tuple, depending on its lvalue/rvalue/const lvalue status.
     //! @{
     //! @brief lvalue overload

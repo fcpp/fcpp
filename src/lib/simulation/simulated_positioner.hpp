@@ -79,9 +79,6 @@ struct simulated_positioner {
     //! @brief The dimensionality of the space.
     constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
-    //! @brief Type for representing a position.
-    using position_type = vec<dimension>;
-
     /**
      * @brief The actual component.
      *
@@ -98,12 +95,15 @@ struct simulated_positioner {
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
+            //! @brief Type for representing a position.
+            using position_type = vec<dimension>;
+
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<positioner_tag, position_type>;
 
             #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::x node initialisation tag\033[0m"
 
-            //@{
+            //! @{
             /**
              * @brief Main constructor.
              *
@@ -114,6 +114,8 @@ struct simulated_positioner {
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get_or<tags::x>(t, position_type{})), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{INF} {
                 static_assert(common::tagged_tuple<S,T>::tags::template count<tags::x> >= 1, MISSING_TAG_MESSAGE);
                 m_last = TIME_MIN;
+                fcpp::details::self(m_nbr_vec, P::node::uid) = vec<dimension>();
+                fcpp::details::self(m_nbr_dist, P::node::uid) = 0;
             }
 
             #undef MISSING_TAG_MESSAGE
@@ -275,8 +277,10 @@ struct simulated_positioner {
             void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
                 P::node::receive(t, d, m);
                 position_type v = common::get<positioner_tag>(m) - position(t);
-                fcpp::details::self(m_nbr_vec, d) = v;
-                fcpp::details::self(m_nbr_dist, d) = norm(v);
+                if (d != P::node::uid) {
+                    fcpp::details::self(m_nbr_vec, d) = v;
+                    fcpp::details::self(m_nbr_dist, d) = norm(v);
+                }
             }
 
             //! @brief Produces a message to send to a target, both storing it in its argument and returning it.

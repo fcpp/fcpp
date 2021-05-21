@@ -14,7 +14,13 @@ using namespace component::tags;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<int, real_t, device_t, field<real_t>, tuple<int, device_t>>,
+    exports<
+        coordination::gossip_max_t<int>,
+        coordination::gossip_mean_t<real_t>,
+        coordination::sp_collection_t<int,real_t>,
+        coordination::mp_collection_t<int,real_t>,
+        coordination::wmp_collection_t<real_t>
+    >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

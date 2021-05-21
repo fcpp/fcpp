@@ -21,7 +21,9 @@ using combo = component::combine_spec<
     component::simulated_positioner<>,
     component::storage<tuple_store<idealdist, real_t, fastdist, real_t, slowdist, real_t, fasterr, real_t, slowerr, real_t>>,
     component::identifier<parallel<(O & 8) == 8>, synchronised<(O & 16) == 16>>,
-    component::calculus<program<main>, exports<real_t, field<int>>,
+    component::calculus<
+        program<main>,
+        exports<coordination::distance_compare_t, coordination::connection_t>,
         export_pointer<(O & 1) == 1>,
         export_split<(O & 2) == 2>,
         online_drop<(O & 4) == 4>

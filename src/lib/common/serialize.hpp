@@ -11,6 +11,7 @@
 #include <cstring>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
@@ -27,6 +28,13 @@ namespace fcpp {
 
 //! @brief Namespace containing objects of common use.
 namespace common {
+
+
+//! @brief Exception class for format errors in deserialising.
+class format_error : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+    using std::runtime_error::operator=;
+};
 
 
 //! @cond INTERNAL
@@ -55,6 +63,8 @@ class sstream<false> {
     //! @brief Reads a trivial type from the stream.
     template <typename T, typename = std::enable_if_t<std::is_trivially_copyable<T>::value>>
     sstream& read(T& x, size_t l = sizeof(T)) {
+        if (m_idx + l > m_data.size())
+            throw format_error("format error in deserialisation");
         details::copy(&x, m_data.data() + m_idx, l);
         m_idx += l;
         return *this;

@@ -15,7 +15,7 @@ struct scheduler {
     struct component : public P {
         struct node : public P::node {
             using P::node::node;
-            
+
             times_t next() const {
                 return m_next;
             }
@@ -25,12 +25,12 @@ struct scheduler {
                 m_next += 10;
                 P::node::round(t);
             }
-            
+
             times_t m_next = 0;
         };
         struct net : public P::net {
             using P::net::net;
-            
+
             times_t next() const {
                 return m_next;
             }
@@ -38,7 +38,7 @@ struct scheduler {
             void update() {
                 m_next += 20;
             }
-            
+
             times_t m_next = 0;
         };
     };
@@ -58,7 +58,7 @@ struct exposer {
             using P::node::terminate;
             using P::node::message_time;
             using P::node::frequency;
-            
+
             void round_main(times_t t) {
                 EXPECT_EQ(t, current_time());
                 EXPECT_LT(previous_time(), current_time());

@@ -11,7 +11,7 @@ class TwinTest : public ::testing::Test {
   protected:
     virtual void SetUp() {
     }
-    
+
     internal::twin<int, true> mirrored;
     internal::twin<int, false> separate;
 };

@@ -61,6 +61,12 @@ struct storage {
             //! @brief Tuple type of the contents.
             using tuple_type = common::tagged_tuple_t<tuple_store_type>;
 
+          private: // implementation details
+            //! @brief Checks whether a type is supported by the storage.
+            template <typename A>
+            constexpr static bool type_supported = tuple_type::tags::template count<std::remove_reference_t<A>> != 0;
+
+          public: // visible by net objects and the main program
             /**
              * @brief Main constructor.
              *
@@ -75,14 +81,17 @@ struct storage {
                 return m_storage;
             }
 
+            #define MISSING_TYPE_MESSAGE "\033[1m\033[4munsupported tag access (add A to storage tag list)\033[0m"
+
             /**
              * @brief Write access to stored data.
              *
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            typename tuple_type::template tag_type<T>& storage() {
-                return common::get<T>(m_storage);
+            auto& storage() {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
             }
 
             /**
@@ -91,8 +100,9 @@ struct storage {
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            const typename tuple_type::template tag_type<T>& storage() const {
-                return common::get<T>(m_storage);
+            auto const& storage() const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
             }
 
             /**
@@ -101,8 +111,9 @@ struct storage {
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            typename tuple_type::template tag_type<T>& storage(T) {
-                return common::get<T>(m_storage);
+            auto& storage(T) {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
             }
 
             /**
@@ -111,11 +122,38 @@ struct storage {
              * @param T The tag corresponding to the data to be accessed.
              */
             template <typename T>
-            const typename tuple_type::template tag_type<T>& storage(T) const {
-                return common::get<T>(m_storage);
+            auto const& storage(T) const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
             }
+
+            #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
+            //! @brief Access to the data corresponding to an existing tag.
+            template <typename T>
+            inline auto& get_impl(common::bool_pack<true>) {
+                return common::get<T>(m_storage);
+            }
+
+            //! @brief Const access to the data corresponding to an existing tag.
+            template <typename T>
+            inline auto const& get_impl(common::bool_pack<true>) const {
+                return common::get<T>(m_storage);
+            }
+
+            //! @brief Access to the data corresponding to a non-existent tag.
+            template <typename T>
+            inline auto& get_impl(common::bool_pack<false>) {
+                return m_storage;
+            }
+
+            //! @brief Const access to the data corresponding to a non-existent tag.
+            template <typename T>
+            inline auto const& get_impl(common::bool_pack<false>) const {
+                return m_storage;
+            }
+
             //! @brief The data storage.
             tuple_type m_storage;
         };

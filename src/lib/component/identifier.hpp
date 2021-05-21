@@ -178,6 +178,9 @@ struct identifier {
             //! @brief The map type used internally for storing nodes.
             using map_type = common::random_access_map<device_t, node_type>;
 
+            //! @brief The type of node locks.
+            using lock_type = common::unique_lock<parallel>;
+
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
@@ -226,8 +229,8 @@ struct identifier {
             }
 
             //! @brief Access to the node with a given device device identifier (given a lock for the node's mutex).
-            node_type& node_at(device_t uid, common::unique_lock<parallel>& l) {
-                l = common::unique_lock<parallel>(m_nodes.at(uid).mutex);
+            node_type& node_at(device_t uid, lock_type& l) {
+                l = lock_type(m_nodes.at(uid).mutex);
                 return m_nodes.at(uid);
             }
 

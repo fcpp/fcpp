@@ -15,19 +15,19 @@ using namespace fcpp;
 // mock metric class returning a given value and never updating
 struct metric {
     metric() = default;
-    
+
     metric(double v) : val(v) {}
-    
+
     template <typename... Ts>
     double build(Ts const&...) const {
         return val;
     }
-    
+
     template <typename... Ts>
     double update(const double& r, Ts const&...) const {
         return val == 0.0 ? r : val;
     }
-    
+
   private:
     double val;
 };
@@ -44,7 +44,7 @@ class ContextTest : public ::testing::Test {
         m.insert(18, details::make_field({1,9}, std::vector<int>{9,2,2}));
         m.insert(8);
     }
-    
+
     common::multitype_map<trace_t, fcpp::field<int>, char> m;
 };
 

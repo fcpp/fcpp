@@ -16,7 +16,14 @@ constexpr hops_t X = std::numeric_limits<hops_t>::max();
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<times_t, hops_t, int, real_t, field<int>, tuple<real_t,times_t>, tuple<real_t,int>>,
+    exports<
+        coordination::abf_hops_t,
+        coordination::abf_distance_t,
+        coordination::bis_distance_t,
+        coordination::flex_distance_t,
+        coordination::broadcast_t<int, int>,
+        coordination::broadcast_t<hops_t, hops_t>
+    >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>

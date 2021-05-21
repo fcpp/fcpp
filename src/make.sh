@@ -191,15 +191,20 @@ while [ "$1" != "" ]; do
         gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
         gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
-        export CC="$gcc"
+        export CC="$gpp"
         export CXX="$gpp"
     elif [ "$1" == "sed" ]; then
         pattern="$2"
         replace=""
         videoreplace=`echo -e "\033[7m&\033[0m"`
+        replacing=0
         shift 2
         if [ "$1" != "" -a `echo $1 | grep "clean\|here\|gcc\|sed\|doc\|build\|test\|run\|all" | wc -l` -eq 0 ]; then
             replace="$1"
+            if [ "$replace" == "del" ]; then
+                replace=""
+            fi
+            replacing=1
             videoreplace=`echo -e "\033[31m[-&-]\033[32m{+$replace+}\033[0m"`
             shift 1
         fi
@@ -223,7 +228,7 @@ while [ "$1" != "" ]; do
             done
         done
         echo "$totn occurrences found across $totf files."
-        if [ "$replace" != "" ]; then
+        if [ $replacing -eq 1 ]; then
             echo -n "Proceed with substitution? (y/N) "
             read x
             if [ "$x" == "y" ]; then

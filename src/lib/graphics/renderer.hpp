@@ -65,22 +65,22 @@ namespace fcpp {
 
             //! @brief It draws a star of lines, given the center and sides.
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
-            
+
             //! @brief It draws the specified text in the specified coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale) const;
-            
+
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
-            
+
             //! @brief Returns viewport's current width.
             int getCurrentWidth();
-            
+
             //! @brief Returns viewport's current height.
             int getCurrentHeight();
 
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow() const;
-            
+
             //! @brief It returns the reference of the camera object.
             Camera& getCamera();
 
@@ -95,16 +95,16 @@ namespace fcpp {
 
             //! @brief It changes the idle shape of the cursor; boolean 'selection' states whether mouse picking is active or not; boolean 'setNow' states whether the call should immediately apply the change to the actual cursor.
             void setStandardCursor(bool selection, bool setNow = true);
-            
+
             //! @brief It manages mouse input of the given type.
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
-            
+
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the renderer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods);
-            
+
             //! @brief It resizes the viewport, given the new width and height values.
             void viewportResize(int width, int height);
-            
+
         private:
             //! @brief Default path to vertex_phong shader.
             static const std::string VERTEX_PHONG_PATH;
@@ -123,19 +123,19 @@ namespace fcpp {
 
             //! @brief Default path to fragment_texture shader.
             static const std::string FRAGMENT_TEXTURE_PATH;
-            
+
             //! @brief Default path to vertex_font shader.
             static const std::string VERTEX_FONT_PATH;
 
             //! @brief Default path to fragment_font shader.
             static const std::string FRAGMENT_FONT_PATH;
-            
+
             //! @brief Default path to font.
             static const std::string FONT_PATH;
 
             //! @brief Default path to textures.
             static const std::string TEXTURE_PATH;
-            
+
             //! @brief Default font size.
             static constexpr unsigned int FONT_DEFAULT_SIZE{ 48 };
 
@@ -165,7 +165,7 @@ namespace fcpp {
 
             //! @brief Data structure mapping chars with glyphs.
             static std::unordered_map<char, glyph> s_glyphs;
-            
+
             //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
             static int s_planeIndexSize;
 
@@ -267,7 +267,7 @@ namespace fcpp {
 
             //! @brief Camera object of the scene
             Camera m_camera;
-            
+
             //! @brief Euclid's algorithm to get the greatest common divisor.
             int euclid(int a, int b);
 

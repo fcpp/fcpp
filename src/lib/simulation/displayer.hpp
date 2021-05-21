@@ -791,7 +791,7 @@ struct displayer {
             //! @brief It checks if the ray of direction d (unit vector) and position p intersects with a sphere of radius r at position c; length of projection of c onto ray is stored into prj.
             bool intersectSphere(const glm::vec3& p, const glm::vec3& d, float r, const glm::vec3& c, float& prj) {
                 bool intersection{ false };
-                
+
                 // Define vector from p to c
                 glm::vec3 vpc{ c - p };
 

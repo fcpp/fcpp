@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
-#include <glm/gtx/transform.hpp> 
+#include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -43,10 +43,10 @@ void Camera::setViewDefault(glm::vec3 position, float depth, glm::vec3 worldUp, 
 
     // Calculate the right
     glm::vec3 right { glm::normalize(glm::cross(front, worldUp)) };  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-    
+
     // Calculate the up
     glm::vec3 up { glm::normalize(glm::cross(right, front)) };
-    
+
     // Calculate view matrix with all the formerly obtained vectors
     m_viewDefault = m_view = glm::lookAt(position, position + front, up);
 

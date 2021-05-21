@@ -147,7 +147,7 @@ void Renderer::allocateGlyphTextures() {
     FT_Set_Pixel_Sizes(ftFace, 0, FONT_DEFAULT_SIZE);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
     for (unsigned char c = 0; c < 128; c++) {
-        // load character glyph 
+        // load character glyph
         if (FT_Load_Char(ftFace, c, FT_LOAD_RENDER)) {
             std::cerr << "ERROR::RENDERER::FREETYPE::GLYPH_LOAD_FAILED (" << c << ")\n";
             continue;
@@ -285,7 +285,7 @@ int Renderer::euclid(int a, int b) {
     while(b != 0) //repeat until b is 0
     {
          r = a % b;
-         a = b; 
+         a = b;
          b = r; //swap a and b
     }
     return a; //the result is a when b is equal to 0
@@ -777,7 +777,7 @@ void Renderer::setLightPosition(glm::vec3& newPos) {
 void Renderer::setStandardCursor(bool selection, bool setNow) {
     if (selection) m_standardCursor = s_cursorCross;
     else m_standardCursor = s_cursorArrow;
-    
+
     if (setNow) glfwSetCursor(m_window, m_standardCursor);
 }
 
@@ -800,7 +800,7 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
             if (first) m_gridShow = not m_gridShow;
             break;
     }
-    
+
     // Process camera's input
     m_camera.keyboardInput(key, first, deltaTime, mods);
 }

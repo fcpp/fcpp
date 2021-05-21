@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #ifndef FCPP_GRAPHICS_SHAPES_H_
 #define FCPP_GRAPHICS_SHAPES_H_

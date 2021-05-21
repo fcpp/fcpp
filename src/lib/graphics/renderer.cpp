@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
 #include <stdexcept>
@@ -255,7 +255,7 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     }
 
     // Set initial aspect ratio
-	m_camera.setScreen(m_currentWidth, m_currentHeight);
+    m_camera.setScreen(m_currentWidth, m_currentHeight);
 
     // Initialize context if master
     if (m_master) initializeContext(true);
@@ -691,7 +691,7 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale) const {
-    // Activate corresponding render state	
+    // Activate corresponding render state
     m_shaderProgramFont.use();
     m_shaderProgramFont.setVec3("u_textColor", m_foreground);
     m_shaderProgramFont.setInt("u_text", 0);

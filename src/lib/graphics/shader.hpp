@@ -1,5 +1,4 @@
-// Copyright © 2020-2021 Luigi Rapetta. All Rights Reserved.
-// Thanks to learnopengl.com for the original structure.
+// Copyright © 2021 Luigi Rapetta. All Rights Reserved.
 
 #ifndef FCPP_GRAPHICS_SHADER_H
 #define FCPP_GRAPHICS_SHADER_H

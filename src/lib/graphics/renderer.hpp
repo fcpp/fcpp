@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #ifndef FCPP_GRAPHICS_RENDERER_H_
 #define FCPP_GRAPHICS_RENDERER_H_
@@ -24,7 +24,7 @@
 
 
 namespace fcpp {
-	namespace internal {
+    namespace internal {
         //! @brief Supported pointers to vertex buffers.
         enum class vertex { singleLine, star, plane, grid, SIZE };
 
@@ -41,9 +41,9 @@ namespace fcpp {
 
         //! @brief Renderer class; it has the responsability of calling OpenGL directives.
         class Renderer {
-		public:
-			//! @brief Renderer constructor, with GLFW and OpenGL initializations.
-			Renderer(size_t antialias, std::string name, bool master = true, GLFWwindow* masterPtr = NULL);
+        public:
+            //! @brief Renderer constructor, with GLFW and OpenGL initializations.
+            Renderer(size_t antialias, std::string name, bool master = true, GLFWwindow* masterPtr = NULL);
 
             //! @brief Renderer destructor closing the window.
             ~Renderer();
@@ -282,8 +282,8 @@ namespace fcpp {
 
             //! @brief It compiles the shader programs.
             void generateShaderPrograms();
-		};
-	}
+        };
+    }
 }
 
 #endif // FCPP_GRAPHICS_RENDERER_H_

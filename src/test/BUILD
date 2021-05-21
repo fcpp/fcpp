@@ -1,4 +1,4 @@
-cc_library(
+    cc_library(
     name = 'fake_os',
     hdrs = ['fake_os.hpp'],
     srcs = ['fake_os.cpp'],
@@ -36,7 +36,7 @@ cc_library(
         "//lib/common:mutex",
         "//lib/common:tagged_tuple",
         "//lib/data:vec",
-	"//test:helper"
+        "//test:helper"
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     visibility = [

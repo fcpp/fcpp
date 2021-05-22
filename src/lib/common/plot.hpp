@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file plot.hpp
@@ -55,6 +55,33 @@ namespace filter {
     //! @brief Filters values equal to `V/den`.
     template <intmax_t V, intmax_t den = 1>
     using equal = within<V, V, den>;
+
+    //! @brief Negate a filter.
+    template <typename F>
+    struct neg : F {
+        template <typename V>
+        bool operator()(V v) const {
+            return not F::operator()(v);
+        }
+    };
+
+    //! @brief Joins filters (or).
+    template <typename F, typename G>
+    struct vee : F, G {
+        template <typename V>
+        bool operator()(V v) const {
+            return F::operator()(v) or G::operator()(v);
+        }
+    };
+
+    //! @brief Disjoins filters (and).
+    template <typename F, typename G>
+    struct wedge : F, G {
+        template <typename V>
+        bool operator()(V v) const {
+            return F::operator()(v) and G::operator()(v);
+        }
+    };
 }
 
 
@@ -884,6 +911,7 @@ class split {
     //! @brief Row processing.
     template <typename R>
     split& operator<<(R const& row) {
+        static_assert(common::type_intersect<typename R::tags, typename key_type::tags>::size == key_type::tags::size, "splitting key not in plot row");
         key_type k = approx_impl(row, B{});
         P* p;
         {

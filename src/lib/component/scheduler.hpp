@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file scheduler.hpp
@@ -76,7 +76,7 @@ struct scheduler {
 
             /**
              * @brief Returns next event to schedule for the node component.
-             * 
+             *
              * Should correspond to the next time also during updates.
              */
             times_t next() const {

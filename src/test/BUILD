@@ -36,7 +36,7 @@ cc_library(
         "//lib/common:mutex",
         "//lib/common:tagged_tuple",
         "//lib/data:vec",
-	"//test:helper"
+        "//test:helper"
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     visibility = [

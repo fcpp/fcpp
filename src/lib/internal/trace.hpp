@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file trace.hpp
@@ -128,15 +128,15 @@ class trace {
     inline void push(trace_t x) {
         assert(x <= k_hash_mod and "code points overflow: reduce code or increase FCPP_TRACE");
         assert((x < k_hash_factor or !FCPP_WARNING_TRACE) and "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
-    	m_stack_hash = (m_stack_hash * k_hash_factor + x) & k_hash_mod;
-    	m_stack.push_back(x);
+        m_stack_hash = (m_stack_hash * k_hash_factor + x) & k_hash_mod;
+        m_stack.push_back(x);
     }
 
     //! @brief Remove the last function call from the stack trace updating the hash.
     inline void pop() {
-    	trace_t x = m_stack.back();
-    	m_stack.pop_back();
-    	m_stack_hash = ((m_stack_hash + k_hash_mod+1 - x) * k_hash_inverse) & k_hash_mod;
+        trace_t x = m_stack.back();
+        m_stack.pop_back();
+        m_stack_hash = ((m_stack_hash + k_hash_mod+1 - x) * k_hash_inverse) & k_hash_mod;
     }
 
   private:

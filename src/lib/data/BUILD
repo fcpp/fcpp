@@ -1,4 +1,13 @@
 cc_library(
+    name = 'color',
+    hdrs = ['color.hpp'],
+    srcs = ['color.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'field',
     hdrs = ['field.hpp'],
     srcs = ['field.cpp'],
@@ -7,6 +16,15 @@ cc_library(
         "//lib/common:serialize",
         "//lib/data:tuple",
     ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'shape',
+    hdrs = ['shape.hpp'],
+    srcs = ['shape.cpp'],
     visibility = [
         '//visibility:public',
     ],

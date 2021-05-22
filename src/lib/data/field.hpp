@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file field.hpp
@@ -11,7 +11,6 @@
 #include <cassert>
 
 #include <algorithm>
-#include <ostream>
 #include <vector>
 
 #include "lib/settings.hpp"
@@ -1258,7 +1257,7 @@ _BOP_TYPE(field<A>,<<,B) operator<<(field<A>&& x, const B& y) {
 }
 template <typename A, typename B>
 std::enable_if_t<
-    not common::is_class_template<field, A> and not std::is_base_of<std::ostream, A>::value,
+    not common::is_class_template<field, A> and not fcpp::common::is_ostream<A>::value,
     _BOP_TYPE(A,<<,field<B>)
 >
 operator<<(const A& x, const field<B>& y) {

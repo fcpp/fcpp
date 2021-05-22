@@ -13,16 +13,17 @@ function usage() {
     echo -e "    \033[1msed\033[0m:                             manipulates patterns in source files (can be chained)"
     echo -e "       <pattern> [replace]"
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation (can be chained)"
+    echo -e "    \033[1mgui\033[0m:                             builds graphical simulations (platform can be unix or windows)"
+    echo -e "       [-g] <platform> <targets...>"
     echo -e "    \033[1mbuild\033[0m:                           builds binaries for given targets, skipping tests"
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mtest\033[0m:                            builds binaries and tests for given targets"
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mrun\033[0m:                             build and runs a single target"
-    echo -e "       <copts...> <target> <plots...> <arguments...>"
+    echo -e "       <copts...> <target> <arguments...>"
     echo -e "    \033[1mall\033[0m:                             builds all possible targets and documentation"
     echo -e "       <copts...>"
-    echo -e "Targets can be substrings demanding builds for all possible expansions. Syntax for plots is:"
-    $plot_builder | tail -n +6 | head -n 10
+    echo -e "Targets can be substrings demanding builds for all possible expansions."
     exit 1
 }
 
@@ -132,7 +133,7 @@ function filter() {
         else
             name=""
         fi
-        if [ -f $build -a `cat $build | tr -s ' \n' ' ' | grep "$rule( name = $name" | wc -l` -gt 0 ]; then
+        if [ -f $build -a `cat $build | tr -s ' \r\n' ' ' | grep "$rule( name = $name" | wc -l` -gt 0 ]; then
             echo -n "$target "
         fi
     done
@@ -244,6 +245,40 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "doc" ]; then
         shift 1
         mkdoc
+    elif [ "$1" == "gui" ]; then
+        shift 1
+        btype="Release"
+        if [ "$1" == "-g" ]; then
+            btype="Debug"
+            shift 1
+        fi
+        platform=$1
+        if [ "$platform" == windows ]; then
+            flag=MinGW
+        elif [ "$platform" == unix ]; then
+            flag=Unix
+        else
+            echo -e "\033[4mUnrecognized platform \"$platform\". Available platforms are:\033[0m"
+            echo -e "    \033[1mwindows unix\033[0m"
+            exit 1
+        fi
+        shift 1
+        echo -e "\033[4mcmake -S ./ -B ./bin -G \"$flag Makefiles\" -DCMAKE_BUILD_TYPE=$btype -Wno-dev\033[0m"
+        cmake -S ./ -B ./bin -G "$flag Makefiles" -DCMAKE_BUILD_TYPE=$btype -Wno-dev
+        echo -e "\033[4mcmake --build ./bin/\033[0m"
+        cmake --build ./bin/
+        if [ "$platform" == windows ]; then
+            cp bin/fcpp/src/libfcpp.dll bin/
+        fi
+        for target in "$@"; do
+            cd bin
+            ./$target | tee ../plot/$target.asy
+            cd ../plot
+            sed -i "" -E "s| \(mean-mean\)||g" $target.asy
+            asy $target.asy -f pdf
+            cd ..
+        done
+        quitter
     elif [ "$1" == "build" ]; then
         shift 1
         parseopt "$@"

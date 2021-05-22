@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file settings.hpp
@@ -199,6 +199,30 @@
 #ifndef FCPP_TIME_EPSILON
 //! @brief Setting defining which time differences are to be considered negligible.
 #define FCPP_TIME_EPSILON 0.01f
+#endif
+
+
+#ifndef FCPP_REFRESH_RATE
+//! @brief Setting defining the minimum acceptable refresh rate of graphical representations.
+#define FCPP_REFRESH_RATE 0.1f
+#endif
+
+
+#ifndef FCPP_ANTIALIAS
+//! @brief Setting defining the antialiasing factor (1 to disable).
+#define FCPP_ANTIALIAS 4
+#endif
+
+
+#ifndef FCPP_SPHERICITY
+//! @brief Setting defining the definition of spheres (1 for icosahedron).
+#define FCPP_SPHERICITY 10
+#endif
+
+
+#ifndef FCPP_FIELD_DRAW_LIMIT
+//! @brief Setting defining the maximum number of elements displayed for a field.
+#define FCPP_FIELD_DRAW_LIMIT 8
 #endif
 
 

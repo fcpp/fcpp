@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file ostream.hpp
@@ -8,9 +8,12 @@
 #ifndef FCPP_COMMON_OSTREAM_H_
 #define FCPP_COMMON_OSTREAM_H_
 
+#include <cmath>
+
 #include <map>
 #include <ostream>
 #include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -21,6 +24,73 @@
 
 //! @cond INTERNAL
 namespace fcpp {
+
+namespace details {
+    template <typename T>
+    std::string real2str(T x) {
+        if (std::isfinite(x)) {
+            std::string s;
+            if (x == 0) return "0";
+            if (x < 0) {
+                s.push_back('-');
+                x = -x;
+            }
+            int e = 0;
+            if (0.1 > x or x >= 10000) {
+                e = log10(x);
+                x /= pow(10, e);
+            }
+            int i = x;
+            s += std::to_string(i);
+            s.push_back('.');
+            i = (x-i)*100;
+            s.push_back('0'+i/10);
+            s.push_back('0'+i%10);
+            if (e != 0) {
+                s.push_back(' ');
+                s.push_back('1');
+                s.push_back('0');
+                s.push_back('^');
+                s += std::to_string(e);
+            }
+            return s;
+        }
+        if (std::isnan(x)) return "nan";
+        return x < 0 ? "-inf" : "inf";
+    }
+}
+
+//! @brief String conversion of numeric types.
+//! @{
+inline std::string to_string(int x) {
+    return std::to_string(x);
+}
+inline std::string to_string(long x) {
+    return std::to_string(x);
+}
+inline std::string to_string(long long x) {
+    return std::to_string(x);
+}
+inline std::string to_string(unsigned x) {
+    return std::to_string(x);
+}
+inline std::string to_string(unsigned long x) {
+    return std::to_string(x);
+}
+inline std::string to_string(unsigned long long x) {
+    return std::to_string(x);
+}
+inline std::string to_string(float x) {
+    return details::real2str<float>(x);
+}
+inline std::string to_string(double x) {
+    return details::real2str<double>(x);
+}
+inline std::string to_string(long double x) {
+    return details::real2str<long double>(x);
+}
+//! @}
+
 
 template <typename T>
 class field;
@@ -58,9 +128,27 @@ namespace internal {
 }
 
 namespace details {
-    //! @brief Prints an iterable container.
+    //! @brief Converts to string an iterable container.
     template <typename T>
-    std::ostream& iterable_print(std::ostream& o, const char* delim, T const& c) {
+    inline std::string iterable_stringify(const char* delim, T const& c, const char* sep = ", ") {
+        std::string s;
+        s.push_back(delim[0]);
+        bool first = true;
+        for (auto const& x : c) {
+            if (first) first = false;
+            else {
+                s.push_back(sep[0]);
+                s.push_back(sep[1]);
+            }
+            s += to_string(common::escape(x));
+        }
+        s.push_back(delim[1]);
+        return s;
+    }
+
+    //! @brief Prints an iterable container.
+    template <typename O, typename T>
+    O& iterable_print(O& o, const char* delim, T const& c) {
         o << delim[0];
         bool first = true;
         for (auto const& x : c) {
@@ -68,12 +156,33 @@ namespace details {
             else o << ", ";
             o << common::escape(x);
         }
-        return o << delim[1];
+        o << delim[1];
+        return o;
+    }
+    //! @brief Converts to string an iterable container.
+    template <typename T>
+    inline std::string pair_iterable_stringify(const char* delim, T const& c) {
+        std::string s;
+        s.push_back(delim[0]);
+        bool first = true;
+        for (auto const& x : c) {
+            if (first) first = false;
+            else {
+                s.push_back(',');
+                s.push_back(' ');
+            }
+            s += to_string(common::escape(x.first));
+            s.push_back(':');
+            s += to_string(common::escape(x.second));
+        }
+        s.push_back(delim[1]);
+        return s;
     }
 
+
     //! @brief Prints an iterable container.
-    template <typename T>
-    std::ostream& pair_iterable_print(std::ostream& o, const char* delim, T const& c) {
+    template <typename O, typename T>
+    O& pair_iterable_print(O& o, const char* delim, T const& c) {
         o << delim[0];
         bool first = true;
         for (auto const& x : c) {
@@ -81,7 +190,8 @@ namespace details {
             else o << ", ";
             o << common::escape(x.first) << ":" << common::escape(x.second);
         }
-        return o << delim[1];
+        o << delim[1];
+        return o;
     }
 
     //! @brief Generic get for any structure.
@@ -98,32 +208,41 @@ namespace details {
     }
     //! @}
 
+    //! @brief Converts to string an indexable structure.
+    template <typename T, size_t... is, typename tag>
+    inline std::string indexed_stringify(const char* delim, const T& x, std::index_sequence<is...>, tag) {
+        return iterable_stringify(delim, std::vector<std::string>{to_string(common::escape(get<is>(x, tag{})))...}, "; ");
+    }
+
     //! @brief Prints an indexable structure.
     //! @{
-    inline void indexed_print(std::ostream&) {}
-    template <typename T>
-    inline void indexed_print(std::ostream& o, const T& x) {
+    template <typename O>
+    inline void indexed_print(O&) {}
+    template <typename O, typename T>
+    inline void indexed_print(O& o, const T& x) {
         o << x;
     }
-    template <typename T, typename... Ts>
-    inline void indexed_print(std::ostream& o, const T& x, const Ts&... xs) {
+    template <typename O, typename T, typename... Ts>
+    inline void indexed_print(O& o, const T& x, const Ts&... xs) {
         o << x << "; ";
         indexed_print(o, xs...);
     }
-    template <typename T, size_t... is, typename tag>
-    std::ostream& indexed_print(std::ostream& o, const char* delim, const T& x, std::index_sequence<is...>, tag) {
+    template <typename O, typename T, size_t... is, typename tag>
+    O& indexed_print(O& o, const char* delim, const T& x, std::index_sequence<is...>, tag) {
         o << delim[0];
         indexed_print(o, common::escape(get<is>(x, tag{}))...);
-        return o << delim[1];
+        o << delim[1];
+        return o;
     }
     //! @}
 
     //! @brief Prints a self-printable structure.
-    template <typename T, typename... tags>
-    std::ostream& printable_print(std::ostream& o, const char* delim, T const& c, tags...) {
+    template <typename O, typename T, typename... tags>
+    O& printable_print(O& o, const char* delim, T const& c, tags...) {
         o << delim[0];
         c.print(o, tags{}...);
-        return o << delim[1];
+        o << delim[1];
+        return o;
     }
 }
 }
@@ -135,51 +254,99 @@ namespace details {
  */
 namespace std {
     //! @brief Printing arrays.
-    template <typename T, size_t n>
-    std::ostream& operator<<(std::ostream& o, const std::array<T, n>& v) {
+    template <typename O, typename T, size_t n, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::array<T, n>& v) {
         return fcpp::details::iterable_print(o, "[]", v);
+    }
+
+    //! @brief Converting arrays to strings.
+    template <typename T, size_t n>
+    std::string to_string(std::array<T, n> const& v) {
+        return fcpp::details::iterable_stringify("[]", v);
     }
 
     //! @brief Printing pairs.
-    template <typename T, typename U>
-    std::ostream& operator<<(std::ostream& o, const std::pair<T, U>& p) {
+    template <typename O, typename T, typename U, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::pair<T, U>& p) {
         return fcpp::details::indexed_print(o, "()", p, std::make_index_sequence<2>{}, fcpp::details::std_tag{});
     }
 
+    //! @brief Converting pairs to strings.
+    template <typename T, typename U>
+    std::string to_string(std::pair<T, U> const& p) {
+        return fcpp::details::indexed_stringify("()", p, std::make_index_sequence<2>{}, fcpp::details::std_tag{});
+    }
+
     //! @brief Printing tuples.
-    template <typename... Ts>
-    std::ostream& operator<<(std::ostream& o, const std::tuple<Ts...>& t) {
+    template <typename O, typename... Ts, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::tuple<Ts...>& t) {
         return fcpp::details::indexed_print(o, "()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::std_tag{});
     }
 
+    //! @brief Converting tuples to strings.
+    template <typename... Ts>
+    std::string to_string(std::tuple<Ts...> const& t) {
+        return fcpp::details::indexed_stringify("()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::std_tag{});
+    }
+
     //! @brief Printing vectors.
-    template <typename T>
-    std::ostream& operator<<(std::ostream& o, const std::vector<T>& v) {
+    template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::vector<T>& v) {
         return fcpp::details::iterable_print(o, "[]", v);
     }
 
-    //! @brief Printing ordered sets.
+    //! @brief Converting vectors to strings.
     template <typename T>
-    std::ostream& operator<<(std::ostream& o, const std::set<T>& s) {
+    std::string to_string(std::vector<T> const& v) {
+        return fcpp::details::iterable_stringify("[]", v);
+    }
+
+    //! @brief Printing ordered sets.
+    template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::set<T>& s) {
         return fcpp::details::iterable_print(o, "{}", s);
+    }
+
+    //! @brief Converting ordered sets to strings.
+    template <typename T>
+    std::string to_string(std::set<T> const& s) {
+        return fcpp::details::iterable_stringify("{}", s);
     }
 
     //! @brief Printing unordered sets.
-    template <typename T>
-    std::ostream& operator<<(std::ostream& o, const std::unordered_set<T>& s) {
+    template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::unordered_set<T>& s) {
         return fcpp::details::iterable_print(o, "{}", s);
     }
 
+    //! @brief Converting unordered sets to strings.
+    template <typename T>
+    std::string to_string(std::unordered_set<T> const& s) {
+        return fcpp::details::iterable_stringify("{}", s);
+    }
+
     //! @brief Printing ordered maps.
-    template <typename K, typename V>
-    std::ostream& operator<<(std::ostream& o, const std::map<K,V>& m) {
+    template <typename O, typename K, typename V, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::map<K,V>& m) {
         return fcpp::details::pair_iterable_print(o, "{}", m);
     }
 
-    //! @brief Printing unordered maps.
+    //! @brief Converting maps to strings.
     template <typename K, typename V>
-    std::ostream& operator<<(std::ostream& o, const std::unordered_map<K,V>& m) {
+    std::string to_string(std::map<K,V> const& m) {
+        return fcpp::details::pair_iterable_stringify("{}", m);
+    }
+
+    //! @brief Printing unordered maps.
+    template <typename O, typename K, typename V, typename = fcpp::common::if_ostream<O>>
+    O& operator<<(O& o, const std::unordered_map<K,V>& m) {
         return fcpp::details::pair_iterable_print(o, "{}", m);
+    }
+
+    //! @brief Converting unordered maps to strings.
+    template <typename K, typename V>
+    std::string to_string(std::unordered_map<K,V> const& m) {
+        return fcpp::details::pair_iterable_stringify("{}", m);
     }
 }
 
@@ -189,44 +356,76 @@ namespace std {
  */
 namespace fcpp {
     //! @brief Printing fields.
-    template <typename T>
-    std::ostream& operator<<(std::ostream& o, const field<T>& x) {
+    template <typename O, typename T, typename = common::if_ostream<O>>
+    O& operator<<(O& o, const field<T>& x) {
         o << "{";
         for (size_t i = 0; i < details::get_ids(x).size(); ++i) {
             o << details::get_ids(x)[i] << ":" << common::escape(details::get_vals(x)[i+1]) << ", ";
         }
-        return o << "*:" << common::escape(details::get_vals(x)[0]) << "}";
+        o << "*:" << common::escape(details::get_vals(x)[0]) << "}";
+        return o;
+    }
+
+    //! @brief Converting fields to strings.
+    template <typename T>
+    std::string to_string(field<T> const& x) {
+        std::string s = "{";
+        for (size_t i = 0; i < details::get_ids(x).size() and i < FCPP_FIELD_DRAW_LIMIT and s.size() < 10*FCPP_FIELD_DRAW_LIMIT; ++i) {
+            s += to_string(details::get_ids(x)[i]);
+            s.push_back(':');
+            s += to_string(common::escape(details::get_vals(x)[i+1]));
+            if (i+1 == details::get_ids(x).size() or (i < FCPP_FIELD_DRAW_LIMIT-1 and s.size() < 10*FCPP_FIELD_DRAW_LIMIT-2)) s.push_back(',');
+            else for (int j=0; j<3; ++j) s.push_back('.');
+            s.push_back(' ');
+        }
+        s.push_back('*');
+        s.push_back(':');
+        s += to_string(common::escape(details::get_vals(x)[0]));
+        s.push_back('}');
+        return s;
     }
 
     //! @brief Printing tuples.
-    template <typename... Ts>
-    std::ostream& operator<<(std::ostream& o, const tuple<Ts...>& t) {
+    template <typename O, typename... Ts, typename = common::if_ostream<O>>
+    O& operator<<(O& o, const tuple<Ts...>& t) {
         return fcpp::details::indexed_print(o, "()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::fcpp_tag{});
     }
 
+    //! @brief Converting tuples to strings.
+    template <typename... Ts>
+    std::string to_string(tuple<Ts...> const& t) {
+        return fcpp::details::indexed_stringify("()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::fcpp_tag{});
+    }
+
     //! @brief Printing vectors.
-    template <size_t n>
-    std::ostream& operator<<(std::ostream& o, const vec<n>& p) {
+    template <typename O, size_t n, typename = common::if_ostream<O>>
+    O& operator<<(O& o, const vec<n>& p) {
         return fcpp::details::iterable_print(o, "[]", p);
+    }
+
+    //! @brief Converting vectors to strings.
+    template <size_t n>
+    std::string to_string(vec<n> const& p) {
+        return fcpp::details::iterable_stringify("[]", p);
     }
 
     //! @brief Namespace containing objects of common use.
     namespace common {
         //! @brief Printing multitype maps in arrowhead format.
-        template <typename T, typename... Ts>
-        std::ostream& operator<<(std::ostream& o, const multitype_map<T, Ts...>& m) {
+        template <typename O, typename T, typename... Ts, typename = if_ostream<O>>
+        O& operator<<(O& o, const multitype_map<T, Ts...>& m) {
             return fcpp::details::printable_print(o, "()", m);
         }
 
         //! @brief Printing random access maps.
-        template <typename K, typename T, typename H, typename P, typename A>
-        std::ostream& operator<<(std::ostream& o, const random_access_map<K,T,H,P,A>& m) {
+        template <typename O, typename K, typename T, typename H, typename P, typename A, typename = if_ostream<O>>
+        O& operator<<(O& o, const random_access_map<K,T,H,P,A>& m) {
             return fcpp::details::pair_iterable_print(o, "{}", m);
         }
 
         //! @brief Printing tagged tuples in arrowhead format.
-        template <typename S, typename T>
-        std::ostream& operator<<(std::ostream& o, const tagged_tuple<S,T>& t) {
+        template <typename O, typename S, typename T, typename = if_ostream<O>>
+        O& operator<<(O& o, const tagged_tuple<S,T>& t) {
             return fcpp::details::printable_print(o, "()", t);
         }
     }
@@ -234,27 +433,30 @@ namespace fcpp {
     //! @brief Namespace containing objects of internal use.
     namespace internal {
         //! @brief Printing calculus contexts.
-        template <bool b, bool d, typename... Ts>
-        std::ostream& operator<<(std::ostream& o, const context<b, d, Ts...>& c) {
+        template <typename O, bool b, bool d, typename... Ts, typename = common::if_ostream<O>>
+        O& operator<<(O& o, const context<b, d, Ts...>& c) {
             return fcpp::details::printable_print(o, "()", c);
         }
 
         //! @brief Printing content of flat pointers.
-        template <typename T, bool is_flat>
-        std::ostream& operator<<(std::ostream& o, const flat_ptr<T, is_flat>& p) {
-            return o << common::escape(*p);
+        template <typename O, typename T, bool is_flat, typename = common::if_ostream<O>>
+        O& operator<<(O& o, const flat_ptr<T, is_flat>& p) {
+            o << common::escape(*p);
+            return o;
         }
 
         //! @brief Printing identical twin objects.
-        template <typename T>
-        std::ostream& operator<<(std::ostream& o, const twin<T,true>& t) {
-            return o << "(" << common::escape(t.first()) << ")";
+        template <typename O, typename T, typename = common::if_ostream<O>>
+        O& operator<<(O& o, const twin<T,true>& t) {
+            o << "(" << common::escape(t.first()) << ")";
+            return o;
         }
 
         //! @brief Printing different twin objects.
-        template <typename T>
-        std::ostream& operator<<(std::ostream& o, const twin<T,false>& t) {
-            return o << "(" << common::escape(t.first()) << "; " << common::escape(t.second()) << ")";
+        template <typename O, typename T, typename = common::if_ostream<O>>
+        O& operator<<(O& o, const twin<T,false>& t) {
+            o << "(" << common::escape(t.first()) << "; " << common::escape(t.second()) << ")";
+            return o;
         }
     }
 }

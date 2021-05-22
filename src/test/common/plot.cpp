@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -22,6 +22,33 @@ struct oth_but {};
         EXPECT_EQ(q.source, s);     \
         EXPECT_DOUBLE_EQ(q.value, v);
 
+
+TEST(PlotTest, Filters) {
+    {
+        filter::within<10, 20> f;
+        EXPECT_EQ(f(05), false);
+        EXPECT_EQ(f(15), true);
+        EXPECT_EQ(f(25), false);
+    }
+    {
+        filter::neg<filter::within<10, 20>> f;
+        EXPECT_EQ(f(05), true);
+        EXPECT_EQ(f(15), false);
+        EXPECT_EQ(f(25), true);
+    }
+    {
+        filter::vee<filter::below<10>, filter::above<20>> f;
+        EXPECT_EQ(f(05), true);
+        EXPECT_EQ(f(15), false);
+        EXPECT_EQ(f(25), true);
+    }
+    {
+        filter::neg<filter::wedge<filter::above<10>, filter::below<20>>> f;
+        EXPECT_EQ(f(05), true);
+        EXPECT_EQ(f(15), false);
+        EXPECT_EQ(f(25), true);
+    }
+}
 
 TEST(PlotTest, Value) {
     {

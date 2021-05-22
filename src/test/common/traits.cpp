@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 #include <array>
 #include <string>
@@ -300,6 +300,9 @@ struct flagopt {};
 template <size_t i>
 struct onenum {};
 
+template <size_t i, size_t j=1>
+struct twonum {};
+
 template <size_t... is>
 struct numopt {};
 
@@ -310,7 +313,7 @@ template <typename... Ts>
 struct typeopt {};
 
 TEST(TraitsTest, Options) {
-    using plainseq = common::type_sequence<onenum<10>, flagopt<false>, numopt<2,3>, onetype<int>, typeopt<int,char>>;
+    using plainseq = common::type_sequence<onenum<10>, twonum<2>, flagopt<false>, numopt<2,3>, onetype<int>, typeopt<int,char>>;
     struct hideseq : public plainseq {};
     EXPECT_SAME(common::details::type_sequence_decay<hideseq>, plainseq);
     EXPECT_SAME(common::details::type_sequence_decay<std::tuple<int,char>>, common::type_sequence<>);
@@ -336,6 +339,15 @@ TEST(TraitsTest, Options) {
     EXPECT_EQ(n, 10ULL);
     n = common::option_num<onenum, 42, int, hideseq, onenum<6>>;
     EXPECT_EQ(n, 10ULL);
+    double f;
+    f = common::option_float<twonum, 45, 10, int, bool>;
+    EXPECT_DOUBLE_EQ(f, 4.5);
+    f = common::option_float<twonum, 45, 10, int, bool, twonum<2>, void, twonum<6>>;
+    EXPECT_DOUBLE_EQ(f, 2.0);
+    f = common::option_float<twonum, 45, 10, int, common::type_sequence<bool, twonum<2>, void>, twonum<6>>;
+    EXPECT_DOUBLE_EQ(f, 2.0);
+    f = common::option_float<twonum, 45, 10, int, hideseq, twonum<6>>;
+    EXPECT_DOUBLE_EQ(f, 2.0);
     EXPECT_SAME(common::option_nums<numopt,void>,
                 common::index_sequence<>);
     EXPECT_SAME(common::option_nums<numopt,void,numopt<2,3>,bool>,
@@ -382,4 +394,18 @@ TEST(TraitsTest, Options) {
                     bool, common::type_sequence<char, int>, double
                 >, std::tuple, typeopt>,
                 std::tuple<bool,typeopt<char,int>,double>);
+}
+
+struct custom_stream_type {};
+template <>
+struct common::is_ostream<custom_stream_type> : public std::true_type {};
+
+TEST(TraitsTest, IsOStream) {
+    bool b;
+    b = common::is_ostream<std::ostream>::value;
+    EXPECT_TRUE(b);
+    b = common::is_ostream<int>::value;
+    EXPECT_FALSE(b);
+    b = common::is_ostream<custom_stream_type>::value;
+    EXPECT_TRUE(b);
 }

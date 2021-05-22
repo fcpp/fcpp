@@ -4,6 +4,8 @@
 bazel-*
 _bazel_*
 build/
+bin/
 doc/
 .vagrant/
 .DS_Store
+

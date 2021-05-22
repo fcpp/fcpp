@@ -1,4 +1,4 @@
-// Copyright © 2019 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -35,7 +35,7 @@ TEST_F(TwinTest, FalseOperators) {
 
 TEST_F(TwinTest, Mirrored) {
     mirrored.first() = 42;
-	EXPECT_EQ(42, mirrored.second());
+    EXPECT_EQ(42, mirrored.second());
     mirrored.second() = 17;
     EXPECT_EQ(17, mirrored.first());
 }

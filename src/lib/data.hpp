@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file data.hpp
@@ -8,7 +8,9 @@
 #ifndef FCPP_DATA_H_
 #define FCPP_DATA_H_
 
+#include "lib/data/color.hpp"
 #include "lib/data/field.hpp"
+#include "lib/data/shape.hpp"
 #include "lib/data/tuple.hpp"
 #include "lib/data/vec.hpp"
 

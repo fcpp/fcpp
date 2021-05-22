@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file aggregator.hpp
@@ -102,12 +102,14 @@ class count {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -160,12 +162,14 @@ class distinct {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -220,12 +224,14 @@ class sum {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -283,12 +289,14 @@ class mean {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -347,12 +355,14 @@ class moment {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -418,12 +428,14 @@ class deviation {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -490,12 +502,14 @@ class stats {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, "mean", "dev");
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         auto res = result<void>();
         os << std::get<0>(res) << " " << std::get<1>(res) << " ";
     }
@@ -558,12 +572,14 @@ class min {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -616,12 +632,14 @@ class max {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, name());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
 
@@ -688,12 +706,12 @@ namespace details {
     }
 
     //! @brief Prints the results of aggregation for quantile (empty case).
-    template <typename T>
-    void quantile_output(std::ostream&, T&&, std::index_sequence<>) {}
+    template <typename O, typename T>
+    void quantile_output(O&, T&&, std::index_sequence<>) {}
 
     //! @brief Prints the results of aggregation for quantile.
-    template <typename T, size_t i, size_t... is>
-    void quantile_output(std::ostream& os, T&& r, std::index_sequence<i, is...>) {
+    template <typename O, typename T, size_t i, size_t... is>
+    void quantile_output(O& os, T&& r, std::index_sequence<i, is...>) {
         os << std::get<i>(r) << " ";
         quantile_output(os, r, std::index_sequence<is...>{});
     }
@@ -747,12 +765,14 @@ class quantile<T, only_finite, false, qs...> {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, details::quant_repr(qs)...);
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
 
@@ -806,12 +826,14 @@ class quantile<T, only_finite, true, qs...> {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         os << details::header(tag, details::quant_repr(qs)...);
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
 
@@ -893,31 +915,35 @@ class combine : public Ts... {
     }
 
     //! @brief Outputs the aggregator description.
-    void header(std::ostream& os, std::string tag) const {
+    template <typename O>
+    void header(O& os, std::string tag) const {
         header_impl(os, tag, common::type_sequence<Ts...>());
     }
 
     //! @brief Printed results of aggregation.
-    void output(std::ostream& os) const {
+    template <typename O>
+    void output(O& os) const {
         output_impl(os, common::type_sequence<Ts...>());
     }
 
   private:
     //! @brief Outputs the aggregator description.
-    template <typename S, typename... Ss>
-    void header_impl(std::ostream& os, std::string& tag, common::type_sequence<S,Ss...>) const {
+    template <typename O, typename S, typename... Ss>
+    void header_impl(O& os, std::string& tag, common::type_sequence<S,Ss...>) const {
         S::header(os, tag);
         header_impl(os, tag, common::type_sequence<Ss...>());
     }
-    void header_impl(std::ostream&, std::string&, common::type_sequence<>) const {}
+    template <typename O>
+    void header_impl(O&, std::string&, common::type_sequence<>) const {}
 
     //! @brief Printed results of aggregation.
-    template <typename S, typename... Ss>
-    void output_impl(std::ostream& os, common::type_sequence<S,Ss...>) const {
+    template <typename O, typename S, typename... Ss>
+    void output_impl(O& os, common::type_sequence<S,Ss...>) const {
         S::output(os);
         output_impl(os, common::type_sequence<Ss...>());
     }
-    void output_impl(std::ostream&, common::type_sequence<>) const {}
+    template <typename O>
+    void output_impl(O&, common::type_sequence<>) const {}
 };
 
 

@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 #include <vector>
 
@@ -18,8 +18,8 @@ struct public_trace : public internal::trace {
 public_trace test_trace;
 
 TEST(TraceTest, Hash) {
-	EXPECT_EQ((trace_t)0, test_trace.hash(0));
-	EXPECT_EQ((trace_t)12L<<k_hash_len, test_trace.hash(12));
+    EXPECT_EQ((trace_t)0, test_trace.hash(0));
+    EXPECT_EQ((trace_t)12L<<k_hash_len, test_trace.hash(12));
 }
 
 TEST(TraceTest, PushPop) {

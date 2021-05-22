@@ -88,7 +88,7 @@ C:\Program Files (x86)\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin
 ```
 but the actual path may vary depending on your installation. Then, you should be able to build the whole library with CMake through:
 ```
-> ./make.sh gui windows
+./make.sh gui windows
 ```
 
 ### Linux
@@ -104,7 +104,7 @@ sudo apt-get install xorg-dev g++ cmake asymptote
 ```
 Then, you should be able to build the whole library with CMake through:
 ```
-> ./make.sh gui unix
+./make.sh gui unix
 ```
 
 ### MacOS
@@ -112,7 +112,6 @@ Then, you should be able to build the whole library with CMake through:
 Pre-requisites:
 - Xcode Command Line Tools
 - CMake 3.9 (or higher)
-- [Asymptote](http://asymptote.sourceforge.io) (for building the plots)
 
 To install them, assuming you have the [brew](https://brew.sh) package manager, type the following commands:
 ```
@@ -121,7 +120,7 @@ brew install cmake asymptote
 ```
 Then, you should be able to build the whole library with CMake through:
 ```
-> ./make.sh gui unix
+./make.sh gui unix
 ```
 
 ### User Interface
@@ -146,11 +145,11 @@ If you write and launch your own graphical simulation, a window will open displa
 ### Status Badges
 
 #### Stable Branch
-![Build Status](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?branch=master)
+[![Build Status](https://github.com/fcpp/fcpp/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/fcpp/fcpp/actions?query=branch%3Amaster)
 [![Codacy](https://api.codacy.com/project/badge/Grade/90634407d674499cb62da7d7d74e8b42)](https://app.codacy.com/gh/fcpp/fcpp?utm_source=github.com&utm_medium=referral&utm_content=fcpp/fcpp&utm_campaign=Badge_Grade_Dashboard)
 
 #### Development Branch
-![Build Status](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?branch=dev)
+[![Build Status](https://github.com/fcpp/fcpp/actions/workflows/main.yml/badge.svg?branch=dev)](https://github.com/fcpp/fcpp/actions?query=branch%3Adev)
 
 ### Authors
 

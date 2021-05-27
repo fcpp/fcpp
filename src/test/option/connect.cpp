@@ -39,8 +39,8 @@ TEST(ConnectTest, Fixed) {
 }
 
 TEST(ConnectTest, Radial) {
-    connect::radial<10, 7> connector(nullptr, common::make_tagged_tuple<>());
-    connect::radial<10, 7>::data_type data;
+    connect::radial<70, connect::fixed<10>> connector(nullptr, common::make_tagged_tuple<>());
+    connect::radial<70, connect::fixed<10>>::data_type data;
     std::mt19937_64 gen(42);
     int count = 0;
     for (size_t i=0; i<100000; ++i)

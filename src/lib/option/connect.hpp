@@ -135,6 +135,47 @@ class fixed : public clique<n> {
 
 
 /**
+ * Connection predicate which is true within a maximum radius (can be set through tag `radius`)
+ * depending on \ref component::tags::power_ratio data of involved devices. Power is a real number
+ * from 0 to 1, and connection is possible within `radius * node1_power * node2_power`.
+ *
+ * @param num The numerator of the default value for the radius (defaults to 1).
+ * @param den The denominator of the default value for the radius (defaults to 1).
+ * @param n   Dimensionality of the space (defaults to 2).
+ */
+template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
+class powered : public fixed<num,den,n> {
+    //! @brief Shortcut to the parent fixed connector.
+    using C = fixed<num,den,n>;
+
+    //! brief Shortcut to the power_ratio tag.
+    using power_ratio = component::tags::power_ratio;
+
+  public:
+    //! @brief Type for representing a position.
+    using typename C::position_type;
+
+    //! @brief The node data type.
+    using data_type = typename C::data_type::template push_back<power_ratio, real_t>;
+
+    //! @brief Inheriting constructor.
+    using C::C;
+
+    //! @brief The maximum radius of connection.
+    template <typename T>
+    real_t relative_radius(T const& data1, T const& data2) const {
+        return C::relative_radius(data1, data2) * common::get<power_ratio>(data1) * common::get<power_ratio>(data2);
+    }
+
+    //! @brief Checks if connection is possible.
+    template <typename G, typename T>
+    bool operator()(G&&, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
+        return norm(pos1 - pos2) <= relative_radius(data1, data2);
+    }
+};
+
+
+/**
  * @brief Connection predicate modifying a base connector with a likelyhood depending on radius (with tag `radius` setting maximum radius and `half_radius` setting half radius).
  *
  * The half radius (50% communication failure) is given as a percentile (1-99) over the maximum connection radius.
@@ -181,47 +222,6 @@ class radial : public C {
   private:
     //! @brief The half radius and distribution scaling factor.
     real_t m_r50, m_k;
-};
-
-
-/**
- * Connection predicate which is true within a maximum radius (can be set through tag `radius`)
- * depending on \ref component::tags::power_ratio data of involved devices. Power is a real number
- * from 0 to 1, and connection is possible within `radius * node1_power * node2_power`.
- *
- * @param num The numerator of the default value for the radius (defaults to 1).
- * @param den The denominator of the default value for the radius (defaults to 1).
- * @param n   Dimensionality of the space (defaults to 2).
- */
-template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
-class powered : public fixed<num,den,n> {
-    //! @brief Shortcut to the parent fixed connector.
-    using C = fixed<num,den,n>;
-
-    //! brief Shortcut to the power_ratio tag.
-    using power_ratio = component::tags::power_ratio;
-
-  public:
-    //! @brief Type for representing a position.
-    using typename C::position_type;
-
-    //! @brief The node data type.
-    using data_type = typename C::data_type::template push_back<power_ratio, real_t>;
-
-    //! @brief Inheriting constructor.
-    using C::C;
-
-    //! @brief The maximum radius of connection.
-    template <typename T>
-    real_t relative_radius(T const& data1, T const& data2) const {
-        return C::relative_radius(data1, data2) * common::get<power_ratio>(data1) * common::get<power_ratio>(data2);
-    }
-
-    //! @brief Checks if connection is possible.
-    template <typename G, typename T>
-    bool operator()(G&&, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
-        return norm(pos1 - pos2) <= relative_radius(data1, data2);
-    }
 };
 
 

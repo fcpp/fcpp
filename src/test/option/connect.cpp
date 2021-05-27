@@ -65,3 +65,46 @@ TEST(ConnectTest, Powered) {
     connect = connector(nullptr, data, make_vec(0.5f,1), data, make_vec(0.51f,0));
     EXPECT_FALSE(connect);
 }
+
+TEST(ConnectTest, Hierarchical) {
+    connect::hierarchical<connect::fixed<1>> connector(nullptr, common::make_tagged_tuple<>());
+    connect::hierarchical<connect::fixed<1>>::data_type data1 = 0;
+    connect::hierarchical<connect::fixed<1>>::data_type data2 = 1;
+    connect::hierarchical<connect::fixed<1>>::data_type data3 = 2;
+    bool connect;
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data1, make_vec(0.4f,0.9f));
+    EXPECT_TRUE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data1, make_vec(7,10));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data1, make_vec(0.5f,0));
+    EXPECT_TRUE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data1, make_vec(0.51f,0));
+    EXPECT_FALSE(connect);
+
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data2, make_vec(0.4f,0.9f));
+    EXPECT_TRUE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data2, make_vec(7,10));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data2, make_vec(0.5f,0));
+    EXPECT_TRUE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data2, make_vec(0.51f,0));
+    EXPECT_FALSE(connect);
+
+    connect = connector(nullptr, data2, make_vec(0.5f,1), data2, make_vec(0.4f,0.9f));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data2, make_vec(0.5f,1), data2, make_vec(7,10));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data2, make_vec(0.5f,1), data2, make_vec(0.5f,0));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data2, make_vec(0.5f,1), data2, make_vec(0.51f,0));
+    EXPECT_FALSE(connect);
+
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data3, make_vec(0.4f,0.9f));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data3, make_vec(7,10));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data3, make_vec(0.5f,0));
+    EXPECT_FALSE(connect);
+    connect = connector(nullptr, data1, make_vec(0.5f,1), data3, make_vec(0.51f,0));
+    EXPECT_FALSE(connect);
+}

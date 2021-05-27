@@ -32,6 +32,9 @@ namespace tags {
     //! @brief Net initialisation tag associating to 50%-likely communication radius.
     struct half_radius;
 
+    //! @brief Node initialisation tag associating to a network rank.
+    struct network_rank;
+
     //! @brief Node initialisation tag associating to the ratio to full power.
     struct power_ratio;
 }
@@ -218,6 +221,37 @@ class powered : public fixed<num,den,n> {
     template <typename G, typename T>
     bool operator()(G&&, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
         return norm(pos1 - pos2) <= relative_radius(data1, data2);
+    }
+};
+
+
+/**
+ * Connection predicate adding a hierarchical condition on connectivity: devices are
+ * only allowed to connect to others exactly one step lower (on on the same step
+ * if zero or negative priority) in their \ref component::tags::network_rank value.
+ *
+ * @param C   The basic connector to modify.
+ */
+template <typename C>
+class hierarchical : public C {
+    //! brief Shortcut to the network_rank tag.
+    using network_rank = component::tags::network_rank;
+
+  public:
+    //! @brief Type for representing a position.
+    using typename C::position_type;
+
+    //! @brief The node data type.
+    using data_type = typename C::data_type::template push_back<network_rank, int>;
+
+    //! @brief Inheriting constructor.
+    using C::C;
+
+    //! @brief Checks if connection is possible.
+    template <typename G, typename T>
+    bool operator()(G&& g, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
+        int delta = abs(common::get<network_rank>(data1) - common::get<network_rank>(data2));
+        return (delta == 1 or (delta == 0 and common::get<network_rank>(data1) <= 0)) and C::operator()(std::forward<G>(g), data1, pos1, data2, pos2);
     }
 };
 

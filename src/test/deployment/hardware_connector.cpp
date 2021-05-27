@@ -61,6 +61,8 @@ MULTI_TEST(ConnectorTest, Messages, O, 2) {
     EXPECT_ROUND(3, true,  {});
     conn->fake_receive({3.2f, 10, 2.5f, {2, 0, 0, 0, 0}});
     conn->fake_receive({3.3f, 17, 3.5f, {4, 0, 0, 0, 0}});
+    conn->fake_receive({3.4f, 17, 4.5f, {42}});
+    conn->fake_receive({3.5f, 17, 5.5f, {24, 0, 0, 0, 0, 0, 0, 0}});
     if (message_push) {
         EXPECT_ROUND(3.5f, false, {10, 17});
     } else {

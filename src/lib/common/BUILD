@@ -76,6 +76,18 @@ cc_library(
 )
 
 cc_library(
+    name = 'quaternion',
+    hdrs = ['quaternion.hpp'],
+    srcs = ['quaternion.cpp'],
+    deps = [
+        "//lib:settings",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'random_access_map',
     hdrs = ['random_access_map.hpp'],
     srcs = ['random_access_map.cpp'],

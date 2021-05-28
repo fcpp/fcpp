@@ -192,3 +192,59 @@ TEST(SequenceTest, Grid) {
         EXPECT_EQ(make_vec(1,0,0), e(nullptr));
     }
 }
+
+TEST(SequenceTest, Circle) {
+    {
+        sequence::circle_n<1, 0, 0, 0, 1, 1, 1, 4> e(nullptr);
+        std::vector<vec<3>> v;
+        for (int i=0; i<4; ++i) {
+            v.push_back(e(nullptr));
+            EXPECT_NEAR(norm(v[i]), norm(make_vec(1,1,1)), 1e-9);
+            EXPECT_NEAR(v[i]*make_vec(1,1,1), 0, 1e-9);
+        }
+        for (int i=0; i<4; ++i) {
+            EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
+            EXPECT_NEAR(v[i]*v[(i+2)%4], -3, 1e-9);
+        }
+    }
+    {
+        sequence::circle_n<1, 0, 0, 1, 4> e(nullptr);
+        std::vector<vec<2>> v;
+        for (int i=0; i<4; ++i) {
+            v.push_back(e(nullptr));
+            EXPECT_NEAR(norm(v[i]), 1, 1e-9);
+        }
+        for (int i=0; i<4; ++i) {
+            EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
+            EXPECT_NEAR(v[i]*v[(i+2)%4], -1, 1e-9);
+        }
+    }
+    struct ct {};
+    struct rt {};
+    struct nt {};
+    {
+        sequence::circle_i<ct, rt, nt, 3> e(nullptr, common::make_tagged_tuple<ct,rt,nt>(make_vec(0,0,0), make_vec(1,1,1), 4));
+        std::vector<vec<3>> v;
+        for (int i=0; i<4; ++i) {
+            v.push_back(e(nullptr));
+            EXPECT_NEAR(norm(v[i]), norm(make_vec(1,1,1)), 1e-9);
+            EXPECT_NEAR(v[i]*make_vec(1,1,1), 0, 1e-9);
+        }
+        for (int i=0; i<4; ++i) {
+            EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
+            EXPECT_NEAR(v[i]*v[(i+2)%4], -3, 1e-9);
+        }
+    }
+    {
+        sequence::circle_i<ct, rt, nt, 2> e(nullptr, common::make_tagged_tuple<ct,rt,nt>(make_vec(0,0), make_vec(1), 4));
+        std::vector<vec<2>> v;
+        for (int i=0; i<4; ++i) {
+            v.push_back(e(nullptr));
+            EXPECT_NEAR(norm(v[i]), 1, 1e-9);
+        }
+        for (int i=0; i<4; ++i) {
+            EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
+            EXPECT_NEAR(v[i]*v[(i+2)%4], -1, 1e-9);
+        }
+    }
+}

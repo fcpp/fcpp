@@ -47,6 +47,7 @@ set(SOURCE_LIST lib/beautify.cpp
                 lib/common/ostream.cpp
                 lib/common/plot.cpp
                 lib/common/profiler.cpp
+                lib/common/quaternion.cpp
                 lib/common/random_access_map.cpp
                 lib/common/serialize.cpp
                 lib/common/tagged_tuple.cpp

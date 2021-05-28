@@ -58,6 +58,7 @@ cc_library(
     srcs = ['sequence.cpp'],
     deps = [
         "//lib:settings",
+        "//lib/common:quaternion",
         "//lib/option:distribution",
     ],
     visibility = [

@@ -54,7 +54,9 @@ class quaternion {
     //! @brief Rotation quaternion constructor.
     quaternion(real_t angle, real_t const* axis) {
         m_data[0] = cos(angle/2);
-        real_t s = sin(angle/2);
+        real_t s = 0;
+        for (size_t i=0; i<3; ++i) s += axis[i]*axis[i];
+        s = sin(angle/2) / sqrt(s);
         for (size_t i=0; i<3; ++i) m_data[i+1] = s*axis[i];
     }
 

@@ -135,7 +135,16 @@ TEST(QuaternionTest, Division) {
 TEST(QuaternionTest, Rotation) {
     real_t pi = acos(-1);
     quaternion p({1,1,0});
-    quaternion r(-pi, {-1,1,1});
-    quaternion q = r*p/r;
-    EXPECT_LT(q+p, 0.01);
+    quaternion r(-pi/2, {-1,1,1});
+    quaternion q = r*p*~r;
+    EXPECT_NEAR(q[0], 0, 1e-9);
+    real_t e = 0;
+    for (size_t i=1; i<4; ++i) e += p[i]*q[i];
+    EXPECT_NEAR(e, 0, 1e-9);
+    r *= r;
+    q = r*p*~r;
+    EXPECT_LT(p+q, 1e-9);
+    r *= r;
+    q = r*p*~r;
+    EXPECT_LT(p-q, 1e-9);
 }

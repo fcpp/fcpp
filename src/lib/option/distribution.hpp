@@ -164,7 +164,7 @@ struct name {                                       \
 }
 
 
-//! @brief Constant distribution for numeric types.
+//! @brief Constant distribution.
 //! @{
 /**
  * @brief With value as distribution.

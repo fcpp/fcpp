@@ -15,8 +15,10 @@ TEST(SequenceTest, Never) {
     std::mt19937 rnd(42);
     times_t d;
     sequence::never e(rnd);
+    EXPECT_TRUE(e.empty());
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
+    EXPECT_TRUE(e.empty());
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
 }
@@ -25,28 +27,38 @@ TEST(SequenceTest, MultipleSame) {
     std::mt19937 rnd(42);
     times_t d;
     sequence::multiple_n<3, 52, 10> e(rnd);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e.next();
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e.next();
     e.step(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_TRUE(e.empty());
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
+    EXPECT_TRUE(e.empty());
     d = e.next();
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
     times_t f;
     sequence::multiple<distribution::constant_n<size_t, 2>, distribution::uniform_n<times_t, 50, 10, 10>> ee(rnd);
+    EXPECT_FALSE(ee.empty());
     d = ee(rnd);
     EXPECT_NEAR(5.0, d, 1.74);
+    EXPECT_FALSE(ee.empty());
     f = ee.next();
     EXPECT_NEAR(d, f, 1e-6);
+    EXPECT_FALSE(ee.empty());
     f = ee(rnd);
     EXPECT_NEAR(d, f, 1e-6);
+    EXPECT_TRUE(ee.empty());
     f = ee(rnd);
     EXPECT_EQ(TIME_MAX, f);
 }
@@ -55,15 +67,20 @@ TEST(SequenceTest, MultipleDiff) {
     std::mt19937 rnd(42);
     times_t d;
     sequence::multiple<distribution::constant_n<size_t, 3>, distribution::constant_n<times_t, 52, 10>, false> e(rnd);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e.next();
     e.step(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_TRUE(e.empty());
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
+    EXPECT_TRUE(e.empty());
     d = e.next();
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
@@ -72,9 +89,11 @@ TEST(SequenceTest, MultipleDiff) {
     v.push_back(ee(rnd));
     EXPECT_LT(0, v[0]);
     while (ee.next() < TIME_MAX) {
+        EXPECT_FALSE(ee.empty());
         v.push_back(ee(rnd));
         EXPECT_LT(v[v.size()-2], v[v.size()-1]);
     }
+    EXPECT_TRUE(ee.empty());
     EXPECT_LT(v.back(), 1);
     EXPECT_EQ(v.size(), 10ULL);
 }
@@ -83,17 +102,23 @@ TEST(SequenceTest, List) {
     std::mt19937 rnd(42);
     times_t d;
     sequence::list_n<10, 33, 52, 15> e(rnd);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(1.5, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e.next();
     EXPECT_NEAR(3.3, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(3.3, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e.next();
     e.step(rnd);
     EXPECT_NEAR(5.2, d, 1e-6);
+    EXPECT_TRUE(e.empty());
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
+    EXPECT_TRUE(e.empty());
     d = e.next();
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
@@ -103,43 +128,60 @@ TEST(SequenceTest, Periodic) {
     std::mt19937 rnd(42);
     times_t d;
     sequence::periodic_n<10, 15, 20, 62, 5> e(rnd);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(1.5, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(3.5, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e.next();
     EXPECT_NEAR(5.5, d, 1e-6);
+    EXPECT_FALSE(e.empty());
     d = e(rnd);
     EXPECT_NEAR(5.5, d, 1e-6);
+    EXPECT_TRUE(e.empty());
     d = e(rnd);
     EXPECT_EQ(TIME_MAX, d);
+    EXPECT_TRUE(e.empty());
     d = e.next();
     e.step(rnd);
     EXPECT_EQ(TIME_MAX, d);
     sequence::periodic<distribution::constant_n<times_t, 15, 10>, distribution::constant_n<times_t, 1>, distribution::constant_n<times_t, 62, 10>, distribution::constant_n<size_t, 3>> ee(rnd);
+    EXPECT_FALSE(ee.empty());
     d = ee.next();
     EXPECT_NEAR(1.5, d, 1e-6);
+    EXPECT_FALSE(ee.empty());
     d = ee(rnd);
     EXPECT_NEAR(1.5, d, 1e-6);
+    EXPECT_FALSE(ee.empty());
     d = ee(rnd);
     EXPECT_NEAR(2.5, d, 1e-6);
+    EXPECT_FALSE(ee.empty());
     d = ee(rnd);
     EXPECT_NEAR(3.5, d, 1e-6);
+    EXPECT_TRUE(ee.empty());
     d = ee(rnd);
     EXPECT_EQ(TIME_MAX, d);
+    EXPECT_TRUE(ee.empty());
     d = ee(rnd);
     EXPECT_EQ(TIME_MAX, d);
     sequence::periodic<distribution::constant_n<times_t, 15, 10>> ei(rnd);
+    EXPECT_FALSE(ei.empty());
     d = ei(rnd);
     EXPECT_NEAR(1.5, d, 1e-6);
+    EXPECT_FALSE(ei.empty());
     d = ei(rnd);
     EXPECT_NEAR(3.0, d, 1e-6);
+    EXPECT_FALSE(ei.empty());
     d = ei(rnd);
     EXPECT_NEAR(4.5, d, 1e-6);
+    EXPECT_FALSE(ei.empty());
     d = ei.next();
     EXPECT_NEAR(6.0, d, 1e-6);
     d = ei(rnd);
     EXPECT_NEAR(6.0, d, 1e-6);
+    EXPECT_FALSE(ei.empty());
 }
 
 TEST(SequenceTest, Merge) {
@@ -150,23 +192,35 @@ TEST(SequenceTest, Merge) {
             sequence::never,
             sequence::list_n<10, 73, 52, 15>
         > e(rnd, common::make_tagged_tuple<char>(10));
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(1.5, e(rnd), 1e-6);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(5.2, e(rnd), 1e-6);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(5.2, e(rnd), 1e-6);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(5.2, e(rnd), 1e-6);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(5.2, e(rnd), 1e-6);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(7.3, e(rnd), 1e-6);
+        EXPECT_TRUE(e.empty());
         EXPECT_EQ(TIME_MAX, e(rnd));
     }
     {
         sequence::merge<sequence::multiple_n<3, 52, 10>> e(rnd);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(5.2, e(rnd), 1e-6);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(5.2, e(rnd), 1e-6);
+        EXPECT_FALSE(e.empty());
         EXPECT_NEAR(5.2, e(rnd), 1e-6);
+        EXPECT_TRUE(e.empty());
         EXPECT_EQ(TIME_MAX, e(rnd));
     }
     {
         sequence::merge<> e(rnd);
+        EXPECT_TRUE(e.empty());
         EXPECT_EQ(TIME_MAX, e(rnd));
     }
 }
@@ -176,8 +230,11 @@ TEST(SequenceTest, Grid) {
         sequence::grid_n<10, 0, 0, 40, 25, 3, 6> e(nullptr);
         for (int z=0; z<2; ++z)
             for (int y=0; y<6; ++y)
-                for (int x=0; x<3; ++x)
+                for (int x=0; x<3; ++x) {
+                    EXPECT_EQ(e.empty(), z > 0);
                     EXPECT_EQ(make_vec(2*x,0.5*y), e(nullptr));
+                }
+        EXPECT_TRUE(e.empty());
     }
     {
         struct lo {};
@@ -186,8 +243,11 @@ TEST(SequenceTest, Grid) {
         sequence::grid_i<lo, lo, lo, hi, hi, hi, nm, nm, nm> e(nullptr, common::make_tagged_tuple<lo,hi,nm>(0,2,3));
         for (int z=0; z<3; ++z)
             for (int y=0; y<3; ++y)
-                for (int x=0; x<3; ++x)
+                for (int x=0; x<3; ++x) {
+                    EXPECT_FALSE(e.empty());
                     EXPECT_EQ(make_vec(x,y,z), e(nullptr));
+                }
+        EXPECT_TRUE(e.empty());
         EXPECT_EQ(make_vec(0,0,0), e(nullptr));
         EXPECT_EQ(make_vec(1,0,0), e(nullptr));
     }
@@ -198,10 +258,12 @@ TEST(SequenceTest, Circle) {
         sequence::circle_n<1, 0, 0, 0, 1, 1, 1, 4> e(nullptr);
         std::vector<vec<3>> v;
         for (int i=0; i<4; ++i) {
+            EXPECT_FALSE(e.empty());
             v.push_back(e(nullptr));
             EXPECT_NEAR(norm(v[i]), norm(make_vec(1,1,1)), 1e-9);
             EXPECT_NEAR(v[i]*make_vec(1,1,1), 0, 1e-9);
         }
+        EXPECT_TRUE(e.empty());
         for (int i=0; i<4; ++i) {
             EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
             EXPECT_NEAR(v[i]*v[(i+2)%4], -3, 1e-9);
@@ -211,9 +273,11 @@ TEST(SequenceTest, Circle) {
         sequence::circle_n<1, 0, 0, 1, 4> e(nullptr);
         std::vector<vec<2>> v;
         for (int i=0; i<4; ++i) {
+            EXPECT_FALSE(e.empty());
             v.push_back(e(nullptr));
             EXPECT_NEAR(norm(v[i]), 1, 1e-9);
         }
+        EXPECT_TRUE(e.empty());
         for (int i=0; i<4; ++i) {
             EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
             EXPECT_NEAR(v[i]*v[(i+2)%4], -1, 1e-9);
@@ -226,10 +290,12 @@ TEST(SequenceTest, Circle) {
         sequence::circle_i<ct, rt, nt, 3> e(nullptr, common::make_tagged_tuple<ct,rt,nt>(make_vec(0,0,0), make_vec(1,1,1), 4));
         std::vector<vec<3>> v;
         for (int i=0; i<4; ++i) {
+            EXPECT_FALSE(e.empty());
             v.push_back(e(nullptr));
             EXPECT_NEAR(norm(v[i]), norm(make_vec(1,1,1)), 1e-9);
             EXPECT_NEAR(v[i]*make_vec(1,1,1), 0, 1e-9);
         }
+        EXPECT_TRUE(e.empty());
         for (int i=0; i<4; ++i) {
             EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
             EXPECT_NEAR(v[i]*v[(i+2)%4], -3, 1e-9);
@@ -239,9 +305,11 @@ TEST(SequenceTest, Circle) {
         sequence::circle_i<ct, rt, nt, 2> e(nullptr, common::make_tagged_tuple<ct,rt,nt>(make_vec(0,0), make_vec(1), 4));
         std::vector<vec<2>> v;
         for (int i=0; i<4; ++i) {
+            EXPECT_FALSE(e.empty());
             v.push_back(e(nullptr));
             EXPECT_NEAR(norm(v[i]), 1, 1e-9);
         }
+        EXPECT_TRUE(e.empty());
         for (int i=0; i<4; ++i) {
             EXPECT_NEAR(v[i]*v[(i+1)%4], 0, 1e-9);
             EXPECT_NEAR(v[i]*v[(i+2)%4], -1, 1e-9);

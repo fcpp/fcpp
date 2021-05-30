@@ -50,6 +50,11 @@ struct never {
     template <typename G, typename S, typename T>
     never(G&&, const common::tagged_tuple<S,T>&) {}
 
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return true;
+    }
+
     //! @brief Returns next event, without stepping over.
     times_t next() const {
         return TIME_MAX; // no event to schedule
@@ -95,6 +100,11 @@ class multiple<N, E, true> {
     template <typename G, typename S, typename T>
     multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<E>(g,tup)), i(details::call_distr<N>(g,tup)) {}
 
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return i == 0;
+    }
+
     //! @brief Returns next event, without stepping over.
     times_t next() const {
         return (i > 0) ? t : TIME_MAX;
@@ -138,6 +148,11 @@ class multiple<N, E, false> {
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     multiple(G&& g, const common::tagged_tuple<S,T>& tup) : multiple(g, E{g,tup}, N{g,tup}) {}
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return pending.empty();
+    }
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -216,6 +231,11 @@ class list {
         std::sort(pending.begin(), pending.end());
     }
 
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return i >= sizeof...(Ds);
+    }
+
     //! @brief Returns next event, without stepping over.
     times_t next() const {
         return (i < sizeof...(Ds)) ? pending[i] : TIME_MAX;
@@ -292,6 +312,11 @@ class periodic {
         n  = details::call_distr<N>(g,tup);
         te = details::call_distr<E>(g,tup);
         t  = details::call_distr<S>(g,tup);
+    }
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return i >= n or t > te;
     }
 
     //! @brief Returns next event, without stepping over.
@@ -389,6 +414,11 @@ class merge {
     template <typename G, typename S, typename T>
     merge(G&& g, const common::tagged_tuple<S,T>& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
         set_next(std::make_index_sequence<sizeof...(Ss)>{});
+    }
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return m_next == TIME_MAX;
     }
 
     //! @brief Returns next event, without stepping over.
@@ -528,6 +558,11 @@ namespace details {
             for (size_t i=0; i<n; ++i) m_step[i] = (m_step[i]-m_init[i])/std::max(m_mods[i]-1, size_t(1));
             m_divs[0] = 1;
             for (size_t i=1; i<n; ++i) m_divs[i] = m_divs[i-1]*m_mods[i-1];
+        }
+
+        //! @brief Check whether the sequence is finished.
+        bool empty() const {
+            return m_i >= m_divs.back()*m_mods.back();
         }
 
         //! @brief Returns next element, without stepping over.
@@ -703,8 +738,8 @@ class circle {
         m_c = details::call_distr<C>(g);
         auto r = details::call_distr<R>(g);
         m_p = details::perpendicular(r);
-        size_t num = details::call_distr<N>(g);
-        m_r0 = rotation_type(2*acos(-1)/num, r.data);
+        m_i = details::call_distr<N>(g);
+        m_r0 = rotation_type(2*acos(-1)/m_i, r.data);
         m_r = rotation_type(1);
     }
 
@@ -714,9 +749,14 @@ class circle {
         m_c = details::call_distr<C>(g,t);
         auto r = details::call_distr<R>(g,t);
         m_p = details::perpendicular(r);
-        size_t num = details::call_distr<N>(g,t);
-        m_r0 = rotation_type(2*acos(-1)/num, r.data);
+        m_i = details::call_distr<N>(g,t);
+        m_r0 = rotation_type(2*acos(-1)/m_i, r.data);
         m_r = rotation_type(1);
+    }
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return m_i <= 0;
     }
 
     //! @brief Returns next element, without stepping over.
@@ -728,6 +768,7 @@ class circle {
     template <typename G>
     void step(G&&) {
         m_r *= m_r0;
+        --m_i;
     }
 
     //! @brief Returns next element, stepping over.
@@ -741,6 +782,7 @@ class circle {
   private:
     type m_c, m_p;
     rotation_type m_r0, m_r;
+    int m_i;
 };
 
 

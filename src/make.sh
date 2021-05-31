@@ -263,8 +263,8 @@ while [ "$1" != "" ]; do
             exit 1
         fi
         shift 1
-        echo -e "\033[4mcmake -S ./ -B ./bin -G \"$flag Makefiles\" -DCMAKE_BUILD_TYPE=$btype -Wno-dev\033[0m"
-        cmake -S ./ -B ./bin -G "$flag Makefiles" -DCMAKE_BUILD_TYPE=$btype -Wno-dev
+        echo -e "\033[4mcmake -S ./ -B ./bin -G \"$flag Makefiles\" -DCMAKE_BUILD_TYPE=$btype\033[0m"
+        cmake -S ./ -B ./bin -G "$flag Makefiles" -DCMAKE_BUILD_TYPE=$btype
         echo -e "\033[4mcmake --build ./bin/\033[0m"
         cmake --build ./bin/
         if [ "$platform" == windows ]; then

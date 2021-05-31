@@ -163,6 +163,7 @@ cc_library(
     deps = [
         "//lib:component",
         "//lib/simulation:batch",
+        "//lib/simulation:displayer",
         "//lib/simulation:simulated_connector",
         "//lib/simulation:simulated_positioner",
         "//lib/simulation:spawner",

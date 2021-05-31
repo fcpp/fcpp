@@ -12,12 +12,10 @@
 
 #include "lib/component.hpp"
 #include "lib/simulation/batch.hpp"
+#include "lib/simulation/displayer.hpp"
 #include "lib/simulation/simulated_connector.hpp"
 #include "lib/simulation/simulated_positioner.hpp"
 #include "lib/simulation/spawner.hpp"
-#ifdef FCPP_GUI
-#include "lib/simulation/displayer.hpp"
-#endif
 
 
 /**
@@ -35,14 +33,12 @@ namespace component {
  */
 DECLARE_COMBINE(batch_simulator, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
 
-#ifdef FCPP_GUI
 /**
  * @brief Combination of components for interactive simulations.
  *
  * It can be instantiated as `interactive_simulator<options...>::net`.
  */
 DECLARE_COMBINE(interactive_simulator, displayer, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
-#endif
 
 }
 

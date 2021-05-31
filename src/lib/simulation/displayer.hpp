@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstring>
 
+#ifdef FCPP_GUI
 #include <algorithm>
 #include <chrono>
 #include <deque>
@@ -39,6 +40,7 @@
 #include "lib/graphics/renderer.hpp"
 #include "lib/graphics/shapes.hpp"
 #include "lib/graphics/input_types.hpp"
+#endif
 
 
 /**
@@ -97,6 +99,7 @@ namespace tags {
 }
 
 
+#ifdef FCPP_GUI
 //! @brief Class displaying detailed node information in a separate window.
 template <typename F>
 class info_window {
@@ -1036,6 +1039,19 @@ struct displayer {
         };
     };
 };
+#else
+/**
+ * @brief Inert version of the displayer component.
+ */
+template <class... Ts>
+struct displayer {
+    template <typename F, typename P>
+    struct component : public P {
+        using node = typename P::node;
+        using net = typename P::net;
+    };
+};
+#endif
 
 
 }

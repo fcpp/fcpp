@@ -12,7 +12,7 @@ function(fcpp_gui_copy target source dest folder)
     )
 endfunction()
 
-macro(fcpp_gui_setup)
+macro(fcpp_setup)
     set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
@@ -31,11 +31,13 @@ macro(fcpp_gui_setup)
     endif(FCPP_BUILD_GL)
 endmacro()
 
-function(fcpp_gui_project project_name project_executable)
+function(fcpp_project project_name project_executable)
     add_executable(${project_name} ${project_executable})
     target_link_libraries(${project_name} PRIVATE fcpp)
     target_include_directories(${project_name} PRIVATE .)
-    fcpp_gui_copy(${project_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${project_name}> textures)
+    if(FCPP_BUILD_GL)
+        fcpp_gui_copy(${project_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${project_name}> textures)
+    endif(FCPP_BUILD_GL)
 endfunction()
 
 ######################
@@ -48,7 +50,7 @@ project(
 	DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
 option(FCPP_BUILD_GL "Build OpenGL features." ON)
-fcpp_gui_setup()
+fcpp_setup()
 set(
     SOURCE_LIST
     lib/beautify.cpp

@@ -52,6 +52,9 @@
 //! @brief Macro defining the type arguments of an aggregate function.
 #define GEN_EXPORT(...) template <MACRO_MAPPER(__TYPE_ARG__, __VA_ARGS__)> using
 
+//! @brief Macro defining an aggregate for cycle.
+#define FOR(var, start, cond)   for (internal::trace_cycle var{node.stack_trace, start}; cond; ++var)
+
 /**
  * @brief Macro for defining a main class to be used in the calculus component. Usage:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}

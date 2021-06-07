@@ -41,8 +41,7 @@ bool operator==(quaternion const& a, quaternion const& b) {
 
 //! @brief Inequality operator.
 bool operator!=(quaternion const& a, quaternion const& b) {
-    for (size_t i=0; i<4; ++i) if (a[i] != b[i]) return true;
-    return false;
+    return not (a == b);
 }
 
 //! @brief Norm comparison operators.

@@ -227,6 +227,22 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         string s = string(rys);
         label(pic, scale(0.5)*(logmode ? "$10^{"+s+"}$" : s), (0,ry), align=W);
     }
+    int common_suffix = rfind(names[0], " ");
+    if (common_suffix > 0) {
+        string suffix = substr(names[0], common_suffix);
+        common_suffix = length(names[0]) - common_suffix;
+        for (int i=1; i<names.length; ++i)
+            if (substr(names[i], length(names[i])-common_suffix) != suffix) {
+                common_suffix = 0;
+                break;
+            }
+    }
+    for (int i=0; i<names.length; ++i) {
+        if (common_suffix > 0)
+            names[i] = substr(names[i], 0, length(names[i])-common_suffix);
+        for (int j=0; j<10; ++j)
+            names[i] = replace(names[i], "<"+string(j)+">", " "+string(j));
+    }
     if (LEGENDA) {
         for (int i=0; i<names.length; i+=2) {
             draw(pic, (0,-0.5-i/8) -- (0.8,-0.5-i/8), styles[i%styles.length]+colors[i%colors.length]);

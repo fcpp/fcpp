@@ -213,7 +213,7 @@ struct test_net {
         for (int source = 0; source < N; ++source)
             for (int dest : m_topology[source]) {
                 typename node_type::message_t m;
-                d(dest).receive(m_count + 0.5f, source, d(source).send(m_count + 0.5f, dest, m));
+                d(dest).receive(m_count + 0.5f, source, d(source).send(m_count + 0.5f, m));
             }
         ++m_count;
         round_start();

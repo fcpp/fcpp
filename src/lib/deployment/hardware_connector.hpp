@@ -156,7 +156,7 @@ struct hardware_connector {
                     PROFILE_COUNT("connector");
                     common::osstream os;
                     typename F::node::message_t m;
-                    os << P::node::as_final().send(m_send, P::node::uid, m);
+                    os << P::node::as_final().send(m_send, m);
                     fcpp::details::self(m_nbr_msg_size, P::node::uid) = os.size();
                     m_network.send(std::move(os));
                     P::node::as_final().receive(m_send, P::node::uid, m);

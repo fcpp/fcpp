@@ -283,10 +283,10 @@ struct simulated_positioner {
                 }
             }
 
-            //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
+            //! @brief Produces the message to send, both storing it in its argument and returning it.
             template <typename S, typename T>
-            common::tagged_tuple<S,T>& send(times_t t, device_t d, common::tagged_tuple<S,T>& m) const {
-                P::node::send(t, d, m);
+            common::tagged_tuple<S,T>& send(times_t t, common::tagged_tuple<S,T>& m) const {
+                P::node::send(t, m);
                 common::get<positioner_tag>(m) = position(t);
                 return m;
             }

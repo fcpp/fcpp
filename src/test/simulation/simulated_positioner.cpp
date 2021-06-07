@@ -104,9 +104,9 @@ TEST(PhysicalPositionTest, NbrVec) {
     EXPECT_EQ(3, d1.next());
     EXPECT_EQ(3, d2.next());
     EXPECT_EQ(3, d3.next());
-    d1.receive(2.00, 1, d1.send(2.00, 1, m));
-    d1.receive(2.25, 2, d2.send(2.25, 1, m));
-    d1.receive(2.50, 3, d3.send(2.50, 1, m));
+    d1.receive(2.00, 1, d1.send(2.00, m));
+    d1.receive(2.25, 2, d2.send(2.25, m));
+    d1.receive(2.50, 3, d3.send(2.50, m));
     real_t d;
     d = norm(details::self(d1.nbr_vec(), 1) - make_vec(0, 0));
     EXPECT_GT(1e-6, d);

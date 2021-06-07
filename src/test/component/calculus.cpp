@@ -64,7 +64,7 @@ int gossip(node_t& node, trace_t call_point, int x) {
 template <typename T>
 void sendto(const T& source, T& dest) {
     typename T::message_t m;
-    dest.receive(0, source.uid, source.send(0, dest.uid, m));
+    dest.receive(0, source.uid, source.send(0, m));
 }
 
 template <typename T>

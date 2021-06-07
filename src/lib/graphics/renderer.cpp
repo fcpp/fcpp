@@ -432,22 +432,9 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         int numY{ grid_max_y - grid_min_y + 1 };
 
         int highlighter{ 10 }; // the module required by a line to be highlighted
-        /* symmetrical code:
-        if (numX != numY or numX % 10 != 0) {
-            highlighter = euclid(numX - 1, numY - 1);
-            while (highlighter >= 10 and highlighter % 2 == 0)
-                highlighter /= 2;
-        } else highlighter = 10;
-        */
 
         int numHighX{ (grid_max_x - grid_max_x % highlighter - grid_min_x) / highlighter + 1 };
         int numHighY{ (grid_max_y - grid_max_y % highlighter - grid_min_y) / highlighter + 1 };
-        /* symmetrical code:
-        if (highlighter != 1) {
-            numHighX = (grid_max_x - grid_max_x % highlighter - grid_min_x) / highlighter + 1;
-            numHighY = (grid_max_y - grid_max_y % highlighter - grid_min_y) / highlighter + 1;
-        } else numHighX = numHighY = 2;
-        */
 
         // Generating grid mesh
         int i{ 0 }; // for putting vertices into gridMesh
@@ -463,7 +450,7 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
             gridMesh[3 + i * 6] = (float)(x * gridScale);
             gridMesh[4 + i * 6] = (float)(grid_max_y * gridScale);
             gridMesh[5 + i * 6] = 0.0f;
-            if (x % highlighter == 0) { // symmetrical code: (highlighter != 1 and x % highlighter == 0) or (x == grid_min_x or x == grid_max_x)
+            if (x % highlighter == 0) {
                 gridHighIndex[j * 2] = i * 2;
                 gridHighIndex[1 + j * 2] = i * 2 + 1;
                 ++j;
@@ -482,7 +469,7 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
             gridMesh[3 + i * 6] = (float)(grid_max_x * gridScale);
             gridMesh[4 + i * 6] = (float)(y * gridScale);
             gridMesh[5 + i * 6] = 0.0f;
-            if (y % highlighter == 0) { //symmetrical code: (highlighter != 1 and y % highlighter == 0) or (y == grid_min_y or y == grid_max_y)
+            if (y % highlighter == 0) {
                 gridHighIndex[j * 2] = i * 2;
                 gridHighIndex[1 + j * 2] = i * 2 + 1;
                 ++j;

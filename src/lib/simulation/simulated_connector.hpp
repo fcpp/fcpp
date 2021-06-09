@@ -473,9 +473,9 @@ struct simulated_connector {
                         }
                     }
                 }
-                m_node_mutex.lock();
+                common::unique_lock<parallel> l(m_node_mutex);
                 auto& it = m_nodes[n.uid];
-                m_node_mutex.unlock();
+                l.unlock();
                 if (move) {
                     if (c == it->first) return;
                     else it->second.erase(n);

@@ -398,7 +398,7 @@ struct simulated_connector {
             //! @brief Removes a node from all cells.
             void cell_leave(typename F::node& n) {
                 if (m_nodes.size() == 0) return;
-                common::lock_guard<parallel> l(m_node_mutex);
+                common::exclusive_guard<parallel> l(m_node_mutex);
                 m_nodes.at(n.uid)->second.erase(n);
                 m_nodes.erase(n.uid);
             }
@@ -410,7 +410,7 @@ struct simulated_connector {
 
             //! @brief Returns the cells in proximity of node `n`.
             cell_type const& cell_of(const typename F::node& n) const {
-                common::lock_guard<parallel> l(m_node_mutex);
+                common::shared_guard<parallel> l(m_node_mutex);
                 return m_nodes.at(n.uid)->second;
             }
 
@@ -450,38 +450,46 @@ struct simulated_connector {
             inline void cell_enter_impl(typename F::node& n, const position_type& p) {
                 cell_id_type c = to_cell(p);
                 typename cell_map_type::iterator nit;
+                bool create;
                 {
-                    common::lock_guard<parallel> l(m_cell_mutex);
+                    common::shared_guard<parallel> l(m_cell_mutex);
                     nit = m_cells.find(c);
-                    if (nit == m_cells.end()) {
-                        nit = m_cells.emplace(std::piecewise_construct, std::make_tuple(c), std::make_tuple()).first;
-                        nit->second.link(nit->second);
-                        cell_id_type d;
-                        for (size_t i=0; i<dimension; ++i) d[i] = c[i]-1;
-                        while (true) {
-                            if (c != d) {
-                                auto lit = m_cells.find(d);
-                                if (lit != m_cells.end()) {
-                                    nit->second.link(lit->second);
-                                    lit->second.link(nit->second);
-                                }
+                    create = nit == m_cells.end();
+                }
+                if (create) {
+                    common::exclusive_guard<parallel> l(m_cell_mutex);
+                    nit = m_cells.emplace(std::piecewise_construct, std::make_tuple(c), std::make_tuple()).first;
+                    nit->second.link(nit->second);
+                    cell_id_type d;
+                    for (size_t i=0; i<dimension; ++i) d[i] = c[i]-1;
+                    while (true) {
+                        if (c != d) {
+                            auto lit = m_cells.find(d);
+                            if (lit != m_cells.end()) {
+                                nit->second.link(lit->second);
+                                lit->second.link(nit->second);
                             }
-                            size_t i;
-                            for (i = 0; i < dimension and d[i] == c[i]+1; ++i) d[i] = c[i]-1;
-                            if (i == dimension) break;
-                            ++d[i];
                         }
+                        size_t i;
+                        for (i = 0; i < dimension and d[i] == c[i]+1; ++i) d[i] = c[i]-1;
+                        if (i == dimension) break;
+                        ++d[i];
                     }
                 }
-                common::unique_lock<parallel> l(m_node_mutex);
-                auto& it = m_nodes[n.uid];
-                l.unlock();
+                typename cell_map_type::iterator *it;
                 if (move) {
-                    if (c == it->first) return;
-                    else it->second.erase(n);
+                    {
+                        common::shared_guard<parallel> l(m_node_mutex);
+                        it = &m_nodes.at(n.uid);
+                    }
+                    if (c == (*it)->first) return;
+                    else (*it)->second.erase(n);
+                } else {
+                    common::exclusive_guard<parallel> l(m_node_mutex);
+                    it = &m_nodes[n.uid];
                 }
-                it = nit;
-                it->second.insert(n);
+                *it = nit;
+                (*it)->second.insert(n);
             }
 
             //! @brief Returns the `randomizer` generator if available.
@@ -516,7 +524,7 @@ struct simulated_connector {
             connector_type m_connector;
 
             //! @brief The mutexes regulating access to maps.
-            mutable common::mutex<parallel> m_node_mutex, m_cell_mutex;
+            mutable common::shared_mutex<parallel> m_node_mutex, m_cell_mutex;
         };
     };
 };

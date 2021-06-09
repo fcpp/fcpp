@@ -13,14 +13,15 @@
 #include <chrono>
 #ifndef FCPP_DISABLE_THREADS
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 #endif
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
 
-#ifdef FCPP_DISABLE_THREADS
 //! @cond INTERNAL
+#ifdef FCPP_DISABLE_THREADS
 namespace std {
     struct adopt_lock_t {};
     struct defer_lock_t {};
@@ -37,9 +38,16 @@ namespace std {
         template <typename R, typename P>
         void sleep_for(chrono::duration<R,P> const&) {}
     };
+
+    template <typename M>
+    struct lock_guard;
+    template <typename M>
+    struct unique_lock;
+    template <typename M>
+    struct shared_lock;
 }
-//! @endcond
 #endif
+//! @endcond
 
 
 /**
@@ -86,6 +94,7 @@ struct mutex<false> {
 
 
 #ifdef FCPP_DISABLE_THREADS
+//! @brief Disabled mutex interface when threads are not available.
 template <>
 struct mutex<true> : public mutex<false> {};
 #elif defined(_OPENMP)
@@ -127,221 +136,10 @@ struct mutex<true> {
 #else
 //! @brief Actual mutex interface when `enabled` is true and the standard C++ `mutex` is available.
 template <>
-struct mutex<true> : public std::mutex {
-    using std::mutex::mutex;
-};
+struct mutex<true> : public std::mutex {};
 #endif
 
 
-//! @brief Bypassable version of `std::lock_guard` (keeps a mutex locked during its lifetime).
-template <bool enabled>
-struct lock_guard;
-
-
-//! @brief Bypassed version of `std::lock_guard`.
-template <>
-struct lock_guard<false> {
-    //! @brief Locking constructor.
-    explicit lock_guard(mutex<false>&) {}
-
-    //! @brief Adopting constructor.
-    lock_guard(mutex<false>&, std::adopt_lock_t) {}
-
-    //! @brief Disabled copying.
-    lock_guard(const lock_guard&) = delete;
-};
-
-
-#ifdef FCPP_DISABLE_THREADS
-template <>
-struct lock_guard<true> : public lock_guard<false> {
-    using lock_guard<false>::lock_guard;
-};
-#else
-//! @brief Imported version of `std::lock_guard`.
-template <>
-struct lock_guard<true> : public std::lock_guard<mutex<true>> {
-    using std::lock_guard<mutex<true>>::lock_guard;
-};
-#endif
-
-
-//! @brief Bypassable unlocker of a mutex during its lifetime.
-template <bool enabled>
-struct unlock_guard;
-
-
-//! @brief Bypassed version of `unlock_guard`.
-template <>
-struct unlock_guard<false> {
-    //! @brief Locking constructor.
-    explicit unlock_guard(mutex<false>&) {}
-
-    //! @brief Adopting constructor.
-    unlock_guard(mutex<false>&, std::adopt_lock_t) {}
-
-    //! @brief Disabled copying.
-    unlock_guard(const unlock_guard&) = delete;
-};
-
-
-#ifdef FCPP_DISABLE_THREADS
-template <>
-struct unlock_guard<true> : public unlock_guard<false> {
-    using unlock_guard<false>::unlock_guard;
-};
-#else
-//! @brief Active version of `unlock_guard`.
-template <>
-struct unlock_guard<true> {
-    //! @brief Unlocking constructor.
-    explicit unlock_guard(mutex<true>& m) : m_mutex(m) {
-        m_mutex.unlock();
-    }
-
-    //! @brief Adopting constructor.
-    unlock_guard(mutex<true>& m, std::adopt_lock_t) : m_mutex(m) {}
-
-    //! @brief Disabled copying.
-    unlock_guard(const unlock_guard&) = delete;
-
-    //! @brief Locking destructor.
-    ~unlock_guard() {
-        m_mutex.lock();
-    }
-
-  private:
-    mutex<true>& m_mutex;
-};
-#endif
-
-
-//! @brief Bypassable version of `std::unique_lock` (manages a mutex through lifetime).
-template <bool enabled>
-struct unique_lock;
-
-
-//! @brief Bypassed version of `std::unique_lock`.
-template <>
-struct unique_lock<false> {
-    unique_lock() noexcept {}
-
-    explicit unique_lock(common::mutex<false>&) {}
-
-    unique_lock(common::mutex<false>&, std::try_to_lock_t) {}
-
-    unique_lock(common::mutex<false>&, std::defer_lock_t) noexcept {}
-
-    unique_lock(common::mutex<false>&, std::adopt_lock_t) {}
-
-    template <class R, class P>
-    unique_lock(common::mutex<false>&, const std::chrono::duration<R,P>&) {}
-
-    template <class C, class D>
-    unique_lock(common::mutex<false>&, const std::chrono::time_point<C,D>&) {}
-
-    unique_lock(const unique_lock&) = delete;
-
-    unique_lock(unique_lock&&) {}
-
-    inline unique_lock& operator=(unique_lock&&) {
-        return *this;
-    }
-
-    inline unique_lock& operator=(const unique_lock&) = delete;
-
-    inline void swap(unique_lock&) noexcept {}
-
-    inline common::mutex<false>* release() noexcept {
-        return new common::mutex<false>();
-    }
-
-    inline void lock() {}
-
-    inline bool try_lock() {
-        return true;
-    }
-
-    template <class R, class P>
-    inline bool try_lock_for(const std::chrono::duration<R,P>&) {
-        return true;
-    }
-
-    template <class C, class D>
-    inline bool try_lock_until(const std::chrono::time_point<C,D>&) {
-        return true;
-    }
-
-    inline void unlock() {}
-
-    inline bool owns_lock() const noexcept {
-        return true;
-    }
-
-    inline explicit operator bool() const noexcept {
-        return true;
-    }
-
-    inline common::mutex<false>* mutex() const noexcept {
-        return new common::mutex<false>();
-    }
-};
-
-inline void swap(unique_lock<false>&, unique_lock<false>&) noexcept {}
-
-
-#ifdef FCPP_DISABLE_THREADS
-template <>
-struct unique_lock<true> : public unique_lock<false> {
-    using unique_lock<false>::unique_lock;
-};
-#else
-//! @brief Imported version of `std::unique_lock`.
-template <>
-struct unique_lock<true> : std::unique_lock<mutex<true>> {
-    using std::unique_lock<common::mutex<true>>::unique_lock;
-};
-#endif
-
-
-template <typename... Ts>
-void lock(mutex<false>&, Ts&...) {}
-
-#ifdef FCPP_DISABLE_THREADS
-template <typename... Ts>
-void lock(mutex<true>&, Ts&...) {}
-#else
-template <typename... Ts>
-void lock(mutex<true>& a, Ts&... ms) {
-    std::lock(a, ms...);
-}
-#endif
-
-template <typename... Ts>
-int try_lock(mutex<false>&, Ts&...) {
-    return -1;
-}
-
-#ifdef FCPP_DISABLE_THREADS
-template <typename... Ts>
-int try_lock(mutex<true>&, Ts&...) {
-    return -1;
-}
-#else
-template <typename... Ts>
-int try_lock(mutex<true>& a, Ts&... ms) {
-    return std::try_lock(a, ms...);
-}
-#endif
-
-
-//! @cond INTERNAL
-/**
- * @brief Shared mutexes and locks are not currently used by the FCPP library.
- * Their compilation is disabled since it may be problematic for some platforms.
- */
-#if false
-#include <shared_mutex>
 /**
  * @brief Provides an uniform object interface for an OpenMP or C++14 mutex.
  *
@@ -384,8 +182,12 @@ struct shared_mutex<false> {
 };
 
 
-#if defined(_OPENMP)
-//! @brief Actual mutex interface when `enabled` is true and OpenMP is available.
+#ifdef FCPP_DISABLE_THREADS
+//! @brief Disabled shared mutex interface when threads are not available.
+template <>
+struct shared_mutex<true> : public shared_mutex<false> {};
+#elif defined(_OPENMP)
+//! @brief Actual shared mutex interface when `enabled` is true and OpenMP is available.
 template <>
 struct shared_mutex<true> {
     //! @brief Default constructor.
@@ -451,101 +253,222 @@ struct shared_mutex<true> {
     uint16_t m_counter;
 };
 #elif __cplusplus >= 201700
-//! @brief Actual mutex interface when `enabled` is true and the standard C++17 `shared_mutex` is available.
+//! @brief Actual shared mutex interface when `enabled` is true and the standard C++17 `shared_mutex` is available.
 template <>
-struct shared_mutex<true> : public std::shared_mutex {
-    using std::shared_mutex::shared_mutex;
-};
+struct shared_mutex<true> : public std::shared_mutex {};
 #else
-//! @brief Actual mutex interface when `enabled` is true and the standard C++14 `shared_timed_mutex` is available.
+//! @brief Actual shared mutex interface when `enabled` is true and the standard C++14 `shared_timed_mutex` is available.
 template <>
-struct shared_mutex<true> : public std::shared_timed_mutex {
-    using std::shared_timed_mutex::shared_timed_mutex;
-};
+struct shared_mutex<true> : public std::shared_timed_mutex {};
 #endif
+
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief Unlocker of a mutex during its lifetime.
+    template <typename M>
+    struct unlock_guard {
+        //! @brief Unlocking constructor.
+        explicit unlock_guard(M& m) : m_mutex(m) {
+            m_mutex.unlock();
+        }
+
+        //! @brief Adopting constructor.
+        unlock_guard(M& m, std::adopt_lock_t) : m_mutex(m) {}
+
+        //! @brief Disabled copying.
+        unlock_guard(const unlock_guard&) = delete;
+
+        //! @brief Locking destructor.
+        ~unlock_guard() {
+            m_mutex.lock();
+        }
+
+      private:
+        M& m_mutex;
+    };
+
+    //! @brief Shared locker of a mutex during its lifetime.
+    template <typename M>
+    struct shared_guard {
+        //! @brief Locking constructor.
+        explicit shared_guard(M& m) : m_mutex(m) {
+            m_mutex.lock_shared();
+        }
+
+        //! @brief Adopting constructor.
+        shared_guard(M& m, std::adopt_lock_t) : m_mutex(m) {}
+
+        //! @brief Disabled copying.
+        shared_guard(const shared_guard&) = delete;
+
+        //! @brief Locking destructor.
+        ~shared_guard() {
+            m_mutex.unlock_shared();
+        }
+
+      private:
+        M& m_mutex;
+    };
+
+    //! @brief Bypassed version of a guard (lock or unlock; and unique, shared or exclusive).
+    template <typename M>
+    struct bypassed_guard {
+        //! @brief Locking constructor.
+        explicit bypassed_guard(M&) {}
+
+        //! @brief Adopting constructor.
+        bypassed_guard(M&, std::adopt_lock_t) {}
+
+        //! @brief Disabled copying.
+        bypassed_guard(const bypassed_guard&) = delete;
+    };
+
+    //! @brief Bypassed version of a lock (unique, shared or exclusive).
+    template <typename M>
+    struct bypassed_lock {
+        bypassed_lock() noexcept {}
+
+        explicit bypassed_lock(M&) {}
+
+        bypassed_lock(M&, std::try_to_lock_t) {}
+
+        bypassed_lock(M&, std::defer_lock_t) noexcept {}
+
+        bypassed_lock(M&, std::adopt_lock_t) {}
+
+        template <class R, class P>
+        bypassed_lock(M&, const std::chrono::duration<R,P>&) {}
+
+        template <class C, class D>
+        bypassed_lock(M&, const std::chrono::time_point<C,D>&) {}
+
+        bypassed_lock(const bypassed_lock&) = delete;
+
+        bypassed_lock(bypassed_lock&&) {}
+
+        inline bypassed_lock& operator=(bypassed_lock&&) {
+            return *this;
+        }
+
+        inline bypassed_lock& operator=(const bypassed_lock&) = delete;
+
+        inline void swap(bypassed_lock&) noexcept {}
+
+        inline M* release() noexcept {
+            return new M();
+        }
+
+        inline void lock() {}
+
+        inline bool try_lock() {
+            return true;
+        }
+
+        template <class R, class P>
+        inline bool try_lock_for(const std::chrono::duration<R,P>&) {
+            return true;
+        }
+
+        template <class C, class D>
+        inline bool try_lock_until(const std::chrono::time_point<C,D>&) {
+            return true;
+        }
+
+        inline void unlock() {}
+
+        inline bool owns_lock() const noexcept {
+            return true;
+        }
+
+        inline explicit operator bool() const noexcept {
+            return true;
+        }
+
+        inline M* mutex() const noexcept {
+            return new M();
+        }
+    };
+
+    //! @brief Template selecting between a bypassed and an active version of a locker class.
+    template <bool enabled, template<bool> class M, template<class> class B, template<class> class A>
+    using generic_locker = std::conditional_t<
+        enabled,
+#ifdef FCPP_DISABLE_THREADS
+        B<M<enabled>>,
+#else
+        A<M<enabled>>,
+#endif
+        B<M<enabled>>
+    >;
+}
+//! @endcond
+
+
+//! @brief Bypassable version of `std::lock_guard` (keeps a mutex locked during its lifetime).
+template <bool enabled>
+using lock_guard = details::generic_locker<enabled, mutex, details::bypassed_guard, std::lock_guard>;
+
+
+//! @brief Bypassable unlocker of a mutex during its lifetime.
+template <bool enabled>
+using unlock_guard = details::generic_locker<enabled, mutex, details::bypassed_guard, details::unlock_guard>;
+
+
+//! @brief Bypassable version of a shared lock guard on a shared mutex.
+template <bool enabled>
+using shared_guard = details::generic_locker<enabled, shared_mutex, details::bypassed_guard, details::shared_guard>;
+
+
+//! @brief Bypassable version of a exclusive lock guard on a shared mutex.
+template <bool enabled>
+using exclusive_guard = details::generic_locker<enabled, shared_mutex, details::bypassed_guard, std::lock_guard>;
+
+
+//! @brief Bypassable version of `std::unique_lock` (manages a mutex through lifetime).
+template <bool enabled>
+using unique_lock = details::generic_locker<enabled, mutex, details::bypassed_lock, std::unique_lock>;
 
 
 //! @brief Bypassable version of `std::shared_lock` (manages a shared_mutex through lifetime).
 template <bool enabled>
-struct shared_lock;
+using shared_lock = details::generic_locker<enabled, shared_mutex, details::bypassed_lock, std::shared_lock>;
 
 
-//! @brief Bypassed version of `std::shared_lock`.
-template <>
-struct shared_lock<false> {
-    shared_lock() noexcept {}
-
-    explicit shared_lock(common::shared_mutex<false>&) {}
-
-    shared_lock(common::shared_mutex<false>&, std::try_to_lock_t) {}
-
-    shared_lock(common::shared_mutex<false>&, std::defer_lock_t) noexcept {}
-
-    shared_lock(common::shared_mutex<false>&, std::adopt_lock_t) {}
-
-    template <class R, class P>
-    shared_lock(common::shared_mutex<false>&, const std::chrono::duration<R,P>&) {}
-
-    template <class C, class D>
-    shared_lock(common::shared_mutex<false>&, const std::chrono::time_point<C,D>&) {}
-
-    shared_lock(const shared_lock&) = delete;
-
-    shared_lock(shared_lock&&) {}
-
-    inline shared_lock& operator=(shared_lock&&) {
-        return *this;
-    }
-
-    inline shared_lock& operator=(const shared_lock&) = delete;
-
-    inline void swap(shared_lock&) noexcept {}
-
-    inline common::shared_mutex<false>* release() noexcept {
-        return new common::shared_mutex<false>();
-    }
-
-    inline void lock() {}
-
-    inline bool try_lock() {
-        return true;
-    }
-
-    template <class R, class P>
-    inline bool try_lock_for(const std::chrono::duration<R,P>&) {
-        return true;
-    }
-
-    template <class C, class D>
-    inline bool try_lock_until(const std::chrono::time_point<C,D>&) {
-        return true;
-    }
-
-    inline void unlock() {}
-
-    inline bool owns_lock() const noexcept {
-        return true;
-    }
-
-    inline explicit operator bool() const noexcept {
-        return true;
-    }
-
-    inline common::shared_mutex<false>* mutex() const noexcept {
-        return new common::shared_mutex<false>();
-    }
-};
-
-inline void swap(shared_lock<false>&, shared_lock<false>&) noexcept {}
+//! @brief Bypassable version of `std::unique_lock` on a shared mutex.
+template <bool enabled>
+using exclusive_lock = details::generic_locker<enabled, shared_mutex, details::bypassed_lock, std::unique_lock>;
 
 
-//! @brief Imported version of `std::shared_lock`.
-template <>
-struct shared_lock<true> : std::shared_lock<shared_mutex<true>> {
-    using std::shared_lock<common::shared_mutex<true>>::shared_lock;
-};
+template <typename... Ts>
+inline void lock(mutex<false>&, Ts&...) {}
+
+#ifdef FCPP_DISABLE_THREADS
+template <typename... Ts>
+inline void lock(mutex<true>&, Ts&...) {}
+#else
+template <typename... Ts>
+inline void lock(mutex<true>& a, Ts&... ms) {
+    std::lock(a, ms...);
+}
 #endif
-//! @endcond
+
+template <typename... Ts>
+inline int try_lock(mutex<false>&, Ts&...) {
+    return -1;
+}
+
+#ifdef FCPP_DISABLE_THREADS
+template <typename... Ts>
+inline int try_lock(mutex<true>&, Ts&...) {
+    return -1;
+}
+#else
+template <typename... Ts>
+inline int try_lock(mutex<true>& a, Ts&... ms) {
+    return std::try_lock(a, ms...);
+}
+#endif
 
 
 }

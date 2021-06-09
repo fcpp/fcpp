@@ -82,32 +82,32 @@ namespace details {
 
         //! @brief Inserts a node in the cell.
         void insert(N& n) {
-            common::lock_guard<parallel> l(m_mutex);
+            common::exclusive_guard<parallel> l(m_mutex);
             m_contents.insert(&n);
         }
 
         //! @brief Removes a node from the cell.
         void erase(N& n) {
-            common::lock_guard<parallel> l(m_mutex);
+            common::exclusive_guard<parallel> l(m_mutex);
             m_contents.erase(&n);
         }
 
         //! @brief Links a new cell.
         void link(const cell& o) {
-            common::lock_guard<parallel> l(m_mutex);
+            common::exclusive_guard<parallel> l(m_mutex);
             m_linked.push_back(&o);
         }
 
         //! @brief Gives const access to linked cells.
         std::conditional_t<parallel, std::vector<const cell*>, std::vector<const cell*> const&>
         linked() const {
-            common::lock_guard<parallel> l(m_mutex);
+            common::shared_guard<parallel> l(m_mutex);
             return m_linked;
         }
 
         std::conditional_t<parallel, std::unordered_set<N*>, std::unordered_set<N*> const&>
         content() const {
-            common::lock_guard<parallel> l(m_mutex);
+            common::shared_guard<parallel> l(m_mutex);
             return m_contents;
         }
 
@@ -119,7 +119,7 @@ namespace details {
         std::vector<const cell*> m_linked;
 
         //! @brief A mutex regulating access to this cell.
-        mutable common::mutex<parallel> m_mutex;
+        mutable common::shared_mutex<parallel> m_mutex;
     };
 }
 //! @endcond

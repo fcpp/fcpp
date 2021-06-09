@@ -75,10 +75,10 @@ namespace details {
       public:
         //! @brief Default constructors.
         cell() = default;
-        cell(const cell&) = default;
-        cell(cell&&) = default;
-        cell& operator=(const cell&) = default;
-        cell& operator=(cell&&) = default;
+        cell(const cell&) = delete;
+        cell(cell&&) = delete;
+        cell& operator=(const cell&) = delete;
+        cell& operator=(cell&&) = delete;
 
         //! @brief Inserts a node in the cell.
         void insert(N& n) {
@@ -268,13 +268,14 @@ struct simulated_connector {
 
             //! @brief Updates the internal status of node component.
             void update() {
-                if (std::min(m_send, m_leave) < P::node::next()) {
+                times_t t = std::min(m_send, m_leave);
+                times_t pt = P::node::next();
+                if (t < pt) {
                     PROFILE_COUNT("connector");
-                    times_t t = next();
                     if (t == m_leave) {
                         PROFILE_COUNT("connector/cell");
                         m_leave = TIME_MAX;
-                        if (P::node::next() < TIME_MAX) {
+                        if (pt < TIME_MAX) {
                             P::node::net.cell_move(P::node::as_final(), t);
                             set_leave_time(t);
                         }
@@ -284,15 +285,15 @@ struct simulated_connector {
                         m_send = TIME_MAX;
                         typename F::node::message_t m;
                         P::node::as_final().send(t, m);
+                        P::node::as_final().receive(t, P::node::uid, m);
+                        common::unlock_guard<parallel> u(P::node::mutex);
                         for (auto c : P::node::net.cell_of(P::node::as_final()).linked())
-                            for (typename F::node* n : c->content())
-                                if (n == this)
-                                    n->receive(t, P::node::uid, m);
-                                else if (P::node::net.connection_success(get_generator(has_randomizer<P>{}, *this), m_data, P::node::position(t), n->m_data, n->position(t))) {
-                                    common::unlock_guard<parallel> u(P::node::mutex);
-                                    common::lock_guard<parallel> l(n->mutex);
+                            for (typename F::node* n : c->content()) {
+                                common::lock_guard<parallel> l(n->mutex);
+                                if (n != this and P::node::net.connection_success(get_generator(has_randomizer<P>{}, *this), m_data, P::node::position(t), n->m_data, n->position(t))) {
                                     n->receive(t, P::node::uid, m);
                                 }
+                            }
                     }
                 } else P::node::update();
             }
@@ -397,8 +398,8 @@ struct simulated_connector {
             //! @brief Removes a node from all cells.
             void cell_leave(typename F::node& n) {
                 if (m_nodes.size() == 0) return;
+                common::lock_guard<parallel> l(m_node_mutex);
                 m_nodes.at(n.uid)->second.erase(n);
-                common::lock_guard<parallel> l(m_mutex);
                 m_nodes.erase(n.uid);
             }
 
@@ -409,6 +410,7 @@ struct simulated_connector {
 
             //! @brief Returns the cells in proximity of node `n`.
             cell_type const& cell_of(const typename F::node& n) const {
+                common::lock_guard<parallel> l(m_node_mutex);
                 return m_nodes.at(n.uid)->second;
             }
 
@@ -447,20 +449,22 @@ struct simulated_connector {
             template <bool move>
             inline void cell_enter_impl(typename F::node& n, const position_type& p) {
                 cell_id_type c = to_cell(p);
-                if (move) {
-                    if (c == m_nodes.at(n.uid)->first) return;
-                    else m_nodes.at(n.uid)->second.erase(n);
-                }
-                if (m_cells.count(c) == 0) {
-                    common::lock_guard<parallel> l(m_mutex);
-                    if (m_cells.count(c) == 0) {
-                        m_cells[c].link(m_cells[c]); // creates cell
+                typename cell_map_type::iterator nit;
+                {
+                    common::lock_guard<parallel> l(m_cell_mutex);
+                    nit = m_cells.find(c);
+                    if (nit == m_cells.end()) {
+                        nit = m_cells.emplace(std::piecewise_construct, std::make_tuple(c), std::make_tuple()).first;
+                        nit->second.link(nit->second);
                         cell_id_type d;
                         for (size_t i=0; i<dimension; ++i) d[i] = c[i]-1;
                         while (true) {
-                            if (c != d and m_cells.count(d) > 0) {
-                                m_cells[c].link(m_cells[d]);
-                                m_cells[d].link(m_cells[c]);
+                            if (c != d) {
+                                auto lit = m_cells.find(d);
+                                if (lit != m_cells.end()) {
+                                    nit->second.link(lit->second);
+                                    lit->second.link(nit->second);
+                                }
                             }
                             size_t i;
                             for (i = 0; i < dimension and d[i] == c[i]+1; ++i) d[i] = c[i]-1;
@@ -469,12 +473,15 @@ struct simulated_connector {
                         }
                     }
                 }
-                m_cells[c].insert(n);
-                if (move) m_nodes.at(n.uid) = m_cells.find(c);
-                else {
-                    common::lock_guard<parallel> l(m_mutex);
-                    m_nodes[n.uid] = m_cells.find(c);
+                m_node_mutex.lock();
+                auto& it = m_nodes[n.uid];
+                m_node_mutex.unlock();
+                if (move) {
+                    if (c == it->first) return;
+                    else it->second.erase(n);
                 }
+                it = nit;
+                it->second.insert(n);
             }
 
             //! @brief Returns the `randomizer` generator if available.
@@ -508,8 +515,8 @@ struct simulated_connector {
             //! @brief The connector predicate.
             connector_type m_connector;
 
-            //! @brief The mutex regulating access to maps.
-            common::mutex<parallel> m_mutex;
+            //! @brief The mutexes regulating access to maps.
+            mutable common::mutex<parallel> m_node_mutex, m_cell_mutex;
         };
     };
 };

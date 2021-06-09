@@ -26,6 +26,8 @@ using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distrib
 using ever_true = distribution::constant_n<bool, true>;
 using ever_false = distribution::constant_n<bool, false>;
 
+using tt = common::tagged_tuple_t<tag,bool,gat,int,start,times_t>;
+
 template <int O>
 using combo1 = component::combine_spec<
     component::spawner<spawn_schedule<seq_rep>, init<tag,ever_true,gat,seq_per>>,
@@ -56,22 +58,10 @@ MULTI_TEST(SpawnerTest, Sequence, O, 2) {
     EXPECT_EQ(0, (int)network.node_size());
     EXPECT_EQ(1, network.next());
     network.update();
-    EXPECT_EQ(1, (int)network.node_size());
-    EXPECT_TRUE(common::get<tag>(network.node_at(0).storage_tuple()));
-    EXPECT_EQ(2, common::get<gat>(network.node_at(0).storage_tuple()));
-    EXPECT_EQ(1, common::get<start>(network.node_at(0).storage_tuple()));
-    EXPECT_EQ(1, network.next());
-    network.update();
-    EXPECT_EQ(2, (int)network.node_size());
-    EXPECT_TRUE(common::get<tag>(network.node_at(1).storage_tuple()));
-    EXPECT_EQ(3, common::get<gat>(network.node_at(1).storage_tuple()));
-    EXPECT_EQ(1, common::get<start>(network.node_at(1).storage_tuple()));
-    EXPECT_EQ(1, network.next());
-    network.update();
     EXPECT_EQ(3, (int)network.node_size());
-    EXPECT_TRUE(common::get<tag>(network.node_at(2).storage_tuple()));
-    EXPECT_EQ(4, common::get<gat>(network.node_at(2).storage_tuple()));
-    EXPECT_EQ(1, common::get<start>(network.node_at(2).storage_tuple()));
+    EXPECT_EQ(network.node_at(0).storage_tuple(), tt(true, 2, 1));
+    EXPECT_EQ(network.node_at(1).storage_tuple(), tt(true, 3, 1));
+    EXPECT_EQ(network.node_at(2).storage_tuple(), tt(true, 4, 1));
     EXPECT_EQ(TIME_MAX, network.next());
     network.update();
     EXPECT_EQ(3, (int)network.node_size());
@@ -82,31 +72,27 @@ MULTI_TEST(SpawnerTest, MultiSpawn, O, 2) {
     EXPECT_EQ(0, (int)network.node_size());
     EXPECT_EQ(1, network.next());
     network.update();
-    EXPECT_EQ(1, (int)network.node_size());
-    EXPECT_TRUE(common::get<tag>(network.node_at(0).storage_tuple()));
-    EXPECT_EQ(1, network.next());
-    network.update();
-    EXPECT_EQ(2, (int)network.node_size());
-    EXPECT_TRUE(common::get<tag>(network.node_at(1).storage_tuple()));
-    EXPECT_EQ(1, network.next());
-    network.update();
     EXPECT_EQ(3, (int)network.node_size());
-    EXPECT_TRUE(common::get<tag>(network.node_at(2).storage_tuple()));
+    EXPECT_EQ(network.node_at(0).storage_tuple(), tt(true, 2, 1));
+    EXPECT_EQ(network.node_at(1).storage_tuple(), tt(true, 3, 1));
+    EXPECT_EQ(network.node_at(2).storage_tuple(), tt(true, 4, 1));
     EXPECT_EQ(2, network.next());
     network.update();
     EXPECT_EQ(4, (int)network.node_size());
-    EXPECT_FALSE(common::get<tag>(network.node_at(3).storage_tuple()));
+    EXPECT_EQ(network.node_at(3).storage_tuple(), tt(false, 2, 2));
     EXPECT_EQ(3, network.next());
     network.update();
     EXPECT_EQ(5, (int)network.node_size());
-    EXPECT_FALSE(common::get<tag>(network.node_at(4).storage_tuple()));
+    EXPECT_EQ(network.node_at(4).storage_tuple(), tt(false, 3, 3));
     EXPECT_EQ(4, network.next());
     network.update();
     EXPECT_EQ(6, (int)network.node_size());
-    EXPECT_FALSE(common::get<tag>(network.node_at(5).storage_tuple()));
+    EXPECT_EQ(network.node_at(5).storage_tuple(), tt(false, 4, 4));
     EXPECT_EQ(5, network.next());
     network.update();
     EXPECT_EQ(7, (int)network.node_size());
-    EXPECT_FALSE(common::get<tag>(network.node_at(6).storage_tuple()));
+    EXPECT_EQ(network.node_at(6).storage_tuple(), tt(false, 5, 5));
     EXPECT_EQ(TIME_MAX, network.next());
+    network.update();
+    EXPECT_EQ(7, (int)network.node_size());
 }

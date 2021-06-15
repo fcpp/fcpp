@@ -44,13 +44,13 @@ endfunction()
 # MAIN PROJECT SETUP #
 ######################
 
+option(FCPP_BUILD_GL "Build OpenGL features." ON)
+fcpp_setup()
 project(
     fcpp
 	VERSION 0.8.1
 	DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
-option(FCPP_BUILD_GL "Build OpenGL features." ON)
-fcpp_setup()
 set(
     SOURCE_LIST
     lib/beautify.cpp

@@ -243,13 +243,21 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         for (int j=0; j<10; ++j)
             names[i] = replace(names[i], "<"+string(j)+">", " "+string(j));
     }
+    Label adapt_label(string text, real maxscale, real maxlength) {
+        picture pp;
+        unitsize(pp, 1cm);
+        label(pp, scale(maxscale)*text, (0,0));
+        real len = size(pp, true).x;
+        if (len > maxlength) maxscale *= maxlength / len;
+        return scale(maxscale) * (text + "\phantom{pd}");
+    }
     if (LEGENDA) {
         for (int i=0; i<names.length; i+=2) {
             draw(pic, (0,-0.5-i/8) -- (0.8,-0.5-i/8), styles[i%styles.length]+colors[i%colors.length]);
-            label(pic, scale(0.5)*(names[i]+"\phantom{pd}"), (0.9,-0.5-i/8), align=E);
+            label(pic, adapt_label(names[i], 0.5, DIM.x/2 - 0.5), (0.9,-0.5-i/8), align=E);
             if (i+1 < names.length) {
                 draw(pic, (DIM.x/2+0.5,-0.5-i/8) -- (DIM.x/2+1.3,-0.5-i/8), styles[(i+1)%styles.length]+colors[(i+1)%colors.length]);
-                label(pic, scale(0.5)*(names[i+1]+"\phantom{pd}"), (DIM.x/2+1.4,-0.5-i/8), align=E);
+                label(pic, adapt_label(names[i+1], 0.5, DIM.x/2 - 0.5), (DIM.x/2+1.4,-0.5-i/8), align=E);
             }
         }
     } else {
@@ -262,7 +270,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
                 continue;
             }
             draw(pp, (2.4*(i-k),-0.5) -- (2.4*(i-k)+0.8,-0.5), styles[i%styles.length]+colors[i%colors.length]);
-            label(pp, scale(0.5)*(names[i]+"\phantom{pd}"), (2.4*(i-k)+0.9,-0.5), align=E);
+            label(pp, adapt_label(names[i], 0.5, DIM.x/2 - 0.5), (2.4*(i-k)+0.9,-0.5), align=E);
         }
         shipout(ppath+"-legenda", pp);
     }

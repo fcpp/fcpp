@@ -35,13 +35,25 @@ color color::hsva(double h, double s, double v, double a) {
 }
 
 //! @brief Compares colors.
-bool color::operator==(const color& o) const {
+bool color::operator==(color const& o) const {
     for (int i=0; i<4; ++i) {
         if (abs(rgba[i] - o.rgba[i]) > 0.01) return false;
     }
     return true;
 }
 
+//! @brief Color addition (for blending).
+color operator+(color const& x, color const& y) {
+    color c;
+    for (size_t i=0; i<4; ++i) c.rgba[i] = x.rgba[i] + y.rgba[i];
+    return c;
+}
+
+//! @brief Color multiplication (for blending).
+color operator*(double f, color c) {
+    for (size_t i=0; i<4; ++i) c.rgba[i] *= f;
+    return c;
+}
 
 //! @brief Conversion to string.
 std::string to_string(color const& c) {

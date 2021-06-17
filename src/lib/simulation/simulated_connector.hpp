@@ -308,7 +308,8 @@ struct simulated_connector {
             void round_end(times_t t) {
                 P::node::round_end(t);
                 P::node::net.cell_move(P::node::as_final(), t);
-                set_leave_time(t);
+                if (P::node::next() < TIME_MAX) set_leave_time(t);
+                else m_leave = TIME_MAX;
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).

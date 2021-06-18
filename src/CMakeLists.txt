@@ -13,44 +13,38 @@ function(fcpp_gui_copy target source dest folder)
 endfunction()
 
 macro(fcpp_setup)
-    set(CMAKE_CXX_STANDARD 14)
+	set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
-    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
+	set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -march=native")
-    if(WIN32)
+	if(WIN32)
         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
         set(BUILD_SHARED_LIBS OFF)
         set(CMAKE_EXE_LINKER_FLAGS "-static")
     endif(WIN32)
-    if(FCPP_BUILD_GL)
-        add_compile_options("-DFCPP_GUI")
-        add_compile_options("-DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT")
-        option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
-        option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
-        option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
-    endif(FCPP_BUILD_GL)
 endmacro()
 
-function(fcpp_project project_name project_executable)
-    add_executable(${project_name} ${project_executable})
+function(fcpp_project project_name project_executable enable_gui)
+	add_executable(${project_name} ${project_executable})
     target_link_libraries(${project_name} PRIVATE fcpp)
     target_include_directories(${project_name} PRIVATE .)
-    if(FCPP_BUILD_GL)
-        fcpp_gui_copy(${project_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${project_name}> textures)
-    endif(FCPP_BUILD_GL)
+	if(${enable_gui} STREQUAL ON)
+		fcpp_gui_copy(${project_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${project_name}> textures)
+		target_compile_options(${project_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
+    endif()
 endfunction()
 
 ######################
 # MAIN PROJECT SETUP #
 ######################
 
-option(FCPP_BUILD_GL "Build OpenGL features." ON)
-fcpp_setup()
 project(
     fcpp
 	VERSION 0.8.1
 	DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
+option(FCPP_BUILD_GL "Build OpenGL features." ON)
+fcpp_setup()
 set(
     SOURCE_LIST
     lib/beautify.cpp
@@ -138,6 +132,9 @@ endif(FCPP_BUILD_GL)
 ######################
 
 if(FCPP_BUILD_GL)
+	option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
+	option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
+	option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
     add_library(
         glad
         ./external/glad-core-3.3/include/KHR/khrplatform.h
@@ -171,8 +168,8 @@ if(FCPP_BUILD_GL)
         freetype
     )
     if(UNIX)
-        target_compile_options(stb_image PUBLIC "-fPIC")
-        target_compile_options(glad PUBLIC "-fPIC")
-        target_compile_options(freetype PUBLIC "-fPIC")
+        target_compile_options(stb_image PUBLIC -fPIC)
+        target_compile_options(glad PUBLIC -fPIC)
+        target_compile_options(freetype PUBLIC -fPIC)
     endif(UNIX)
 endif(FCPP_BUILD_GL)

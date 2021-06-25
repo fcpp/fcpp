@@ -194,8 +194,9 @@ struct simulated_connector {
     struct component : public P {
         DECLARE_COMPONENT(connector);
         REQUIRE_COMPONENT(connector,positioner);
-        CHECK_COMPONENT(randomizer);
         CHECK_COMPONENT(identifier);
+        CHECK_COMPONENT(randomizer);
+        CHECK_COMPONENT(scheduler);
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -308,8 +309,8 @@ struct simulated_connector {
             void round_end(times_t t) {
                 P::node::round_end(t);
                 P::node::net.cell_move(P::node::as_final(), t);
-                if (P::node::next() < TIME_MAX) set_leave_time(t);
-                else m_leave = TIME_MAX;
+                if (has_scheduler<P>::value and P::node::next() == TIME_MAX) m_leave = TIME_MAX;
+                else set_leave_time(t);
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).

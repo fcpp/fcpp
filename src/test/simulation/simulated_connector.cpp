@@ -37,8 +37,8 @@ using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distrib
 template <int O>
 using combo = component::combine_spec<
     exposer,
+    component::simulated_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::scheduler<round_schedule<seq_per>>,
-    component::simulated_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>,connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::simulated_positioner<>,
     component::base<parallel<(O & 1) == 1>>
 >;

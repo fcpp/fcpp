@@ -11,6 +11,7 @@
 #include <cassert>
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 #include "lib/settings.hpp"
@@ -77,10 +78,10 @@ class network {
     using data_type = typename transceiver_t::data_type;
 
     //! @brief Constructor with default settings.
-    network(node_t& n) : m_node(n), m_transceiver({}), m_manager(&network::manage, this) {}
+    network(node_t& n) : m_node(n), m_transceiver({}), m_manager(std::mem_fn(&network::manage), this) {}
 
     //! @brief Constructor with given settings.
-    network(node_t& n, data_type d) : m_node(n), m_transceiver(d), m_manager(&network::manage, this) {}
+    network(node_t& n, data_type d) : m_node(n), m_transceiver(d), m_manager(std::mem_fn(&network::manage), this) {}
 
     ~network() {
         m_running = false;

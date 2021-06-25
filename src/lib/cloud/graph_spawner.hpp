@@ -69,10 +69,11 @@ struct graph_spawner {
      */
     template <typename F, typename P>
     struct component : public P {
-        DECLARE_COMPONENT(spawner);
-        REQUIRE_COMPONENT(spawner,identifier);
-        AVOID_COMPONENT(spawner,timer);
-        CHECK_COMPONENT(randomizer);
+        DECLARE_COMPONENT(graph_spawner);
+        REQUIRE_COMPONENT(graph_spawner,identifier);
+        AVOID_COMPONENT(graph_spawner,timer);
+        // TODO: remove if not needed for graphs
+        //CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.
         using node = typename P::node;
@@ -96,7 +97,7 @@ struct graph_spawner {
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_schedule.next() < P::net::next()) {
-                    PROFILE_COUNT("spawner");
+                    PROFILE_COUNT("graph_spawner");
                     times_t t = m_schedule.next();
                     size_t i = m_schedule.next_sequence();
                     m_schedule.step(get_generator(has_randomizer<P>{}, *this));

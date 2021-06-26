@@ -255,8 +255,10 @@ while [ "$1" != "" ]; do
         platform=$1
         if [ "$platform" == windows ]; then
             flag=MinGW
+            opt=""
         elif [ "$platform" == unix ]; then
             flag=Unix
+            opt="-j `nproc`"
         else
             echo -e "\033[4mUnrecognized platform \"$platform\". Available platforms are:\033[0m"
             echo -e "    \033[1mwindows unix\033[0m"
@@ -266,7 +268,7 @@ while [ "$1" != "" ]; do
         echo -e "\033[4mcmake -S ./ -B ./bin -G \"$flag Makefiles\" -DCMAKE_BUILD_TYPE=$btype\033[0m"
         cmake -S ./ -B ./bin -G "$flag Makefiles" -DCMAKE_BUILD_TYPE=$btype
         echo -e "\033[4mcmake --build ./bin/\033[0m"
-        cmake --build ./bin/
+        cmake --build ./bin/ $opt
         if [ "$platform" == windows ]; then
             cp bin/fcpp/src/libfcpp.dll bin/
         fi
@@ -274,7 +276,9 @@ while [ "$1" != "" ]; do
             cd bin
             ./$target | tee ../plot/$target.asy
             cd ../plot
-            sed -i "" -E "s| \(mean-mean\)||g" $target.asy
+            if [ "$platform" == unix ]; then
+                sed -i "" -E "s| \(mean-mean\)||g" $target.asy
+            fi
             asy $target.asy -f pdf
             cd ..
         done

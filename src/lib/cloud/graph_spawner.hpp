@@ -35,6 +35,12 @@ namespace tags {
     template <typename T>
     struct spawn_schedule {};
 
+    //! @brief Net initialisation tag associating to the name of the file specifying graph nodes.
+    struct nodesfile;
+
+    //! @brief Net initialisation tag associating to the name of the file specifying graph arcs.
+    struct arcsfile;
+
     //! @brief Node initialisation tag associating to a starting time of execution.
     struct start;
 }

@@ -83,7 +83,12 @@ struct graph_spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t) {}
+            net(const common::tagged_tuple<S,T>& t) :
+                P::net(t),
+                m_schedule(get_generator(has_randomizer<P>{}, *this),t),
+                m_nodesfile( common::get_or<tags::nodesfile>(t, "index") ),
+                m_arcsfile( common::get_or<tags::arcsfile>(t, "arcs") )
+            {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -136,6 +141,8 @@ struct graph_spawner {
 
             //! @brief The scheduling of spawning events.
             schedule_type m_schedule;
+            string m_nodesfile;
+            string m_arcsfile;
         };
     };
 };

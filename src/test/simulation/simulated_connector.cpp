@@ -44,7 +44,7 @@ using combo = component::combine_spec<
 >;
 
 
-MULTI_TEST(PhysicalConnectorTest, Cell, O, 2) {
+MULTI_TEST(SimulatedConnectorTest, Cell, O, 2) {
     int n[4]; // 4 nodes
     component::details::cell<(O & 1) == 1, int> c[4]; // 4 cells
     n[0] = n[1] = n[2] = n[3] = 0;
@@ -90,7 +90,7 @@ MULTI_TEST(PhysicalConnectorTest, Cell, O, 2) {
     EXPECT_EQ(3, n[3]);
 }
 
-MULTI_TEST(PhysicalConnectorTest, Connection, O, 2) {
+MULTI_TEST(SimulatedConnectorTest, Connection, O, 2) {
     typename combo<O>::net network{common::make_tagged_tuple<oth>("foo")};
     EXPECT_EQ(1, network.connection_radius());
     typename connect::fixed<1>::data_type data;
@@ -105,7 +105,7 @@ MULTI_TEST(PhysicalConnectorTest, Connection, O, 2) {
     EXPECT_FALSE(connect);
 }
 
-MULTI_TEST(PhysicalConnectorTest, EnterLeave, O, 2) {
+MULTI_TEST(SimulatedConnectorTest, EnterLeave, O, 2) {
     typename combo<O>::net  network{common::make_tagged_tuple<oth>("foo")};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid, x>(0, make_vec(0.5,0.5))};
     typename combo<O>::node d1{network, common::make_tagged_tuple<uid, x>(1, make_vec(0.0,0.0))};
@@ -126,7 +126,7 @@ MULTI_TEST(PhysicalConnectorTest, EnterLeave, O, 2) {
     EXPECT_EQ(target, close);
 }
 
-MULTI_TEST(PhysicalConnectorTest, Messages, O, 2) {
+MULTI_TEST(SimulatedConnectorTest, Messages, O, 2) {
     auto update = [](auto& node) {
         common::lock_guard<(O & 1) == 1> l(node.mutex);
         node.update();

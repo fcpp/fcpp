@@ -38,7 +38,7 @@ using combo1 = component::combine_spec<
     component::base<>
 >;
 
-TEST(PhysicalPositionTest, NoFriction) {
+TEST(SimulatedPositionerTest, NoFriction) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
     combo1::node device{network, common::make_tagged_tuple<uid, x, a>(0, make_vec(1,2), make_vec(-1,0))};
     EXPECT_EQ(2, device.next());
@@ -85,11 +85,11 @@ TEST(PhysicalPositionTest, NoFriction) {
     EXPECT_EQ(v, device.velocity(4));
 }
 
-TEST(PhysicalPositionTest, YesFriction) {
+TEST(SimulatedPositionerTest, YesFriction) {
     // TODO: test this
 }
 
-TEST(PhysicalPositionTest, NbrVec) {
+TEST(SimulatedPositionerTest, NbrVec) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
     combo1::node d1{network, common::make_tagged_tuple<uid, x>(1, make_vec(0,0))};
     combo1::node d2{network, common::make_tagged_tuple<uid, x>(2, make_vec(1,0))};

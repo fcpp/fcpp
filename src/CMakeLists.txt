@@ -24,13 +24,13 @@ macro(fcpp_setup)
     endif(WIN32)
 endmacro()
 
-function(fcpp_target project_name project_executable enable_gui)
-    add_executable(${project_name} ${project_executable})
-    target_link_libraries(${project_name} PRIVATE fcpp)
-    target_include_directories(${project_name} PRIVATE .)
+function(fcpp_target target_name target_executable enable_gui)
+    add_executable(${target_name} ${target_executable})
+    target_link_libraries(${target_name} PRIVATE fcpp)
+    target_include_directories(${target_name} PRIVATE .)
     if(${enable_gui} STREQUAL ON)
-        fcpp_gui_copy(${project_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${project_name}> textures)
-        target_compile_options(${project_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
+        fcpp_gui_copy(${target_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${target_name}> textures)
+        target_compile_options(${target_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
     endif()
 endfunction()
 
@@ -43,7 +43,8 @@ project(
     VERSION 0.8.1
     DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
-option(FCPP_BUILD_GL "Build OpenGL features." ON)
+option(FCPP_BUILD_GL "Build OpenGL features." OFF)
+option(FCPP_BUILD_TESTS "Build Google Tests." OFF)
 fcpp_setup()
 set(
     SOURCE_LIST
@@ -173,3 +174,92 @@ if(FCPP_BUILD_GL)
         target_compile_options(freetype PUBLIC -fPIC)
     endif(UNIX)
 endif(FCPP_BUILD_GL)
+
+################
+# GOOGLE TESTS #
+################
+
+if(FCPP_BUILD_TESTS)
+    find_package(GTest)
+    include(CTest)
+    set(
+        TEST_HELPERS
+        test/fake_os.cpp
+        test/helper.cpp
+        test/test_net.cpp
+    )
+    add_library(fcpp_testlib STATIC ${TEST_HELPERS})
+    target_link_libraries(fcpp_testlib PRIVATE
+        fcpp
+        GTest::GTest
+    )
+    set(
+        TEST_FILES
+        test/common/algorithm.cpp
+        test/common/multitype_map.cpp
+        test/common/mutex.cpp
+        test/common/option.cpp
+        test/common/ostream.cpp
+        test/common/plot.cpp
+        test/common/profiler.cpp
+        test/common/quaternion.cpp
+        test/common/random_access_map.cpp
+        test/common/serialize.cpp
+        test/common/tagged_tuple.cpp
+        test/common/traits.cpp
+        test/component/base.cpp
+        test/component/calculus.cpp
+        test/component/identifier.cpp
+        test/component/logger.cpp
+        test/component/randomizer.cpp
+        test/component/scheduler.cpp
+        test/component/storage.cpp
+        test/component/timer.cpp
+        test/coordination/collection.cpp
+        test/coordination/election.cpp
+        test/coordination/geometry.cpp
+        test/coordination/spreading.cpp
+        test/coordination/time.cpp
+        test/coordination/utils.cpp
+        test/data/color.cpp
+        test/data/field.cpp
+        test/data/tuple.cpp
+        test/data/vec.cpp
+        test/deployment/hardware_connector.cpp
+        test/deployment/hardware_identifier.cpp
+        test/deployment/hardware_logger.cpp
+        test/general/collection_compare.cpp
+        test/general/embedded.cpp
+        test/general/slow_distance.cpp
+        test/internal/context.cpp
+        test/internal/flat_ptr.cpp
+        test/internal/trace.cpp
+        test/internal/twin.cpp
+        test/option/aggregator.cpp
+        test/option/connect.cpp
+        test/option/distribution.cpp
+        test/option/metric.cpp
+        test/option/sequence.cpp
+        test/simulation/batch.cpp
+        test/simulation/simulated_connector.cpp
+        test/simulation/simulated_positioner.cpp
+        test/simulation/spawner.cpp
+    )
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
+    foreach(TESTFILE IN LISTS TEST_FILES)
+        get_filename_component(TESTNAME ${TESTFILE} NAME_WE)
+        add_executable(${TESTNAME} ${TESTFILE})
+        target_link_libraries(${TESTNAME} PRIVATE
+            fcpp
+            fcpp_testlib
+            GTest::GTest
+            GTest::Main
+        )
+        set_target_properties(${TESTNAME} PROPERTIES PREFIX "tests/")
+        if(${CMAKE_VERSION} VERSION_LESS "3.10.3")
+            gtest_discover_tests(${TESTNAME} TIMEOUT 240)
+        else()
+            gtest_discover_tests(${TESTNAME} DISCOVERY_TIMEOUT 240)
+        endif()
+    endforeach()
+endif(FCPP_BUILD_TESTS)

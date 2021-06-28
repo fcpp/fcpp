@@ -10,6 +10,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <iostream>
 
 #include "lib/component/base.hpp"
 #include "lib/component/storage.hpp"
@@ -96,8 +97,9 @@ struct graph_spawner {
                 P::net(t),
                 m_schedule(get_generator(has_randomizer<P>{}, *this),t),
                 m_nodesfile( common::get_or<tags::nodesfile>(t, "index") ),
-                m_arcsfile( common::get_or<tags::arcsfile>(t, "arcs") )
-            {}
+                m_arcsfile( common::get_or<tags::arcsfile>(t, "arcs") ) {
+                //                read_row(o, row, tuple_type::tags{});
+            }
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -139,6 +141,15 @@ struct graph_spawner {
                 tt_type tt(tup);
                 common::get<tags::start>(tt) = t;
                 return tt;
+            }
+
+            inline void read_row(std::ostream& o, attributes_type& row, common::type_sequence<>) {
+            }
+
+            template <typename S, typename... Ss>
+            inline void read_row(std::ostream& o, attributes_type& row, common::type_sequence<S, Ss...>) {
+                o >> common::get<S>(row);
+                read_row(o, row, common::type_sequence<Ss...>{});
             }
 
             // //! @brief Emplaces a node generated through the j-th distribution.

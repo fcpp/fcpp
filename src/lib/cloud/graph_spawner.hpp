@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <utility>
 #include <iostream>
+#include <fstream>
 
 #include "lib/component/base.hpp"
 #include "lib/component/storage.hpp"
@@ -143,13 +144,25 @@ struct graph_spawner {
                 return tt;
             }
 
-            inline void read_row(std::ostream& o, attributes_type& row, common::type_sequence<>) {
+            inline void read_nodes() {
+                std::ifstream nodesf(m_nodesfile);
+                attributes_type row;
+
+                while (nodesf) {
+                    read_row(nodesf, row, attributes_type::tags);
+                }
+
+                nodesf.close();
+            }
+
+
+            inline void read_row(std::istream& is, attributes_type& row, common::type_sequence<>) {
             }
 
             template <typename S, typename... Ss>
-            inline void read_row(std::ostream& o, attributes_type& row, common::type_sequence<S, Ss...>) {
-                o >> common::get<S>(row);
-                read_row(o, row, common::type_sequence<Ss...>{});
+            inline void read_row(std::istream& is, attributes_type& row, common::type_sequence<S, Ss...>) {
+                is >> common::get<S>(row);
+                read_row(is, row, common::type_sequence<Ss...>{});
             }
 
             // //! @brief Emplaces a node generated through the j-th distribution.
@@ -166,7 +179,7 @@ struct graph_spawner {
             std::string m_nodesfile;
 
             //! @brief The file describing graph arcs.
-            std::string m_arcsfile;
+             std::string m_arcsfile;
         };
     };
 };

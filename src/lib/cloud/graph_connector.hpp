@@ -198,9 +198,9 @@ struct graph_connector {
             //! @brief Updates the internal status of node component.
             void update() {
                 if (m_send < P::node::next()) {
-                    PROFILE_COUNT("connector");
+                    PROFILE_COUNT("graph_connector");
                     times_t t = next();
-                    PROFILE_COUNT("connector/send");
+                    PROFILE_COUNT("graph_connector/send");
                     m_send = TIME_MAX;
                     for (std::pair<device_t, typename F::node*> p : m_neighbours) {
                         typename F::node *n = p.second;
@@ -233,7 +233,7 @@ struct graph_connector {
             }
 
           private: // implementation details
-            //! @brief
+            //! @brief Stores the list of neighbours in the graph.
             using neighbour_list = std::unordered_map<device_t, typename F::node*>;
 
             //! @brief Stores size of received message (disabled).

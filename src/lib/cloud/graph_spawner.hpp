@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "lib/component/base.hpp"
+#include "lib/component/storage.hpp"
 #include "lib/option/sequence.hpp"
 
 
@@ -64,6 +65,9 @@ struct graph_spawner {
     //! @brief Sequence generator type scheduling spawning of nodes.
     using schedule_type = sequence::merge_t<common::option_types<tags::spawn_schedule, Ts...>>;
 
+    using attributes_tag_type = common::option_types<tags::node_attributes, Ts...>;
+    using attributes_type = std::conditional_t<std::is_same<attributes_tag_type, common::type_sequence<>>::value, common::option_types<tags::tuple_store, Ts...>, attributes_tag_type>;
+
     /**
      * @brief The actual component.
      *
@@ -78,8 +82,7 @@ struct graph_spawner {
         DECLARE_COMPONENT(graph_spawner);
         REQUIRE_COMPONENT(graph_spawner,identifier);
         AVOID_COMPONENT(graph_spawner,timer);
-        // TODO: remove if not needed for graphs
-        //CHECK_COMPONENT(randomizer);
+        CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.
         using node = typename P::node;
@@ -147,8 +150,12 @@ struct graph_spawner {
 
             //! @brief The scheduling of spawning events.
             schedule_type m_schedule;
-            string m_nodesfile;
-            string m_arcsfile;
+
+            //! @brief The file describing graph nodes.
+            std::string m_nodesfile;
+
+            //! @brief The file describing graph arcs.
+            std::string m_arcsfile;
         };
     };
 };

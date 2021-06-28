@@ -22,6 +22,7 @@ cc_library(
     srcs = ['graph_spawner.cpp'],
     deps = [
         "//lib/component:base",
+        "//lib/component:storage",
         "//lib/option:sequence",
     ],
     visibility = [

@@ -180,7 +180,14 @@ endif(FCPP_BUILD_GL)
 ################
 
 if(FCPP_BUILD_TESTS)
-    find_package(GTest)
+    cmake_minimum_required(VERSION 3.14)
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/f5e592d8ee5ffb1d9af5be7f715ce3576b8bf9c4.zip
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
     include(CTest)
     set(
         TEST_HELPERS
@@ -191,7 +198,7 @@ if(FCPP_BUILD_TESTS)
     add_library(fcpp_testlib STATIC ${TEST_HELPERS})
     target_link_libraries(fcpp_testlib PRIVATE
         fcpp
-        GTest::GTest
+        gtest
     )
     set(
         TEST_FILES
@@ -252,14 +259,10 @@ if(FCPP_BUILD_TESTS)
         target_link_libraries(${TESTNAME} PRIVATE
             fcpp
             fcpp_testlib
-            GTest::GTest
-            GTest::Main
+            gtest
+            gtest_main
         )
         set_target_properties(${TESTNAME} PROPERTIES PREFIX "tests/")
-        if(${CMAKE_VERSION} VERSION_LESS "3.10.3")
-            gtest_discover_tests(${TESTNAME} TIMEOUT 240)
-        else()
-            gtest_discover_tests(${TESTNAME} DISCOVERY_TIMEOUT 240)
-        endif()
+        add_test(NAME ${TESTNAME} COMMAND ${TESTNAME})
     endforeach()
 endif(FCPP_BUILD_TESTS)

@@ -22,6 +22,9 @@ macro(fcpp_setup)
         set(BUILD_SHARED_LIBS OFF)
         set(CMAKE_EXE_LINKER_FLAGS "-static")
     endif(WIN32)
+    if(FCPP_BUILD_TESTS)
+        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
+    endif(FCPP_BUILD_TESTS)
 endmacro()
 
 function(fcpp_target target_name target_executable enable_gui)
@@ -29,9 +32,26 @@ function(fcpp_target target_name target_executable enable_gui)
     target_link_libraries(${target_name} PRIVATE fcpp)
     target_include_directories(${target_name} PRIVATE .)
     if(${enable_gui} STREQUAL ON)
-        fcpp_gui_copy(${target_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${target_name}> textures)
-        target_compile_options(${target_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
+        if(FCPP_BUILD_GL)
+            fcpp_gui_copy(${target_name} ${PROJECT_SOURCE_DIR} $<TARGET_FILE_DIR:${target_name}> textures)
+            target_compile_options(${target_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
+        endif()
     endif()
+endfunction()
+
+function(fcpp_test target_name target_executable)
+    if(FCPP_BUILD_TESTS)
+        add_executable(${target_name}_test ${target_executable})
+        target_link_libraries(${target_name}_test PRIVATE
+            fcpp
+            fcpp_testlib
+            gtest
+            gtest_main
+        )
+        target_include_directories(${target_name}_test PRIVATE .)
+        set_target_properties(${target_name}_test PROPERTIES PREFIX "tests/")
+        add_test(NAME ${target_name}_test COMMAND ${target_name}_test)
+    endif(FCPP_BUILD_TESTS)
 endfunction()
 
 ######################
@@ -43,8 +63,9 @@ project(
     VERSION 0.8.1
     DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
-option(FCPP_BUILD_GL "Build OpenGL features." OFF)
-option(FCPP_BUILD_TESTS "Build Google Tests." OFF)
+option(FCPP_BUILD_GL        "Build OpenGL features."          OFF)
+option(FCPP_BUILD_TESTS     "Build Google Tests features."    OFF)
+option(FCPP_INTERNAL_TESTS  "Build internal tests for FCPP."  ON)
 fcpp_setup()
 set(
     SOURCE_LIST
@@ -200,69 +221,62 @@ if(FCPP_BUILD_TESTS)
         fcpp
         gtest
     )
-    set(
-        TEST_FILES
-        test/common/algorithm.cpp
-        test/common/multitype_map.cpp
-        test/common/mutex.cpp
-        test/common/option.cpp
-        test/common/ostream.cpp
-        test/common/plot.cpp
-        test/common/profiler.cpp
-        test/common/quaternion.cpp
-        test/common/random_access_map.cpp
-        test/common/serialize.cpp
-        test/common/tagged_tuple.cpp
-        test/common/traits.cpp
-        test/component/base.cpp
-        test/component/calculus.cpp
-        test/component/identifier.cpp
-        test/component/logger.cpp
-        test/component/randomizer.cpp
-        test/component/scheduler.cpp
-        test/component/storage.cpp
-        test/component/timer.cpp
-        test/coordination/collection.cpp
-        test/coordination/election.cpp
-        test/coordination/geometry.cpp
-        test/coordination/spreading.cpp
-        test/coordination/time.cpp
-        test/coordination/utils.cpp
-        test/data/color.cpp
-        test/data/field.cpp
-        test/data/tuple.cpp
-        test/data/vec.cpp
-        test/deployment/hardware_connector.cpp
-        test/deployment/hardware_identifier.cpp
-        test/deployment/hardware_logger.cpp
-        test/general/collection_compare.cpp
-        test/general/embedded.cpp
-        test/general/slow_distance.cpp
-        test/internal/context.cpp
-        test/internal/flat_ptr.cpp
-        test/internal/trace.cpp
-        test/internal/twin.cpp
-        test/option/aggregator.cpp
-        test/option/connect.cpp
-        test/option/distribution.cpp
-        test/option/metric.cpp
-        test/option/sequence.cpp
-        test/simulation/batch.cpp
-        test/simulation/simulated_connector.cpp
-        test/simulation/simulated_positioner.cpp
-        test/simulation/spawner.cpp
-    )
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests)
-    foreach(TESTFILE IN LISTS TEST_FILES)
-        get_filename_component(TESTNAME ${TESTFILE} NAME_WE)
-        add_executable(${TESTNAME} ${TESTFILE})
-        target_link_libraries(${TESTNAME} PRIVATE
-            fcpp
-            fcpp_testlib
-            gtest
-            gtest_main
+    if(FCPP_INTERNAL_TESTS)
+        set(
+            TEST_FILES
+            test/common/algorithm.cpp
+            test/common/multitype_map.cpp
+            test/common/mutex.cpp
+            test/common/option.cpp
+            test/common/ostream.cpp
+            test/common/plot.cpp
+            test/common/profiler.cpp
+            test/common/quaternion.cpp
+            test/common/random_access_map.cpp
+            test/common/serialize.cpp
+            test/common/tagged_tuple.cpp
+            test/common/traits.cpp
+            test/component/base.cpp
+            test/component/calculus.cpp
+            test/component/identifier.cpp
+            test/component/logger.cpp
+            test/component/randomizer.cpp
+            test/component/scheduler.cpp
+            test/component/storage.cpp
+            test/component/timer.cpp
+            test/coordination/collection.cpp
+            test/coordination/election.cpp
+            test/coordination/geometry.cpp
+            test/coordination/spreading.cpp
+            test/coordination/time.cpp
+            test/coordination/utils.cpp
+            test/data/color.cpp
+            test/data/field.cpp
+            test/data/tuple.cpp
+            test/data/vec.cpp
+            test/deployment/hardware_connector.cpp
+            test/deployment/hardware_identifier.cpp
+            test/deployment/hardware_logger.cpp
+            test/general/collection_compare.cpp
+            test/general/embedded.cpp
+            test/general/slow_distance.cpp
+            test/internal/context.cpp
+            test/internal/flat_ptr.cpp
+            test/internal/trace.cpp
+            test/internal/twin.cpp
+            test/option/aggregator.cpp
+            test/option/connect.cpp
+            test/option/distribution.cpp
+            test/option/metric.cpp
+            test/option/sequence.cpp
+            test/simulation/batch.cpp
+            test/simulation/simulated_connector.cpp
+            test/simulation/simulated_positioner.cpp
+            test/simulation/spawner.cpp
         )
-        set_target_properties(${TESTNAME} PROPERTIES PREFIX "tests/")
-        add_test(NAME ${TESTNAME} COMMAND ${TESTNAME})
-    endforeach()
+        foreach(TESTFILE IN LISTS TEST_FILES)
+            get_filename_component(TESTNAME ${TESTFILE} NAME_WE)
+            fcpp_test(${TESTNAME} ${TESTFILE})
+        endforeach()
+    endif(FCPP_INTERNAL_TESTS)
 endif(FCPP_BUILD_TESTS)

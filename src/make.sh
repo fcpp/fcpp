@@ -88,6 +88,16 @@ function timeformat {
 }
 
 function reporter() {
+    echo -en "\033[4m" >&2
+    spacing=""
+    for p in "$@"; do
+        if [ `echo $p | wc -w` -gt 1 ]; then
+            p="\"$p\""
+        fi
+        echo -n "$spacing$p" >&2
+        spacing=" "
+    done
+    echo -e "\033[0m" >&2
     "$@"
     code=$?
     if [ $code -gt 0 ]; then
@@ -174,7 +184,8 @@ function finder() {
 function cmake_finder() {
     search_folder="$1"
     search_sources="$2"
-    shift 2
+    search_suffix="$3"
+    shift 3
     alltargets=""
     for find in "$@"; do
         targets=""
@@ -183,10 +194,10 @@ function cmake_finder() {
         fi
         for pattern in "$find" "$find*" "*$find*"; do
             if [ "$targets" == "" ]; then
-                targets=$(echo $search_folder*/$pattern | tr ' ' '\n' | grep -v "*")
+                targets=$(echo $search_folder*/$pattern$search_suffix | tr ' ' '\n' | grep -v "*")
             fi
             if [ "$targets" == "" ]; then
-                targets=$(echo $search_sources/$pattern/*.cpp | tr ' ' '\n' | grep -v "*" | sed "s|.cpp$||;s|^$search_sources/[^/]*/|$search_folder/|")
+                targets=$(echo $search_sources/$pattern/*.cpp | tr ' ' '\n' | grep -v "*" | sed "s|.cpp$|$search_suffix|;s|^$search_sources/[^/]*/|$search_folder/|")
             fi
         done
         if [ "$targets" == "" ]; then
@@ -207,21 +218,18 @@ function builder() {
     elif [ "$btype" == "Release" ]; then
         asan="--features=opt"
     fi
-    echo -e "\033[4mbazel $cmd $copts $asan $t\033[0m"
     reporter bazel $cmd $copts $asan $t
 }
 
 function cmake_builder() {
     parseopt "$@"
-    code=$?
+    nshift=$?
     if [ "$platform" == Unix ]; then
         opt="-j `nproc`"
     fi
-    echo -e "\033[4mcmake -S ./ -B ./bin -G \"$platform Makefiles\" -DCMAKE_BUILD_TYPE=$btype $opts \"$cmakeopts\"\033[0m"
     reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
-    echo -e "\033[4mcmake --build ./bin/\033[0m"
     reporter cmake --build ./bin/ $opt
-    return $code
+    return $nshift
 }
 
 function powerset() {
@@ -320,17 +328,17 @@ while [ "$1" != "" ]; do
         shift 1
         cmake_builder "$@"
         shift $?
-        for target in $(cmake_finder bin run "$@"); do
+        for target in $(cmake_finder bin run "" "$@"); do
+            if [ ${#exitcodes[@]} -gt 0 ]; then
+                quitter
+            fi
             name="${target:4}"
             file="output/raw/$name.txt"
             mkdir -p output/raw
             cd bin
-            echo -e "\033[1m$target\033[0m"
+            echo -e "\033[1;4m$target\033[0m\n"
             ./$name > ../$file 2> ../$file.err & pid=$!
             cd ..
-            if [ ${#exitcodes[@]} -gt 0 ]; then
-                quitter
-            fi
             trap ctrl_c INT
             function ctrl_c() {
                 echo -e "\n\033[J"
@@ -372,22 +380,20 @@ while [ "$1" != "" ]; do
         opts="$opts -DFCPP_BUILD_TESTS=ON"
         cmake_builder "$@"
         shift $?
-        for target in $(cmake_finder bin/tests test "$@"); do
-            echo -e "\033[1m$target\033[0m"
+        for target in $(cmake_finder bin/tests test _test "$@"); do
             reporter $target
         done
         quitter
     elif [ "$1" == "all" ]; then
         shift 1
+        mkdoc
         opts="$opts -DFCPP_BUILD_TESTS=ON"
         cmake_builder "$@"
         shift $?
         if [ "$1" != "" ]; then
             usage
         fi
-        mkdoc
-        for target in $(cmake_finder bin/tests test all); do
-            echo -e "\033[1m$target\033[0m"
+        for target in $(cmake_finder bin/tests test _test all); do
             reporter $target
         done
         quitter

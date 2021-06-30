@@ -56,7 +56,7 @@ using combo2 = component::combine_spec<
 >;
 
 
-MULTI_TEST(IdentifierTest, Storage, O, 1) {
+MULTI_TEST(HardwareIdentifierTest, Storage, O, 1) {
     typename combo1<O>::net network{common::make_tagged_tuple<tag,gat>(false,10)};
     EXPECT_EQ(1, (int)network.node_size());
     EXPECT_EQ(0, (int)network.node_count(0));
@@ -68,7 +68,7 @@ MULTI_TEST(IdentifierTest, Storage, O, 1) {
     EXPECT_EQ(TIME_MAX, network.next());
 }
 
-MULTI_TEST(IdentifierTest, Schedule, O, 1) {
+MULTI_TEST(HardwareIdentifierTest, Schedule, O, 1) {
     typename combo2<O>::net network{common::make_tagged_tuple<>()};
     EXPECT_EQ(1, (int)network.node_size());
     EXPECT_EQ(0, (int)network.node_count(0));

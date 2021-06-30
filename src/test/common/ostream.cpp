@@ -17,7 +17,7 @@
 
 #define STREAM_EQ(x, ...)     ss << __VA_ARGS__; EXPECT_EQ(ss.str(), x); ss.str("")
 
-TEST(StreamTest, STD) {
+TEST(OstreamTest, STD) {
     std::stringstream ss;
     using namespace std;
     STREAM_EQ("[4, 2, 0]", array<int,3>{4,2,0});
@@ -30,7 +30,7 @@ TEST(StreamTest, STD) {
     STREAM_EQ("{42:\"hello world\"}", unordered_map<int, std::string>{{42, "hello world"}});
 }
 
-TEST(StreamTest, FCPP) {
+TEST(OstreamTest, FCPP) {
     std::stringstream ss;
     using namespace fcpp;
     STREAM_EQ("{0:'y', 2:'z', *:'x'}", details::make_field({0,2}, std::vector<char>{'x','y','z'}));

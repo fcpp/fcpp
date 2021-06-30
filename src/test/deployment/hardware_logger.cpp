@@ -1,5 +1,6 @@
 // Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
+#include <cstdio>
 #include <sstream>
 #include <string>
 
@@ -42,7 +43,7 @@ using combo1 = component::combine_spec<
 >;
 
 
-TEST(LoggerTest, MakeStream) {
+TEST(HardwareLoggerTest, MakeStream) {
     common::tagged_tuple_t<name,const char*,uid,int,oth,char,gat,bool> t{"bar",7,'b',false};
     std::shared_ptr<std::ostream> p;
     p = component::details::make_stream("foo", t);
@@ -52,9 +53,10 @@ TEST(LoggerTest, MakeStream) {
     p = component::details::make_stream(&s, t);
     *p << "foo";
     EXPECT_EQ("foo", s.str());
+    std::remove("foo");
 }
 
-MULTI_TEST(LoggerTest, Main, O, 1) {
+MULTI_TEST(HardwareLoggerTest, Main, O, 1) {
     std::stringstream s;
     {
         typename combo1<O>::net network{common::make_tagged_tuple<output,tag,gat,oth>(&s,true,42,0.0f)};

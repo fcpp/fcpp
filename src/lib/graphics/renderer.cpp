@@ -793,7 +793,11 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
 }
 
 void Renderer::viewportResize(int width, int height) {
-    if (m_master) glViewport(0, 0, width, height);
+#ifdef __APPLE__
+	if (m_master) glViewport(0, 0, width/2, height/2);
+#else
+	if (m_master) glViewport(0, 0, width, height);
+#endif
     else m_resizeOnSwap = true;
     m_currentWidth = width;
     m_currentHeight = height;

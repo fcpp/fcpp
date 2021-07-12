@@ -39,6 +39,10 @@ namespace tags {
     template <bool b>
     struct realtime {};
 
+    //! @brief Declaration tag associating to a clock type
+    template <typename T>
+    struct clock_type {};
+
     //! @brief Node initialisation tag associating to a `device_t` unique identifier.
     struct uid {};
 }
@@ -92,6 +96,9 @@ struct base {
 
     //! @brief Whether running should follow real time.
     constexpr static bool realtime = common::option_flag<tags::realtime, FCPP_REALTIME < INF, Ts...>;
+
+    //! @brief The clock type used for time measurements.
+    using clock_t = common::option_type<tags::clock_type, std::chrono::high_resolution_clock, Ts ...>;
 
     /**
      * @brief The actual component.
@@ -207,8 +214,6 @@ struct base {
 
         //! @brief The global part of the component.
         class net {
-            //! @brief The clock type used for time measurements.
-            using clock_t = std::chrono::high_resolution_clock;
 
           public: // visible by node objects and the main program
             //! @name constructors
@@ -281,7 +286,7 @@ struct base {
 
             //! @brief Waits real time before an update.
             inline void maybe_sleep(times_t nxt, std::true_type) {
-                clock_t::time_point t = m_realtime_start + clock_t::duration((long long)(nxt/m_realtime_factor));
+                typename clock_t::time_point t = m_realtime_start + typename clock_t::duration((long long)(nxt/m_realtime_factor));
                 if (t > clock_t::now())
                     std::this_thread::sleep_until(t);
                 else {
@@ -294,7 +299,7 @@ struct base {
             }
 
             //! @brief The start time of the program.
-            clock_t::time_point m_realtime_start;
+            typename clock_t::time_point m_realtime_start;
 
             //! @brief A conversion factor from clock ticks to real time in seconds.
             real_t m_realtime_factor;

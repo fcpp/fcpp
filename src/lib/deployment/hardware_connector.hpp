@@ -233,6 +233,9 @@ struct hardware_connector {
             //! @brief Sizes of messages received from neighbours.
             field<size_t> m_nbr_msg_size;
 
+        #ifdef FCPP_DISABLE_THREADS
+          public:
+        #endif
             //! @brief Backend regulating and performing the connection.
             connector_type m_network;
         };

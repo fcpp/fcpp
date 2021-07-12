@@ -78,14 +78,24 @@ class network {
     using data_type = typename transceiver_t::data_type;
 
     //! @brief Constructor with default settings.
-    network(node_t& n) : m_node(n), m_transceiver({}), m_manager(std::mem_fn(&network::manage), this) {}
+    network(node_t& n) : m_node(n), m_transceiver({})
+        #ifndef FCPP_DISABLE_THREADS
+        , m_manager(std::mem_fn(&network::manage), this)
+        #endif
+        {}
 
     //! @brief Constructor with given settings.
-    network(node_t& n, data_type d) : m_node(n), m_transceiver(d), m_manager(std::mem_fn(&network::manage), this) {}
+    network(node_t& n, data_type d) : m_node(n), m_transceiver(d)
+        #ifndef FCPP_DISABLE_THREADS
+        , m_manager(std::mem_fn(&network::manage), this)
+        #endif
+        {}
 
     ~network() {
         m_running = false;
+        #ifndef FCPP_DISABLE_THREADS
         m_manager.join();
+        #endif
     }
 
     //! @brief Access to network settings.
@@ -115,10 +125,14 @@ class network {
         return m;
     }
 
+  #ifndef FCPP_DISABLE_THREADS
   private:
+  #endif
     //! @brief Manages the send and receive of messages.
     void manage() {
+        #ifndef FCPP_DISABLE_THREADS
         while (m_running) {
+        #endif
             if (not m_send.empty()) {
                 common::lock_guard<true> l(m_send_mutex);
                 m_send.push_back((char)std::min((m_node.net.internal_time() - m_send_time)*128, times_t{255}));
@@ -130,7 +144,9 @@ class network {
                     ++m_attempt;
                 }
             }
+            #ifndef FCPP_DISABLE_THREADS
             std::this_thread::yield();
+            #endif
             // receiving
             message_type m = m_transceiver.receive(m_attempt);
             if (not m.content.empty()) {
@@ -142,9 +158,15 @@ class network {
                     m_receive.push_back(std::move(m));
                 }
             }
+        #ifndef FCPP_DISABLE_THREADS
             std::this_thread::yield();
         }
+        #endif
     }
+
+  #ifdef FCPP_DISABLE_THREADS
+  private:
+  #endif
 
     //! @brief Reference to the node object.
     node_t& m_node;
@@ -170,8 +192,10 @@ class network {
     //! @brief Number of attempts failed for a send.
     int m_attempt = 0;
 
+    #ifndef FCPP_DISABLE_THREADS
     //! @brief Thread managing send and receive of messages.
     std::thread m_manager;
+    #endif
 };
 
 

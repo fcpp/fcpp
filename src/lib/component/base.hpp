@@ -244,7 +244,13 @@ struct base {
             //! @brief Runs the events until a given end. Should NEVER be overridden.
             void run(times_t end = TIME_MAX) {
                 times_t nxt;
-                while ((nxt = as_final().next()) < end) {
+                #ifndef FCPP_DISABLE_THREADS
+                while (
+                #else
+                if (
+                #endif
+                    (nxt = as_final().next()) < end
+                ) {
                     m_next_update = nxt;
                     maybe_sleep(nxt, std::integral_constant<bool, realtime>{});
                     m_last_update = nxt;
@@ -263,6 +269,10 @@ struct base {
             inline times_t real_time() const {
                 return (clock_t::now() - m_realtime_start).count() * m_realtime_factor;
             }
+
+            #ifdef FCPP_DISABLE_THREADS
+            typename clock_t::time_point sleep_until_t;
+            #endif
 
           protected: // visible by net objects only
             //! @brief Gives access to the net as instance of `F::net`. Should NEVER be overridden.
@@ -283,7 +293,11 @@ struct base {
             inline void maybe_sleep(times_t nxt, std::true_type) {
                 clock_t::time_point t = m_realtime_start + clock_t::duration((long long)(nxt/m_realtime_factor));
                 if (t > clock_t::now())
+                    #ifndef FCPP_DISABLE_THREADS
                     std::this_thread::sleep_until(t);
+                    #else
+                    sleep_until_t = t;
+                    #endif
                 else {
                     times_t delay = (clock_t::now() - t).count() * m_realtime_factor;
                     if (delay >= m_warn_delay) {

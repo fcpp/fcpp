@@ -32,7 +32,7 @@ namespace std {
     constexpr try_to_lock_t try_to_lock{};
 
     namespace this_thread {
-        void yield() {}
+        void yield();
         template <typename C, typename D>
         void sleep_until(chrono::time_point<C,D> const&) {}
         template <typename R, typename P>

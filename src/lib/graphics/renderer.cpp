@@ -240,9 +240,8 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
     if (antialias > 1)
         glfwWindowHint(GLFW_SAMPLES, antialias);
 
@@ -793,11 +792,7 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
 }
 
 void Renderer::viewportResize(int width, int height) {
-#ifdef __APPLE__
-	if (m_master) glViewport(0, 0, width/2, height/2);
-#else
-	if (m_master) glViewport(0, 0, width, height);
-#endif
+    if (m_master) glViewport(0, 0, width, height);
     else m_resizeOnSwap = true;
     m_currentWidth = width;
     m_currentHeight = height;

@@ -77,6 +77,9 @@ struct hardware_logger {
     //! @brief Type of the output stream.
     using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
 
+    //! @brief Type of the clock object.
+    using clock_type = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
+
     //! @brief Sequence of tags and types for storing persistent data.
     using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;
 
@@ -114,7 +117,7 @@ struct hardware_logger {
              */
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t) {
-                std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                std::time_t time = clock_type::to_time_t(clock_type::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "########################################################\n";
@@ -130,7 +133,7 @@ struct hardware_logger {
 
             //! @brief Destructor printing an export end section.
             ~node() {
-                std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                std::time_t time = clock_type::to_time_t(clock_type::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "########################################################\n";

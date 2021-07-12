@@ -175,6 +175,9 @@ struct logger {
     //! @brief Type of the output stream.
     using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
 
+    //! @brief Type of the clock object.
+    using clock_type = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
+
     //! @brief Sequence generator type scheduling writing of data.
     using schedule_type = common::option_type<tags::log_schedule, sequence::never, Ts...>;
 
@@ -245,7 +248,7 @@ struct logger {
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
-                std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                std::time_t time = clock_type::to_time_t(clock_type::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "##########################################################\n";
@@ -260,7 +263,7 @@ struct logger {
 
             //! @brief Destructor printing an export end section.
             ~net() {
-                std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                std::time_t time = clock_type::to_time_t(clock_type::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "##########################################################\n";

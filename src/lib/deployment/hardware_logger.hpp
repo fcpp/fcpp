@@ -55,6 +55,7 @@ namespace tags {
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
  * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
+ * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::name associates to the main name of a component composition instance (defaults to the empty string).
@@ -78,7 +79,7 @@ struct hardware_logger {
     using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
 
     //! @brief Type of the clock object.
-    using clock_type = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
+    using clock_t = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
 
     //! @brief Sequence of tags and types for storing persistent data.
     using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;
@@ -117,7 +118,7 @@ struct hardware_logger {
              */
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t) {
-                std::time_t time = clock_type::to_time_t(clock_type::now());
+                std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "########################################################\n";
@@ -133,7 +134,7 @@ struct hardware_logger {
 
             //! @brief Destructor printing an export end section.
             ~node() {
-                std::time_t time = clock_type::to_time_t(clock_type::now());
+                std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "########################################################\n";

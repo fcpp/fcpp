@@ -85,6 +85,7 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  * - \ref tags::realtime defines whether running should follow real time (defaults to `FCPP_REALTIME < INF`).
+ * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::high_resolution_clock`)
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::uid associates to a `device_t` unique identifier (required).

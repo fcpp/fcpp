@@ -55,7 +55,7 @@ namespace tags {
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
  * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
- * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
+ * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::high_resolution_clock`)
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::name associates to the main name of a component composition instance (defaults to the empty string).
@@ -79,7 +79,7 @@ struct hardware_logger {
     using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
 
     //! @brief Type of the clock object.
-    using clock_t = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
+    using clock_t = common::option_type<tags::clock_type, std::chrono::high_resolution_clock, Ts ...>;
 
     //! @brief Sequence of tags and types for storing persistent data.
     using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;

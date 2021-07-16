@@ -141,6 +141,7 @@ namespace details {
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
+ * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
@@ -176,7 +177,7 @@ struct logger {
     using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
 
     //! @brief Type of the clock object.
-    using clock_type = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
+    using clock_t = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
 
     //! @brief Sequence generator type scheduling writing of data.
     using schedule_type = common::option_type<tags::log_schedule, sequence::never, Ts...>;
@@ -248,7 +249,7 @@ struct logger {
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
-                std::time_t time = clock_type::to_time_t(clock_type::now());
+                std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "##########################################################\n";
@@ -263,7 +264,7 @@ struct logger {
 
             //! @brief Destructor printing an export end section.
             ~net() {
-                std::time_t time = clock_type::to_time_t(clock_type::now());
+                std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
                 *m_stream << "##########################################################\n";

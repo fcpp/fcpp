@@ -49,6 +49,9 @@ fcpp_setup()
 set(
     SOURCE_LIST
     lib/beautify.cpp
+    lib/cloud.cpp
+    lib/cloud/graph_connector.cpp
+    lib/cloud/graph_spawner.cpp
     lib/common.cpp
     lib/common/algorithm.cpp
     lib/common/multitype_map.cpp
@@ -202,6 +205,8 @@ if(FCPP_BUILD_TESTS)
     )
     set(
         TEST_FILES
+        test/cloud/graph_connector.cpp
+        test/cloud/graph_spawner.cpp
         test/common/algorithm.cpp
         test/common/multitype_map.cpp
         test/common/mutex.cpp

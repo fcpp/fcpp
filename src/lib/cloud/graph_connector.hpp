@@ -208,8 +208,8 @@ struct graph_connector {
                         if (n != this) {
                             common::unlock_guard<parallel> u(P::node::mutex);
                             common::lock_guard<parallel> l(n->mutex);
-                            n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
-                        } else n->receive(t, P::node::uid, P::node::as_final().send(t, n->uid, m));
+                            n->receive(t, P::node::uid, P::node::as_final().send(t, m));
+                        } else n->receive(t, P::node::uid, P::node::as_final().send(t, m));
                     }
                 } else P::node::update();
             }

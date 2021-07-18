@@ -38,7 +38,7 @@ using combo1 = component::combine_spec<
     component::base<>
 >;
 
-TEST(PhysicalPositionTest, NoFriction) {
+TEST(SimulatedPositionerTest, NoFriction) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
     combo1::node device{network, common::make_tagged_tuple<uid, x, a>(0, make_vec(1,2), make_vec(-1,0))};
     EXPECT_EQ(2, device.next());
@@ -85,11 +85,11 @@ TEST(PhysicalPositionTest, NoFriction) {
     EXPECT_EQ(v, device.velocity(4));
 }
 
-TEST(PhysicalPositionTest, YesFriction) {
+TEST(SimulatedPositionerTest, YesFriction) {
     // TODO: test this
 }
 
-TEST(PhysicalPositionTest, NbrVec) {
+TEST(SimulatedPositionerTest, NbrVec) {
     combo1::net  network{common::make_tagged_tuple<oth>("foo")};
     combo1::node d1{network, common::make_tagged_tuple<uid, x>(1, make_vec(0,0))};
     combo1::node d2{network, common::make_tagged_tuple<uid, x>(2, make_vec(1,0))};
@@ -104,9 +104,9 @@ TEST(PhysicalPositionTest, NbrVec) {
     EXPECT_EQ(3, d1.next());
     EXPECT_EQ(3, d2.next());
     EXPECT_EQ(3, d3.next());
-    d1.receive(2.00, 1, d1.send(2.00, 1, m));
-    d1.receive(2.25, 2, d2.send(2.25, 1, m));
-    d1.receive(2.50, 3, d3.send(2.50, 1, m));
+    d1.receive(2.00, 1, d1.send(2.00, m));
+    d1.receive(2.25, 2, d2.send(2.25, m));
+    d1.receive(2.50, 3, d3.send(2.50, m));
     real_t d;
     d = norm(details::self(d1.nbr_vec(), 1) - make_vec(0, 0));
     EXPECT_GT(1e-6, d);

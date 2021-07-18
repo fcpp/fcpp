@@ -61,18 +61,6 @@ struct vec {
         return data[i];
     }
 
-    //! @brief Equality operator.
-    bool operator==(vec const& o) const {
-        for (size_t i=0; i<n; ++i) if (data[i] != o.data[i]) return false;
-        return true;
-    }
-
-    //! @brief Inequality operator.
-    bool operator!=(vec const& o) const {
-        for (size_t i=0; i<n; ++i) if (data[i] != o.data[i]) return true;
-        return false;
-    }
-
     //! @brief Serialises the content from/to a given input/output stream.
     template <typename S>
     S& serialize(S& s) {
@@ -212,9 +200,16 @@ real_t operator*(const vec<n>& x, const vec<n>& y) {
     return res;
 }
 
+using std::abs;
+
+template <size_t n>
+real_t abs(const vec<n>& x) {
+    return x * x;
+}
+
 template <size_t n>
 real_t norm(const vec<n>& x) {
-    return sqrt(x * x);
+    return sqrt(abs(x));
 }
 
 template <size_t n>
@@ -225,6 +220,45 @@ real_t unit(const vec<n>& x) {
 template <size_t n>
 real_t distance(const vec<n>& x, const vec<n>& y) {
     return norm(x - y);
+}
+//! @}
+
+
+//! @brief Comparison operators.
+//! @{
+template <size_t n>
+bool operator==(vec<n> const& x, vec<n> const& y) {
+    for (size_t i=0; i<n; ++i) if (x.data[i] != y.data[i]) return false;
+    return true;
+}
+
+template <size_t n>
+bool operator!=(vec<n> const& x, vec<n> const& y) {
+    return not (x == y);
+}
+//! @}
+
+
+//! @brief Norm comparison operators.
+//! @{
+template <size_t n>
+bool operator<(vec<n> const& x, real_t b) {
+    return abs(x) < b*b;
+}
+
+template <size_t n>
+bool operator<=(vec<n> const& x, real_t b) {
+    return abs(x) <= b*b;
+}
+
+template <size_t n>
+bool operator>(vec<n> const& x, real_t b) {
+    return abs(x) > b*b;
+}
+
+template <size_t n>
+bool operator>=(vec<n> const& x, real_t b) {
+    return abs(x) >= b*b;
 }
 //! @}
 

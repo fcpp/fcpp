@@ -12,6 +12,15 @@ cc_library(
 )
 
 cc_library(
+    name = 'displayer',
+    hdrs = ['displayer.hpp'],
+    srcs = ['displayer.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'simulated_connector',
     hdrs = ['simulated_connector.hpp'],
     srcs = ['simulated_connector.cpp'],

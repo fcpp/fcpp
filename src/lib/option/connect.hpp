@@ -31,6 +31,12 @@ namespace tags {
 
     //! @brief Net initialisation tag associating to 50%-likely communication radius.
     struct half_radius;
+
+    //! @brief Node initialisation tag associating to a network rank.
+    struct network_rank;
+
+    //! @brief Node initialisation tag associating to the ratio to full power.
+    struct power_ratio;
 }
 
 }
@@ -52,7 +58,7 @@ class clique {
     using position_type = vec<n>;
 
     //! @brief The node data type.
-    struct data_type {};
+    using data_type = common::tagged_tuple_t<>;
 
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
@@ -60,6 +66,12 @@ class clique {
 
     //! @brief The maximum radius of connection.
     real_t maximum_radius() const {
+        return INF;
+    }
+
+    //! @brief The maximum radius of connection.
+    template <typename T>
+    real_t relative_radius(T const&, T const&) const {
         return INF;
     }
 
@@ -79,18 +91,24 @@ class clique {
  * @param n   Dimensionality of the space (defaults to 2).
  */
 template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
-class fixed {
+class fixed : public clique<n> {
+    //! @brief Shortcut to the parent fixed connector.
+    using C = clique<n>;
+
+    //! brief Shortcut to the radius tag.
+    using radius = component::tags::radius;
+
   public:
     //! @brief Type for representing a position.
-    using position_type = vec<n>;
+    using typename C::position_type;
 
     //! @brief The node data type.
-    struct data_type {};
+    using typename C::data_type;
 
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
-    fixed(G&&, const common::tagged_tuple<S,T>& t) {
-        m_radius = common::get_or<component::tags::radius>(t, ((real_t)num)/den);
+    fixed(G&& g, const common::tagged_tuple<S,T>& t) : C(std::forward<G>(g), t) {
+        m_radius = common::get_or<radius>(t, ((real_t)num)/den);
     }
 
     //! @brief The maximum radius of connection.
@@ -98,10 +116,16 @@ class fixed {
         return m_radius;
     }
 
+    //! @brief The maximum radius of connection.
+    template <typename T>
+    real_t relative_radius(T const&, T const&) const {
+        return m_radius;
+    }
+
     //! @brief Checks if connection is possible.
-    template <typename G>
-    bool operator()(G&&, const data_type&, const position_type& position1, const data_type&, const position_type& position2) const {
-        return norm(position1 - position2) <= m_radius;
+    template <typename G, typename T>
+    bool operator()(G&&, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
+        return norm(pos1 - pos2) <= relative_radius(data1, data2);
     }
 
   private:
@@ -111,90 +135,124 @@ class fixed {
 
 
 /**
- * Connection predicate with likelyhood depending on radius (with tag `radius` setting maximum radius and `half_radius` setting half radius).
- *
- * @param r99 The numerator of the default value for the maximum radius (99% communication failure).
- * @param r50 The numerator of the default value for the half radius (50% communication failure).
- * @param den The denominator of the default values (defaults to 1).
- * @param n   Dimensionality of the space (defaults to 2).
- */
-template <intmax_t r99, intmax_t r50, intmax_t den = 1, size_t n = 2>
-class radial {
-  public:
-    //! @brief Type for representing a position.
-    using position_type = vec<n>;
-
-    //! @brief The node data type.
-    struct data_type {};
-
-    //! @brief Generator and tagged tuple constructor.
-    template <typename G, typename S, typename T>
-    radial(G&&, const common::tagged_tuple<S,T>& t) {
-        m_r99 = common::get_or<component::tags::radius>(t, ((real_t)r99)/den);
-        m_r50 = common::get_or<component::tags::half_radius>(t, ((real_t)r50)/den);
-        m_k = log(6792093.0/29701) / (m_r99-m_r50);
-    }
-
-    //! @brief The maximum radius of connection.
-    real_t maximum_radius() const {
-        return m_r99;
-    }
-
-    //! @brief Checks if connection is possible.
-    template <typename G>
-    bool operator()(G&& gen, const data_type&, const position_type& position1, const data_type&, const position_type& position2) const {
-        std::uniform_real_distribution<real_t> dist;
-        real_t r = dist(gen);
-        return r*r*r > 1/(7 * exp((m_r50 - norm(position1 - position2)) * m_k) + 1);
-    }
-
-  private:
-    //! @brief The connection radius.
-    real_t m_r99, m_r50, m_k;
-
-    //! @brief The random number distribution.
-    std::uniform_real_distribution<real_t> dist;
-};
-
-
-/**
  * Connection predicate which is true within a maximum radius (can be set through tag `radius`)
- * depending on power data of involved devices. Power is a real number from 0 to 1, and
- * connection is possible within `radius * node1_power * node2_power`.
+ * depending on \ref component::tags::power_ratio data of involved devices. Power is a real number
+ * from 0 to 1, and connection is possible within `radius * node1_power * node2_power`.
  *
  * @param num The numerator of the default value for the radius (defaults to 1).
  * @param den The denominator of the default value for the radius (defaults to 1).
  * @param n   Dimensionality of the space (defaults to 2).
  */
 template <intmax_t num = 1, intmax_t den = 1, size_t n = 2>
-class powered {
+class powered : public fixed<num,den,n> {
+    //! @brief Shortcut to the parent fixed connector.
+    using C = fixed<num,den,n>;
+
+    //! brief Shortcut to the power_ratio tag.
+    using power_ratio = component::tags::power_ratio;
+
   public:
     //! @brief Type for representing a position.
-    using position_type = vec<n>;
+    using typename C::position_type;
 
     //! @brief The node data type.
-    using data_type = real_t;
+    using data_type = typename C::data_type::template push_back<power_ratio, real_t>;
 
-    //! @brief Generator and tagged tuple constructor.
-    template <typename G, typename S, typename T>
-    powered(G&&, const common::tagged_tuple<S,T>& t) {
-        m_radius = common::get_or<component::tags::radius>(t, ((real_t)num)/den);
-    }
+    //! @brief Inheriting constructor.
+    using C::C;
 
     //! @brief The maximum radius of connection.
-    real_t maximum_radius() const {
-        return m_radius;
+    template <typename T>
+    real_t relative_radius(T const& data1, T const& data2) const {
+        return C::relative_radius(data1, data2) * common::get<power_ratio>(data1) * common::get<power_ratio>(data2);
     }
 
     //! @brief Checks if connection is possible.
-    template <typename G>
-    bool operator()(G&&, const data_type& power1, const position_type& position1, const data_type& power2, const position_type& position2) const {
-        return norm(position1 - position2) <= m_radius * power1 * power2;
+    template <typename G, typename T>
+    bool operator()(G&&, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
+        return norm(pos1 - pos2) <= relative_radius(data1, data2);
+    }
+};
+
+
+/**
+ * @brief Connection predicate modifying a base connector with a likelyhood depending on radius (with tag `radius` setting maximum radius and `half_radius` setting half radius).
+ *
+ * The half radius (50% communication failure) is given as a percentile (1-99) over the maximum connection radius.
+ * The maximum radius is set at the point \f$ r99 \f$ where 99% of communication would fail in the theoretical
+ * distribution, which has empirically chosen density:
+ * \f[
+ * p(r) = \left( 7 e^\frac{\textstyle (\frac{r50}{100} - \frac{r}{r99})\log(\frac{6792093}{29701})}{\textstyle 1 - \frac{r50}{100}} + 1 \right)^{-\frac{\textstyle 1}{\textstyle 3}}
+ * \f]
+ *
+ * @param r50 The default value for the half radius.
+ * @param C   The basic connector to modify.
+ */
+template <intmax_t r50, typename C>
+class radial : public C {
+    static_assert(1 <= r50 and r50 <= 99, "\033[1m\033[4mhalf radius out of bounds\033[0m");
+
+    //! brief Shortcut to the power_ratio tag.
+    using half_radius = component::tags::half_radius;
+
+  public:
+    //! @brief Type for representing a position.
+    using typename C::position_type;
+
+    //! @brief The node data type.
+    using typename C::data_type;
+
+    //! @brief Generator and tagged tuple constructor.
+    template <typename G, typename S, typename T>
+    radial(G&& g, const common::tagged_tuple<S,T>& t) : C(std::forward<G>(g), t) {
+        m_r50 = common::get_or<half_radius>(t, (real_t)r50)/100;
+        m_k = log(6792093.0/29701) / (1-m_r50);
+    }
+
+    //! @brief Checks if connection is possible.
+    template <typename G, typename T>
+    bool operator()(G&& g, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
+        if (not C::operator()(std::forward<G>(g), data1, pos1, data2, pos2)) return false;
+        std::uniform_real_distribution<real_t> dist;
+        real_t r = dist(g);
+        real_t r99 = C::relative_radius(data1, data2);
+        return r*r*r > 1/(7 * exp((m_r50 - norm(pos1 - pos2)/r99) * m_k) + 1);
     }
 
   private:
-    //! @brief The connection radius.
-    real_t m_radius;
+    //! @brief The half radius and distribution scaling factor.
+    real_t m_r50, m_k;
+};
+
+
+/**
+ * Connection predicate adding a hierarchical condition on connectivity: devices are
+ * only allowed to connect to others exactly one step lower (on on the same step
+ * if zero or negative priority) in their \ref component::tags::network_rank value.
+ *
+ * @param C   The basic connector to modify.
+ */
+template <typename C>
+class hierarchical : public C {
+    //! brief Shortcut to the network_rank tag.
+    using network_rank = component::tags::network_rank;
+
+  public:
+    //! @brief Type for representing a position.
+    using typename C::position_type;
+
+    //! @brief The node data type.
+    using data_type = typename C::data_type::template push_back<network_rank, int>;
+
+    //! @brief Inheriting constructor.
+    using C::C;
+
+    //! @brief Checks if connection is possible.
+    template <typename G, typename T>
+    bool operator()(G&& g, T const& data1, position_type const& pos1, T const& data2, position_type const& pos2) const {
+        int delta = abs(common::get<network_rank>(data1) - common::get<network_rank>(data2));
+        return (delta == 1 or (delta == 0 and common::get<network_rank>(data1) <= 0)) and C::operator()(std::forward<G>(g), data1, pos1, data2, pos2);
+    }
 };
 
 

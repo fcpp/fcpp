@@ -107,9 +107,11 @@ struct spawner {
                 if (m_schedule.next() < P::net::next()) {
                     PROFILE_COUNT("spawner");
                     times_t t = m_schedule.next();
-                    size_t i = m_schedule.next_sequence();
-                    m_schedule.step(get_generator(has_randomizer<P>{}, *this));
-                    call_distribution(i, t, inert_type{});
+                    while (t == m_schedule.next()) {
+                        size_t i = m_schedule.next_sequence();
+                        m_schedule.step(get_generator(has_randomizer<P>{}, *this));
+                        call_distribution(i, t, inert_type{});
+                    }
                 } else P::net::update();
             }
 

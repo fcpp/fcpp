@@ -11,9 +11,12 @@ using namespace fcpp;
 
 
 // slow computation
-int workhard(int n=15) {
+int workhard(int& t, int n=15) {
     if (n <= 1) return 1;
-    return (workhard(n-1) + workhard(n-2))/2;
+    t += 1;
+    int r = (workhard(t, n-1) + workhard(t, n-2))/2;
+    t -= 1;
+    return r;
 }
 
 #ifdef FCPP_DISABLE_THREADS
@@ -49,7 +52,7 @@ TEST(AlgorithmTest, ParallelFor) {
     for (size_t i=0; i<v.size(); ++i) v[i] = i;
     auto worker = [&acc](size_t,size_t) {
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
     };
     acc = 0;
     common::parallel_for(common::tags::sequential_execution(), N, worker);
@@ -71,14 +74,14 @@ TEST(AlgorithmTest, ParallelFor) {
     common::parallel_for(common::tags::general_execution<true>(4), N, [&acc,&m](size_t,size_t) {
         std::lock_guard<std::mutex> l(m);
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
     });
     EXPECT_EQ(N, acc);
     acc = 0;
     int multiacc[4] = {0,0,0,0};
     common::parallel_for(common::tags::dynamic_execution(4,5), N, [&multiacc](size_t,size_t t) {
         int tmp = multiacc[t];
-        multiacc[t] = tmp + workhard();
+        multiacc[t] = tmp + workhard(tmp);
     });
     for (int i=0; i<4; ++i) acc += multiacc[i];
     EXPECT_EQ(N, acc);
@@ -103,7 +106,7 @@ TEST(AlgorithmTest, ParallelWhile) {
         if (q.empty()) return false;
         q.pop();
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
         return true;
     });
     EXPECT_EQ(N, acc);
@@ -116,7 +119,7 @@ TEST(AlgorithmTest, ParallelWhile) {
             q.pop();
         }
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
         return true;
     });
     EXPECT_NEQ(N, acc);
@@ -127,7 +130,7 @@ TEST(AlgorithmTest, ParallelWhile) {
         if (q.empty()) return false;
         q.pop();
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
         return true;
     });
     EXPECT_EQ(N, acc);
@@ -140,7 +143,7 @@ TEST(AlgorithmTest, ParallelWhile) {
             q.pop();
         }
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
         return true;
     });
     EXPECT_NEQ(N, acc);
@@ -151,7 +154,7 @@ TEST(AlgorithmTest, ParallelWhile) {
         if (q.empty()) return false;
         q.pop();
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
         return true;
     });
     EXPECT_EQ(N, acc);

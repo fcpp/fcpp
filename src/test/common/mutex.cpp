@@ -11,9 +11,12 @@ using namespace fcpp;
 
 
 // slow computation
-int workhard(int n=15) {
+int workhard(int& t, int n=15) {
     if (n <= 1) return 1;
-    return (workhard(n-1) + workhard(n-2))/2;
+    t += 1;
+    int r = (workhard(t, n-1) + workhard(t, n-2))/2;
+    t -= 1;
+    return r;
 }
 
 // sequential for using locks
@@ -23,7 +26,7 @@ int work_lock(T&& ex, common::mutex<enabled>&& m) {
     common::parallel_for(ex, TRIES, [&acc,&m] (int,int) {
         common::lock_guard<enabled> lock(m);
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
     });
     return acc;
 }
@@ -36,7 +39,7 @@ int work_trylock(T&& ex, common::mutex<enabled>&& m) {
         while (not m.try_lock());
         common::lock_guard<enabled> lock(m, std::adopt_lock);
         int tmp = acc;
-        acc = tmp + workhard();
+        acc = tmp + workhard(tmp);
     });
     return acc;
 }

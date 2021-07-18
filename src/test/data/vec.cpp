@@ -24,7 +24,6 @@ vec<3> getw() {
 
 
 TEST(VectorTest, Addition) {
-    vec<3> t = gett();
     vec<3> u = getu();
     vec<3> v = getv();
     vec<3> w = getw();
@@ -32,18 +31,11 @@ TEST(VectorTest, Addition) {
     EXPECT_EQ(w,    u  +getv());
     EXPECT_EQ(w, getu()+   v  );
     EXPECT_EQ(w, getu()+getv());
-    EXPECT_EQ(t,    v  +   3  );
-    EXPECT_EQ(t, getv()+   3  );
-    EXPECT_EQ(t,    3  +   v  );
-    EXPECT_EQ(t,    3  +getv());
     u += v;
     EXPECT_EQ(w, u);
-    v += 3;
-    EXPECT_EQ(t, v);
 }
 
 TEST(VectorTest, Subtraction) {
-    vec<3> t = gett();
     vec<3> u = getu();
     vec<3> v = getv();
     vec<3> w = getw();
@@ -51,14 +43,8 @@ TEST(VectorTest, Subtraction) {
     EXPECT_EQ(v,    w  -getu());
     EXPECT_EQ(v, getw()-   u  );
     EXPECT_EQ(v, getw()-getu());
-    EXPECT_EQ(t,    v  +   3  );
-    EXPECT_EQ(t, getv()+   3  );
-    EXPECT_EQ(t,    3  +   v  );
-    EXPECT_EQ(t,    3  +getv());
     w -= u;
     EXPECT_EQ(v, w);
-    t -= 3;
-    EXPECT_EQ(v, t);
 }
 
 TEST(VectorTest, Multiplication) {
@@ -69,6 +55,7 @@ TEST(VectorTest, Multiplication) {
     EXPECT_EQ(u,  t * 2);
     EXPECT_EQ(u,  2 * t);
     EXPECT_EQ(10, u * v);
+    EXPECT_EQ(25,  abs(w));
     EXPECT_EQ(5,  norm(w));
     t *= 2;
     EXPECT_EQ(u, t);

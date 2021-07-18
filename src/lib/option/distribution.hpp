@@ -164,7 +164,7 @@ struct name {                                       \
 }
 
 
-//! @brief Constant distribution for numeric types.
+//! @brief Constant distribution.
 //! @{
 /**
  * @brief With value as distribution.
@@ -237,7 +237,23 @@ struct constant_n<R, num, den, void> {
  * @param val_tag The tag corresponding to the value in initialisation values.
  */
 template <typename R, typename val_tag>
-using constant_i = constant_n<R, 0, 1, val_tag>;
+struct constant_i {
+    using type = R;
+
+    template <typename G>
+    constant_i(G&&) : val() {}
+
+    template <typename G, typename S, typename T>
+    constant_i(G&&, const common::tagged_tuple<S,T>& t) : val(common::get_or<val_tag>(t, type())) {}
+
+    template <typename G>
+    type operator()(G&&) {
+        return val;
+    }
+
+  private:
+    type val;
+};
 //! @}
 
 

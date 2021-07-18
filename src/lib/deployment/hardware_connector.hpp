@@ -156,7 +156,7 @@ struct hardware_connector {
                     PROFILE_COUNT("connector");
                     common::osstream os;
                     typename F::node::message_t m;
-                    os << P::node::as_final().send(m_send, P::node::uid, m);
+                    os << P::node::as_final().send(m_send, m);
                     fcpp::details::self(m_nbr_msg_size, P::node::uid) = os.size();
                     m_network.send(std::move(os));
                     P::node::as_final().receive(m_send, P::node::uid, m);
@@ -186,8 +186,11 @@ struct hardware_connector {
                 fcpp::details::self(m_nbr_msg_size, m.device) = m.content.size();
                 common::isstream is(std::move(m.content));
                 typename F::node::message_t mt;
-                is >> mt;
-                P::node::as_final().receive(m.time, m.device, mt);
+                try {
+                    is >> mt;
+                    if (is.size() == 0)
+                        P::node::as_final().receive(m.time, m.device, mt);
+                } catch (common::format_error&) {}
             }
 
             //! @brief Perceived distances from neighbours.

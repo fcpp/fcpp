@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "lib/settings.hpp"
+#include "lib/common/quaternion.hpp"
 #include "lib/option/distribution.hpp"
 
 
@@ -48,6 +49,11 @@ struct never {
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     never(G&&, const common::tagged_tuple<S,T>&) {}
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return true;
+    }
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -94,6 +100,11 @@ class multiple<N, E, true> {
     template <typename G, typename S, typename T>
     multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<E>(g,tup)), i(details::call_distr<N>(g,tup)) {}
 
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return i == 0;
+    }
+
     //! @brief Returns next event, without stepping over.
     times_t next() const {
         return (i > 0) ? t : TIME_MAX;
@@ -137,6 +148,11 @@ class multiple<N, E, false> {
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     multiple(G&& g, const common::tagged_tuple<S,T>& tup) : multiple(g, E{g,tup}, N{g,tup}) {}
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return pending.empty();
+    }
 
     //! @brief Returns next event, without stepping over.
     times_t next() const {
@@ -215,6 +231,11 @@ class list {
         std::sort(pending.begin(), pending.end());
     }
 
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return i >= sizeof...(Ds);
+    }
+
     //! @brief Returns next event, without stepping over.
     times_t next() const {
         return (i < sizeof...(Ds)) ? pending[i] : TIME_MAX;
@@ -291,6 +312,11 @@ class periodic {
         n  = details::call_distr<N>(g,tup);
         te = details::call_distr<E>(g,tup);
         t  = details::call_distr<S>(g,tup);
+    }
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return i >= n or t > te;
     }
 
     //! @brief Returns next event, without stepping over.
@@ -388,6 +414,11 @@ class merge {
     template <typename G, typename S, typename T>
     merge(G&& g, const common::tagged_tuple<S,T>& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
         set_next(std::make_index_sequence<sizeof...(Ss)>{});
+    }
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return m_next == TIME_MAX;
     }
 
     //! @brief Returns next event, without stepping over.
@@ -529,6 +560,11 @@ namespace details {
             for (size_t i=1; i<n; ++i) m_divs[i] = m_divs[i-1]*m_mods[i-1];
         }
 
+        //! @brief Check whether the sequence is finished.
+        bool empty() const {
+            return m_i >= m_divs.back()*m_mods.back();
+        }
+
         //! @brief Returns next element, without stepping over.
         type next() const {
             vec<n> p = m_init;
@@ -622,6 +658,173 @@ using grid_i = typename details::grid_i<
     common::type_slice<sizeof...(x_tag)*1/3,sizeof...(x_tag)*2/3,1,x_tag...>,
     common::type_slice<sizeof...(x_tag)*2/3,sizeof...(x_tag),    1,x_tag...>
 >::type;
+//! @}
+
+
+//! @brief Generates points in a circle given its center, radius and orientation, and the number of points.
+//! @{
+//! @cond INTERNAL
+namespace details {
+    struct angle {
+        angle(real_t r = 1) : data(0) {
+            assert(r == 1);
+        }
+
+        angle(real_t a, real_t const*) : data(a) {}
+
+        real_t data;
+    };
+
+    inline angle& operator*=(angle& x, angle const& y) {
+        x.data += y.data;
+        return x;
+    }
+
+    using common::quaternion;
+
+    inline vec<3> rotate(quaternion const& r, vec<3> const& v) {
+        quaternion q = r * quaternion(v.data) * ~r;
+        return vec<3>{q[1], q[2], q[3]};
+    }
+
+    inline vec<2> rotate(angle const& r, vec<2> const& v) {
+        real_t c = cos(r.data);
+        real_t s = sin(r.data);
+        return {v[0]*c-v[1]*s, v[0]*s+v[1]*c};
+    }
+
+    inline vec<3> perpendicular(vec<3> const& v) {
+        size_t i = 0;
+        for (int j = 1; j < 3; ++j) if (abs(v[j]) < abs(v[i])) i = j;
+        vec<3> w;
+        w[i] = 0;
+        w[(i+1)%3] = -v[(i+2)%3];
+        w[(i+2)%3] = +v[(i+1)%3];
+        w *= norm(v) / norm(w);
+        return w;
+    }
+
+    inline vec<2> perpendicular(vec<1> const& v) {
+        return {v[0], 0};
+    }
+}
+//! @endcond
+
+/**
+ * @brief With center, radius and numerosity as distributions.
+ *
+ * `C::type` and `R::type` must either be both `vec<3>`, or `vec<2>` and `vec<1>` respectively.
+ * `N::type` must be convertible to `size_t`.
+ *
+ * @param C The center (as distribution).
+ * @param R The radius (as distribution).
+ * @param N The numerosity (as distribution).
+ */
+template <typename C, typename R, typename N>
+class circle {
+  public:
+    //! @brief The type of results generated.
+    using type = typename C::type;
+
+    //! @brief The dimensionality of the space.
+    static constexpr size_t n = type::dimension;
+
+    //! @brief The type for rotations.
+    using rotation_type = std::conditional_t<n == 2, details::angle, common::quaternion>;
+
+    //! @brief Default constructor.
+    template <typename G>
+    circle(G&& g) {
+        m_c = details::call_distr<C>(g);
+        auto r = details::call_distr<R>(g);
+        m_p = details::perpendicular(r);
+        m_i = details::call_distr<N>(g);
+        m_r0 = rotation_type(2*acos(-1)/m_i, r.data);
+        m_r = rotation_type(1);
+    }
+
+    //! @brief Tagged tuple constructor.
+    template <typename G, typename S, typename T>
+    circle(G&& g, const common::tagged_tuple<S,T>& t) {
+        m_c = details::call_distr<C>(g,t);
+        auto r = details::call_distr<R>(g,t);
+        m_p = details::perpendicular(r);
+        m_i = details::call_distr<N>(g,t);
+        m_r0 = rotation_type(2*acos(-1)/m_i, r.data);
+        m_r = rotation_type(1);
+    }
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return m_i <= 0;
+    }
+
+    //! @brief Returns next element, without stepping over.
+    type next() const {
+        return m_c + details::rotate(m_r, m_p);
+    }
+
+    //! @brief Steps over to next element, without returning.
+    template <typename G>
+    void step(G&&) {
+        m_r *= m_r0;
+        --m_i;
+    }
+
+    //! @brief Returns next element, stepping over.
+    template <typename G>
+    type operator()(G&& g) {
+        type p = next();
+        step(g);
+        return p;
+    }
+
+  private:
+    type m_c, m_p;
+    rotation_type m_r0, m_r;
+    int m_i;
+};
+
+
+/**
+ * @brief With center, radius and numerosity as numeric template parameters.
+ *
+ * @param scale A scale factor by which the coordinates are divided.
+ * @param xs The (integral) center, radius and numerosity.
+ */
+template <intmax_t scale, intmax_t... xs>
+struct circle_n;
+
+template <intmax_t scale, intmax_t cx, intmax_t cy, intmax_t r, intmax_t num>
+struct circle_n<scale, cx, cy, r, num> : public circle<distribution::point_n<scale, cx, cy>, distribution::point_n<scale, r>, distribution::constant_n<size_t, num, 1>> {
+    using circle<distribution::point_n<scale, cx, cy>, distribution::point_n<scale, r>, distribution::constant_n<size_t, num, 1>>::circle;
+};
+
+template <intmax_t scale, intmax_t cx, intmax_t cy, intmax_t cz, intmax_t rx, intmax_t ry, intmax_t rz, intmax_t num>
+struct circle_n<scale, cx, cy, cz, rx, ry, rz, num> : public circle<distribution::point_n<scale, cx, cy, cz>, distribution::point_n<scale, rx, ry, rz>, distribution::constant_n<size_t, num, 1>> {
+    using circle<distribution::point_n<scale, cx, cy, cz>, distribution::point_n<scale, rx, ry, rz>, distribution::constant_n<size_t, num, 1>>::circle;
+};
+
+/**
+ * @brief With center, radius and numerosity as initialisation values.
+ *
+ * @param c_tag The center tag.
+ * @param r_tag The radius tag.
+ * @param n_tag The numerosity tag.
+ * @param n     The dimensionality.
+ */
+template <typename c_tag, typename r_tag, typename n_tag, intmax_t n>
+struct circle_i;
+
+template <typename c_tag, typename r_tag, typename n_tag>
+struct circle_i<c_tag, r_tag, n_tag, 2> : public circle<distribution::constant_i<vec<2>, c_tag>, distribution::constant_i<vec<1>, r_tag>, distribution::constant_i<size_t, n_tag>> {
+    using circle<distribution::constant_i<vec<2>, c_tag>, distribution::constant_i<vec<1>, r_tag>, distribution::constant_i<size_t, n_tag>>::circle;
+};
+
+template <typename c_tag, typename r_tag, typename n_tag>
+struct circle_i<c_tag, r_tag, n_tag, 3> : public circle<distribution::constant_i<vec<3>, c_tag>, distribution::constant_i<vec<3>, r_tag>, distribution::constant_i<size_t, n_tag>> {
+    using circle<distribution::constant_i<vec<3>, c_tag>, distribution::constant_i<vec<3>, r_tag>, distribution::constant_i<size_t, n_tag>>::circle;
+};
 //! @}
 
 

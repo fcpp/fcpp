@@ -161,9 +161,9 @@ struct base {
             template <typename S, typename T>
             void receive(times_t, device_t, const common::tagged_tuple<S,T>&) {}
 
-            //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
+            //! @brief Produces the message to send, both storing it in its argument and returning it.
             template <typename S, typename T>
-            common::tagged_tuple<S,T>& send(times_t, device_t, common::tagged_tuple<S,T>& t) const {
+            common::tagged_tuple<S,T>& send(times_t, common::tagged_tuple<S,T>& t) const {
                 return t;
             }
 

@@ -212,7 +212,7 @@ struct color {
     explicit color(packed_color irgba);
 
     //! @brief Compares colors.
-    bool operator==(const color& o) const;
+    bool operator==(color const&) const;
 
     //! @brief Access to the red component.
     float& red() {
@@ -268,9 +268,16 @@ struct color {
 };
 
 
+//! @brief Color addition (for blending).
+color operator+(color const&, color const&);
+
+//! @brief Color multiplication (for blending).
+color operator*(double, color);
+
+
 //! @brief Printing colors.
 template <typename O>
-O& operator<<(O& o, const color& c) {
+O& operator<<(O& o, color const& c) {
     c.print(o);
     return o;
 }

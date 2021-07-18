@@ -232,10 +232,10 @@ struct calculus {
                     m_context.first().insert(d, m_export.first(), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
             }
 
-            //! @brief Produces a message to send to a target, both storing it in its argument and returning it.
+            //! @brief Produces the message to send, both storing it in its argument and returning it.
             template <typename S, typename T>
-            common::tagged_tuple<S,T>& send(times_t t, device_t d, common::tagged_tuple<S,T>& m) const {
-                P::node::send(t, d, m);
+            common::tagged_tuple<S,T>& send(times_t t, common::tagged_tuple<S,T>& m) const {
+                P::node::send(t, m);
                 common::get<calculus_tag>(m) = m_export.second();
                 return m;
             }

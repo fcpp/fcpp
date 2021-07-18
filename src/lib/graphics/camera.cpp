@@ -101,6 +101,7 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
             break;
         }
         case mouse_type::drag:
+        {
             float a = (xFirst*x + yFirst*y) / m_diagonal;
             float b = (xFirst*y - yFirst*x) / m_diagonal;
             if (std::abs(a) < CAM_THRESHOLD * std::max(std::abs(b), 1.0f)) a = 0;
@@ -117,6 +118,9 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
                 glm::translate(glm::normalize(glm::vec3(xFirst, yFirst, 0.0f))*a*m_depth*0.02f) *
                 glm::rotate(glm::radians(-a), glm::vec3{yFirst, -xFirst, 0.0f}) *
                 glm::rotate(glm::radians(b), glm::vec3{0.0f, 0.0f, 1.0f}) * m_view;
+            break;
+        }
+        default:
             break;
     }
 }

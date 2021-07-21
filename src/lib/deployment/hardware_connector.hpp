@@ -186,11 +186,15 @@ struct hardware_connector {
                 fcpp::details::self(m_nbr_msg_size, m.device) = m.content.size();
                 common::isstream is(std::move(m.content));
                 typename F::node::message_t mt;
+                #if __cpp_exceptions
                 try {
+                #endif
                     is >> mt;
                     if (is.size() == 0)
-                        P::node::as_final().receive(m.time, m.device, mt);
+                        P::node::as_final().receive(m.time, m.device, mt);        
+                #if __cpp_exceptions
                 } catch (common::format_error&) {}
+                #endif
             }
 
             //! @brief Perceived distances from neighbours.

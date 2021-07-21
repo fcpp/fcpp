@@ -69,6 +69,8 @@ struct graph_spawner {
 
     using attributes_tag_type = common::option_types<tags::node_attributes, Ts...>;
     using attributes_type = std::conditional_t<std::is_same<attributes_tag_type, common::type_sequence<>>::value, common::option_types<tags::tuple_store, Ts...>, attributes_tag_type>;
+    using attributes_tuple_type = common::tagged_tuple_t<attributes_type>;
+
 
     /**
      * @brief The actual component.
@@ -99,7 +101,7 @@ struct graph_spawner {
                 m_schedule(get_generator(has_randomizer<P>{}, *this),t),
                 m_nodesfile( common::get_or<tags::nodesfile>(t, "index") ),
                 m_arcsfile( common::get_or<tags::arcsfile>(t, "arcs") ) {
-                //                read_row(o, row, tuple_type::tags{});
+                read_nodes();
             }
 
             /**
@@ -146,21 +148,21 @@ struct graph_spawner {
 
             inline void read_nodes() {
                 std::ifstream nodesf(m_nodesfile);
-                attributes_type row;
+                attributes_tuple_type row;
 
                 while (nodesf) {
-                    read_row(nodesf, row, attributes_type::tags);
+                    read_row(nodesf, row, typename attributes_tuple_type::tags{});
                 }
 
                 nodesf.close();
             }
 
 
-            inline void read_row(std::istream& is, attributes_type& row, common::type_sequence<>) {
+            inline void read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<>) {
             }
 
             template <typename S, typename... Ss>
-            inline void read_row(std::istream& is, attributes_type& row, common::type_sequence<S, Ss...>) {
+            inline void read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<S, Ss...>) {
                 is >> common::get<S>(row);
                 read_row(is, row, common::type_sequence<Ss...>{});
             }

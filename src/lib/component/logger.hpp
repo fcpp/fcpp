@@ -141,7 +141,7 @@ namespace details {
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
- * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::high_resolution_clock`)
+ * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
@@ -177,7 +177,7 @@ struct logger {
     using ostream_type = common::option_type<tags::ostream_type, std::ostream, Ts ...>;
 
     //! @brief Type of the clock object.
-    using clock_t = common::option_type<tags::clock_type, std::chrono::high_resolution_clock, Ts ...>;
+    using clock_t = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
 
     //! @brief Sequence generator type scheduling writing of data.
     using schedule_type = common::option_type<tags::log_schedule, sequence::never, Ts...>;

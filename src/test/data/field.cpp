@@ -17,7 +17,7 @@ template <typename A>
 field<A> build_field(A def, std::unordered_map<device_t, A> data) {
     std::vector<device_t> ids;
     ids.reserve(data.size());
-    for (const auto& x : data)
+    for (auto const& x : data)
         ids.push_back(x.first);
     std::sort(ids.begin(), ids.end());
     std::vector<A> vals;
@@ -48,7 +48,7 @@ class FieldTest : public ::testing::Test {
     }
 
     template <typename T>
-    const T& constify(T& x) {
+    T const& constify(T& x) {
         return static_cast<const T&>(x);
     }
 

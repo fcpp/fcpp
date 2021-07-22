@@ -210,7 +210,7 @@ namespace details {
 
     //! @brief Converts to string an indexable structure.
     template <typename T, size_t... is, typename tag>
-    inline std::string indexed_stringify(const char* delim, const T& x, std::index_sequence<is...>, tag) {
+    inline std::string indexed_stringify(const char* delim, T const& x, std::index_sequence<is...>, tag) {
         return iterable_stringify(delim, std::vector<std::string>{to_string(common::escape(get<is>(x, tag{})))...}, "; ");
     }
 
@@ -219,16 +219,16 @@ namespace details {
     template <typename O>
     inline void indexed_print(O&) {}
     template <typename O, typename T>
-    inline void indexed_print(O& o, const T& x) {
+    inline void indexed_print(O& o, T const& x) {
         o << x;
     }
     template <typename O, typename T, typename... Ts>
-    inline void indexed_print(O& o, const T& x, const Ts&... xs) {
+    inline void indexed_print(O& o, T const& x, const Ts&... xs) {
         o << x << "; ";
         indexed_print(o, xs...);
     }
     template <typename O, typename T, size_t... is, typename tag>
-    O& indexed_print(O& o, const char* delim, const T& x, std::index_sequence<is...>, tag) {
+    O& indexed_print(O& o, const char* delim, T const& x, std::index_sequence<is...>, tag) {
         o << delim[0];
         indexed_print(o, common::escape(get<is>(x, tag{}))...);
         o << delim[1];
@@ -279,7 +279,7 @@ namespace std {
 
     //! @brief Printing tuples.
     template <typename O, typename... Ts, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::tuple<Ts...>& t) {
+    O& operator<<(O& o, std::tuple<Ts...> const& t) {
         return fcpp::details::indexed_print(o, "()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::std_tag{});
     }
 
@@ -291,7 +291,7 @@ namespace std {
 
     //! @brief Printing vectors.
     template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::vector<T>& v) {
+    O& operator<<(O& o, std::vector<T> const& v) {
         return fcpp::details::iterable_print(o, "[]", v);
     }
 
@@ -303,7 +303,7 @@ namespace std {
 
     //! @brief Printing ordered sets.
     template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::set<T>& s) {
+    O& operator<<(O& o, std::set<T> const& s) {
         return fcpp::details::iterable_print(o, "{}", s);
     }
 
@@ -315,7 +315,7 @@ namespace std {
 
     //! @brief Printing unordered sets.
     template <typename O, typename T, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::unordered_set<T>& s) {
+    O& operator<<(O& o, std::unordered_set<T> const& s) {
         return fcpp::details::iterable_print(o, "{}", s);
     }
 
@@ -327,7 +327,7 @@ namespace std {
 
     //! @brief Printing ordered maps.
     template <typename O, typename K, typename V, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::map<K,V>& m) {
+    O& operator<<(O& o, std::map<K,V> const& m) {
         return fcpp::details::pair_iterable_print(o, "{}", m);
     }
 
@@ -339,7 +339,7 @@ namespace std {
 
     //! @brief Printing unordered maps.
     template <typename O, typename K, typename V, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::unordered_map<K,V>& m) {
+    O& operator<<(O& o, std::unordered_map<K,V> const& m) {
         return fcpp::details::pair_iterable_print(o, "{}", m);
     }
 
@@ -357,7 +357,7 @@ namespace std {
 namespace fcpp {
     //! @brief Printing fields.
     template <typename O, typename T, typename = common::if_ostream<O>>
-    O& operator<<(O& o, const field<T>& x) {
+    O& operator<<(O& o, field<T> const& x) {
         o << "{";
         for (size_t i = 0; i < details::get_ids(x).size(); ++i) {
             o << details::get_ids(x)[i] << ":" << common::escape(details::get_vals(x)[i+1]) << ", ";
@@ -387,7 +387,7 @@ namespace fcpp {
 
     //! @brief Printing tuples.
     template <typename O, typename... Ts, typename = common::if_ostream<O>>
-    O& operator<<(O& o, const tuple<Ts...>& t) {
+    O& operator<<(O& o, tuple<Ts...> const& t) {
         return fcpp::details::indexed_print(o, "()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::fcpp_tag{});
     }
 
@@ -399,7 +399,7 @@ namespace fcpp {
 
     //! @brief Printing vectors.
     template <typename O, size_t n, typename = common::if_ostream<O>>
-    O& operator<<(O& o, const vec<n>& p) {
+    O& operator<<(O& o, vec<n> const& p) {
         return fcpp::details::iterable_print(o, "[]", p);
     }
 
@@ -419,13 +419,13 @@ namespace fcpp {
 
         //! @brief Printing random access maps.
         template <typename O, typename K, typename T, typename H, typename P, typename A, typename = if_ostream<O>>
-        O& operator<<(O& o, const random_access_map<K,T,H,P,A>& m) {
+        O& operator<<(O& o, random_access_map<K,T,H,P,A> const& m) {
             return fcpp::details::pair_iterable_print(o, "{}", m);
         }
 
         //! @brief Printing tagged tuples in arrowhead format.
         template <typename O, typename S, typename T, typename = if_ostream<O>>
-        O& operator<<(O& o, const tagged_tuple<S,T>& t) {
+        O& operator<<(O& o, tagged_tuple<S,T> const& t) {
             return fcpp::details::printable_print(o, "()", t);
         }
     }
@@ -447,14 +447,14 @@ namespace fcpp {
 
         //! @brief Printing identical twin objects.
         template <typename O, typename T, typename = common::if_ostream<O>>
-        O& operator<<(O& o, const twin<T,true>& t) {
+        O& operator<<(O& o, twin<T,true> const& t) {
             o << "(" << common::escape(t.first()) << ")";
             return o;
         }
 
         //! @brief Printing different twin objects.
         template <typename O, typename T, typename = common::if_ostream<O>>
-        O& operator<<(O& o, const twin<T,false>& t) {
+        O& operator<<(O& o, twin<T,false> const& t) {
             o << "(" << common::escape(t.first()) << "; " << common::escape(t.second()) << ")";
             return o;
         }

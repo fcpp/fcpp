@@ -37,7 +37,7 @@ times_t delayed(node_t& node, trace_t call_point, times_t start, times_t t) {
 
 template <typename node_t>
 int counter(node_t& node, trace_t call_point) {
-    return old(node, call_point, 0, [](const int& o) {
+    return old(node, call_point, 0, [](int const& o) {
         return o+1;
     });
 }
@@ -62,7 +62,7 @@ int gossip(node_t& node, trace_t call_point, int x) {
 
 
 template <typename T>
-void sendto(const T& source, T& dest) {
+void sendto(T const& source, T& dest) {
     typename T::message_t m;
     dest.receive(0, source.uid, source.send(0, m));
 }

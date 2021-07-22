@@ -110,12 +110,12 @@ namespace tags {
  * - be able to build a `result_type` from a `tagged_tuple` message possibly using node data:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  *   template <typename N, typename S, typename T>
- *   result_type build(const N& node, times_t t, device_t d, const common::tagged_tuple<S,T>& m);
+ *   result_type build(N const& node, times_t t, device_t d, common::tagged_tuple<S,T> const& m);
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  * - be able to update by comparing a `result_type` with node data:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  *   template <typename N>
- *   result_type update(const result_type&, const N& node);
+ *   result_type update(const result_type&, N const& node);
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * Round classes should be default-constructible and be callable with the following signature:
@@ -195,7 +195,7 @@ struct calculus {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_context{}, m_metric{}, m_hoodsize{common::get_or<tags::hoodsize>(t, std::numeric_limits<device_t>::max())}, m_threshold{common::get_or<tags::threshold>(t, m_metric.build())} {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_context{}, m_metric{}, m_hoodsize{common::get_or<tags::hoodsize>(t, std::numeric_limits<device_t>::max())}, m_threshold{common::get_or<tags::threshold>(t, m_metric.build())} {}
 
             //! @brief Number of neighbours (including self).
             size_t size() const {
@@ -225,7 +225,7 @@ struct calculus {
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
+            void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 m_context.second().insert(d, common::get<calculus_tag>(m), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
                 if (export_split and d == P::node::uid)
@@ -310,13 +310,13 @@ void align_inplace(node_t& node, trace_t call_point, A& x) {
 
 //! @brief Accesses the local value of a field.
 template <typename node_t, typename A>
-to_local<A const&> self(const node_t& node, trace_t, A const& x) {
+to_local<A const&> self(node_t const& node, trace_t, A const& x) {
     return details::self(x, node.uid);
 }
 
 //! @brief Accesses the local value of a field (moving).
 template <typename node_t, typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
-to_local<A&&> self(const node_t& node, trace_t, A&& x) {
+to_local<A&&> self(node_t const& node, trace_t, A&& x) {
     return details::self(std::move(x), node.uid);
 }
 
@@ -334,13 +334,13 @@ to_local<A&&> self(const node_t&, trace_t, A&& x, device_t uid) {
 
 //! @brief Returns the local value of a field (modifiable).
 template <typename node_t, typename A>
-to_local<A&> mod_self(const node_t& node, trace_t, A& x) {
+to_local<A&> mod_self(node_t const& node, trace_t, A& x) {
     return details::self(x, node.uid);
 }
 
 //! @brief Modifies the local value of a field.
 template <typename node_t, typename A, typename B>
-to_field<std::decay_t<A>> mod_self(const node_t& node, trace_t, A&& x, B&& y) {
+to_field<std::decay_t<A>> mod_self(node_t const& node, trace_t, A&& x, B&& y) {
     return details::mod_self(std::forward<A>(x), std::forward<B>(y), node.uid);
 }
 
@@ -374,7 +374,7 @@ to_field<std::decay_t<A>> mod_other(node_t& node, trace_t call_point, A const& x
 
 //! @brief Reduces a field to a single value by a binary operation.
 template <typename node_t, typename O, typename A>
-auto fold_hood(node_t& node, trace_t call_point, O&& op, const A& a) {
+auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
     return details::fold_hood(op, a, details::get_context(node).second().align(t, node.uid));
@@ -382,7 +382,7 @@ auto fold_hood(node_t& node, trace_t call_point, O&& op, const A& a) {
 
 //! @brief Reduces a field to a single value by a binary operation with a default value for self.
 template <typename node_t, typename O, typename A, typename B>
-auto fold_hood(node_t& node, trace_t call_point, O&& op, const A& a, const B& b) {
+auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a, B const& b) {
     trace_t t = node.stack_trace.hash(call_point);
     details::get_export(node).second()->insert(t);
     return details::fold_hood(op, a, b, details::get_context(node).second().align(t, node.uid), node.uid);
@@ -451,7 +451,7 @@ namespace details {
  * the second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A)>>
-auto old(node_t& node, trace_t call_point, const A& f0, G&& op) {
+auto old(node_t& node, trace_t call_point, A const& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).first()->template count<A>(t) == 0);
     auto f = op(align(node, call_point, details::get_context(node).first().old(t, f0, node.uid)));
@@ -469,7 +469,7 @@ auto old(node_t& node, trace_t call_point, const A& f0, G&& op) {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <typename node_t, typename A>
-A old(node_t& node, trace_t call_point, const A& f0, const A& f) {
+A old(node_t& node, trace_t call_point, A const& f0, A const& f) {
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).first()->template count<A>(t) == 0);
     details::get_export(node).first()->insert(t, f);
@@ -481,7 +481,7 @@ A old(node_t& node, trace_t call_point, const A& f0, const A& f) {
  * Equivalent to `old(f, f)`.
  */
 template <typename node_t, typename A>
-inline A old(node_t& node, trace_t call_point, const A& f) {
+inline A old(node_t& node, trace_t call_point, A const& f) {
     return old(node, call_point, f, f);
 }
 //! @}
@@ -498,7 +498,7 @@ inline A old(node_t& node, trace_t call_point, const A& f) {
  * the second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename A, typename G, typename = std::result_of_t<G(to_field<A>)>>
-auto nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
+auto nbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<A>(t) == 0);
     auto f = op(details::get_context(node).second().nbr(t, f0, node.uid));
@@ -516,7 +516,7 @@ auto nbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <typename node_t, typename A>
-to_field<A> nbr(node_t& node, trace_t call_point, const A& f0, const A& f) {
+to_field<A> nbr(node_t& node, trace_t call_point, A const& f0, A const& f) {
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<A>(t) == 0);
     details::get_export(node).second()->insert(t, f);
@@ -528,7 +528,7 @@ to_field<A> nbr(node_t& node, trace_t call_point, const A& f0, const A& f) {
  * Equivalent to `nbr(f, f)`.
  */
 template <typename node_t, typename A>
-inline to_field<A> nbr(node_t& node, trace_t call_point, const A& f) {
+inline to_field<A> nbr(node_t& node, trace_t call_point, A const& f) {
     return nbr(node, call_point, f, f);
 }
 //! @}
@@ -544,7 +544,7 @@ inline to_field<A> nbr(node_t& node, trace_t call_point, const A& f) {
  * the second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A, to_field<A>)>>
-A oldnbr(node_t& node, trace_t call_point, const A& f0, G&& op) {
+A oldnbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<A>(t) == 0);
     auto f = op(align(node, call_point, details::get_context(node).second().old(t, f0, node.uid)), details::get_context(node).second().nbr(t, f0, node.uid));

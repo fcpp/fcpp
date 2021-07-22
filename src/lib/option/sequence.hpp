@@ -98,7 +98,7 @@ class multiple<N, E, true> {
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : t(details::call_distr<E>(g,tup)), i(details::call_distr<N>(g,tup)) {}
+    multiple(G&& g, common::tagged_tuple<S,T> const& tup) : t(details::call_distr<E>(g,tup)), i(details::call_distr<N>(g,tup)) {}
 
     //! @brief Check whether the sequence is finished.
     bool empty() const {
@@ -147,7 +147,7 @@ class multiple<N, E, false> {
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    multiple(G&& g, const common::tagged_tuple<S,T>& tup) : multiple(g, E{g,tup}, N{g,tup}) {}
+    multiple(G&& g, common::tagged_tuple<S,T> const& tup) : multiple(g, E{g,tup}, N{g,tup}) {}
 
     //! @brief Check whether the sequence is finished.
     bool empty() const {
@@ -227,7 +227,7 @@ class list {
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    list(G&& g, const common::tagged_tuple<S,T>& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
+    list(G&& g, common::tagged_tuple<S,T> const& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
         std::sort(pending.begin(), pending.end());
     }
 
@@ -308,7 +308,7 @@ class periodic {
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename U, typename T>
-    periodic(G&& g, const common::tagged_tuple<U,T>& tup) : dp(g,tup) {
+    periodic(G&& g, common::tagged_tuple<U,T> const& tup) : dp(g,tup) {
         n  = details::call_distr<N>(g,tup);
         te = details::call_distr<E>(g,tup);
         t  = details::call_distr<S>(g,tup);
@@ -412,7 +412,7 @@ class merge {
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    merge(G&& g, const common::tagged_tuple<S,T>& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
+    merge(G&& g, common::tagged_tuple<S,T> const& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
         set_next(std::make_index_sequence<sizeof...(Ss)>{});
     }
 
@@ -551,7 +551,7 @@ namespace details {
 
         //! @brief Tagged tuple constructor.
         template <typename G, typename S, typename T>
-        grid(G&& g, const common::tagged_tuple<S,T>& tup) : m_i(0) {
+        grid(G&& g, common::tagged_tuple<S,T> const& tup) : m_i(0) {
             m_init = {details::call_distr<Ls>(g, tup)...};
             m_step = {details::call_distr<Us>(g, tup)...};
             m_mods = {details::call_distr<Ns>(g, tup)...};
@@ -745,7 +745,7 @@ class circle {
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    circle(G&& g, const common::tagged_tuple<S,T>& t) {
+    circle(G&& g, common::tagged_tuple<S,T> const& t) {
         m_c = details::call_distr<C>(g,t);
         auto r = details::call_distr<R>(g,t);
         m_p = details::perpendicular(r);

@@ -117,7 +117,7 @@ struct hardware_logger {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t) {
                 std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();

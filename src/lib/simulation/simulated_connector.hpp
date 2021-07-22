@@ -93,7 +93,7 @@ namespace details {
         }
 
         //! @brief Links a new cell.
-        void link(const cell& o) {
+        void link(cell const& o) {
             common::exclusive_guard<parallel> l(m_mutex);
             m_linked.push_back(&o);
         }
@@ -150,9 +150,9 @@ namespace details {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * using data_type = // type for connection power data on nodes
  * using position_type = vec<n>;
- * template <typename G, typename S, typename T> connector_type(G&& gen, const common::tagged_tuple<S,T>& tup);
+ * template <typename G, typename S, typename T> connector_type(G&& gen, common::tagged_tuple<S,T> const& tup);
  * real_t maximum_radius() const;
- * bool operator()(const data_type& data1, const position_type& position1, const data_type& data2, const position_type& position2) const;
+ * bool operator()(data_type const& data1, position_type const& position1, data_type const& data2, position_type const& position2) const;
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <class... Ts>
@@ -212,7 +212,7 @@ struct simulated_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})), m_nbr_msg_size(0) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})), m_nbr_msg_size(0) {
                 m_send = m_leave = TIME_MAX;
                 m_epsilon = common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON);
                 P::node::net.cell_enter(P::node::as_final());
@@ -229,7 +229,7 @@ struct simulated_connector {
             }
 
             //! @brief Connector data (const access).
-            const connection_data_type& connector_data() const {
+            connection_data_type const& connector_data() const {
                 return m_data;
             }
 
@@ -315,7 +315,7 @@ struct simulated_connector {
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            inline void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
+            inline void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 receive_size(common::bool_pack<message_size>{}, d, m);
             }
@@ -326,7 +326,7 @@ struct simulated_connector {
             void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
             //! @brief Stores size of received message.
             template <typename S, typename T>
-            void receive_size(common::bool_pack<true>, device_t d, const common::tagged_tuple<S,T>& m) {
+            void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
                 common::osstream os;
                 os << m;
                 fcpp::details::self(m_nbr_msg_size.front(), d) = os.size();
@@ -385,7 +385,7 @@ struct simulated_connector {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {
@@ -423,14 +423,14 @@ struct simulated_connector {
 
             //! @brief Checks whether connection is possible.
             template <typename G>
-            inline bool connection_success(G&& gen, const connection_data_type& data1, const position_type& position1, const connection_data_type& data2, const position_type& position2) const {
+            inline bool connection_success(G&& gen, connection_data_type const& data1, position_type const& position1, connection_data_type const& data2, position_type const& position2) const {
                 return m_connector(gen, data1, position1, data2, position2);
             }
 
           private: // implementation details
             //! @brief A custom hash for cell identifiers.
             struct cell_hasher {
-                size_t operator()(const cell_id_type& c) const {
+                size_t operator()(cell_id_type const& c) const {
                     size_t h = dimension;
                     for (auto& i : c) h ^= i + 0x9e3779b9 + (h << 6) + (h >> 2);
                     return h;
@@ -441,7 +441,7 @@ struct simulated_connector {
             using cell_map_type = std::unordered_map<cell_id_type, cell_type, cell_hasher>;
 
             //! @brief Converts a position into a cell identifier.
-            cell_id_type to_cell(const position_type& v) {
+            cell_id_type to_cell(position_type const& v) {
                 cell_id_type c;
                 for (size_t i=0; i<dimension; ++i) c[i] = (int)floor(v[i]/connection_radius());
                 return c;
@@ -449,7 +449,7 @@ struct simulated_connector {
 
             //! @brief Interts a node in the cell correspoding to a given position.
             template <bool move>
-            inline void cell_enter_impl(typename F::node& n, const position_type& p) {
+            inline void cell_enter_impl(typename F::node& n, position_type const& p) {
                 cell_id_type c = to_cell(p);
                 typename cell_map_type::iterator nit;
                 bool create;

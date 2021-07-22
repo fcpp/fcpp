@@ -72,22 +72,22 @@ struct boolwrap {
     }
 
     template <typename T>
-    boolwrap operator==(const T& c) const {
+    boolwrap operator==(T const& c) const {
         return {x == bool(c)};
     }
 
     template <typename T>
-    boolwrap operator<(const T& c) const {
+    boolwrap operator<(T const& c) const {
         return {x < bool(c)};
     }
 
     template <typename T>
-    boolwrap operator&&(const T& c) const {
+    boolwrap operator&&(T const& c) const {
         return {x && bool(c)};
     }
 
     template <typename T>
-    boolwrap operator||(const T& c) const {
+    boolwrap operator||(T const& c) const {
         return {x || bool(c)};
     }
 

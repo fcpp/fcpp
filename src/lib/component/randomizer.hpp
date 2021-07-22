@@ -80,7 +80,7 @@ struct randomizer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_generator(common::get_or<tags::seed>(t, P::node::uid)) {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_generator(common::get_or<tags::seed>(t, P::node::uid)) {}
 
             /**
              * @brief Write access to stored data.
@@ -134,7 +134,7 @@ struct randomizer {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
 
           protected: // visible by net objects only
             //! @brief Gives access to the random number generator.

@@ -428,7 +428,7 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {}
 
             //! @brief Caches the current position for later use.
             glm::vec3 const& cache_position(times_t t) {
@@ -480,7 +480,7 @@ struct displayer {
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
+            void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 m_nbr_uids.push_back(d);
             }
@@ -787,12 +787,12 @@ struct displayer {
             }
 
             //! @brief It returns the projection of a vector v onto a ray along its direction d (unit vector).
-            inline glm::vec3 rayProjection(const glm::vec3& v, const glm::vec3& d) {
+            inline glm::vec3 rayProjection(glm::vec3 const& v, glm::vec3 const& d) {
                 return glm::dot<3, float, glm::qualifier::highp>(v, d) * d;
             }
 
             //! @brief It checks if the ray of direction d (unit vector) and position p intersects with a sphere of radius r at position c; length of projection of c onto ray is stored into prj.
-            bool intersectSphere(const glm::vec3& p, const glm::vec3& d, float r, const glm::vec3& c, float& prj) {
+            bool intersectSphere(glm::vec3 const& p, glm::vec3 const& d, float r, glm::vec3 const& c, float& prj) {
                 bool intersection{ false };
 
                 // Define vector from p to c

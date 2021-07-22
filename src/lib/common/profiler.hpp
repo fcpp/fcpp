@@ -40,14 +40,14 @@ class profiler {
         std::clock_t tot = std::clock() - program_start;
         std::set<std::string> keys;
         size_t maxlen = 0;
-        for (const auto& x : clock_counters) {
+        for (auto const& x : clock_counters) {
             keys.insert(x.first);
             maxlen = std::max(maxlen, x.first.size());
         }
         o << "ACTION";
         for (size_t i=3; i<maxlen; ++i) o << " ";
         o << "TOTAL     PARTIAL   SECS\n";
-        for (const auto& k : keys) {
+        for (auto const& k : keys) {
             o << k << ": ";
             for (size_t i=k.size(); i<maxlen; ++i) o << " ";
             int p = clock_counters[k]*10000/tot;

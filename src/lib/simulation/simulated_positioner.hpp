@@ -111,7 +111,7 @@ struct simulated_positioner {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_x(common::get_or<tags::x>(t, position_type{})), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{INF} {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_x(common::get_or<tags::x>(t, position_type{})), m_v(common::get_or<tags::v>(t, position_type{})), m_a(common::get_or<tags::a>(t, position_type{})), m_f(common::get_or<tags::f>(t, 0)), m_nbr_vec{details::nan_vec<dimension>()}, m_nbr_dist{INF} {
                 static_assert(common::tagged_tuple<S,T>::tags::template count<tags::x> >= 1, MISSING_TAG_MESSAGE);
                 m_last = TIME_MIN;
                 fcpp::details::self(m_nbr_vec, P::node::uid) = vec<dimension>();
@@ -126,7 +126,7 @@ struct simulated_positioner {
             }
 
             //! @brief Position now (const access).
-            const position_type& position() const {
+            position_type const& position() const {
                 return m_x;
             }
 
@@ -152,7 +152,7 @@ struct simulated_positioner {
             }
 
             //! @brief Velocity now (const access).
-            const position_type& velocity() const {
+            position_type const& velocity() const {
                 return m_v;
             }
 
@@ -178,7 +178,7 @@ struct simulated_positioner {
             }
 
             //! @brief Personal acceleration (const access).
-            const position_type& propulsion() const {
+            position_type const& propulsion() const {
                 return m_a;
             }
 
@@ -274,7 +274,7 @@ struct simulated_positioner {
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
+            void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 position_type v = common::get<positioner_tag>(m) - position(t);
                 if (d != P::node::uid) {
@@ -292,12 +292,12 @@ struct simulated_positioner {
             }
 
             //! @brief Perceived positions of neighbours as difference vectors.
-            const fcpp::field<position_type>& nbr_vec() const {
+            fcpp::field<position_type> const& nbr_vec() const {
                 return m_nbr_vec;
             }
 
             //! @brief Perceived distances from neighbours.
-            const fcpp::field<real_t>& nbr_dist() const {
+            fcpp::field<real_t> const& nbr_dist() const {
                 return m_nbr_dist;
             }
 

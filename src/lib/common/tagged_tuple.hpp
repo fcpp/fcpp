@@ -248,12 +248,12 @@ namespace details {
     }
     //! @brief Forwards other values for underscore tuple printing.
     template <typename T, typename = std::enable_if_t<not std::is_same<T,bool>::value>>
-    inline const T& tt_val_print(const T& x, tags::underscore_tuple) {
+    inline T const& tt_val_print(T const& x, tags::underscore_tuple) {
         return x;
     }
     //! @brief Escapes a value for other tuple printing.
     template <typename T, typename S, typename = std::enable_if_t<not std::is_same<S,tags::underscore_tuple>::value>>
-    inline auto tt_val_print(const T& x, S) {
+    inline auto tt_val_print(T const& x, S) {
         return escape(x);
     }
 

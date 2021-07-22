@@ -54,7 +54,7 @@ namespace details {
         iterator(iterator&&) = default;
 
         //! @brief Copy constructor from underlying iterator.
-        iterator(const I& i) : m_it(i) {}
+        iterator(I const& i) : m_it(i) {}
 
         //! @brief Move constructor from underlying iterator.
         iterator(I&& i) : m_it(i) {}
@@ -124,32 +124,32 @@ namespace details {
         iterator operator-(size_t n) const {
             return m_it-n;
         }
-        D operator-(const iterator& o) const {
+        D operator-(iterator const& o) const {
             return m_it - o.m_it;
         }
-        friend iterator operator+(size_t n, const iterator& i) {
+        friend iterator operator+(size_t n, iterator const& i) {
             return i+n;
         }
         //! @}
 
         //! @brief Relational operators.
         //! @{
-        bool operator==(const iterator& o) const {
+        bool operator==(iterator const& o) const {
             return m_it == o.m_it;
         }
-        bool operator!=(const iterator& o) const {
+        bool operator!=(iterator const& o) const {
             return m_it != o.m_it;
         }
-        bool operator<=(const iterator& o) const {
+        bool operator<=(iterator const& o) const {
             return m_it <= o.m_it;
         }
-        bool operator>=(const iterator& o) const {
+        bool operator>=(iterator const& o) const {
             return m_it >= o.m_it;
         }
-        bool operator<(const iterator& o) const {
+        bool operator<(iterator const& o) const {
             return m_it < o.m_it;
         }
-        bool operator>(const iterator& o) const {
+        bool operator>(iterator const& o) const {
             return m_it > o.m_it;
         }
         //! @}
@@ -295,7 +295,7 @@ class random_access_map {
     }
 
     //! @brief Accesses an element of the container (creating one if not found).
-    mapped_type& operator[](const key_type& k) {
+    mapped_type& operator[](key_type const& k) {
         if (m_map.count(k) == 0) {
             m_map[k] = mapped_type();
             insert_impl(m_map.find(k));
@@ -311,23 +311,23 @@ class random_access_map {
     }
 
     //! @brief Accesses an element of the container (throwing if not found).
-    mapped_type& at(const key_type& k) {
+    mapped_type& at(key_type const& k) {
         return m_map.at(k);
     }
-    const mapped_type& at(const key_type& k) const {
+    mapped_type const& at(key_type const& k) const {
         return m_map.at(k);
     }
 
     //! @brief Searches the container for an element with a given key (end if not found).
-    iterator find(const key_type& k) {
+    iterator find(key_type const& k) {
         return convert(m_map.find(k));
     }
-    const_iterator find(const key_type& k) const {
+    const_iterator find(key_type const& k) const {
         return convert(m_map.find(k));
     }
 
     //! @brief Counts the elements with a specific key.
-    size_type count(const key_type& k) const {
+    size_type count(key_type const& k) const {
         return m_map.count(k);
     }
 
@@ -340,7 +340,7 @@ class random_access_map {
     }
 
     //! @brief Inserts new elements in the map.
-    std::pair<iterator,bool> insert(const value_type& val) {
+    std::pair<iterator,bool> insert(value_type const& val) {
         auto itb = m_map.insert(val);
         if (itb.second) insert_impl(itb.first);
         return {convert(itb.first), itb.second};
@@ -366,7 +366,7 @@ class random_access_map {
         if (it != m_map.end()) erase_impl(it);
         return convert(m_map.erase(it));
     }
-    size_type erase(const key_type& k) {
+    size_type erase(key_type const& k) {
         auto it = m_map.find(k);
         if (it != m_map.end()) erase_impl(it);
         return m_map.erase(k);
@@ -399,12 +399,12 @@ class random_access_map {
     }
 
     //! @brief Equality operator.
-    bool operator==(const random_access_map& o) const {
+    bool operator==(random_access_map const& o) const {
         return m_map == o.m_map;
     }
 
     //! @brief Inequality operator.
-    bool operator!=(const random_access_map& o) const {
+    bool operator!=(random_access_map const& o) const {
         return m_map != o.m_map;
     }
 

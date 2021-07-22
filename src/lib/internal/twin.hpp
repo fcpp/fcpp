@@ -76,7 +76,7 @@ class twin<T, true> {
     }
 
     //! @brief Const access to the first element.
-    const T& first() const {
+    T const& first() const {
         return m_data;
     }
 
@@ -86,7 +86,7 @@ class twin<T, true> {
     }
 
     //! @brief Const access to the second element.
-    const T& second() const {
+    T const& second() const {
         return m_data;
     }
 };
@@ -140,7 +140,7 @@ class twin<T, false> {
     }
 
     //! @brief Const access to the first element.
-    const T& first() const {
+    T const& first() const {
         return m_data1;
     }
 
@@ -150,7 +150,7 @@ class twin<T, false> {
     }
 
     //! @brief Const access to the second element.
-    const T& second() const {
+    T const& second() const {
         return m_data2;
     }
 };

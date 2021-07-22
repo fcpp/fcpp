@@ -131,7 +131,7 @@ struct base {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : uid(common::get_or<tags::uid>(t, 0)), net(n) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : uid(common::get_or<tags::uid>(t, 0)), net(n) {
                 static_assert(common::tagged_tuple<S,T>::tags::template count<tags::uid> >= 1, MISSING_TAG_MESSAGE);
             }
 

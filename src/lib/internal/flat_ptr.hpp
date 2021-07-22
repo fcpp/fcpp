@@ -47,7 +47,7 @@ class flat_ptr<T, false> {
     }
 
     //! @brief Default copying constructor.
-    flat_ptr(const T& d) {
+    flat_ptr(T const& d) {
         m_data.reset(new T(d));
     };
 
@@ -66,7 +66,7 @@ class flat_ptr<T, false> {
     //! @name assignment operators
     //! @{
     //! @brief Default copying assignment.
-    flat_ptr<T, false>& operator=(const T& d) {
+    flat_ptr<T, false>& operator=(T const& d) {
         m_data.reset(new T(d));
         return *this;
     };
@@ -100,7 +100,7 @@ class flat_ptr<T, false> {
     }
 
     //! @brief Const access to the content.
-    const T& operator*() const {
+    T const& operator*() const {
         return *m_data.get();
     }
 
@@ -135,7 +135,7 @@ class flat_ptr<T, true> {
     flat_ptr() = default;
 
     //! @brief Default copying constructor.
-    flat_ptr(const T& d) : m_data(d) {};
+    flat_ptr(T const& d) : m_data(d) {};
 
     //! @brief Default moving constructor.
     flat_ptr(T&& d) : m_data(d) {};
@@ -150,7 +150,7 @@ class flat_ptr<T, true> {
     //! @name assignment operators
     //! @{
     //! @brief Default copying assignment.
-    flat_ptr<T, true>& operator=(const T& d) {
+    flat_ptr<T, true>& operator=(T const& d) {
         m_data = d;
         return *this;
     };
@@ -184,7 +184,7 @@ class flat_ptr<T, true> {
     }
 
     //! @brief Const access to the content.
-    const T& operator*() const {
+    T const& operator*() const {
         return m_data;
     }
 

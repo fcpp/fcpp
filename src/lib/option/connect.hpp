@@ -107,7 +107,7 @@ class fixed : public clique<n> {
 
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
-    fixed(G&& g, const common::tagged_tuple<S,T>& t) : C(std::forward<G>(g), t) {
+    fixed(G&& g, common::tagged_tuple<S,T> const& t) : C(std::forward<G>(g), t) {
         m_radius = common::get_or<radius>(t, ((real_t)num)/den);
     }
 
@@ -204,7 +204,7 @@ class radial : public C {
 
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
-    radial(G&& g, const common::tagged_tuple<S,T>& t) : C(std::forward<G>(g), t) {
+    radial(G&& g, common::tagged_tuple<S,T> const& t) : C(std::forward<G>(g), t) {
         m_r50 = common::get_or<half_radius>(t, (real_t)r50)/100;
         m_k = log(6792093.0/29701) / (1-m_r50);
     }

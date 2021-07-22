@@ -42,7 +42,7 @@ class tuple {
     tuple(tuple&&) = default;
     //! @brief Implicit conversion copy constructor.
     template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
-    tuple(const tuple<Us...>& t) : m_tuple(t.m_tuple) {}
+    tuple(tuple<Us...> const& t) : m_tuple(t.m_tuple) {}
     //! @brief Implicit conversion move constructor.
     template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(tuple<Us...>&& t) : m_tuple(std::move(t.m_tuple)) {}
@@ -56,12 +56,12 @@ class tuple {
     //! @brief assignment
     //! @{
     //! @brief Copy assignment.
-    tuple& operator=(const tuple& t) = default;
+    tuple& operator=(tuple const& t) = default;
     //! @brief Move assignment.
     tuple& operator=(tuple&& t) = default;
     //! @brief Implicit conversion copy assignment.
     template <typename... Us>
-    tuple& operator=(const tuple<Us...>& t) {
+    tuple& operator=(tuple<Us...> const& t) {
         m_tuple = t.m_tuple;
         return *this;
     }
@@ -109,7 +109,7 @@ class tuple<> {
     //! @brief assignment
     //! @{
     //! @brief Copy assignment.
-    tuple& operator=(const tuple& t) = default;
+    tuple& operator=(tuple const& t) = default;
     //! @brief Move assignment.
     tuple& operator=(tuple&& t) = default;
     //! @}
@@ -144,7 +144,7 @@ namespace details {
     }
     //! @brief Converts an `std::tuple` into a `tuple` (lvalue).
     template <typename... Ts>
-    const tuple<Ts...>& tuple_promote(const std::tuple<Ts...>& t) {
+    tuple<Ts...> const& tuple_promote(std::tuple<Ts...> const& t) {
         return (const tuple<Ts...>&)t;
     }
 
@@ -155,7 +155,7 @@ namespace details {
     }
     //! @brief Converts a `tuple` into an `std::tuple` (lvalue).
     template <typename... Ts>
-    const std::tuple<Ts...>& tuple_demote(const tuple<Ts...>& t) {
+    std::tuple<Ts...> const& tuple_demote(tuple<Ts...> const& t) {
         return (const std::tuple<Ts...>&)t;
     }
 }
@@ -208,7 +208,7 @@ typename std::tuple_element<n, std::tuple<Ts...>>::type&& get(tuple<Ts...>&& t) 
 }
 //! @brief const lvalue overload
 template <size_t n, typename... Ts>
-typename std::tuple_element<n, std::tuple<Ts...>>::type const& get(const tuple<Ts...>& t) noexcept {
+typename std::tuple_element<n, std::tuple<Ts...>>::type const& get(tuple<Ts...> const& t) noexcept {
     return std::get<n>((const std::tuple<Ts...>&)t);
 }
 //! @}
@@ -271,7 +271,7 @@ namespace details {
     }
     //! @brief const lvalue overload
     template <typename... Ts>
-    inline tuple_wrapper<const tuple<Ts...>&, std::make_index_sequence<sizeof...(Ts)>> tuple_wrap(const tuple<Ts...>& x) {
+    inline tuple_wrapper<const tuple<Ts...>&, std::make_index_sequence<sizeof...(Ts)>> tuple_wrap(tuple<Ts...> const& x) {
         return {x};
     }
     //! @}
@@ -428,24 +428,24 @@ auto operator op(tuple<Ts...>&& x) {                                            
     return op details::tuple_wrap(std::move(x));                                    \
 }                                                                                   \
 template <typename... Ts>                                                           \
-auto operator op(const tuple<Ts...>& x) {                                           \
+auto operator op(tuple<Ts...> const& x) {                                           \
     return op details::tuple_wrap(x);                                               \
 }
 
 #define _DEF_BOP(op)                                                                \
 template <typename... Ts, typename... Us,                                           \
           typename = std::enable_if_t<sizeof...(Ts) == sizeof...(Us)>>              \
-auto operator op(const tuple<Ts...>& x, const tuple<Us...>& y) {                    \
+auto operator op(tuple<Ts...> const& x, tuple<Us...> const& y) {                    \
     return details::tuple_wrap(x) op details::tuple_wrap(y);                        \
 }                                                                                   \
 template <typename... Ts, typename... Us,                                           \
           typename = std::enable_if_t<sizeof...(Ts) == sizeof...(Us)>>              \
-auto operator op(tuple<Ts...>&& x, const tuple<Us...>& y) {                         \
+auto operator op(tuple<Ts...>&& x, tuple<Us...> const& y) {                         \
     return details::tuple_wrap(std::move(x)) op details::tuple_wrap(y);             \
 }                                                                                   \
 template <typename... Ts, typename... Us,                                           \
           typename = std::enable_if_t<sizeof...(Ts) == sizeof...(Us)>>              \
-auto operator op(const tuple<Ts...>& x, tuple<Us...>&& y) {                         \
+auto operator op(tuple<Ts...> const& x, tuple<Us...>&& y) {                         \
     return details::tuple_wrap(x) op details::tuple_wrap(std::move(y));             \
 }                                                                                   \
 template <typename... Ts, typename... Us,                                           \
@@ -457,7 +457,7 @@ auto operator op(tuple<Ts...>&& x, tuple<Us...>&& y) {                          
 #define _DEF_IOP(op)                                                                \
 template <typename... Ts, typename... Us,                                           \
           typename = std::enable_if_t<sizeof...(Ts) == sizeof...(Us)>>              \
-auto operator op##=(tuple<Ts...>& x, const tuple<Us...>& y) {                       \
+auto operator op##=(tuple<Ts...>& x, tuple<Us...> const& y) {                       \
     return details::tuple_wrap(x) op##= details::tuple_wrap(y);                     \
 }                                                                                   \
 template <typename... Ts, typename... Us,                                           \

@@ -24,7 +24,7 @@ struct metric {
     }
 
     template <typename... Ts>
-    double update(const double& r, Ts const&...) const {
+    double update(double const& r, Ts const&...) const {
         return val == 0.0 ? r : val;
     }
 

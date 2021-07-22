@@ -20,13 +20,13 @@ public:
     Shader(const char* vertexPath, const char* fragmentPath);
 
     // Copy constructor
-    Shader(const Shader& source);
+    Shader(Shader const& source);
 
     // Move constructor
     Shader(Shader&& source);
 
     // Copy assignment
-    Shader& operator=(const Shader& source);
+    Shader& operator=(Shader const& source);
 
     // Move assignment
     Shader& operator=(Shader&& source);

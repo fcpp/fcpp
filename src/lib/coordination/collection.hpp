@@ -71,7 +71,7 @@ template <typename T> using gossip_mean_t = gossip_t<T>;
 
 //! @brief Collects distributed data with a single-path strategy.
 template <typename node_t, typename P, typename T, typename U, typename G, typename = common::if_signature<G, T(T,T)>>
-T sp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const U& null, G&& accumulate) {
+T sp_collection(node_t& node, trace_t call_point, P const& distance, T const& value, U const& null, G&& accumulate) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, (T)null, [&](field<T> x){
@@ -85,7 +85,7 @@ template <typename P, typename T, typename U = T> using sp_collection_t = common
 
 //! @brief Collects distributed data with a multi-path strategy.
 template <typename node_t, typename P, typename T, typename U, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,size_t)>>
-T mp_collection(node_t& node, trace_t call_point, const P& distance, const T& value, const U& null, G&& accumulate, F&& divide) {
+T mp_collection(node_t& node, trace_t call_point, P const& distance, T const& value, U const& null, G&& accumulate, F&& divide) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, (T)null, [&](field<T> x){
@@ -101,7 +101,7 @@ template <typename P, typename T, typename U = T> using mp_collection_t = common
 
 //! @brief Collects distributed data with a weighted multi-path strategy.
 template <typename node_t, typename T, typename G, typename F, typename = common::if_signature<G, T(T,T)>, typename = common::if_signature<F, T(T,real_t)>>
-T wmp_collection(node_t& node, trace_t call_point, real_t distance, real_t radius, const T& value, G&& accumulate, F&& multiply) {
+T wmp_collection(node_t& node, trace_t call_point, real_t distance, real_t radius, T const& value, G&& accumulate, F&& multiply) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
     field<real_t> nbrdist = nbr(node, 0, distance);

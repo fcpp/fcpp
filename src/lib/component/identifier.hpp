@@ -183,7 +183,7 @@ struct identifier {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -224,7 +224,7 @@ struct identifier {
             }
 
             //! @brief Const access to the node with a given device device identifier.
-            inline const node_type& node_at(device_t uid) const {
+            inline node_type const& node_at(device_t uid) const {
                 return m_nodes.at(uid);
             }
 

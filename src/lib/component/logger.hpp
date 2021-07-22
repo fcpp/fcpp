@@ -85,7 +85,7 @@ namespace tags {
 namespace details {
     //! @brief Makes a stream reference from a `std::string` path.
     template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(const std::string& s, const common::tagged_tuple<S,T>& t) {
+    std::shared_ptr<std::ostream> make_stream(std::string const& s, common::tagged_tuple<S,T> const& t) {
         if (s.back() == '/' or s.back() == '\\') {
             std::stringstream ss;
             ss << s;
@@ -99,7 +99,7 @@ namespace details {
     }
     //! @brief Makes a stream reference from a `const char*` path.
     template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(const char* s, const common::tagged_tuple<S,T>& t) {
+    std::shared_ptr<std::ostream> make_stream(const char* s, common::tagged_tuple<S,T> const& t) {
         return make_stream(std::string(s), t);
     }
     //! @brief Makes a stream reference from a stream pointer.
@@ -215,7 +215,7 @@ struct logger {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t) {
                 if (value_push) P::node::net.aggregator_insert(P::node::storage_tuple());
             }
 
@@ -248,7 +248,7 @@ struct logger {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
                 std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
@@ -298,7 +298,7 @@ struct logger {
 
             //! @brief Erases data from the aggregators.
             template <typename S, typename T>
-            void aggregator_erase(const common::tagged_tuple<S,T>& t) {
+            void aggregator_erase(common::tagged_tuple<S,T> const& t) {
                 assert(value_push); // disabled for pull-based loggers
                 common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
                 aggregator_erase_impl(m_aggregators, t, t_tags());
@@ -306,7 +306,7 @@ struct logger {
 
             //! @brief Inserts data into the aggregators.
             template <typename S, typename T>
-            void aggregator_insert(const common::tagged_tuple<S,T>& t) {
+            void aggregator_insert(common::tagged_tuple<S,T> const& t) {
                 assert(value_push); // disabled for pull-based loggers
                 common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
                 aggregator_insert_impl(m_aggregators, t, t_tags());
@@ -334,19 +334,19 @@ struct logger {
 
             //! @brief Erases data from the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_erase_impl(S& a, const T& t, common::type_sequence<Us...>) {
+            void aggregator_erase_impl(S& a, T const& t, common::type_sequence<Us...>) {
                 common::details::ignore((common::get<Us>(a).erase(common::get<Us>(t)),0)...);
             }
 
             //! @brief Inserts data into the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_insert_impl(S& a,  const T& t, common::type_sequence<Us...>) {
+            void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<Us...>) {
                 common::details::ignore((common::get<Us>(a).insert(common::get<Us>(t)),0)...);
             }
 
             //! @brief Inserts an aggregator data into the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_add_impl(S& a,  const T& t, common::type_sequence<Us...>) {
+            void aggregator_add_impl(S& a,  T const& t, common::type_sequence<Us...>) {
                 common::details::ignore((common::get<Us>(a) += common::get<Us>(t))...);
             }
 

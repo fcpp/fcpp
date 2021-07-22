@@ -215,7 +215,6 @@ struct base {
 
         //! @brief The global part of the component.
         class net {
-
           public: // visible by node objects and the main program
             //! @name constructors
             //! @{

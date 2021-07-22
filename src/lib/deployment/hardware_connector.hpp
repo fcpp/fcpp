@@ -191,7 +191,7 @@ struct hardware_connector {
                 #endif
                     is >> mt;
                     if (is.size() == 0)
-                        P::node::as_final().receive(m.time, m.device, mt);        
+                        P::node::as_final().receive(m.time, m.device, mt);
                 #if __cpp_exceptions
                 } catch (common::format_error&) {}
                 #endif

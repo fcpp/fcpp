@@ -34,17 +34,13 @@ namespace tags {
     template <typename... Ts>
     struct node_attributes {};
 
-    //! @brief Declaration tag associating to a sequence generator type scheduling spawning of nodes.
-    template <typename T>
-    struct spawn_schedule {};
-
     //! @brief Net initialisation tag associating to the name of the file specifying graph nodes.
     struct nodesfile;
 
     //! @brief Net initialisation tag associating to the name of the file specifying graph arcs.
     struct arcsfile;
 
-    //! @brief Node initialisation tag associating to a starting time of execution.
+    //! @brief Net initialisation tag setting a default start for nodes.
     struct start;
 }
 
@@ -57,16 +53,13 @@ namespace tags {
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::init defines a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
- * - \ref tags::spawn_schedule defines a sequence generator type scheduling spawning of nodes (defaults to \ref sequence::never).
+ * - \ref tags::node_attributes defines a sequence of attributes tags and and types.
  *
  * Nodes generated receive all tags produced by generating distributions, and \ref tags::start associated to the creation time.
  */
 template <class... Ts>
 struct graph_spawner {
-    //! @brief Sequence generator type scheduling spawning of nodes.
-    using schedule_type = sequence::merge_t<common::option_types<tags::spawn_schedule, Ts...>>;
-
+    //! @brief Attributes type.
     using attributes_tag_type = common::option_types<tags::node_attributes, Ts...>;
     using attributes_type = std::conditional_t<std::is_same<attributes_tag_type, common::type_sequence<>>::value, common::option_types<tags::tuple_store, Ts...>, attributes_tag_type>;
     using attributes_tuple_type = common::tagged_tuple_t<attributes_type>;
@@ -98,29 +91,10 @@ struct graph_spawner {
             template <typename S, typename T>
             net(const common::tagged_tuple<S,T>& t) :
                 P::net(t),
-                m_schedule(get_generator(has_randomizer<P>{}, *this),t),
+                m_start(common::get_or<tags::start>(t, 0)),
                 m_nodesfile( common::get_or<tags::nodesfile>(t, "index") ),
                 m_arcsfile( common::get_or<tags::arcsfile>(t, "arcs") ) {
                 read_nodes();
-            }
-
-            /**
-             * @brief Returns next event to schedule for the net component.
-             *
-             * Should correspond to the next time also during updates.
-             */
-            times_t next() const {
-                return std::min(m_schedule.next(), P::net::next());
-            }
-
-            //! @brief Updates the internal status of net component.
-            void update() {
-                if (m_schedule.next() < P::net::next()) {
-                    PROFILE_COUNT("graph_spawner");
-                    times_t t = m_schedule.next();
-                    size_t i = m_schedule.next_sequence();
-                    m_schedule.step(get_generator(has_randomizer<P>{}, *this));
-                } else P::net::update();
             }
 
           private: // implementation details
@@ -174,8 +148,8 @@ struct graph_spawner {
             //     P::net::node_emplace(push_time(std::get<i>(m_distributions)(get_generator(has_randomizer<P>{}, *this)), t));
             // }
 
-            //! @brief The scheduling of spawning events.
-            schedule_type m_schedule;
+            //! @brief The default start of nodes.
+            size_t m_start;
 
             //! @brief The file describing graph nodes.
             std::string m_nodesfile;

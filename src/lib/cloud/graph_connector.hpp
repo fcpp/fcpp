@@ -44,10 +44,6 @@ namespace tags {
     template <typename T>
     struct delay {};
 
-    //! @brief Declaration tag associating to the dimensionality of the space.
-    template <size_t n>
-    struct dimension;
-
     //! @brief Declaration flag associating to whether message sizes should be emulated.
     template <bool b>
     struct message_size {};
@@ -65,9 +61,6 @@ namespace tags {
 
     //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
     struct epsilon;
-
-    //! @brief Net initialisation tag associating to communication radius.
-    struct radius {};
 }
 
 /**
@@ -88,32 +81,14 @@ namespace tags {
  * <b>Node initialisation tags:</b>
  * - \ref tags::connection_data associates to communication power (defaults to `connector_type::data_type{}`).
  * - \ref tags::epsilon associates to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
- *
- * Net initialisation tags (such as \ref tags::radius) are forwarded to connector classes.
- * Connector classes should have the following members (see \ref connect for a list of available ones):
- * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * using data_type = // type for connection power data on nodes
- * using position_type = vec<n>;
- * template <typename G, typename S, typename T> connector_type(G&& gen, const common::tagged_tuple<S,T>& tup);
- * real_t maximum_radius() const;
- * bool operator()(const data_type& data1, const position_type& position1, const data_type& data2, const position_type& position2) const;
- * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <class... Ts>
 struct graph_connector {
     //! @brief Whether message sizes should be emulated.
     constexpr static bool message_size = common::option_flag<tags::message_size, false, Ts...>;
 
-    //    constexpr static bool static_topology = common::option_flag<tags::static_topology, false, Ts...>;
-
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
-
-    //! @brief The dimensionality of the space.
-    constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
-
-    //! @brief Type for representing a position.
-    using position_type = vec<dimension>;
 
     //! @brief Delay generator for sending messages after rounds.
     using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
@@ -259,7 +234,7 @@ struct graph_connector {
                 return {};
             }
 
-            //! @brief A generator for delays in sending messages.
+            //! @brief A list of neighbours.
             neighbour_list m_neighbours;
 
             //! @brief A generator for delays in sending messages.
@@ -283,12 +258,6 @@ struct graph_connector {
             ~net() {
                 maybe_clear(has_identifier<P>{}, *this);
             }
-
-            // //! @brief Checks whether connection is possible.
-            // template <typename G>
-            // inline bool connection_success(G&& gen, const connection_data_type& data1, const position_type& position1, const connection_data_type& data2, const position_type& position2) const {
-            //     return m_connector(gen, data1, position1, data2, position2);
-            // }
 
           private: // implementation details
             //! @brief Returns the `randomizer` generator if available.

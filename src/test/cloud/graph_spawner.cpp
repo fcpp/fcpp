@@ -9,6 +9,7 @@
 #include "lib/component/identifier.hpp"
 #include "lib/component/storage.hpp"
 #include "lib/component/timer.hpp"
+#include "lib/cloud/graph_connector.hpp"
 #include "lib/cloud/graph_spawner.hpp"
 
 #include "test/helper.hpp"
@@ -31,9 +32,9 @@ using ever_false = distribution::constant_n<bool, false>;
 template <int O>
 using combo1 = component::combine_spec<
     component::graph_spawner<
-        spawn_schedule<seq_rep>,
         node_attributes<url,std::string,idx,int>
-        >,
+    >,
+    component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
         parallel<(O & 1) == 1>,
         synchronised<(O & 2) == 2>
@@ -44,9 +45,9 @@ using combo1 = component::combine_spec<
 template <int O>
 using combo2 = component::combine_spec<
     component::graph_spawner<
-        spawn_schedule<seq_rep>,
-        spawn_schedule<seq_per>
+        node_attributes<url,std::string,idx,int>
     >,
+    component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
         parallel<(O & 1) == 1>,
         synchronised<(O & 2) == 2>
@@ -54,7 +55,6 @@ using combo2 = component::combine_spec<
     component::storage<tuple_store<tag,bool,gat,int,start,times_t>>,
     component::base<parallel<(O & 1) == 1>>
 >;
-
 
 MULTI_TEST(SpawnerTest, Sequence, O, 2) {
     typename combo1<O>::net network{common::make_tagged_tuple<nodesfile,arcsfile>("index", "arcs")};

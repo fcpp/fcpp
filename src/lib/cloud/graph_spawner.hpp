@@ -34,6 +34,9 @@ namespace tags {
     template <typename... Ts>
     struct node_attributes {};
 
+    // //! @brief Node attribute tag with the node ID.
+    // struct uid {};
+
     //! @brief Net initialisation tag associating to the name of the file specifying graph nodes.
     struct nodesfile;
 
@@ -95,6 +98,7 @@ struct graph_spawner {
                 m_nodesfile( common::get_or<tags::nodesfile>(t, "index") ),
                 m_arcsfile( common::get_or<tags::arcsfile>(t, "arcs") ) {
                 read_nodes();
+                read_arcs();
             }
 
           private: // implementation details
@@ -125,7 +129,7 @@ struct graph_spawner {
 
                 while (nodesf) {
                     read_row(nodesf, row, typename attributes_tuple_type::tags{});
-                    // chiamare emplace con row
+                    P::net::node_emplace(row);
                 }
 
                 nodesf.close();
@@ -141,12 +145,18 @@ struct graph_spawner {
                 read_row(is, row, common::type_sequence<Ss...>{});
             }
 
-            // //! @brief Emplaces a node generated through the j-th distribution.
-            // template <size_t i>
-            // inline void call_distribution(size_t j, times_t t, std::index_sequence<i>) {
-            //     assert(i == j);
-            //     P::net::node_emplace(push_time(std::get<i>(m_distributions)(get_generator(has_randomizer<P>{}, *this)), t));
-            // }
+            inline void read_arcs() {
+                std::ifstream arcsf(m_arcsfile);
+
+                std::pair<size_t,size_t> row;
+
+                while (arcsf) {
+                    arcsf >> row.first;
+                    arcsf >> row.second;
+                }
+
+                arcsf.close();
+            }
 
             //! @brief The default start of nodes.
             size_t m_start;

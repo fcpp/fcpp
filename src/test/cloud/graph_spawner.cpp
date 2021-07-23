@@ -22,7 +22,6 @@ struct gat {};
 struct oth {};
 
 struct url {};
-struct idx {};
 
 using seq_rep = sequence::multiple_n<3, 1>;
 using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distribution::constant_n<times_t, 1>, distribution::constant_n<times_t, 5>>;
@@ -32,7 +31,7 @@ using ever_false = distribution::constant_n<bool, false>;
 template <int O>
 using combo1 = component::combine_spec<
     component::graph_spawner<
-        node_attributes<url,std::string,idx,int>
+        node_attributes<url,std::string,uid,size_t>
     >,
     component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
@@ -45,7 +44,7 @@ using combo1 = component::combine_spec<
 template <int O>
 using combo2 = component::combine_spec<
     component::graph_spawner<
-        node_attributes<url,std::string,idx,int>
+        node_attributes<url,std::string,uid,size_t>
     >,
     component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<

@@ -39,6 +39,10 @@ namespace tags {
     template <bool b>
     struct realtime {};
 
+    //! @brief Declaration tag associating to a clock type
+    template <typename T>
+    struct clock_type {};
+
     //! @brief Node initialisation tag associating to a `device_t` unique identifier.
     struct uid {};
 }
@@ -81,6 +85,7 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  * - \ref tags::realtime defines whether running should follow real time (defaults to `FCPP_REALTIME < INF`).
+ * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::high_resolution_clock`)
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::uid associates to a `device_t` unique identifier (required).
@@ -92,6 +97,9 @@ struct base {
 
     //! @brief Whether running should follow real time.
     constexpr static bool realtime = common::option_flag<tags::realtime, FCPP_REALTIME < INF, Ts...>;
+
+    //! @brief The clock type used for time measurements.
+    using clock_t = common::option_type<tags::clock_type, std::chrono::high_resolution_clock, Ts ...>;
 
     /**
      * @brief The actual component.
@@ -123,7 +131,7 @@ struct base {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : uid(common::get_or<tags::uid>(t, 0)), net(n) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : uid(common::get_or<tags::uid>(t, 0)), net(n) {
                 static_assert(common::tagged_tuple<S,T>::tags::template count<tags::uid> >= 1, MISSING_TAG_MESSAGE);
             }
 
@@ -207,9 +215,6 @@ struct base {
 
         //! @brief The global part of the component.
         class net {
-            //! @brief The clock type used for time measurements.
-            using clock_t = std::chrono::high_resolution_clock;
-
           public: // visible by node objects and the main program
             //! @name constructors
             //! @{
@@ -281,7 +286,7 @@ struct base {
 
             //! @brief Waits real time before an update.
             inline void maybe_sleep(times_t nxt, std::true_type) {
-                clock_t::time_point t = m_realtime_start + clock_t::duration((long long)(nxt/m_realtime_factor));
+                typename clock_t::time_point t = m_realtime_start + typename clock_t::duration((long long)(nxt/m_realtime_factor));
                 if (t > clock_t::now())
                     std::this_thread::sleep_until(t);
                 else {
@@ -294,7 +299,7 @@ struct base {
             }
 
             //! @brief The start time of the program.
-            clock_t::time_point m_realtime_start;
+            typename clock_t::time_point m_realtime_start;
 
             //! @brief A conversion factor from clock ticks to real time in seconds.
             real_t m_realtime_factor;

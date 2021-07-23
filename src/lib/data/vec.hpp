@@ -75,7 +75,7 @@ struct vec {
 //! @brief Vectorial addition.
 //! @{
 template <size_t n>
-vec<n>& operator+=(vec<n>& x, const vec<n>& y) {
+vec<n>& operator+=(vec<n>& x, vec<n> const& y) {
     for (size_t i=0; i<n; ++i) x[i] += y[i];
     return x;
 }
@@ -87,12 +87,12 @@ vec<n>& operator+=(vec<n>& x, real_t y) {
 }
 
 template <size_t n>
-vec<n> operator+(vec<n> x, const vec<n>& y) {
+vec<n> operator+(vec<n> x, vec<n> const& y) {
     return x += y;
 }
 
 template <size_t n>
-vec<n> operator+(const vec<n>& x, vec<n>&& y) {
+vec<n> operator+(vec<n> const& x, vec<n>&& y) {
     return y += x;
 }
 
@@ -111,7 +111,7 @@ vec<n> operator+(real_t x, vec<n> y) {
 //! @brief Vectorial subtraction.
 //! @{
 template <size_t n>
-vec<n>& operator-=(vec<n>& x, const vec<n>& y) {
+vec<n>& operator-=(vec<n>& x, vec<n> const& y) {
     for (size_t i=0; i<n; ++i) x[i] -= y[i];
     return x;
 }
@@ -123,12 +123,12 @@ vec<n>& operator-=(vec<n>& x, real_t y) {
 }
 
 template <size_t n>
-vec<n> operator-(vec<n> x, const vec<n>& y) {
+vec<n> operator-(vec<n> x, vec<n> const& y) {
     return x -= y;
 }
 
 template <size_t n>
-vec<n> operator-(const vec<n>& x, vec<n>&& y) {
+vec<n> operator-(vec<n> const& x, vec<n>&& y) {
     for (size_t i=0; i<n; ++i) y[i] = x[i]-y[i];
     return y;
 }
@@ -194,7 +194,7 @@ vec<n> operator/(vec<n> x, real_t y) {
 //! @brief Scalar multiplication, vector norm and normalisation.
 //! @{
 template <size_t n>
-real_t operator*(const vec<n>& x, const vec<n>& y) {
+real_t operator*(vec<n> const& x, vec<n> const& y) {
     real_t res = 0;
     for (size_t i=0; i<n; ++i) res += x[i] * y[i];
     return res;
@@ -203,22 +203,22 @@ real_t operator*(const vec<n>& x, const vec<n>& y) {
 using std::abs;
 
 template <size_t n>
-real_t abs(const vec<n>& x) {
+real_t abs(vec<n> const& x) {
     return x * x;
 }
 
 template <size_t n>
-real_t norm(const vec<n>& x) {
+real_t norm(vec<n> const& x) {
     return sqrt(abs(x));
 }
 
 template <size_t n>
-real_t unit(const vec<n>& x) {
+real_t unit(vec<n> const& x) {
     return x / norm(x);
 }
 
 template <size_t n>
-real_t distance(const vec<n>& x, const vec<n>& y) {
+real_t distance(vec<n> const& x, vec<n> const& y) {
     return norm(x - y);
 }
 //! @}

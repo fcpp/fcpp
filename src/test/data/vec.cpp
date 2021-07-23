@@ -23,7 +23,7 @@ vec<3> getw() {
 }
 
 
-TEST(VectorTest, Addition) {
+TEST(VecTest, Addition) {
     vec<3> u = getu();
     vec<3> v = getv();
     vec<3> w = getw();
@@ -35,7 +35,7 @@ TEST(VectorTest, Addition) {
     EXPECT_EQ(w, u);
 }
 
-TEST(VectorTest, Subtraction) {
+TEST(VecTest, Subtraction) {
     vec<3> u = getu();
     vec<3> v = getv();
     vec<3> w = getw();
@@ -47,7 +47,7 @@ TEST(VectorTest, Subtraction) {
     EXPECT_EQ(v, w);
 }
 
-TEST(VectorTest, Multiplication) {
+TEST(VecTest, Multiplication) {
     vec<2> t = {1,2};
     vec<2> u = {2,4};
     vec<2> v = {3,1};

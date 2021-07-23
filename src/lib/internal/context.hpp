@@ -119,7 +119,7 @@ class context<true, pointer, M, Ts...> {
 
     //! @brief Changes the status of the context from "modify" to "query".
     void freeze(device_t, device_t) {
-        for (const auto& x : m_data)
+        for (auto const& x : m_data)
             m_sorted_data.emplace_back(x.first, &x.second);
         std::sort(m_sorted_data.begin(), m_sorted_data.end());
     }
@@ -173,7 +173,7 @@ class context<true, pointer, M, Ts...> {
 
     //! @brief Returns the old value for a certain trace (unaligned).
     template <typename A>
-    const A& old(trace_t trace, const A& def, device_t self) const {
+    A const& old(trace_t trace, A const& def, device_t self) const {
         if (m_data.count(self) and m_data.at(self)->template count<A>(trace))
             return m_data.at(self)->template at<A>(trace);
         return def;
@@ -185,7 +185,7 @@ class context<true, pointer, M, Ts...> {
         std::vector<device_t> ids;
         std::vector<to_local<A>> vals;
         vals.push_back(details::other(def));
-        for (const auto& x : m_sorted_data)
+        for (auto const& x : m_sorted_data)
             if ((*x.second)->template count<A>(trace)) {
                 ids.push_back(x.first);
                 vals.push_back(details::self(static_cast<A const&>((*x.second)->template at<A>(trace)), self));
@@ -197,7 +197,7 @@ class context<true, pointer, M, Ts...> {
     template <typename O>
     void print(O& o) const {
         bool first = true;
-        for (const auto& x : m_metrics) {
+        for (auto const& x : m_metrics) {
             if (first) first = false;
             else o << ", ";
             o << x.first << ":" << m_data.at(x.first) << "@" << 0+x.second;
@@ -354,7 +354,7 @@ class context<false, pointer, M, Ts...> {
 
     //! @brief Returns the old value for a certain trace (unaligned).
     template <typename A>
-    const A& old(trace_t trace, const A& def, device_t self) const {
+    A const& old(trace_t trace, A const& def, device_t self) const {
         if (m_self < m_data.size() and get<0>(m_data[m_self]) == self and get<2>(m_data[m_self])->template count<A>(trace))
             return get<2>(m_data[m_self])->template at<A>(trace);
         return def;
@@ -366,7 +366,7 @@ class context<false, pointer, M, Ts...> {
         std::vector<device_t> ids;
         std::vector<to_local<A>> vals;
         vals.push_back(details::other(def));
-        for (const auto& x : m_data)
+        for (auto const& x : m_data)
             if (get<2>(x)->template count<A>(trace)) {
                 ids.push_back(get<0>(x));
                 vals.push_back(details::self(static_cast<A const&>(get<2>(x)->template at<A>(trace)), self));
@@ -378,7 +378,7 @@ class context<false, pointer, M, Ts...> {
     template <typename O>
     void print(O& o) const {
         bool first = true;
-        for (const auto& x : m_data) {
+        for (auto const& x : m_data) {
             if (first) first = false;
             else o << ", ";
             o << get<0>(x) << ":" << get<2>(x) << "@" << 0+get<1>(x);

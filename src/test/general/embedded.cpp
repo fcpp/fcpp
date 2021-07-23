@@ -102,7 +102,7 @@ FUN void topology_recording(ARGS) { CODE
         return n;
     });
     times_t c = 0;
-    for (const auto& it : nbr_counters)
+    for (auto const& it : nbr_counters)
         c = max(c, it.second);
     c = c * 100 / node.storage(round_count{});
     node.storage(strongest_link{}) = (int8_t)round(c);

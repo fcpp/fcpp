@@ -114,7 +114,7 @@ struct hardware_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_dist(INF), m_nbr_msg_size(0), m_network(*this, common::get_or<tags::connection_data>(t, connection_data_type{})) {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_dist(INF), m_nbr_msg_size(0), m_network(*this, common::get_or<tags::connection_data>(t, connection_data_type{})) {}
 
             //! @brief Connector data.
             connection_data_type& connector_data() {
@@ -122,7 +122,7 @@ struct hardware_connector {
             }
 
             //! @brief Connector data (const access).
-            const connection_data_type& connector_data() const {
+            connection_data_type const& connector_data() const {
                 return m_network.data();
             }
 
@@ -186,11 +186,15 @@ struct hardware_connector {
                 fcpp::details::self(m_nbr_msg_size, m.device) = m.content.size();
                 common::isstream is(std::move(m.content));
                 typename F::node::message_t mt;
+                #if __cpp_exceptions
                 try {
+                #endif
                     is >> mt;
                     if (is.size() == 0)
                         P::node::as_final().receive(m.time, m.device, mt);
+                #if __cpp_exceptions
                 } catch (common::format_error&) {}
+                #endif
             }
 
             //! @brief Perceived distances from neighbours.

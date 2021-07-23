@@ -134,7 +134,7 @@ using flex_distance_t = common::export_list<tuple<real_t,int>>;
 
 //! @brief Broadcasts a value following given distances from sources.
 template <typename node_t, typename P, typename T>
-T broadcast(node_t& node, trace_t call_point, const P& distance, const T& value) {
+T broadcast(node_t& node, trace_t call_point, P const& distance, T const& value) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return nbr(node, 0, value, [&] (field<T> x) {
@@ -144,7 +144,7 @@ T broadcast(node_t& node, trace_t call_point, const P& distance, const T& value)
 
 //! @brief Broadcasts a value following given source markers and distances from sources.
 template <typename node_t, typename P, typename T>
-inline T broadcast(node_t& node, trace_t call_point, const P& distance, const T& value, bool source, const T& null) {
+inline T broadcast(node_t& node, trace_t call_point, P const& distance, T const& value, bool source, T const& null) {
     return broadcast(node, call_point, distance, source ? value : null);
 }
 

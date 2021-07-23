@@ -1,5 +1,6 @@
 // Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
+#include <cstdio>
 #include <sstream>
 #include <string>
 
@@ -115,6 +116,7 @@ TEST(LoggerTest, MakeStream) {
     p = component::details::make_stream(&s, t);
     *p << "foo";
     EXPECT_EQ("foo", s.str());
+    std::remove("foo");
 }
 
 MULTI_TEST(LoggerTest, Push, O, 1) {

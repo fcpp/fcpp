@@ -75,7 +75,7 @@ class count {
     count() = default;
 
     //! @brief Combines aggregated values.
-    count& operator+=(const count& o) {
+    count& operator+=(count const& o) {
         m_count += o.m_count;
         return *this;
     }
@@ -134,7 +134,7 @@ class distinct {
     distinct() = default;
 
     //! @brief Combines aggregated values.
-    distinct& operator+=(const distinct& o) {
+    distinct& operator+=(distinct const& o) {
         for (auto const& x : o.m_counts)
             m_counts[x.first] += x.second;
         return *this;
@@ -194,7 +194,7 @@ class sum {
     sum() = default;
 
     //! @brief Combines aggregated values.
-    sum& operator+=(const sum& o) {
+    sum& operator+=(sum const& o) {
         m_sum += o.m_sum;
         return *this;
     }
@@ -255,7 +255,7 @@ class mean {
     mean() = default;
 
     //! @brief Combines aggregated values.
-    mean& operator+=(const mean& o) {
+    mean& operator+=(mean const& o) {
         m_sum += o.m_sum;
         m_count += o.m_count;
         return *this;
@@ -321,7 +321,7 @@ class moment {
     moment() = default;
 
     //! @brief Combines aggregated values.
-    moment& operator+=(const moment& o) {
+    moment& operator+=(moment const& o) {
         m_sum += o.m_sum;
         m_count += o.m_count;
         return *this;
@@ -387,7 +387,7 @@ class deviation {
     deviation() = default;
 
     //! @brief Combines aggregated values.
-    deviation& operator+=(const deviation& o) {
+    deviation& operator+=(deviation const& o) {
         m_sum += o.m_sum;
         m_sqsum += o.m_sqsum;
         m_count += o.m_count;
@@ -461,7 +461,7 @@ class stats {
     stats() = default;
 
     //! @brief Combines aggregated values.
-    stats& operator+=(const stats& o) {
+    stats& operator+=(stats const& o) {
         m_sum += o.m_sum;
         m_sqsum += o.m_sqsum;
         m_count += o.m_count;
@@ -543,7 +543,7 @@ class min {
     min() = default;
 
     //! @brief Combines aggregated values.
-    min& operator+=(const min& o) {
+    min& operator+=(min const& o) {
         m_min = std::min(m_min, o.m_min);
         return *this;
     }
@@ -603,7 +603,7 @@ class max {
     max() = default;
 
     //! @brief Combines aggregated values.
-    max& operator+=(const max& o) {
+    max& operator+=(max const& o) {
         m_max = std::max(m_max, o.m_max);
         return *this;
     }
@@ -679,7 +679,7 @@ namespace details {
 
     //! @brief The results of aggregation for quantile.
     template <typename T, size_t n>
-    std::array<T,n> quantiles(std::vector<T>& ev, const std::array<char,n>& quantiles) {
+    std::array<T,n> quantiles(std::vector<T>& ev, std::array<char,n> const& quantiles) {
         std::array<T,n> res;
         std::vector<size_t> iv;
         for (int q : quantiles) {
@@ -700,7 +700,7 @@ namespace details {
 
     //! @brief The results of aggregation for quantile as tuple.
     template <typename U, typename T, bool only_finite, bool insert_only, char... qs, size_t... is>
-    quantile_result_type<U, T, only_finite, insert_only, qs...> quantiles_tuple(quantile<T, only_finite, insert_only, qs...> const&, std::vector<T>& ev, const std::array<char,sizeof...(qs)>& quantiles, std::index_sequence<is...>) {
+    quantile_result_type<U, T, only_finite, insert_only, qs...> quantiles_tuple(quantile<T, only_finite, insert_only, qs...> const&, std::vector<T>& ev, std::array<char,sizeof...(qs)> const& quantiles, std::index_sequence<is...>) {
         std::array<T,sizeof...(qs)> r = details::quantiles(ev, quantiles);
         return {r[is]...};
     }
@@ -733,7 +733,7 @@ class quantile<T, only_finite, false, qs...> {
     quantile() = default;
 
     //! @brief Combines aggregated values.
-    quantile& operator+=(const quantile& o) {
+    quantile& operator+=(quantile const& o) {
         m_values.insert(o.m_values.begin(), o.m_values.end());
         return *this;
     }
@@ -796,7 +796,7 @@ class quantile<T, only_finite, true, qs...> {
     quantile() = default;
 
     //! @brief Combines aggregated values.
-    quantile& operator+=(const quantile& o) {
+    quantile& operator+=(quantile const& o) {
         m_values.insert(m_values.end(), o.m_values.begin(), o.m_values.end());
         return *this;
     }
@@ -884,7 +884,7 @@ class combine : public Ts... {
     combine() = default;
 
     //! @brief Combines aggregated values.
-    combine& operator+=(const combine& o) {
+    combine& operator+=(combine const& o) {
         common::details::ignore(Ts::operator+=(o)...);
         return *this;
     }

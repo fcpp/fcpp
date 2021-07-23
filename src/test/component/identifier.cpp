@@ -100,6 +100,33 @@ MULTI_TEST(IdentifierTest, Sequential, O, 2) {
     EXPECT_EQ(1, (int)network.node_at(1).uid);
 }
 
+MULTI_TEST(IdentifierTest, Customised, O, 2) {
+    typename combo1<O>::net network{common::make_tagged_tuple<>()};
+    EXPECT_EQ(0, (int)network.node_size());
+    EXPECT_EQ(0, (int)network.node_count(0));
+    EXPECT_EQ(network.node_begin(), network.node_end());
+    device_t i;
+    i = network.node_emplace(common::make_tagged_tuple<uid>(42));
+    EXPECT_EQ(42, (int)i);
+    EXPECT_EQ(1, (int)network.node_size());
+    EXPECT_EQ(0, (int)network.node_count(0));
+    EXPECT_EQ(1, (int)network.node_count(42));
+    EXPECT_NE(network.node_begin(), network.node_end());
+    EXPECT_EQ(42, (int)network.node_at(42).uid);
+    EXPECT_EQ(42, (int)network.node_begin()->second.uid);
+    EXPECT_EQ(TIME_MAX, network.next());
+    network.update();
+    i = network.node_emplace(common::make_tagged_tuple<uid>(24));
+    EXPECT_EQ(24, (int)i);
+    EXPECT_EQ(2, (int)network.node_size());
+    EXPECT_EQ(1, (int)network.node_count(24));
+    EXPECT_EQ(0, (int)network.node_erase(2));
+    EXPECT_EQ(2, (int)network.node_size());
+    EXPECT_EQ(1, (int)network.node_erase(42));
+    EXPECT_EQ(1, (int)network.node_size());
+    EXPECT_EQ(24, (int)network.node_at(24).uid);
+}
+
 MULTI_TEST(IdentifierTest, Parallel, O, 2) {
     typename combo2<O>::net network{common::make_tagged_tuple<>()};
     EXPECT_EQ(0, (int)network.node_size());

@@ -84,7 +84,7 @@ struct hardware_identifier {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -115,7 +115,7 @@ struct hardware_identifier {
             }
 
             //! @brief Const access to the node with a given device identifier.
-            inline const node_type& node_at(device_t uid) const {
+            inline node_type const& node_at(device_t uid) const {
                 assert(m_node.uid == uid);
                 return m_node;
             }
@@ -131,25 +131,25 @@ struct hardware_identifier {
             //! @brief Adds a tagged value to a tagged tuple if not already present.
             //! @{
             template <typename S, typename T, typename Ss, typename Us>
-            auto maybe_push(const common::tagged_tuple<Ss,Us>& t, T const&, common::type_sequence<S>) {
+            auto maybe_push(common::tagged_tuple<Ss,Us> const& t, T const&, common::type_sequence<S>) {
                 return t;
             }
             template <typename S, typename T, typename Ss, typename Us>
-            auto maybe_push(const common::tagged_tuple<Ss,Us>& t, T const& x, common::type_sequence<>) {
+            auto maybe_push(common::tagged_tuple<Ss,Us> const& t, T const& x, common::type_sequence<>) {
                 using tt_type = typename common::tagged_tuple<Ss,Us>::template push_back<S, T>;
                 tt_type tt(t);
                 common::get<S>(tt) = x;
                 return tt;
             }
             template <typename S, typename T, typename Ss, typename Us>
-            inline auto maybe_push(const common::tagged_tuple<Ss,Us>& t, T const& x) {
+            inline auto maybe_push(common::tagged_tuple<Ss,Us> const& t, T const& x) {
                 return maybe_push<S>(t, x, typename Ss::template intersect<S>{});
             }
             //! @}
 
             //! @brief Adds a `start` time and `uid` to a given tagged tuple.
             template <typename Ss, typename Us>
-            auto push_start_uid(const common::tagged_tuple<Ss,Us>& t) {
+            auto push_start_uid(common::tagged_tuple<Ss,Us> const& t) {
                 return maybe_push<tags::uid>(maybe_push<tags::start>(t, times_t{0}), os::uid());
             }
 

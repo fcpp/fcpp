@@ -91,7 +91,7 @@ struct spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -130,20 +130,20 @@ struct spawner {
 
             //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
             template <typename S, typename T, typename... Us>
-            tuple_type build_distributions_tuple(const common::tagged_tuple<S,T>& t, common::type_sequence<Us...>) {
+            tuple_type build_distributions_tuple(common::tagged_tuple<S,T> const& t, common::type_sequence<Us...>) {
                 return {build_distributions(t, typename Us::tags(), typename Us::types())...};
             }
 
             //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
             template <typename S, typename T, typename... Ss, typename... Us>
             common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>
-            build_distributions(const common::tagged_tuple<S,T>& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
+            build_distributions(common::tagged_tuple<S,T> const& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
                 return {Us{get_generator(has_randomizer<P>{}, *this),t}...};
             }
 
             //! @brief Adds a `start` time to a given tagged tuple.
             template <typename S, typename T>
-            auto push_time(const common::tagged_tuple<S,T>& tup, times_t t) {
+            auto push_time(common::tagged_tuple<S,T> const& tup, times_t t) {
                 using tt_type = typename common::tagged_tuple<S,T>::template push_back<tags::start, times_t>;
                 tt_type tt(tup);
                 common::get<tags::start>(tt) = t;

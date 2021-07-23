@@ -38,13 +38,13 @@ struct once {
 
     //! @brief Measures an incoming message.
     template <typename N, typename S, typename T>
-    result_type build(const N& n, times_t, device_t d, const common::tagged_tuple<S,T>&) const {
+    result_type build(N const& n, times_t, device_t d, const common::tagged_tuple<S,T>&) const {
         return d == n.uid ? 0 : 1;
     }
 
     //! @brief Updates an existing measure.
     template <typename N>
-    result_type update(const result_type& r, const N&) const {
+    result_type update(result_type const& r, const N&) const {
         return r == 0 ? 0 : 2;
     }
 };
@@ -69,13 +69,13 @@ struct retain {
 
     //! @brief Measures an incoming message.
     template <typename N, typename S, typename T>
-    result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>&) const {
+    result_type build(N const& n, times_t t, device_t d, const common::tagged_tuple<S,T>&) const {
         return d == n.uid ? 0 : n.next_time() - t;
     }
 
     //! @brief Updates an existing measure.
     template <typename N>
-    result_type update(const result_type& r, const N& n) const {
+    result_type update(result_type const& r, N const& n) const {
         return r == 0 ? 0 : r + n.next_time() - n.current_time();
     }
 };
@@ -105,13 +105,13 @@ struct minkowski {
 
     //! @brief Measures an incoming message.
     template <typename N, typename S, typename T>
-    result_type build(const N& n, times_t t, device_t d, const common::tagged_tuple<S,T>& m) const {
+    result_type build(N const& n, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
         return d == n.uid ? 0 : norm(common::get<position_tag>(m) - n.position(t)) + (n.next_time() - t) * radius / real_t(period);
     }
 
     //! @brief Updates an existing measure.
     template <typename N>
-    result_type update(const result_type& r, const N& n) const {
+    result_type update(result_type const& r, N const& n) const {
         return r == 0 ? 0 : r + (n.next_time() - n.current_time()) * radius / real_t(period);
     }
 };

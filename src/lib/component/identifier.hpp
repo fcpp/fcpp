@@ -183,7 +183,7 @@ struct identifier {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
 
             /**
              * @brief Returns next event to schedule for the net component.
@@ -224,7 +224,7 @@ struct identifier {
             }
 
             //! @brief Const access to the node with a given device device identifier.
-            inline const node_type& node_at(device_t uid) const {
+            inline node_type const& node_at(device_t uid) const {
                 return m_nodes.at(uid);
             }
 
@@ -257,14 +257,12 @@ struct identifier {
 
             //! @brief Creates a new node, initialising it with data in `t` (returns the identifier assigned).
             template <typename S, typename T>
-            device_t node_emplace(const common::tagged_tuple<S,T>& t) {
-                while (m_nodes.count(m_next_uid) > 0) ++m_next_uid;
-                using tt_type = typename common::tagged_tuple<S,T>::template push_back<tags::uid, device_t>;
-                tt_type tt(t);
-                common::get<tags::uid>(tt) = m_next_uid;
-                m_nodes.emplace(std::piecewise_construct, std::make_tuple(m_next_uid), std::tuple<typename F::net&, tt_type>(P::net::as_final(), tt));
-                m_queue.push(m_nodes.at(m_next_uid).next(), m_next_uid);
-                return m_next_uid++;
+            device_t node_emplace(common::tagged_tuple<S,T> const& t) {
+                auto tt = push_uid(t, typename S::template intersect<tags::uid>());
+                device_t const& id = common::get<tags::uid>(tt);
+                m_nodes.emplace(std::piecewise_construct, std::make_tuple(id), std::tuple<typename F::net&, decltype(tt)>(P::net::as_final(), tt));
+                m_queue.push(m_nodes.at(id).next(), id);
+                return id;
             }
 
             //! @brief Erases the node with a given identifier.
@@ -278,6 +276,23 @@ struct identifier {
             }
 
           private: // implementation details
+            //! @brief Returns the next device UID to be created (without request).
+            template <typename T>
+            inline auto push_uid(T const& t, common::type_sequence<>) {
+                while (m_nodes.count(m_next_uid) > 0) ++m_next_uid;
+                using tt_type = typename T::template push_back<tags::uid, device_t>;
+                tt_type tt(t);
+                common::get<tags::uid>(tt) = m_next_uid++;
+                return tt;
+            }
+
+            //! @brief Returns the next device UID to be created (with request).
+            template <typename T>
+            inline T const& push_uid(T const& t, common::type_sequence<tags::uid>) {
+                assert(m_nodes.count(common::get<tags::uid>(t)) == 0);
+                return t;
+            }
+
             //! @brief The set of nodes, indexed by identifier.
             map_type m_nodes;
 

@@ -80,7 +80,7 @@ struct timer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_neigh(TIME_MIN) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_neigh(TIME_MIN) {
                 m_prev = m_cur = TIME_MIN;
                 m_next = common::get_or<tags::start>(t, TIME_MAX);
                 m_offs = (m_next == TIME_MAX ? 0 : m_next);
@@ -113,7 +113,7 @@ struct timer {
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
+            void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 fcpp::details::self(m_neigh, d) = t;
             }
@@ -148,7 +148,7 @@ struct timer {
             }
 
             //! @brief Returns the time stamps of the most recent messages from neighbours.
-            const field<times_t>& message_time() const {
+            field<times_t> const& message_time() const {
                 return m_neigh;
             }
 
@@ -189,7 +189,7 @@ struct timer {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t) {
+            net(common::tagged_tuple<S,T> const& t) : P::net(t) {
                 m_offs = 0;
                 m_fact = common::get_or<tags::realtime_factor>(t, FCPP_REALTIME < INF ? FCPP_REALTIME : 1);
                 m_inv = 1/m_fact;

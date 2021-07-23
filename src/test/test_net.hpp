@@ -76,7 +76,7 @@ namespace details {
     struct expose_identifier : public C::net {
         using C::net::net;
         template <typename S, typename T>
-        device_t node_emplace(const common::tagged_tuple<S,T>& t) {
+        device_t node_emplace(common::tagged_tuple<S,T> const& t) {
             while (m_nodes.count(m_next_uid) > 0) ++m_next_uid;
             using tt_type = typename common::tagged_tuple<S,T>::template push_back<component::tags::uid, device_t>;
             tt_type tt(t);

@@ -161,7 +161,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     field() = default;
 
     //! @brief Constant field (copying).
-    field(const T& d) {
+    field(T const& d) {
         m_vals.push_back(d);
     }
 
@@ -178,7 +178,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
 
     //! @brief Implicit conversion copy constructor.
     template <typename A, typename = std::enable_if_t<std::is_convertible<A,T>::value>>
-    field(const field<A>& f) : m_ids(f.m_ids), m_vals{f.m_vals.begin(), f.m_vals.end()} {}
+    field(field<A> const& f) : m_ids(f.m_ids), m_vals{f.m_vals.begin(), f.m_vals.end()} {}
 
     //! @brief Implicit conversion move constructor.
     template <typename A, typename = std::enable_if_t<std::is_convertible<A,T>::value>>
@@ -186,7 +186,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
 
     //! @brief Implicit conversion copy constructor from field-like structures.
     template <typename A, typename = std::enable_if_t<std::is_convertible<to_local<A>,T>::value and (not common::is_class_template<fcpp::field,A>) and not std::is_convertible<A,T>::value>>
-    field(const A& f) {
+    field(A const& f) {
         m_vals.push_back(details::other(f));
         for (details::field_iterator<A const, void> it(f); not it.end(); ++it) {
             m_ids.push_back(it.id());
@@ -205,7 +205,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
 
     //! @brief Implicit conversion copy assignment.
     template <typename A, typename = std::enable_if_t<std::is_convertible<A,T>::value>>
-    field& operator=(const field<A>& f) {
+    field& operator=(field<A> const& f) {
         m_ids = f.m_ids;
         m_vals.clear();
         m_vals.insert(m_vals.end(), f.m_vals.begin(), f.m_vals.end());
@@ -297,7 +297,7 @@ namespace details {
     template <>
     struct field_base<true> {
         explicit operator bool() const {
-            const field<bool>& f = *((const field<bool>*)this);
+            field<bool> const& f = *((const field<bool>*)this);
             for (bool x : f.m_vals) if (not x) return false;
             return true;
         }
@@ -945,7 +945,7 @@ namespace details {
     //! @brief Inclusive folding (optimization for locals).
     template <typename F, typename A>
     if_local<A, local_result<F,A const&,A const&>>
-    fold_hood(F&& op, const A& x, std::vector<device_t> const& dom) {
+    fold_hood(F&& op, A const& x, std::vector<device_t> const& dom) {
         assert(dom.size() > 0);
         size_t n = dom.size();
         local_result<F,A const&,A const&> res = x;
@@ -983,7 +983,7 @@ namespace details {
     //! @brief Exclusive folding (optimization for locals).
     template <typename F, typename A, typename B>
     if_local<A, local_result<F,A const&,B const&>>
-    fold_hood(F&& op, const A& x, const B& b, std::vector<device_t> const& dom, device_t i) {
+    fold_hood(F&& op, A const& x, B const& b, std::vector<device_t> const& dom, device_t i) {
         assert(std::binary_search(dom.begin(), dom.end(), i));
         local_result<F,A const&,B const&> res = details::self(b, i);
         for (size_t n = dom.size(); n>1; --n) res = op(x, res);
@@ -1169,12 +1169,12 @@ field<decltype(std::declval<to_local<A>>() op std::declval<to_local<B>>())>
  */
 #define _DEF_UOP(op)                                                                \
 template <typename A>                                                               \
-field<A> operator op(const field<A>& x) {                                           \
-    return map_hood([] (const A& a) {return op a;}, x);                             \
+field<A> operator op(field<A> const& x) {                                           \
+    return map_hood([] (A const& a) {return op a;}, x);                             \
 }                                                                                   \
 template <typename A>                                                               \
 field<A> operator op(field<A>&& x) {                                                \
-    mod_hood([] (const A& a) {return op std::move(a);}, x);                         \
+    mod_hood([] (A const& a) {return op std::move(a);}, x);                         \
     return x;                                                                       \
 }
 
@@ -1186,17 +1186,17 @@ field<A> operator op(field<A>&& x) {                                            
  */
 #define _DEF_BOP(op)                                                                                    \
 template <typename A, typename B>                                                                       \
-_BOP_TYPE(field<A>,op,B) operator op(const field<A>& x, const B& y) {                                   \
-    return map_hood([](const A& a, const to_local<B>& b) { return a op b; }, x, y);                     \
+_BOP_TYPE(field<A>,op,B) operator op(field<A> const& x, B const& y) {                                   \
+    return map_hood([](A const& a, to_local<B> const& b) { return a op b; }, x, y);                     \
 }                                                                                                       \
 template <typename A, typename B>                                                                       \
-_BOP_TYPE(field<A>,op,B) operator op(field<A>&& x, const B& y) {                                        \
-    return mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) op b; }, x, y);          \
+_BOP_TYPE(field<A>,op,B) operator op(field<A>&& x, B const& y) {                                        \
+    return mod_hood([](A const& a, to_local<B> const& b) { return std::move(a) op b; }, x, y);          \
 }                                                                                                       \
 template <typename A, typename B>                                                                       \
 common::ifn_class_template<field, A, _BOP_TYPE(A,op,field<B>)>                                          \
-operator op(const A& x, const field<B>& y) {                                                            \
-    return map_hood([](const to_local<A>& a, const B& b) { return a op b; }, x, y);                     \
+operator op(A const& x, field<B> const& y) {                                                            \
+    return map_hood([](to_local<A> const& a, B const& b) { return a op b; }, x, y);                     \
 }                                                                                                       \
 
 /**
@@ -1207,8 +1207,8 @@ operator op(const A& x, const field<B>& y) {                                    
  */
 #define _DEF_IOP(op)                                                                                    \
 template <typename A, typename B>                                                                       \
-field<A>& operator op##=(field<A>& x, const B& y) {                                                     \
-    return mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) op b; }, x, y);          \
+field<A>& operator op##=(field<A>& x, B const& y) {                                                     \
+    return mod_hood([](A const& a, to_local<B> const& b) { return std::move(a) op b; }, x, y);          \
 }
 
 
@@ -1248,20 +1248,20 @@ _DEF_IOP(<<)
 
 //! @cond INTERNAL
 template <typename A, typename B>
-_BOP_TYPE(field<A>,<<,B) operator<<(const field<A>& x, const B& y) {
-    return map_hood([](const A& a, const to_local<B>& b) { return a << b; }, x, y);
+_BOP_TYPE(field<A>,<<,B) operator<<(field<A> const& x, B const& y) {
+    return map_hood([](A const& a, to_local<B> const& b) { return a << b; }, x, y);
 }
 template <typename A, typename B>
-_BOP_TYPE(field<A>,<<,B) operator<<(field<A>&& x, const B& y) {
-    return mod_hood([](const A& a, const to_local<B>& b) { return std::move(a) << b; }, x, y);
+_BOP_TYPE(field<A>,<<,B) operator<<(field<A>&& x, B const& y) {
+    return mod_hood([](A const& a, to_local<B> const& b) { return std::move(a) << b; }, x, y);
 }
 template <typename A, typename B>
 std::enable_if_t<
     not common::is_class_template<field, A> and not fcpp::common::is_ostream<A>::value,
     _BOP_TYPE(A,<<,field<B>)
 >
-operator<<(const A& x, const field<B>& y) {
-    return map_hood([](const to_local<A>& a, const B& b) { return a << b; }, x, y);
+operator<<(A const& x, field<B> const& y) {
+    return map_hood([](to_local<A> const& a, B const& b) { return a << b; }, x, y);
 }
 //! @endcond
 

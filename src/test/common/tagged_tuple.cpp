@@ -26,7 +26,7 @@ namespace tags {
 }
 
 
-class TagTupleTest : public ::testing::Test {
+class TaggedTupleTest : public ::testing::Test {
   protected:
     virtual void SetUp() {
     }
@@ -35,7 +35,7 @@ class TagTupleTest : public ::testing::Test {
 };
 
 
-TEST_F(TagTupleTest, Operators) {
+TEST_F(TaggedTupleTest, Operators) {
     common::tagged_tuple_t<tag, int, gat, bool> x(t), y, z;
     z = y;
     y = x;
@@ -52,7 +52,7 @@ TEST_F(TagTupleTest, Operators) {
     EXPECT_EQ(u, t);
 }
 
-TEST_F(TagTupleTest, Get) {
+TEST_F(TaggedTupleTest, Get) {
     int i;
     i = common::get<tag>(t);
     EXPECT_EQ(2, i);
@@ -70,14 +70,14 @@ TEST_F(TagTupleTest, Get) {
     EXPECT_EQ(false, b);
 }
 
-TEST_F(TagTupleTest, Call) {
+TEST_F(TaggedTupleTest, Call) {
     auto x = common::make_tagged_tuple<tag,gat>([](int x){ return x+1; }, [](int x){ return 2*x; });
     auto y = x(3);
     auto z = common::make_tagged_tuple<tag,gat>(4, 6);
     EXPECT_EQ(y, z);
 }
 
-TEST_F(TagTupleTest, Assignment) {
+TEST_F(TaggedTupleTest, Assignment) {
     int i;
     i = common::get<tag>(t);
     EXPECT_EQ(2, i);
@@ -97,7 +97,7 @@ TEST_F(TagTupleTest, Assignment) {
     EXPECT_EQ(3, i);
 }
 
-TEST_F(TagTupleTest, Types) {
+TEST_F(TaggedTupleTest, Types) {
     std::string ex, res;
     ex  = typeid(char).name();
     res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_type<gat>).name();
@@ -125,7 +125,7 @@ TEST_F(TagTupleTest, Types) {
     EXPECT_EQ(ex, res);
 }
 
-TEST_F(TagTupleTest, Print) {
+TEST_F(TaggedTupleTest, Print) {
     std::stringstream s;
     t.print(s);
     EXPECT_EQ("tag => 2; gat => true", s.str());

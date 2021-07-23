@@ -120,7 +120,6 @@ struct graph_spawner {
                     times_t t = m_schedule.next();
                     size_t i = m_schedule.next_sequence();
                     m_schedule.step(get_generator(has_randomizer<P>{}, *this));
-                    //call_distribution(i, t, inert_type{});
                 } else P::net::update();
             }
 
@@ -152,6 +151,7 @@ struct graph_spawner {
 
                 while (nodesf) {
                     read_row(nodesf, row, typename attributes_tuple_type::tags{});
+                    // chiamare emplace con row
                 }
 
                 nodesf.close();

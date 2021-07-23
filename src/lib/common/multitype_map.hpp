@@ -86,7 +86,7 @@ class multitype_map {
 
     //! @brief Inserts value at corresponding key.
     template<typename A>
-    void insert(T key, const A& value) {
+    void insert(T key, A const& value) {
         get_map<A>(bool_pack<type_supported<A>>{})[key] = value;
         static_assert(type_supported<A>, MISSING_TYPE_MESSAGE);
     }
@@ -118,7 +118,7 @@ class multitype_map {
 
     //! @brief Immutable reference to the value of a certain type at a given key.
     template<typename A>
-    const A& at(T key) const {
+    A const& at(T key) const {
         return get_map<A>(bool_pack<type_supported<A>>{}).at(key);
     }
 

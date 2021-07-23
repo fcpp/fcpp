@@ -74,10 +74,10 @@ struct storage {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_storage(t) {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_storage(t) {}
 
             //! @brief Const access to stored data as tagged tuple.
-            const tuple_type& storage_tuple() const {
+            tuple_type const& storage_tuple() const {
                 return m_storage;
             }
 

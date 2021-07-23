@@ -52,7 +52,7 @@ using combo = component::combine_spec<
         n.update();
 
 #ifndef FCPP_DISABLE_THREADS
-MULTI_TEST(ConnectorTest, Messages, O, 2) {
+MULTI_TEST(HardwareConnectorTest, Messages, O, 2) {
     bool message_push = (O & 2) == 2;
     typename combo<O>::net n{common::make_tagged_tuple<oth>("foo")};
     auto conn = n.node_at(42).connector_data();

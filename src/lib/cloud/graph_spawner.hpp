@@ -114,13 +114,19 @@ struct graph_spawner {
                 return {};
             }
 
-            //! @brief Adds a `start` time to a given tagged tuple.
+            //! @brief Adds a `start` time to a node file tuple (if not present in the file).
             template <typename S, typename T>
-            auto push_time(const common::tagged_tuple<S,T>& tup, times_t t) {
+            auto push_time(const common::tagged_tuple<S,T>& tup, common::type_sequence<>) {
                 using tt_type = typename common::tagged_tuple<S,T>::template push_back<tags::start, times_t>;
                 tt_type tt(tup);
-                common::get<tags::start>(tt) = t;
+                common::get<tags::start>(tt) = this->m_start;
                 return tt;
+            }
+
+            //! @brief No need to add a `start` time to a node file tuple (if present in the file).
+            template <typename T>
+            inline T const& push_time(T const& t, common::type_sequence<tags::start>) {
+                return t;
             }
 
             inline void read_nodes() {
@@ -129,7 +135,8 @@ struct graph_spawner {
 
                 while (nodesf) {
                     read_row(nodesf, row, typename attributes_tuple_type::tags{});
-                    P::net::node_emplace(row);
+                    auto trow = push_time(row, typename attributes_tuple_type::tags::template intersect<tags::start>());
+                    P::net::node_emplace(trow);
                 }
 
                 nodesf.close();

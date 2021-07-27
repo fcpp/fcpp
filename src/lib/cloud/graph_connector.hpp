@@ -22,7 +22,7 @@
 #include "lib/data/vec.hpp"
 #include "lib/option/connect.hpp"
 #include "lib/option/distribution.hpp"
-
+#include "lib/internal/twin.hpp"
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -51,6 +51,10 @@ namespace tags {
     //! @brief Declaration flag associating to whether parallelism is enabled.
     template <bool b>
     struct parallel;
+
+    //! @brief Declaration flag associating to whether the neighbour relation is symmetric.
+    template <bool b>
+    struct symmetric;
 
     //! @brief Declaration flag associating to whether the topology of the graph is static.
     template <bool b>
@@ -89,6 +93,9 @@ struct graph_connector {
 
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Whether the neighbour relation is symmetric (defaults to true).
+    constexpr static bool symmetric = common::option_flag<tags::symmetric, true, Ts...>;
 
     //! @brief Delay generator for sending messages after rounds.
     using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
@@ -129,7 +136,13 @@ struct graph_connector {
             }
 
             void connect(device_t i, typename F::node *n) {
-                m_neighbours.insert(std::make_pair(i,n));
+                if (symmetric) {
+                    m_neighbours.first().insert(std::make_pair(i,n));
+                    n->m_neighbours.second().insert(std::make_pair(this->uid,this));
+                } else {
+                    m_neighbours.first().insert(std::make_pair(i,n));
+                    n->m_neighbours.second().insert(std::make_pair(this->uid,this));
+                }
             }
 
             void disconnect(device_t i) {
@@ -182,7 +195,7 @@ struct graph_connector {
                     P::node::as_final().send(t, m);
                     P::node::as_final().receive(t, P::node::uid, m);
                     common::unlock_guard<parallel> u(P::node::mutex);
-                    for (std::pair<device_t, typename F::node*> p : m_neighbours) {
+                    for (std::pair<device_t, typename F::node*> p : m_neighbours.first()) {
                         typename F::node *n = p.second;
                         common::lock_guard<parallel> l(n->mutex);
                         if (n != this) {
@@ -239,7 +252,7 @@ struct graph_connector {
             }
 
             //! @brief A list of neighbours.
-            neighbour_list m_neighbours;
+            internal::twin<neighbour_list,symmetric> m_neighbours;
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;

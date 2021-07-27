@@ -26,9 +26,9 @@ struct url {};
 template <int O>
 using combo1 = component::combine_spec<
     component::graph_spawner<
-        node_attributes<url,std::string,uid,size_t>
+        node_attributes<url,std::string,uid,device_t>
     >,
-    component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
+    component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
         parallel<(O & 1) == 1>,
         synchronised<(O & 2) == 2>
@@ -39,9 +39,9 @@ using combo1 = component::combine_spec<
 template <int O>
 using combo2 = component::combine_spec<
     component::graph_spawner<
-        node_attributes<url,std::string,uid,size_t>
+        node_attributes<url,std::string,uid,device_t>
     >,
-    component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
+    component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
         parallel<(O & 1) == 1>,
         synchronised<(O & 2) == 2>
@@ -50,7 +50,7 @@ using combo2 = component::combine_spec<
     component::base<parallel<(O & 1) == 1>>
 >;
 
-MULTI_TEST(SpawnerTest, Sequence, O, 2) {
+MULTI_TEST(SpawnerTest, Sequence, O, 3) {
     typename combo1<O>::net network{common::make_tagged_tuple<nodesfile,arcsfile>("index", "arcs")};
     EXPECT_EQ(106, (int)network.node_size());
     // EXPECT_EQ(1, network.next());

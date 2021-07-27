@@ -133,8 +133,7 @@ struct graph_spawner {
                 std::ifstream nodesf(m_nodesfile);
                 attributes_tuple_type row;
 
-                while (nodesf) {
-                    read_row(nodesf, row, typename attributes_tuple_type::tags{});
+                while (read_row(nodesf, row, typename attributes_tuple_type::tags{})) {
                     auto trow = push_time(row, typename attributes_tuple_type::tags::template intersect<tags::start>());
                     P::net::node_emplace(trow);
                 }
@@ -143,13 +142,17 @@ struct graph_spawner {
             }
 
 
-            inline void read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<>) {
+            inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<>) {
+                return true;
             }
 
             template <typename S, typename... Ss>
-            inline void read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<S, Ss...>) {
-                is >> common::get<S>(row);
-                read_row(is, row, common::type_sequence<Ss...>{});
+            inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<S, Ss...>) {
+                if (!(is >> common::get<S>(row))) {
+                    assert(is.eof());
+                    return false;
+                }
+                return read_row(is, row, common::type_sequence<Ss...>{});
             }
 
             inline void read_arcs() {

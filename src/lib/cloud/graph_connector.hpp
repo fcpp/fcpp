@@ -62,9 +62,6 @@ namespace tags {
 
     //! @brief Node initialisation tag associating to communication power.
     struct connection_data {};
-
-    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
-    struct epsilon;
 }
 
 /**
@@ -84,7 +81,6 @@ namespace tags {
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::connection_data associates to communication power (defaults to `connector_type::data_type{}`).
- * - \ref tags::epsilon associates to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
  */
 template <class... Ts>
 struct graph_connector {
@@ -128,25 +124,20 @@ struct graph_connector {
             template <typename S, typename T>
             node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_nbr_msg_size(0) {
                 m_send = TIME_MAX;
-                m_epsilon = common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON);
             }
 
             //! @brief Destructor leaving the corresponding cell.
             ~node() {
             }
 
-            void connect(device_t i, typename F::node *n) {
-                if (symmetric) {
-                    m_neighbours.first().insert(std::make_pair(i,n));
-                    n->m_neighbours.second().insert(std::make_pair(this->uid,this));
-                } else {
-                    m_neighbours.first().insert(std::make_pair(i,n));
-                    n->m_neighbours.second().insert(std::make_pair(this->uid,this));
-                }
+            void connect(typename F::node *n) {
+                m_neighbours.first().emplace(n->uid,n);
+                n->m_neighbours.second().emplace(P::node::uid,this);
             }
 
             void disconnect(device_t i) {
-                m_neighbours.erase(i);
+                m_neighbours[i]->second().erase(P::node::uid);
+                m_neighbours.first().erase(i);
             }
 
             //! @brief Returns the time of the next sending of messages.
@@ -197,8 +188,8 @@ struct graph_connector {
                     common::unlock_guard<parallel> u(P::node::mutex);
                     for (std::pair<device_t, typename F::node*> p : m_neighbours.first()) {
                         typename F::node *n = p.second;
-                        common::lock_guard<parallel> l(n->mutex);
                         if (n != this) {
+                            common::lock_guard<parallel> l(n->mutex);
                             n->receive(t, P::node::uid, m);
                         }
                     }
@@ -252,13 +243,13 @@ struct graph_connector {
             }
 
             //! @brief A list of neighbours.
-            internal::twin<neighbour_list,symmetric> m_neighbours;
+            internal::twin<neighbour_list, symmetric> m_neighbours;
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;
 
-            //! @brief Time of the next send-message event (and epsilon time).
-            times_t m_send, m_epsilon;
+            //! @brief Time of the next send-message event.
+            times_t m_send;
 
             //! @brief Sizes of messages received from neighbours.
             common::option<field<size_t>, message_size> m_nbr_msg_size;

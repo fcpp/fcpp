@@ -172,22 +172,26 @@ struct graph_connector {
 
             //! @brief Updates the internal status of node component.
             void update() {
-                if (m_send < P::node::next()) {
+                times_t t = m_send;
+                times_t pt = P::node::next();
+                if (t < pt) {
                     PROFILE_COUNT("graph_connector");
-                    times_t t = next();
                     PROFILE_COUNT("graph_connector/send");
                     m_send = TIME_MAX;
+                    typename F::node::message_t m;
+                    P::node::as_final().send(t, m);
+                    P::node::as_final().receive(t, P::node::uid, m);
+                    common::unlock_guard<parallel> u(P::node::mutex);
                     for (std::pair<device_t, typename F::node*> p : m_neighbours) {
                         typename F::node *n = p.second;
-                        typename F::node::message_t m;
+                        common::lock_guard<parallel> l(n->mutex);
                         if (n != this) {
-                            common::unlock_guard<parallel> u(P::node::mutex);
-                            common::lock_guard<parallel> l(n->mutex);
-                            n->receive(t, P::node::uid, P::node::as_final().send(t, m));
-                        } else n->receive(t, P::node::uid, P::node::as_final().send(t, m));
+                            n->receive(t, P::node::uid, m);
+                        }
                     }
                 } else P::node::update();
             }
+
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {

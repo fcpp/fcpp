@@ -23,11 +23,6 @@ struct oth {};
 
 struct url {};
 
-using seq_rep = sequence::multiple_n<3, 1>;
-using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distribution::constant_n<times_t, 1>, distribution::constant_n<times_t, 5>>;
-using ever_true = distribution::constant_n<bool, true>;
-using ever_false = distribution::constant_n<bool, false>;
-
 template <int O>
 using combo1 = component::combine_spec<
     component::graph_spawner<
@@ -57,7 +52,7 @@ using combo2 = component::combine_spec<
 
 MULTI_TEST(SpawnerTest, Sequence, O, 2) {
     typename combo1<O>::net network{common::make_tagged_tuple<nodesfile,arcsfile>("index", "arcs")};
-    // EXPECT_EQ(0, (int)network.node_size());
+    EXPECT_EQ(106, (int)network.node_size());
     // EXPECT_EQ(1, network.next());
     // network.update();
     // EXPECT_EQ(1, (int)network.node_size());

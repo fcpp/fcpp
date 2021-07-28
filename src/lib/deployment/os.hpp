@@ -63,6 +63,7 @@ struct transceiver;
 /**
  * @brief Wrapper for the default network connector
  * @param push Whether incoming messages should be immediately pushed to the node.
+ * @param transceiver_t The transceiver type.
  */
 template <bool push, typename transceiver_t = transceiver>
 struct async_retry_network {
@@ -74,7 +75,6 @@ struct async_retry_network {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * void receive(message_type&);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
- * @param transceiver_t The transceiver type.
  */
 template <typename node_t>
 class network {

@@ -60,18 +60,23 @@ device_t uid();
  */
 struct transceiver;
 
+/**
+ * @brief Wrapper for the default network connector
+ * @param push Whether incoming messages should be immediately pushed to the node.
+ */
+template <bool push, typename transceiver_t = transceiver>
+struct async_retry_network {
 
 /**
  * @brief Higher-level interface for network capabilities.
  *
- * @param push Whether incoming messages should be immediately pushed to the node.
  * @param node_t The node type. It has the following method that can be called at any time:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * void receive(message_type&);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  * @param transceiver_t The transceiver type.
  */
-template <bool push, typename node_t, typename transceiver_t = transceiver>
+template <typename node_t>
 class network {
   public:
     //! @brief Default-constructible type for network settings.
@@ -174,6 +179,7 @@ class network {
     std::thread m_manager;
 };
 
+};
 
 }
 

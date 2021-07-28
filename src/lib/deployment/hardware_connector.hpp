@@ -100,11 +100,11 @@ struct hardware_connector {
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
-            //! @brief Network interface class.
-            using connector_type = common::option_type<tags::connector, os::network<message_push, node>, Ts...>;
+            //! @brief Network interface class wrapper.
+            using connector_type = common::option_type<tags::connector, os::async_retry_network<message_push>, Ts...>;
 
             //! @brief The type of settings data regulating connection.
-            using connection_data_type = typename connector_type::data_type;
+            using connection_data_type = typename connector_type::template network<node>::data_type;
 
             //! @{
             /**
@@ -238,7 +238,7 @@ struct hardware_connector {
             field<size_t> m_nbr_msg_size;
 
             //! @brief Backend regulating and performing the connection.
-            connector_type m_network;
+            typename connector_type::template network<node> m_network;
         };
 
         //! @brief The global part of the component.

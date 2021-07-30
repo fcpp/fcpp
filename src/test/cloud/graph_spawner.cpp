@@ -50,9 +50,16 @@ using combo2 = component::combine_spec<
     component::base<parallel<(O & 1) == 1>>
 >;
 
+std::string twonodes =
+    "1000notes.com	0"
+    "100500.tv	1";
+
 MULTI_TEST(SpawnerTest, Sequence, O, 3) {
-    typename combo1<O>::net network{common::make_tagged_tuple<nodesinput,arcsinput>("index", "arcs")};
-    EXPECT_EQ(106, (int)network.node_size());
+    std::stringstream ssnodes(twonodes);
+    std::stringstream ssarcs("");
+
+    typename combo1<O>::net network{common::make_tagged_tuple<nodesinput,arcsinput>(&ssnodes, &ssarcs)};
+    EXPECT_EQ(2, (int)network.node_size());
     // EXPECT_EQ(1, network.next());
     // network.update();
     // EXPECT_EQ(1, (int)network.node_size());

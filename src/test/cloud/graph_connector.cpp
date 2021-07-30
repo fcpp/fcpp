@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/component/base.hpp"
+#include "lib/component/identifier.hpp"
 #include "lib/component/scheduler.hpp"
 #include "lib/cloud/graph_connector.hpp"
 
@@ -37,8 +38,23 @@ using combo = component::combine_spec<
     exposer,
     component::scheduler<round_schedule<seq_per>>,
     component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
+    component::identifier<
+        parallel<(O & 1) == 1>,
+        synchronised<(O & 2) == 2>
+    >,
     component::base<parallel<(O & 1) == 1>>
 >;
+
+MULTI_TEST(GraphConnectorTest, Arcs, O, 2) {
+    typename combo<O>::net  network{common::make_tagged_tuple<oth>("foo")};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
+    typename combo<O>::node d3{network, common::make_tagged_tuple<uid>(3)};
+    typename combo<O>::node d4{network, common::make_tagged_tuple<uid>(4)};
+
+    d1.connect(&d0);
+}
 
 MULTI_TEST(GraphConnectorTest, Messages, O, 2) {
     auto update = [](auto& node) {

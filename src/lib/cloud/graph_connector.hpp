@@ -132,7 +132,7 @@ struct graph_connector {
 
             void connect(typename F::node *n) {
                 m_neighbours.first().emplace(n->uid,n);
-                n->m_neighbours.second().emplace(P::node::uid,this);
+                n->m_neighbours.second().emplace(P::node::uid,&P::node::as_final());
             }
 
             void disconnect(device_t i) {

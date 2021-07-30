@@ -51,7 +51,7 @@ using combo2 = component::combine_spec<
 >;
 
 MULTI_TEST(SpawnerTest, Sequence, O, 3) {
-    typename combo1<O>::net network{common::make_tagged_tuple<nodesfile,arcsfile>("index", "arcs")};
+    typename combo1<O>::net network{common::make_tagged_tuple<nodesinput,arcsinput>("index", "arcs")};
     EXPECT_EQ(106, (int)network.node_size());
     // EXPECT_EQ(1, network.next());
     // network.update();

@@ -37,16 +37,27 @@ namespace tags {
     // //! @brief Node attribute tag with the node ID.
     // struct uid {};
 
-    //! @brief Net initialisation tag associating to the name of the file specifying graph nodes.
-    struct nodesfile;
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes.
+    struct nodesinput;
 
-    //! @brief Net initialisation tag associating to the name of the file specifying graph arcs.
-    struct arcsfile;
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs.
+    struct arcsinput;
 
     //! @brief Net initialisation tag setting a default start for nodes.
     struct start;
 }
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief Makes an istream reference from a `std::string` path.
+    std::shared_ptr<std::istream> make_istream(std::string const& s);
+
+    //! @brief Makes an istream reference from a `const char*` path.
+    std::shared_ptr<std::istream> make_istream(const char* s);
+
+    //! @brief Makes an istream reference from a stream pointer.
+    std::shared_ptr<std::istream> make_istream(std::istream* i);
+}
 
 /**
  * @brief Component handling generation of nodes from a graph.
@@ -95,9 +106,10 @@ struct graph_spawner {
             net(const common::tagged_tuple<S,T>& t) :
                 P::net(t),
                 m_start(common::get_or<tags::start>(t, 0)),
-                m_nodesfile( common::get_or<tags::nodesfile>(t, "index") ),
-                m_arcsfile( common::get_or<tags::arcsfile>(t, "arcs") ) {
+                m_nodesstream(details::make_istream(common::get_or<tags::nodesinput>(t, "index"))),
+                m_arcsstream(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs"))) {
                 read_nodes();
+
                 read_arcs();
             }
 
@@ -130,15 +142,12 @@ struct graph_spawner {
             }
 
             inline void read_nodes() {
-                std::ifstream nodesf(m_nodesfile);
                 attributes_tuple_type row;
 
-                while (read_row(nodesf, row, typename attributes_tuple_type::tags{})) {
+                while (read_row(*m_nodesstream, row, typename attributes_tuple_type::tags{})) {
                     auto trow = push_time(row, typename attributes_tuple_type::tags::template intersect<tags::start>());
                     P::net::node_emplace(trow);
                 }
-
-                nodesf.close();
             }
 
 
@@ -156,26 +165,32 @@ struct graph_spawner {
             }
 
             inline void read_arcs() {
-                std::ifstream arcsf(m_arcsfile);
-
                 std::pair<size_t,size_t> row;
 
-                while (arcsf) {
-                    arcsf >> row.first;
-                    arcsf >> row.second;
+                while (read_arc(*m_arcsstream, row)) {
+                    // do something!
+                }
+            }
+
+            inline bool read_arc(std::istream& is, std::pair<size_t,size_t> &row) {
+                is >> row.first;
+                is >> row.second;
+                if (!is) {
+                    assert(is.eof());
+                    return false;
                 }
 
-                arcsf.close();
+                return true;
             }
 
             //! @brief The default start of nodes.
             size_t m_start;
 
-            //! @brief The file describing graph nodes.
-            std::string m_nodesfile;
+            //! @brief The stream describing graph nodes.
+            std::shared_ptr<std::istream> m_nodesstream;
 
-            //! @brief The file describing graph arcs.
-             std::string m_arcsfile;
+            //! @brief The stream describing graph arcs.
+            std::shared_ptr<std::istream> m_arcsstream;
         };
     };
 };
@@ -186,4 +201,4 @@ struct graph_spawner {
 
 }
 
-#endif // FCPP_SIMULATION_SPAWNER_H_
+#endif // FCPP_CLOUD_GRAPH_SPAWNER_H_

@@ -53,7 +53,14 @@ MULTI_TEST(GraphConnectorTest, Arcs, O, 2) {
     typename combo<O>::node d3{network, common::make_tagged_tuple<uid>(3)};
     typename combo<O>::node d4{network, common::make_tagged_tuple<uid>(4)};
 
+    EXPECT_EQ(false, d1.connected(d0.uid));
+
     d1.connect(&d0);
+    EXPECT_EQ(true, d1.connected(d0.uid));
+
+    d1.disconnect(d0.uid);
+    EXPECT_EQ(false, d1.connected(d0.uid));
+
 }
 
 MULTI_TEST(GraphConnectorTest, Messages, O, 2) {

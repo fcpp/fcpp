@@ -56,7 +56,7 @@ namespace tags {
     template <bool b>
     struct symmetric;
 
-    //! @brief Declaration flag associating to whether the topology of the graph is static.
+    //! @brief Declaration flag associating to whether the topology of the graph is static. For FUTURE use.
     template <bool b>
     struct static_topology;
 
@@ -136,8 +136,12 @@ struct graph_connector {
             }
 
             void disconnect(device_t i) {
-                m_neighbours[i]->second().erase(P::node::uid);
+                (m_neighbours.first()[i])->m_neighbours.second().erase(P::node::uid);
                 m_neighbours.first().erase(i);
+            }
+
+            bool connected(device_t i) {
+                return m_neighbours.first().count(i);
             }
 
             //! @brief Returns the time of the next sending of messages.

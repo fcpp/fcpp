@@ -93,7 +93,6 @@ struct graph_spawner {
         DECLARE_COMPONENT(graph_spawner);
         REQUIRE_COMPONENT(graph_spawner,identifier);
         AVOID_COMPONENT(graph_spawner,timer);
-        CHECK_COMPONENT(randomizer);
 
         //! @brief The local part of the component.
         using node = typename P::node;
@@ -114,18 +113,6 @@ struct graph_spawner {
             }
 
           private: // implementation details
-            //! @brief Returns the `randomizer` generator if available.
-            template <typename N>
-            inline auto& get_generator(std::true_type, N& n) {
-                return n.generator();
-            }
-
-            //! @brief Returns a `crand` generator otherwise.
-            template <typename N>
-            inline crand get_generator(std::false_type, N&) {
-                return {};
-            }
-
             //! @brief Adds a `start` time to a node file tuple (if not present in the file).
             template <typename S, typename T>
             auto push_time(const common::tagged_tuple<S,T>& tup, common::type_sequence<>) {

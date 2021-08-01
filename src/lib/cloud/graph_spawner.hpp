@@ -90,9 +90,8 @@ struct graph_spawner {
      */
     template <typename F, typename P>
     struct component : public P {
-        DECLARE_COMPONENT(graph_spawner);
-        REQUIRE_COMPONENT(graph_spawner,identifier);
-        AVOID_COMPONENT(graph_spawner,timer);
+        DECLARE_COMPONENT(spawner);
+        REQUIRE_COMPONENT(spawner,identifier);
 
         //! @brief The local part of the component.
         using node = typename P::node;
@@ -155,7 +154,8 @@ struct graph_spawner {
                 std::pair<size_t,size_t> row;
 
                 while (read_arc(*m_arcsstream, row)) {
-                    // do something!
+                    typename net::lock_type l;
+                    P::net::node_at(row.first,l).connect(&P::net::node_at(row.second,l));
                 }
             }
 

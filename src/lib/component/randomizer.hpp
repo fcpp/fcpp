@@ -40,6 +40,8 @@ namespace tags {
 /**
  * @brief Component handling random number generation.
  *
+ * A \ref physical_connector, \ref logger, \ref scheduler, \ref spawner component should not be a parent of a \ref randomizer to avoid using \ref crand in them instead of the given generator type.
+ *
  * <b>Declaration tags:</b>
  * - \ref tags::generator defines a random number generator type (defaults to `std::mt19937_64`).
  *
@@ -66,6 +68,10 @@ struct randomizer {
     template <typename F, typename P>
     struct component : public P {
         DECLARE_COMPONENT(randomizer);
+        AVOID_COMPONENT(randomizer,connector);
+        AVOID_COMPONENT(randomizer,logger);
+        AVOID_COMPONENT(randomizer,scheduler);
+        AVOID_COMPONENT(randomizer,spawner);
 
         //! @brief The local part of the component.
         class node : public P::node {

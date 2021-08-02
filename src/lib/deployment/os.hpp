@@ -71,22 +71,22 @@ struct async_retry_network {
 /**
  * @brief Higher-level interface for network capabilities.
  *
- * @param node_t The node type. It has the following method that can be called at any time:
+ * @param N The node type. It has the following method that can be called at any time:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * void receive(message_type&);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-template <typename node_t>
+template <typename N>
 class network {
   public:
     //! @brief Default-constructible type for network settings.
     using data_type = typename transceiver_t::data_type;
 
     //! @brief Constructor with default settings.
-    network(node_t& n) : m_node(n), m_transceiver({}), m_manager(std::mem_fn(&network::manage), this) {}
+    network(N& n) : m_node(n), m_transceiver({}), m_manager(std::mem_fn(&network::manage), this) {}
 
     //! @brief Constructor with given settings.
-    network(node_t& n, data_type d) : m_node(n), m_transceiver(d), m_manager(std::mem_fn(&network::manage), this) {}
+    network(N& n, data_type d) : m_node(n), m_transceiver(d), m_manager(std::mem_fn(&network::manage), this) {}
 
     ~network() {
         m_running = false;
@@ -152,7 +152,7 @@ class network {
     }
 
     //! @brief Reference to the node object.
-    node_t& m_node;
+    N& m_node;
 
     //! @brief Low-level hardware interface.
     transceiver_t m_transceiver;

@@ -62,7 +62,7 @@ namespace tags {
  * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::connector defines the connector class (defaults to \ref os::network "os::network<message_push, node>").
+ * - \ref tags::connector defines the connector class (defaults to \ref os::async_retry_network "os::async_retry_network<message_push>").
  * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
  *
  * <b>Declaration flags:</b>
@@ -101,10 +101,10 @@ struct hardware_connector {
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief Network interface class wrapper.
-            using connector_type = common::option_type<tags::connector, os::async_retry_network<message_push>, Ts...>;
+            using connector_type = typename common::option_type<tags::connector, os::async_retry_network<message_push>, Ts...>::template network<node>;
 
             //! @brief The type of settings data regulating connection.
-            using connection_data_type = typename connector_type::template network<node>::data_type;
+            using connection_data_type = typename connector_type::data_type;
 
             //! @{
             /**
@@ -238,7 +238,7 @@ struct hardware_connector {
             field<size_t> m_nbr_msg_size;
 
             //! @brief Backend regulating and performing the connection.
-            typename connector_type::template network<node> m_network;
+            connector_type m_network;
         };
 
         //! @brief The global part of the component.

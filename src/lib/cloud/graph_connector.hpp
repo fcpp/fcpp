@@ -140,7 +140,7 @@ struct graph_connector {
                 m_neighbours.first().erase(i);
             }
 
-            bool connected(device_t i) {
+            bool connected(device_t i) const {
                 return m_neighbours.first().count(i);
             }
 

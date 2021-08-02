@@ -51,36 +51,19 @@ using combo2 = component::combine_spec<
 >;
 
 std::string twonodes =
-    "1000notes.com	0"
+    "1000notes.com	0\n"
     "100500.tv	1";
+
+std::string onearc = "0	1";
 
 MULTI_TEST(SpawnerTest, Sequence, O, 3) {
     std::stringstream ssnodes(twonodes);
-    std::stringstream ssarcs("");
+    //    std::stringstream ssarcs(onearc);
+    std::stringstream ssarcs("0 1");
 
     typename combo1<O>::net network{common::make_tagged_tuple<nodesinput,arcsinput>(&ssnodes, &ssarcs)};
     EXPECT_EQ(2, (int)network.node_size());
-    // EXPECT_EQ(1, network.next());
-    // network.update();
-    // EXPECT_EQ(1, (int)network.node_size());
-    // EXPECT_TRUE(common::get<tag>(network.node_at(0).storage_tuple()));
-    // EXPECT_EQ(2, common::get<gat>(network.node_at(0).storage_tuple()));
-    // EXPECT_EQ(1, common::get<start>(network.node_at(0).storage_tuple()));
-    // EXPECT_EQ(1, network.next());
-    // network.update();
-    // EXPECT_EQ(2, (int)network.node_size());
-    // EXPECT_TRUE(common::get<tag>(network.node_at(1).storage_tuple()));
-    // EXPECT_EQ(3, common::get<gat>(network.node_at(1).storage_tuple()));
-    // EXPECT_EQ(1, common::get<start>(network.node_at(1).storage_tuple()));
-    // EXPECT_EQ(1, network.next());
-    // network.update();
-    // EXPECT_EQ(3, (int)network.node_size());
-    // EXPECT_TRUE(common::get<tag>(network.node_at(2).storage_tuple()));
-    // EXPECT_EQ(4, common::get<gat>(network.node_at(2).storage_tuple()));
-    // EXPECT_EQ(1, common::get<start>(network.node_at(2).storage_tuple()));
-    // EXPECT_EQ(TIME_MAX, network.next());
-    // network.update();
-    // EXPECT_EQ(3, (int)network.node_size());
+    EXPECT_EQ(true, network.node_at(0).connected(1));
 }
 
 /*

@@ -38,15 +38,15 @@ namespace component {
 namespace tags {
     //! @brief Declaration tag associating to a connector class.
     template <typename T>
-    struct connector {};
+    struct connector;
 
     //! @brief Declaration tag associating to a delay generator for sending messages after rounds.
     template <typename T>
-    struct delay {};
+    struct delay;
 
     //! @brief Declaration flag associating to whether message sizes should be emulated.
     template <bool b>
-    struct message_size {};
+    struct message_size;
 
     //! @brief Declaration flag associating to whether parallelism is enabled.
     template <bool b>
@@ -59,9 +59,6 @@ namespace tags {
     //! @brief Declaration flag associating to whether the topology of the graph is static. For FUTURE use.
     template <bool b>
     struct static_topology;
-
-    //! @brief Node initialisation tag associating to communication power.
-    struct connection_data {};
 }
 
 /**
@@ -78,9 +75,6 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::message_size defines whether message sizes should be emulated (defaults to false).
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
- *
- * <b>Node initialisation tags:</b>
- * - \ref tags::connection_data associates to communication power (defaults to `connector_type::data_type{}`).
  */
 template <class... Ts>
 struct graph_connector {

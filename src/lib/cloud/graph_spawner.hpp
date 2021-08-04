@@ -154,8 +154,8 @@ struct graph_spawner {
                 std::pair<size_t,size_t> row;
 
                 while (read_arc(*m_arcsstream, row)) {
-                    typename net::lock_type l;
-                    F::net::node_at(row.first,l).connect(&F::net::node_at(row.second,l));
+                    typename net::lock_type l1, l2;
+                    P::net::node_at(row.first,l1).connect(&P::net::node_at(row.second,l2));
                 }
             }
 

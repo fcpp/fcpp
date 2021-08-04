@@ -58,10 +58,10 @@ std::string onearc = "0	1";
 
 MULTI_TEST(SpawnerTest, Sequence, O, 3) {
     std::stringstream ssnodes(twonodes);
-    //    std::stringstream ssarcs(onearc);
-    std::stringstream ssarcs("0 1");
+    std::stringstream ssarcs(onearc);
 
     typename combo1<O>::net network{common::make_tagged_tuple<nodesinput,arcsinput>(&ssnodes, &ssarcs)};
+
     EXPECT_EQ(2, (int)network.node_size());
     EXPECT_EQ(true, network.node_at(0).connected(1));
 }

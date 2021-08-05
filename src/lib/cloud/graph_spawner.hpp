@@ -34,14 +34,11 @@ namespace tags {
     template <typename... Ts>
     struct node_attributes {};
 
-    // //! @brief Node attribute tag with the node ID.
-    // struct uid {};
-
     //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes.
-    struct nodesinput;
+    struct nodesinput {};
 
     //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs.
-    struct arcsinput;
+    struct arcsinput {};
 
     //! @brief Net initialisation tag setting a default start for nodes.
     struct start;

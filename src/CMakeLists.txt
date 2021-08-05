@@ -4,12 +4,14 @@ cmake_minimum_required(VERSION 3.9)
 # HELPER FUNCTIONS #
 ####################
 
-function(fcpp_gui_copy target source dest folder)
-    add_custom_command(
-        TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${source}/${folder} ${dest}/${folder}
-    )
+function(fcpp_copy target source dest folder)
+    if(EXISTS ${source}/${folder})
+        add_custom_command(
+            TARGET ${target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${source}/${folder} ${dest}/${folder}
+        )
+    endif()
 endfunction()
 
 macro(fcpp_setup)
@@ -35,10 +37,11 @@ function(fcpp_target target_name target_executable enable_gui)
     set_target_properties(${target_name} PROPERTIES PREFIX "run/")
     if(${enable_gui} STREQUAL ON)
         if(FCPP_BUILD_GL)
-            fcpp_gui_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} textures)
+            fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} textures)
             target_compile_options(${target_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
         endif()
     endif()
+    fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
 endfunction()
 
 function(fcpp_test target_name target_executable)
@@ -151,8 +154,8 @@ else(WIN32)
 endif(WIN32)
 target_include_directories(fcpp PUBLIC .)
 if(FCPP_BUILD_GL)
-    fcpp_gui_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} shaders)
-    fcpp_gui_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} fonts)
+    fcpp_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} shaders)
+    fcpp_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} fonts)
 endif(FCPP_BUILD_GL)
 
 ######################

@@ -22,6 +22,15 @@ cc_library(
 )
 
 cc_library(
+    name = "hyperloglog",
+    hdrs = ["hyperloglog.hpp"],
+    srcs = ["hyperloglog.cpp"],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'shape',
     hdrs = ['shape.hpp'],
     srcs = ['shape.cpp'],

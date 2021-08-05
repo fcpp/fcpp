@@ -106,6 +106,7 @@ set(
     lib/data.cpp
     lib/data/color.cpp
     lib/data/field.cpp
+    lib/data/hyperloglog.cpp
     lib/data/shape.cpp
     lib/data/tuple.cpp
     lib/data/vec.cpp
@@ -259,6 +260,7 @@ if(FCPP_BUILD_TESTS)
             test/coordination/utils.cpp
             test/data/color.cpp
             test/data/field.cpp
+            test/data/hyperloglog.cpp
             test/data/tuple.cpp
             test/data/vec.cpp
             test/deployment/hardware_connector.cpp

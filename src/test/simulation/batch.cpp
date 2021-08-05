@@ -13,20 +13,33 @@ using namespace fcpp;
 common::mutex<true> m;
 std::vector<std::string> v;
 
-int veryexpensivefunction(int x) {
-    if (x < 2) return 1;
-    return (veryexpensivefunction(x-1) + veryexpensivefunction(x-2))/2;
+// slow computation
+int workhard(int& t, int n=30) {
+    if (n <= 1) return 1;
+    t += 1;
+    int r = (workhard(t, n-1) + workhard(t, n-2))/2;
+    t -= 1;
+    return r;
 }
+
+#ifdef FCPP_DISABLE_THREADS
+#define EXPECT_NEQ(a, b)    EXPECT_EQ(a, b)
+#else
+#define EXPECT_NEQ(a, b)    EXPECT_NE(a, b)
+#endif
+
 
 struct combomock {
     struct net {
         template <typename T>
         net(T const& t) {
-            veryexpensivefunction(38);
+            int tmp = 0;
+            tmp += workhard(tmp);
             std::stringstream s;
             s << t;
             common::lock_guard<true> l(m);
-            v.push_back(s.str());
+            if (tmp == 1)
+                v.push_back(s.str());
         }
 
         void run() {}
@@ -144,22 +157,28 @@ TEST(BatchTest, Run) {
     EXPECT_EQ(v, w);
     v = {};
     w = {};
-    batch::run(combomock{}, common::tags::sequential_execution{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0), batch::list<char>(1,2)));
+    batch::run(combomock{}, common::tags::sequential_execution{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5,8), batch::list<double>(2,7)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0,6), batch::list<char>(1,2,4)));
     w.push_back("(char => 1; double => 2)");
+    w.push_back("(char => 1; double => 7)");
     w.push_back("(char => 2; double => 2)");
+    w.push_back("(char => 2; double => 7)");
     w.push_back("(char => 5; double => 2)");
+    w.push_back("(char => 5; double => 7)");
+    w.push_back("(char => 8; double => 2)");
+    w.push_back("(char => 8; double => 7)");
     w.push_back("(char => 1; double => 3)");
     w.push_back("(char => 2; double => 3)");
+    w.push_back("(char => 4; double => 3)");
     w.push_back("(char => 1; double => 0)");
     w.push_back("(char => 2; double => 0)");
+    w.push_back("(char => 4; double => 0)");
+    w.push_back("(char => 1; double => 6)");
+    w.push_back("(char => 2; double => 6)");
+    w.push_back("(char => 4; double => 6)");
     EXPECT_EQ(v, w);
     v = {};
-    batch::run(combomock{}, common::tags::parallel_execution{7}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0), batch::list<char>(1,2)));
-#ifdef FCPP_DISABLE_THREADS
-    EXPECT_EQ(v, w);
-#else
-    EXPECT_NE(v, w);
-#endif
+    batch::run(combomock{}, common::tags::parallel_execution{17}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5,8), batch::list<double>(2,7)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0,6), batch::list<char>(1,2,4)));
+    EXPECT_NEQ(v, w);
     std::sort(v.begin(), v.end());
     std::sort(w.begin(), w.end());
     EXPECT_EQ(v, w);

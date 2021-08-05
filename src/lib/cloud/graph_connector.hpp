@@ -19,10 +19,8 @@
 #include "lib/common/serialize.hpp"
 #include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
-#include "lib/data/vec.hpp"
-#include "lib/option/connect.hpp"
-#include "lib/option/distribution.hpp"
 #include "lib/internal/twin.hpp"
+#include "lib/option/distribution.hpp"
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -68,7 +66,6 @@ namespace tags {
  * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::connector defines the connector class (defaults to \ref connect::clique "connect::clique<dimension>").
  * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *

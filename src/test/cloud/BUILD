@@ -4,6 +4,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/component:base",
+        "//lib/component:identifier",
         "//lib/component:scheduler",
         "//lib/cloud:graph_connector",
         "//test:helper",
@@ -18,11 +19,11 @@ cc_test(
     srcs = ["graph_spawner.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/common:tagged_tuple",
         "//lib/component:base",
         "//lib/component:identifier",
         "//lib/component:storage",
         "//lib/component:timer",
+        "//lib/cloud:graph_connector",
         "//lib/cloud:graph_spawner",
         "//test:helper",
     ],

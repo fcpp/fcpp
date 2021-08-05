@@ -8,6 +8,7 @@
 #ifndef FCPP_CLOUD_GRAPH_SPAWNER_H_
 #define FCPP_CLOUD_GRAPH_SPAWNER_H_
 
+#include <cassert>
 #include <type_traits>
 #include <utility>
 #include <iostream>
@@ -15,7 +16,6 @@
 
 #include "lib/component/base.hpp"
 #include "lib/component/storage.hpp"
-#include "lib/option/sequence.hpp"
 
 
 /**

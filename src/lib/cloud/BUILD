@@ -7,8 +7,7 @@ cc_library(
         "//lib/common:serialize",
         "//lib/component:base",
         "//lib/data:field",
-        "//lib/data:vec",
-        "//lib/option:connect",
+        "//lib/internal:twin",
         "//lib/option:distribution",
     ],
     visibility = [
@@ -23,7 +22,6 @@ cc_library(
     deps = [
         "//lib/component:base",
         "//lib/component:storage",
-        "//lib/option:sequence",
     ],
     visibility = [
         '//visibility:public',

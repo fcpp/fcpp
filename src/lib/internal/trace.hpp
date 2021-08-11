@@ -229,6 +229,24 @@ struct trace_cycle {
         m_trace.push(++m_i);
         return *this;
     }
+    //! @brief Decrement operator (decreases the cycle element in the trace).
+    inline trace_cycle& operator--() {
+        m_trace.pop();
+        m_trace.push(--m_i);
+        return *this;
+    }
+    //! @brief Increasing operator (increases the cycle element in the trace).
+    inline trace_cycle& operator+=(trace_t x) {
+        m_trace.pop();
+        m_trace.push(m_i+=x);
+        return *this;
+    }
+    //! @brief Decreasing operator (decreases the cycle element in the trace).
+    inline trace_cycle& operator-=(trace_t x) {
+        m_trace.pop();
+        m_trace.push(m_i-=x);
+        return *this;
+    }
     //! @brief Returns the current cycle element.
     inline operator trace_t() {
         return m_i;

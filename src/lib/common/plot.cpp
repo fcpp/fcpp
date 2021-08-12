@@ -66,6 +66,7 @@ namespace details {
         return s;
     }
 }
+//! @endcond
 
 }
 

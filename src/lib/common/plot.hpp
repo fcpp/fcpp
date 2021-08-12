@@ -89,18 +89,13 @@ namespace plot {
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Check if character is a vowel.
-    bool isvowel(char c);
-
-    //! @brief Check if character is alphabetic.
-    bool isalpha(char c);
-
     //! @brief Shortens a string.
     std::string shorten(std::string s);
 
     //! @brief Shortens a title string.
     std::string multi_shorten(std::string s);
 }
+//! @endcond
 
 //! @brief Tag for time information.
 struct time {};
@@ -118,7 +113,7 @@ struct point {
     double value;
 };
 
-//! @brief Printing a single page.
+//! @brief Printing a single point.
 template <typename O>
 O& operator<<(O& o, point const& p) {
     o << "(";

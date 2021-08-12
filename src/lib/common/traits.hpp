@@ -735,6 +735,25 @@ template <typename G, typename F, typename T = void>
 using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value, T>;
 
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief general case.
+    template <typename T>
+    struct type_unwrap;
+
+    //! @brief defined case.
+    template <typename T>
+    struct type_unwrap<void(type_sequence<T>)> {
+        using type = T;
+    };
+}
+//! @endcond
+
+//! @brief Allows passing a type with commas as macro argument.
+template <typename T>
+using type_unwrap = typename details::type_unwrap<T>::type;
+
+
 //! @brief Wraps a sequence of `size_t` values.
 using std::index_sequence;
 

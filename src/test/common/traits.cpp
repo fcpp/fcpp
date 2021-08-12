@@ -294,6 +294,35 @@ TEST(TraitsTest, TemplateArgs) {
                 common::template_args<const array<proxy<double>, 4>&>);
 }
 
+int adder(int x, int y) {
+    return x+y;
+}
+
+template <typename F, typename = common::if_signature<F, int(int,int)>>
+int comb(F&& f, int x) {
+    return f(x,x);
+}
+
+int comb(int x, int y) {
+    return x+y;
+}
+
+template <typename F, typename = common::type_unwrap<void(common::type_sequence<common::if_signature<F, int(int,int)>>)>>
+int comb(F&& f, int x, int y) {
+    return f(x,y);
+}
+
+int comb(int x, int y, int z) {
+    return x+y+z;
+}
+
+TEST(TraitsTest, Signature) {
+    EXPECT_EQ(3, comb(1,2));
+    EXPECT_EQ(4, comb(adder, 2));
+    EXPECT_EQ(5, comb(adder, 2, 3));
+    EXPECT_EQ(6, comb(1,2,3));
+}
+
 template <bool b>
 struct flagopt {};
 

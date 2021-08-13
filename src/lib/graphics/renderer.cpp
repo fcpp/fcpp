@@ -363,9 +363,6 @@ void Renderer::initializeContext(bool master) {
     if (master and !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
 
-    // Set viewport
-    glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
-
     // Enabling V-Sync
     glfwSwapInterval(1);
 
@@ -396,6 +393,7 @@ void Renderer::initializeContext(bool master) {
     glfwGetFramebufferSize(m_window, (int*)&m_framebufferWidth, (int*)&m_framebufferHeight);
     m_renderScale = m_framebufferWidth / m_windowWidth;
     m_camera.setScreen(m_framebufferWidth, m_framebufferHeight);
+    glViewport(0, 0, m_framebufferWidth, m_framebufferHeight);
 
     // Clear first frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);

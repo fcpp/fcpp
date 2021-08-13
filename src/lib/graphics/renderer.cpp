@@ -243,7 +243,7 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+    //glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE); // uncomment this line if you wish to disable support for retina displays
     if (antialias > 1)
         glfwWindowHint(GLFW_SAMPLES, antialias);
 

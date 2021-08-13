@@ -212,7 +212,9 @@ class info_window {
         // Viewport callback
         glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
             info_window& info = *((info_window*)glfwGetWindowUserPointer(window)); // get the info_window instance from window
-            info.m_renderer.viewportResize(width, height);
+            int winWidth, winHeight;
+			glfwGetWindowSize(window, &winWidth, &winHeight);
+			info.m_renderer.viewportResize(winWidth, winHeight, width, height);
             info.set_modified();
         });
     }
@@ -237,7 +239,7 @@ class info_window {
         if (m_net.node_count(m_uid) == 0)
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
         for (size_t i=0; i<m_keys.size(); ++i) {
-            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getCurrentHeight();
+            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getFramebufferHeight();
             m_renderer.drawText(m_keys[i] + m_values[i], 16.0f, y, 0.25f);
         }
     }
@@ -654,7 +656,7 @@ struct displayer {
                         PROFILE_COUNT("displayer/text");
                         // Draw simulation time (t) and FPS
                         m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
-                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth() - 60.0f, 16.0f, 0.25f);
+                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getFramebufferWidth() - 60.0f, 16.0f, 0.25f);
                     }
                     {
                         PROFILE_COUNT("displayer/input");
@@ -731,7 +733,9 @@ struct displayer {
                 // Viewport callback
                 glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                    dspl.m_renderer.viewportResize(width, height);
+                    int winWidth, winHeight;
+					glfwGetWindowSize(window, &winWidth, &winHeight);
+					dspl.m_renderer.viewportResize(winWidth, winHeight, width, height);
                     });
 
                 // Keyboard callback
@@ -752,15 +756,15 @@ struct displayer {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
 
                     if (dspl.m_mouseFirst) {
-                        dspl.m_mouseLastX = (float)xpos;
-                        dspl.m_mouseLastY = (float)ypos;
+                        dspl.m_mouseLastX = (float)xpos * dspl.m_renderer.getWidthScale();
+                        dspl.m_mouseLastY = (float)ypos * dspl.m_renderer.getHeightScale();
                         dspl.m_mouseFirst = false;
                     }
 
                     float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
                     float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
-                    dspl.m_mouseLastX = (float)xpos;
-                    dspl.m_mouseLastY = (float)ypos;
+                    dspl.m_mouseLastX = (float)xpos * dspl.m_renderer.getWidthScale();
+                    dspl.m_mouseLastY = (float)ypos * dspl.m_renderer.getHeightScale();
 
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);
                     dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::drag, 0);
@@ -844,8 +848,8 @@ struct displayer {
                     case mouse_type::hover: {
                         // Raycast caluclation
                         // (x, y) from screen space coordinates to NDC
-                        float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
-                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
+                        float rayX{ (2.0f * (float)x) / m_renderer.getWindowWidth() - 1.0f };
+                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getWindowHeight() };
 
                         // Ray vector goes from screen space to world space (backwards)
                         // Ray in clip space; camera position at (0,0,0)
@@ -880,8 +884,8 @@ struct displayer {
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
                             if (!m_mouseRight) {
                                 m_mouseRight = 1;
-                                m_mouseRightX = m_mouseLastX - (float)(m_renderer.getCurrentWidth() / 2);
-                                m_mouseRightY = (float)(m_renderer.getCurrentHeight() / 2) - m_mouseLastY;
+                                m_mouseRightX = m_mouseLastX - (float)(m_renderer.getWindowWidth() / 2);
+                                m_mouseRightY = (float)(m_renderer.getWindowHeight() / 2) - m_mouseLastY;
                             }
                             int mods = 0;
                             if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)

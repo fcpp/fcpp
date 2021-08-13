@@ -72,11 +72,23 @@ namespace fcpp {
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
 
-            //! @brief Returns viewport's current width.
-            int getCurrentWidth();
+            //! @brief Returns window's current width.
+            int getWindowWidth();
 
-            //! @brief Returns viewport's current height.
-            int getCurrentHeight();
+            //! @brief Returns window's current height.
+            int getWindowHeight();
+			
+			//! @brief Returns framebuffer's current width.
+            int getFramebufferWidth();
+
+            //! @brief Returns framebuffer's current height.
+            int getFramebufferHeight();
+			
+			//! @brief Returns width's the rendering scale.
+            double getWidthScale();
+
+            //! @brief Returns height's the rendering scale.
+            double getHeightScale();
 
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow() const;
@@ -103,7 +115,7 @@ namespace fcpp {
             void keyboardInput(int key, bool first, float deltaTime, int mods);
 
             //! @brief It resizes the viewport, given the new width and height values.
-            void viewportResize(int width, int height);
+            void viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight);
 
         private:
             //! @brief Default path to vertex_phong shader.
@@ -242,10 +254,22 @@ namespace fcpp {
             Shader m_shaderProgramFont;
 
             //! @brief Current width of the window.
-            unsigned int m_currentWidth;
+            int m_windowWidth;
 
             //! @brief Current height of the window.
-            unsigned int m_currentHeight;
+            int m_windowHeight;
+			
+			//! @brief Current width of the default framebuffer.
+            int m_framebufferWidth;
+
+            //! @brief Current height of the default framebuffer.
+            int m_framebufferHeight;
+			
+			//! @brief Scaling factor for the widht to convert window coordinates into framebuffer ones.
+            double m_widthScale;
+
+            //! @brief Scaling factor for the height to convert window coordinates into framebuffer ones.
+            double m_heightScale;
 
             //! @brief Texture ID of the (optional) texture map for the grid.
             unsigned int m_gridTexture;

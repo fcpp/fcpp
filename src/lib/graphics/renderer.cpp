@@ -222,8 +222,10 @@ void Renderer::allocateMeshVertex() {
 
 /* --- CONSTRUCTOR --- */
 Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* masterPtr) :
-    m_currentWidth{ SCR_DEFAULT_WIDTH },
-    m_currentHeight{ SCR_DEFAULT_HEIGHT },
+    m_windowWidth{ SCR_DEFAULT_WIDTH },
+    m_windowHeight{ SCR_DEFAULT_HEIGHT },
+	m_widthScale{ 1.0 },
+    m_heightScale{ 1.0 },
     m_master{ master },
     m_resizeOnSwap{ false },
     m_gridShow{ true },
@@ -252,9 +254,6 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
         glfwTerminate();
         throw std::runtime_error("ERROR::RENDERER::GLFW::WINDOW_CREATION_FAILED\n");
     }
-
-    // Set initial aspect ratio
-    m_camera.setScreen(m_currentWidth, m_currentHeight);
 
     // Initialize context if master
     if (m_master) initializeContext(true);
@@ -396,7 +395,11 @@ void Renderer::initializeContext(bool master) {
     // Generate shader programs
     generateShaderPrograms();
 
-    // Clear first frame
+	// Set initial aspect ratio
+	glfwGetFramebufferSize(m_window, (int*)&m_framebufferWidth, (int*)&m_framebufferHeight);
+    m_camera.setScreen(m_framebufferWidth, m_framebufferHeight);
+	
+	// Clear first frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -406,7 +409,7 @@ void Renderer::swapAndNext() {
     glfwSwapBuffers(m_window);
     if (m_master) glfwPollEvents();
     else if (m_resizeOnSwap) {
-        glViewport(0, 0, m_currentWidth, m_currentHeight);
+        glViewport(0, 0, m_framebufferWidth, m_framebufferHeight);
         m_resizeOnSwap = false;
     }
 
@@ -721,15 +724,31 @@ void Renderer::drawText(std::string text, float x, float y, float scale) const {
 }
 
 float Renderer::getAspectRatio() {
-    return (float)(m_currentWidth) / (float)(m_currentHeight);
+    return (float)(m_windowWidth) / (float)(m_windowHeight);
 }
 
-int Renderer::getCurrentWidth() {
-    return m_currentWidth;
+int Renderer::getWindowWidth() {
+    return m_windowWidth;
 }
 
-int Renderer::getCurrentHeight() {
-    return m_currentHeight;
+int Renderer::getWindowHeight() {
+    return m_windowHeight;
+}
+
+int Renderer::getFramebufferWidth() {
+	return m_framebufferWidth;
+}
+
+int Renderer::getFramebufferHeight() {
+	return m_framebufferHeight;
+}
+
+double Renderer::getWidthScale() {
+	return m_widthScale;
+}
+
+double Renderer::getHeightScale() {
+	return m_heightScale;
 }
 
 GLFWwindow* Renderer::getWindow() const {
@@ -791,10 +810,14 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     m_camera.keyboardInput(key, first, deltaTime, mods);
 }
 
-void Renderer::viewportResize(int width, int height) {
-    if (m_master) glViewport(0, 0, width, height);
+void Renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight) {
+	if (m_master) glViewport(0, 0, fbWidth, fbHeight);
     else m_resizeOnSwap = true;
-    m_currentWidth = width;
-    m_currentHeight = height;
-    m_camera.setScreen(width, height);
+	m_windowWidth = winWidth;
+    m_windowHeight = winHeight;
+	m_framebufferWidth = fbWidth;
+	m_framebufferHeight = fbHeight;
+	m_widthScale = fbWidth / winWidth;
+	m_heightScale = fbHeight / winHeight;
+    m_camera.setScreen(fbWidth, fbHeight);
 }

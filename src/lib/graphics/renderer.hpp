@@ -83,12 +83,9 @@ namespace fcpp {
 
             //! @brief Returns framebuffer's current height.
             int getFramebufferHeight();
-			
-			//! @brief Returns width's the rendering scale.
-            double getWidthScale();
 
-            //! @brief Returns height's the rendering scale.
-            double getHeightScale();
+            //! @brief Returns the render scale.
+            double getRenderScale();
 
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow() const;
@@ -265,11 +262,8 @@ namespace fcpp {
             //! @brief Current height of the default framebuffer.
             int m_framebufferHeight;
 			
-			//! @brief Scaling factor for the widht to convert window coordinates into framebuffer ones.
-            double m_widthScale;
-
-            //! @brief Scaling factor for the height to convert window coordinates into framebuffer ones.
-            double m_heightScale;
+			//! @brief Scaling factor of the framebuffer in relation to the window.
+            double m_renderScale;
 
             //! @brief Texture ID of the (optional) texture map for the grid.
             unsigned int m_gridTexture;

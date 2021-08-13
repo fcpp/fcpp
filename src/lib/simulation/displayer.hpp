@@ -754,17 +754,19 @@ struct displayer {
                 // Cursor position callback
                 glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-
+					xpos *= dspl.m_renderer.getRenderScale();
+					ypos *= dspl.m_renderer.getRenderScale();
+					
                     if (dspl.m_mouseFirst) {
-                        dspl.m_mouseLastX = (float)xpos * dspl.m_renderer.getWidthScale();
-                        dspl.m_mouseLastY = (float)ypos * dspl.m_renderer.getHeightScale();
+                        dspl.m_mouseLastX = (float)xpos;
+                        dspl.m_mouseLastY = (float)ypos;
                         dspl.m_mouseFirst = false;
                     }
 
                     float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
                     float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
-                    dspl.m_mouseLastX = (float)xpos * dspl.m_renderer.getWidthScale();
-                    dspl.m_mouseLastY = (float)ypos * dspl.m_renderer.getHeightScale();
+                    dspl.m_mouseLastX = (float)xpos;
+                    dspl.m_mouseLastY = (float)ypos;
 
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);
                     dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::drag, 0);
@@ -884,8 +886,8 @@ struct displayer {
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
                             if (!m_mouseRight) {
                                 m_mouseRight = 1;
-                                m_mouseRightX = m_mouseLastX - (float)(m_renderer.getWindowWidth() / 2);
-                                m_mouseRightY = (float)(m_renderer.getWindowHeight() / 2) - m_mouseLastY;
+                                m_mouseRightX = m_mouseLastX - (float)(m_renderer.getFramebufferWidth() / 2);
+                                m_mouseRightY = (float)(m_renderer.getFramebufferHeight() / 2) - m_mouseLastY;
                             }
                             int mods = 0;
                             if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)

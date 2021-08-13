@@ -224,8 +224,7 @@ void Renderer::allocateMeshVertex() {
 Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* masterPtr) :
     m_windowWidth{ SCR_DEFAULT_WIDTH },
     m_windowHeight{ SCR_DEFAULT_HEIGHT },
-	m_widthScale{ 1.0 },
-    m_heightScale{ 1.0 },
+	m_renderScale{ 1.0 },
     m_master{ master },
     m_resizeOnSwap{ false },
     m_gridShow{ true },
@@ -395,8 +394,9 @@ void Renderer::initializeContext(bool master) {
     // Generate shader programs
     generateShaderPrograms();
 
-	// Set initial aspect ratio
+	// Set initial window metrics
 	glfwGetFramebufferSize(m_window, (int*)&m_framebufferWidth, (int*)&m_framebufferHeight);
+	m_renderScale = m_framebufferWidth / m_windowWidth;
     m_camera.setScreen(m_framebufferWidth, m_framebufferHeight);
 	
 	// Clear first frame
@@ -680,9 +680,11 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale) const {
-    x *= m_widthScale;
-    y *= m_widthScale;
-    scale *= m_widthScale;
+    // Scale coordinates to renderbuffer's size
+	x *= m_renderScale;
+    y *= m_renderScale;
+    scale *= m_renderScale;
+	
     // Activate corresponding render state
     m_shaderProgramFont.use();
     m_shaderProgramFont.setVec3("u_textColor", m_foreground);
@@ -746,12 +748,8 @@ int Renderer::getFramebufferHeight() {
 	return m_framebufferHeight;
 }
 
-double Renderer::getWidthScale() {
-	return m_widthScale;
-}
-
-double Renderer::getHeightScale() {
-	return m_heightScale;
+double Renderer::getRenderScale() {
+	return m_renderScale;
 }
 
 GLFWwindow* Renderer::getWindow() const {
@@ -820,7 +818,6 @@ void Renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHe
     m_windowHeight = winHeight;
 	m_framebufferWidth = fbWidth;
 	m_framebufferHeight = fbHeight;
-	m_widthScale = fbWidth / winWidth;
-	m_heightScale = fbHeight / winHeight;
+	m_renderScale = fbWidth / winWidth;
     m_camera.setScreen(fbWidth, fbHeight);
 }

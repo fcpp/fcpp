@@ -224,7 +224,7 @@ void Renderer::allocateMeshVertex() {
 Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* masterPtr) :
     m_windowWidth{ SCR_DEFAULT_WIDTH },
     m_windowHeight{ SCR_DEFAULT_HEIGHT },
-	m_renderScale{ 1.0 },
+    m_renderScale{ 1.0 },
     m_master{ master },
     m_resizeOnSwap{ false },
     m_gridShow{ true },
@@ -242,7 +242,6 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-    //glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE); // uncomment this line if you wish to disable support for retina displays
     if (antialias > 1)
         glfwWindowHint(GLFW_SAMPLES, antialias);
 
@@ -378,7 +377,6 @@ void Renderer::initializeContext(bool master) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Enable antialiasing
-    //if (antialias > 1) <----------- fix this later !!!!!!!!!!!!!
     glEnable(GL_MULTISAMPLE);
 
     // Initialize common resources
@@ -394,12 +392,12 @@ void Renderer::initializeContext(bool master) {
     // Generate shader programs
     generateShaderPrograms();
 
-	// Set initial window metrics
-	glfwGetFramebufferSize(m_window, (int*)&m_framebufferWidth, (int*)&m_framebufferHeight);
-	m_renderScale = m_framebufferWidth / m_windowWidth;
+    // Set initial window metrics
+    glfwGetFramebufferSize(m_window, (int*)&m_framebufferWidth, (int*)&m_framebufferHeight);
+    m_renderScale = m_framebufferWidth / m_windowWidth;
     m_camera.setScreen(m_framebufferWidth, m_framebufferHeight);
-	
-	// Clear first frame
+
+    // Clear first frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -681,10 +679,10 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 
 void Renderer::drawText(std::string text, float x, float y, float scale) const {
     // Scale coordinates to renderbuffer's size
-	x *= m_renderScale;
+    x *= m_renderScale;
     y *= m_renderScale;
     scale *= m_renderScale;
-	
+
     // Activate corresponding render state
     m_shaderProgramFont.use();
     m_shaderProgramFont.setVec3("u_textColor", m_foreground);
@@ -741,15 +739,15 @@ int Renderer::getWindowHeight() {
 }
 
 int Renderer::getFramebufferWidth() {
-	return m_framebufferWidth;
+    return m_framebufferWidth;
 }
 
 int Renderer::getFramebufferHeight() {
-	return m_framebufferHeight;
+    return m_framebufferHeight;
 }
 
 double Renderer::getRenderScale() {
-	return m_renderScale;
+    return m_renderScale;
 }
 
 GLFWwindow* Renderer::getWindow() const {
@@ -812,12 +810,12 @@ void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
 }
 
 void Renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight) {
-	if (m_master) glViewport(0, 0, fbWidth, fbHeight);
+    if (m_master) glViewport(0, 0, fbWidth, fbHeight);
     else m_resizeOnSwap = true;
-	m_windowWidth = winWidth;
+    m_windowWidth = winWidth;
     m_windowHeight = winHeight;
-	m_framebufferWidth = fbWidth;
-	m_framebufferHeight = fbHeight;
-	m_renderScale = fbWidth / winWidth;
+    m_framebufferWidth = fbWidth;
+    m_framebufferHeight = fbHeight;
+    m_renderScale = fbWidth / winWidth;
     m_camera.setScreen(fbWidth, fbHeight);
 }

@@ -213,8 +213,8 @@ class info_window {
         glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
             info_window& info = *((info_window*)glfwGetWindowUserPointer(window)); // get the info_window instance from window
             int winWidth, winHeight;
-			glfwGetWindowSize(window, &winWidth, &winHeight);
-			info.m_renderer.viewportResize(winWidth, winHeight, width, height);
+            glfwGetWindowSize(window, &winWidth, &winHeight);
+            info.m_renderer.viewportResize(winWidth, winHeight, width, height);
             info.set_modified();
         });
     }
@@ -734,9 +734,9 @@ struct displayer {
                 glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     int winWidth, winHeight;
-					glfwGetWindowSize(window, &winWidth, &winHeight);
-					dspl.m_renderer.viewportResize(winWidth, winHeight, width, height);
-                    });
+                    glfwGetWindowSize(window, &winWidth, &winHeight);
+                    dspl.m_renderer.viewportResize(winWidth, winHeight, width, height);
+                });
 
                 // Keyboard callback
                 glfwSetKeyCallback(m_renderer.getWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -749,14 +749,14 @@ struct displayer {
                     else if (action == GLFW_RELEASE) {
                         dspl.m_key_stroked.erase(key);
                     }
-                    });
+                });
 
                 // Cursor position callback
                 glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-					xpos *= dspl.m_renderer.getRenderScale();
-					ypos *= dspl.m_renderer.getRenderScale();
-					
+                    xpos *= dspl.m_renderer.getRenderScale();
+                    ypos *= dspl.m_renderer.getRenderScale();
+
                     if (dspl.m_mouseFirst) {
                         dspl.m_mouseLastX = (float)xpos;
                         dspl.m_mouseLastY = (float)ypos;
@@ -770,26 +770,26 @@ struct displayer {
 
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);
                     dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::drag, 0);
-                    });
+                });
 
                 // Cursor click callback
                 glfwSetMouseButtonCallback(m_renderer.getWindow(), [](GLFWwindow* window, int button, int action, int mods) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::click, mods);
-                    });
+                });
 
                 // Cursor scroll callback
                 glfwSetScrollCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xoffset, double yoffset) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll, 0);
-                    });
+                });
 
                 // Window close callback
                 glfwSetWindowCloseCallback(m_renderer.getWindow(), [](GLFWwindow* window) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     if (dspl.frequency() == 0) dspl.frequency(1);
                     dspl.terminate();
-                    });
+                });
             }
 
             //! @brief It returns the projection of a vector v onto a ray along its direction d (unit vector).

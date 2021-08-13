@@ -77,8 +77,8 @@ namespace fcpp {
 
             //! @brief Returns window's current height.
             int getWindowHeight();
-			
-			//! @brief Returns framebuffer's current width.
+
+            //! @brief Returns framebuffer's current width.
             int getFramebufferWidth();
 
             //! @brief Returns framebuffer's current height.
@@ -255,14 +255,14 @@ namespace fcpp {
 
             //! @brief Current height of the window.
             int m_windowHeight;
-			
-			//! @brief Current width of the default framebuffer.
+
+            //! @brief Current width of the default framebuffer.
             int m_framebufferWidth;
 
             //! @brief Current height of the default framebuffer.
             int m_framebufferHeight;
-			
-			//! @brief Scaling factor of the framebuffer in relation to the window.
+
+            //! @brief Scaling factor of the framebuffer in relation to the window.
             double m_renderScale;
 
             //! @brief Texture ID of the (optional) texture map for the grid.

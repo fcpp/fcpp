@@ -239,7 +239,7 @@ class info_window {
         if (m_net.node_count(m_uid) == 0)
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
         for (size_t i=0; i<m_keys.size(); ++i) {
-            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getFramebufferHeight();
+            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getWindowHeight();
             m_renderer.drawText(m_keys[i] + m_values[i], 16.0f, y, 0.25f);
         }
     }
@@ -656,7 +656,7 @@ struct displayer {
                         PROFILE_COUNT("displayer/text");
                         // Draw simulation time (t) and FPS
                         m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
-                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getFramebufferWidth() - 60.0f, 16.0f, 0.25f);
+                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 0.25f);
                     }
                     {
                         PROFILE_COUNT("displayer/input");
@@ -848,8 +848,8 @@ struct displayer {
                     case mouse_type::hover: {
                         // Raycast caluclation
                         // (x, y) from screen space coordinates to NDC
-                        float rayX{ (2.0f * (float)x) / m_renderer.getWindowWidth() - 1.0f };
-                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getWindowHeight() };
+                        float rayX{ (2.0f * (float)x) / m_renderer.getFramebufferWidth() - 1.0f };
+                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getFramebufferHeight() };
 
                         // Ray vector goes from screen space to world space (backwards)
                         // Ray in clip space; camera position at (0,0,0)

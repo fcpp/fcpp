@@ -680,6 +680,9 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale) const {
+    x *= m_widthScale;
+    y *= m_widthScale;
+    scale *= m_widthScale;
     // Activate corresponding render state
     m_shaderProgramFont.use();
     m_shaderProgramFont.setVec3("u_textColor", m_foreground);

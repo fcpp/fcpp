@@ -66,17 +66,26 @@ namespace fcpp {
             //! @brief It draws a star of lines, given the center and sides.
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
 
-            //! @brief It draws the specified text in the specified coordinates, scale and color.
+            //! @brief It draws the specified text in the specified window coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale) const;
 
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
 
-            //! @brief Returns viewport's current width.
-            int getCurrentWidth();
+            //! @brief Returns window's current width.
+            int getWindowWidth();
 
-            //! @brief Returns viewport's current height.
-            int getCurrentHeight();
+            //! @brief Returns window's current height.
+            int getWindowHeight();
+
+            //! @brief Returns framebuffer's current width.
+            int getFramebufferWidth();
+
+            //! @brief Returns framebuffer's current height.
+            int getFramebufferHeight();
+
+            //! @brief Returns the render scale.
+            double getRenderScale();
 
             //! @brief Returns the pointer to the Renderer's m_window
             GLFWwindow* getWindow() const;
@@ -100,10 +109,10 @@ namespace fcpp {
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
 
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the renderer and other classes.
-            void keyboardInput(int key, bool first, float deltaTime, int mods);
+            bool keyboardInput(int key, bool first, float deltaTime, int mods);
 
             //! @brief It resizes the viewport, given the new width and height values.
-            void viewportResize(int width, int height);
+            void viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight);
 
         private:
             //! @brief Default path to vertex_phong shader.
@@ -242,10 +251,19 @@ namespace fcpp {
             Shader m_shaderProgramFont;
 
             //! @brief Current width of the window.
-            unsigned int m_currentWidth;
+            int m_windowWidth;
 
             //! @brief Current height of the window.
-            unsigned int m_currentHeight;
+            int m_windowHeight;
+
+            //! @brief Current width of the default framebuffer.
+            int m_framebufferWidth;
+
+            //! @brief Current height of the default framebuffer.
+            int m_framebufferHeight;
+
+            //! @brief Scaling factor of the framebuffer in relation to the window.
+            double m_renderScale;
 
             //! @brief Texture ID of the (optional) texture map for the grid.
             unsigned int m_gridTexture;

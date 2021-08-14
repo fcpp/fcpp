@@ -66,57 +66,7 @@ namespace details {
         return s;
     }
 }
-
-//! @brief Printing a single page.
-std::ostream& operator<<(std::ostream& o, point const& p) {
-    o << "(";
-    if (p.unit.size()) o << p.unit << ", ";
-    return o << p.source << ", " << p.value << ")";
-}
-
-//! @brief Printing a single plot.
-std::ostream& operator<<(std::ostream& o, plot const& p) {
-    o << "plot.put(plot.plot(name+\"-" << details::shorten(p.xname) << details::shorten(p.yname) << (p.title.size() ? "-" : "") << details::multi_shorten(p.title) << "\", \"" << p.title << "\", \"" << p.xname << "\", \"" << p.yname << "\", new string[] {";
-    bool first = true;
-    for (auto const& y : p.yvals) {
-        if (first) first = false;
-        else o << ", ";
-        o << "\"" << y.first << "\"";
-    }
-    o << "}, new pair[][] {";
-    first = true;
-    for (auto const& y : p.yvals) {
-        if (first) first = false;
-        else o << ", ";
-        o << "{";
-        for (size_t i=0; i<y.second.size(); ++i) {
-            if (i > 0) o << ", ";
-            o << "(" << p.xvals[i] << ", " << y.second[i] << ")";
-        }
-        o << "}";
-    }
-    return o << "}));\n";
-}
-
-//! @brief Printing a single page.
-std::ostream& operator<<(std::ostream& o, page const& p) {
-    if (p.title.size()) o << "// " << p.title << "\n\n";
-    o << "plot.ROWS = " << p.rows << ";\n";
-    o << "plot.COLS = " << p.cols << ";\n\n";
-    for (plot const& q : p.plots) o << q << "\n";
-    return o;
-}
-
-//! @brief Printing a file.
-std::ostream& operator<<(std::ostream& o, file const& f) {
-    o << "// " << f.title << "\n";
-    o << "string name = \"" << f.title << "\";\n\n";
-    o << "import \"plot.asy\" as plot;\n";
-    o << "unitsize(1cm);\n\n";
-    for (page const& p : f.pages) o << p << "\n";
-    o << "shipout(\"" << f.title << "\");\n";
-    return o;
-}
+//! @endcond
 
 }
 

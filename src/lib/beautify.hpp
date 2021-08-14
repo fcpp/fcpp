@@ -37,6 +37,9 @@
 //! @brief Macro defining the type arguments of an aggregate function.
 #define GEN(...)        template <MACRO_MAPPER(__TYPE_ARG__, node_t, __VA_ARGS__)>
 
+//! @brief Bounds generic function type F to comply with signature T.
+#define BOUND(F, T)     = common::type_unwrap<void(common::type_sequence<common::if_signature<F, T>>)>
+
 //! @brief Macro inserting the default arguments.
 #define ARGS            node_t& node, trace_t call_point
 
@@ -52,8 +55,8 @@
 //! @brief Macro defining the type arguments of an aggregate function.
 #define GEN_EXPORT(...) template <MACRO_MAPPER(__TYPE_ARG__, __VA_ARGS__)> using
 
-//! @brief Macro defining an aggregate for cycle.
-#define FOR(var, start, cond)   for (internal::trace_cycle var{node.stack_trace, start}; cond; ++var)
+//! @brief Macro defining the index of an aggregate for loop.
+#define LOOP(v, s)      internal::trace_cycle v{node.stack_trace, trace_t(s)}
 
 /**
  * @brief Macro for defining a main class to be used in the calculus component. Usage:

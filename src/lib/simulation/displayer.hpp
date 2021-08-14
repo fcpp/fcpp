@@ -212,7 +212,9 @@ class info_window {
         // Viewport callback
         glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
             info_window& info = *((info_window*)glfwGetWindowUserPointer(window)); // get the info_window instance from window
-            info.m_renderer.viewportResize(width, height);
+            int winWidth, winHeight;
+            glfwGetWindowSize(window, &winWidth, &winHeight);
+            info.m_renderer.viewportResize(winWidth, winHeight, width, height);
             info.set_modified();
         });
     }
@@ -237,7 +239,7 @@ class info_window {
         if (m_net.node_count(m_uid) == 0)
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
         for (size_t i=0; i<m_keys.size(); ++i) {
-            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getCurrentHeight();
+            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getWindowHeight();
             m_renderer.drawText(m_keys[i] + m_values[i], 16.0f, y, 0.25f);
         }
     }
@@ -611,7 +613,7 @@ struct displayer {
                     auto n_beg = P::net::node_begin();
                     auto n_end = P::net::node_end();
                     PROFILE_COUNT("displayer");
-                    {
+                    if (not m_legenda) {
                         PROFILE_COUNT("displayer/nodes");
                         if (rt == 0) {
                             common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
@@ -645,16 +647,46 @@ struct displayer {
                         m_renderer.setGridTexture(m_texture);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
-                    {
+                    if (not m_legenda) {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
                     }
                     {
                         PROFILE_COUNT("displayer/text");
-                        // Draw simulation time (t) and FPS
-                        m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
-                        m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getCurrentWidth() - 60.0f, 16.0f, 0.25f);
+                        if (m_legenda) {
+                            // todo
+                            m_renderer.drawText("LEGENDA", m_renderer.getWindowWidth() / 2, m_renderer.getWindowHeight() - 32.0f, 0.5f);
+                            std::vector<std::pair<std::string, std::string>> text = {
+                                {"ESC",         "stop and exit the simulation"},
+                                {"P",           "play/pause the simulation"},
+                                {"I/O",         "slow-down/speed-up simulated time"},
+                                {"L",           "show/hide connection links between nodes"},
+                                {"G",           "show/hide the reference grid and node pins"},
+                                {"M",           "enable/disable the marker for selecting nodes"},
+                                {"left-click",  "open a window with selected node details"},
+                                {"C",           "resets the camera to the starting position"},
+                                {"A/D",         "move the camera left/right"},
+                                {"W/S",         "move the camera up/down"},
+                                {"Q/E",         "move the camera forward/backward"},
+                                {"right-click", "drag to rotate the simulation plane"},
+                                {"scroll",      "zoom in and out of the simulation plane"},
+                                {"left-shift",  "added to camera commands for precision control"}
+                            };
+                            size_t ml = 0;
+                            for (auto const& line : text) ml = max(ml, line.first.size());
+                            ml += 2;
+                            for (auto& line : text) while (line.first.size() < ml) line.first.push_back(' ');
+                            for (size_t i = 0; i < text.size(); ++i) {
+                                float y = (1 - (i+0.5f) / text.size()) * (m_renderer.getWindowHeight() - 64);
+                                m_renderer.drawText(text[i].first + text[i].second, 16.0f, y, 0.25f);
+                            }
+                        } else {
+                            // Draw hovered node, simulation time (t) and FPS
+                            if (m_hoveredNode != device_t(-1)) m_renderer.drawText("Node " + std::to_string(m_hoveredNode), 16.0f, m_renderer.getWindowHeight() - 16.0f, 0.25f);
+                            m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
+                            m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 0.25f);
+                        }
                     }
                     {
                         PROFILE_COUNT("displayer/input");
@@ -731,8 +763,10 @@ struct displayer {
                 // Viewport callback
                 glfwSetFramebufferSizeCallback(m_renderer.getWindow(), [](GLFWwindow* window, int width, int height) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
-                    dspl.m_renderer.viewportResize(width, height);
-                    });
+                    int winWidth, winHeight;
+                    glfwGetWindowSize(window, &winWidth, &winHeight);
+                    dspl.m_renderer.viewportResize(winWidth, winHeight, width, height);
+                });
 
                 // Keyboard callback
                 glfwSetKeyCallback(m_renderer.getWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -745,11 +779,13 @@ struct displayer {
                     else if (action == GLFW_RELEASE) {
                         dspl.m_key_stroked.erase(key);
                     }
-                    });
+                });
 
                 // Cursor position callback
                 glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
+                    xpos *= dspl.m_renderer.getRenderScale();
+                    ypos *= dspl.m_renderer.getRenderScale();
 
                     if (dspl.m_mouseFirst) {
                         dspl.m_mouseLastX = (float)xpos;
@@ -764,26 +800,26 @@ struct displayer {
 
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);
                     dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::drag, 0);
-                    });
+                });
 
                 // Cursor click callback
                 glfwSetMouseButtonCallback(m_renderer.getWindow(), [](GLFWwindow* window, int button, int action, int mods) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::click, mods);
-                    });
+                });
 
                 // Cursor scroll callback
                 glfwSetScrollCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xoffset, double yoffset) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     dspl.mouseInput(xoffset, yoffset, 0.0, 0.0, mouse_type::scroll, 0);
-                    });
+                });
 
                 // Window close callback
                 glfwSetWindowCloseCallback(m_renderer.getWindow(), [](GLFWwindow* window) {
                     net& dspl = *((net*)glfwGetWindowUserPointer(window)); // get the net instance from window
                     if (dspl.frequency() == 0) dspl.frequency(1);
                     dspl.terminate();
-                    });
+                });
             }
 
             //! @brief It returns the projection of a vector v onto a ray along its direction d (unit vector).
@@ -844,8 +880,8 @@ struct displayer {
                     case mouse_type::hover: {
                         // Raycast caluclation
                         // (x, y) from screen space coordinates to NDC
-                        float rayX{ (2.0f * (float)x) / m_renderer.getCurrentWidth() - 1.0f };
-                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getCurrentHeight() };
+                        float rayX{ (2.0f * (float)x) / m_renderer.getFramebufferWidth() - 1.0f };
+                        float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getFramebufferHeight() };
 
                         // Ray vector goes from screen space to world space (backwards)
                         // Ray in clip space; camera position at (0,0,0)
@@ -880,8 +916,8 @@ struct displayer {
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
                             if (!m_mouseRight) {
                                 m_mouseRight = 1;
-                                m_mouseRightX = m_mouseLastX - (float)(m_renderer.getCurrentWidth() / 2);
-                                m_mouseRightY = (float)(m_renderer.getCurrentHeight() / 2) - m_mouseLastY;
+                                m_mouseRightX = m_mouseLastX - (float)(m_renderer.getFramebufferWidth() / 2);
+                                m_mouseRightY = (float)(m_renderer.getFramebufferHeight() / 2) - m_mouseLastY;
                             }
                             int mods = 0;
                             if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
@@ -908,6 +944,15 @@ struct displayer {
 
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the displayer and other classes.
             void keyboardInput(int key, bool first, float deltaTime, int mods) {
+                // exit legenda with any key
+                bool justoutoflegenda = false;
+                if (m_legenda) {
+                    if (first) {
+                        m_legenda = false;
+                        justoutoflegenda = true;
+                        m_renderer.setStandardCursor(m_pointer);
+                    } else return;
+                }
                 switch (key) {
                     // terminate program
                     case GLFW_KEY_ESCAPE:
@@ -950,8 +995,13 @@ struct displayer {
                         break;
                     default:
                         // pass key to renderer
-                        m_renderer.keyboardInput(key, first, deltaTime, mods);
-                        break;
+                        if (not m_renderer.keyboardInput(key, first, deltaTime, mods) and first and not justoutoflegenda) {
+                            // unrecognised key: stop simulation for legenda
+                            P::net::frequency(0);
+                            m_hoveredNode = -1;
+                            m_legenda = true;
+                            m_renderer.setStandardCursor(false);
+                        }
                 }
             }
 
@@ -1003,6 +1053,9 @@ struct displayer {
 
             //! @brief Whether nodes can be selected with mouse click.
             bool m_pointer;
+
+            //! @brief Whether to show the legenda.
+            bool m_legenda;
 
             //! @brief The texture to be used for the reference plane.
             std::string m_texture;

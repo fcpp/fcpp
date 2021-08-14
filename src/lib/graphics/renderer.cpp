@@ -222,8 +222,9 @@ void Renderer::allocateMeshVertex() {
 
 /* --- CONSTRUCTOR --- */
 Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* masterPtr) :
-    m_currentWidth{ SCR_DEFAULT_WIDTH },
-    m_currentHeight{ SCR_DEFAULT_HEIGHT },
+    m_windowWidth{ SCR_DEFAULT_WIDTH },
+    m_windowHeight{ SCR_DEFAULT_HEIGHT },
+    m_renderScale{ 1.0 },
     m_master{ master },
     m_resizeOnSwap{ false },
     m_gridShow{ true },
@@ -240,9 +241,7 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
     if (antialias > 1)
         glfwWindowHint(GLFW_SAMPLES, antialias);
 
@@ -253,9 +252,6 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
         glfwTerminate();
         throw std::runtime_error("ERROR::RENDERER::GLFW::WINDOW_CREATION_FAILED\n");
     }
-
-    // Set initial aspect ratio
-    m_camera.setScreen(m_currentWidth, m_currentHeight);
 
     // Initialize context if master
     if (m_master) initializeContext(true);
@@ -367,9 +363,6 @@ void Renderer::initializeContext(bool master) {
     if (master and !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
 
-    // Set viewport
-    glViewport(0, 0, SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT);
-
     // Enabling V-Sync
     glfwSwapInterval(1);
 
@@ -381,7 +374,6 @@ void Renderer::initializeContext(bool master) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Enable antialiasing
-    //if (antialias > 1) <----------- fix this later !!!!!!!!!!!!!
     glEnable(GL_MULTISAMPLE);
 
     // Initialize common resources
@@ -397,6 +389,12 @@ void Renderer::initializeContext(bool master) {
     // Generate shader programs
     generateShaderPrograms();
 
+    // Set initial window metrics
+    glfwGetFramebufferSize(m_window, (int*)&m_framebufferWidth, (int*)&m_framebufferHeight);
+    m_renderScale = m_framebufferWidth / m_windowWidth;
+    m_camera.setScreen(m_framebufferWidth, m_framebufferHeight);
+    glViewport(0, 0, m_framebufferWidth, m_framebufferHeight);
+
     // Clear first frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -407,7 +405,7 @@ void Renderer::swapAndNext() {
     glfwSwapBuffers(m_window);
     if (m_master) glfwPollEvents();
     else if (m_resizeOnSwap) {
-        glViewport(0, 0, m_currentWidth, m_currentHeight);
+        glViewport(0, 0, m_framebufferWidth, m_framebufferHeight);
         m_resizeOnSwap = false;
     }
 
@@ -678,6 +676,11 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 }
 
 void Renderer::drawText(std::string text, float x, float y, float scale) const {
+    // Scale coordinates to renderbuffer's size
+    x *= m_renderScale;
+    y *= m_renderScale;
+    scale *= m_renderScale;
+
     // Activate corresponding render state
     m_shaderProgramFont.use();
     m_shaderProgramFont.setVec3("u_textColor", m_foreground);
@@ -722,15 +725,27 @@ void Renderer::drawText(std::string text, float x, float y, float scale) const {
 }
 
 float Renderer::getAspectRatio() {
-    return (float)(m_currentWidth) / (float)(m_currentHeight);
+    return (float)(m_windowWidth) / (float)(m_windowHeight);
 }
 
-int Renderer::getCurrentWidth() {
-    return m_currentWidth;
+int Renderer::getWindowWidth() {
+    return m_windowWidth;
 }
 
-int Renderer::getCurrentHeight() {
-    return m_currentHeight;
+int Renderer::getWindowHeight() {
+    return m_windowHeight;
+}
+
+int Renderer::getFramebufferWidth() {
+    return m_framebufferWidth;
+}
+
+int Renderer::getFramebufferHeight() {
+    return m_framebufferHeight;
+}
+
+double Renderer::getRenderScale() {
+    return m_renderScale;
 }
 
 GLFWwindow* Renderer::getWindow() const {
@@ -779,23 +794,26 @@ void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mous
     m_camera.mouseInput(x, y, xFirst, yFirst, type, mods);
 }
 
-void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
+bool Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     // Process renderer's input
     switch (key) {
         // show/hide grid
         case GLFW_KEY_G:
             if (first) m_gridShow = not m_gridShow;
-            break;
+            return true;;
     }
 
     // Process camera's input
-    m_camera.keyboardInput(key, first, deltaTime, mods);
+    return m_camera.keyboardInput(key, first, deltaTime, mods);
 }
 
-void Renderer::viewportResize(int width, int height) {
-    if (m_master) glViewport(0, 0, width, height);
+void Renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight) {
+    if (m_master) glViewport(0, 0, fbWidth, fbHeight);
     else m_resizeOnSwap = true;
-    m_currentWidth = width;
-    m_currentHeight = height;
-    m_camera.setScreen(width, height);
+    m_windowWidth = winWidth;
+    m_windowHeight = winHeight;
+    m_framebufferWidth = fbWidth;
+    m_framebufferHeight = fbHeight;
+    m_renderScale = fbWidth / winWidth;
+    m_camera.setScreen(fbWidth, fbHeight);
 }

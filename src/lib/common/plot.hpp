@@ -13,7 +13,6 @@
 
 #include <limits>
 #include <map>
-#include <ostream>
 #include <ratio>
 #include <set>
 #include <sstream>
@@ -88,6 +87,16 @@ namespace filter {
 //! @brief Namespace for plot building tools.
 namespace plot {
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief Shortens a string.
+    std::string shorten(std::string s);
+
+    //! @brief Shortens a title string.
+    std::string multi_shorten(std::string s);
+}
+//! @endcond
+
 //! @brief Tag for time information.
 struct time {};
 
@@ -104,8 +113,14 @@ struct point {
     double value;
 };
 
-//! @brief Printing a single page.
-std::ostream& operator<<(std::ostream& o, point const& p);
+//! @brief Printing a single point.
+template <typename O>
+O& operator<<(O& o, point const& p) {
+    o << "(";
+    if (p.unit.size()) o << p.unit << ", ";
+    o << p.source << ", " << p.value << ")";
+    return o;
+}
 
 
 //! @brief Structure representing a single plot.
@@ -125,7 +140,30 @@ struct plot {
 };
 
 //! @brief Printing a single plot.
-std::ostream& operator<<(std::ostream& o, plot const& p);
+template <typename O>
+O& operator<<(O& o, plot const& p) {
+    o << "plot.put(plot.plot(name+\"-" << details::shorten(p.xname) << details::shorten(p.yname) << (p.title.size() ? "-" : "") << details::multi_shorten(p.title) << "\", \"" << p.title << "\", \"" << p.xname << "\", \"" << p.yname << "\", new string[] {";
+    bool first = true;
+    for (auto const& y : p.yvals) {
+        if (first) first = false;
+        else o << ", ";
+        o << "\"" << y.first << "\"";
+    }
+    o << "}, new pair[][] {";
+    first = true;
+    for (auto const& y : p.yvals) {
+        if (first) first = false;
+        else o << ", ";
+        o << "{";
+        for (size_t i=0; i<y.second.size(); ++i) {
+            if (i > 0) o << ", ";
+            o << "(" << p.xvals[i] << ", " << y.second[i] << ")";
+        }
+        o << "}";
+    }
+    o << "}));\n";
+    return o;
+}
 
 
 //! @brief Structure representing a page of plots.
@@ -148,7 +186,14 @@ struct page {
 };
 
 //! @brief Printing a single page.
-std::ostream& operator<<(std::ostream& o, page const& p);
+template <typename O>
+O& operator<<(O& o, page const& p) {
+    if (p.title.size()) o << "// " << p.title << "\n\n";
+    o << "plot.ROWS = " << p.rows << ";\n";
+    o << "plot.COLS = " << p.cols << ";\n\n";
+    for (plot const& q : p.plots) o << q << "\n";
+    return o;
+}
 
 
 //! @brief Structure representing a whole file of plots.
@@ -174,7 +219,16 @@ struct file {
 };
 
 //! @brief Printing a file.
-std::ostream& operator<<(std::ostream& o, file const& f);
+template <typename O>
+O& operator<<(O& o, file const& f) {
+    o << "// " << f.title << "\n";
+    o << "string name = \"" << f.title << "\";\n\n";
+    o << "import \"plot.asy\" as plot;\n";
+    o << "unitsize(1cm);\n\n";
+    for (page const& p : f.pages) o << p << "\n";
+    o << "shipout(\"" << f.title << "\");\n";
+    return o;
+}
 
 
 //! @brief Empty class not producing a plot.
@@ -357,7 +411,8 @@ class rows {
     }
 
     //! @brief Prints the object's contents.
-    void print(std::ostream& o) {
+    template <typename O>
+    void print(O& o) {
         common::isstream rows({});
         std::swap(rows.data(), m_rows.data());
         std::string tstr = std::string(ctime(&m_start));
@@ -392,18 +447,19 @@ class rows {
 
   private:
     //! @brief Prints the storage headers.
-    void print_headers(std::ostream&, common::type_sequence<>) const {}
-    template <typename U, typename... Us>
-    void print_headers(std::ostream& o, common::type_sequence<U,Us...>) const {
+    template <typename O>
+    void print_headers(O&, common::type_sequence<>) const {}
+    template <typename O, typename U, typename... Us>
+    void print_headers(O& o, common::type_sequence<U,Us...>) const {
         o << common::details::strip_namespaces(common::type_name<U>()) << " ";
         print_headers(o, common::type_sequence<Us...>{});
     }
 
     //! @brief Prints the storage values.
-    template <typename T>
-    void print_output(std::ostream&, T const&, common::type_sequence<>) const {}
-    template <typename T, typename U, typename... Us>
-    void print_output(std::ostream& o, T const& t, common::type_sequence<U,Us...>) const {
+    template <typename O, typename T>
+    void print_output(O&, T const&, common::type_sequence<>) const {}
+    template <typename O, typename T, typename U, typename... Us>
+    void print_output(O& o, T const& t, common::type_sequence<U,Us...>) const {
         o << common::escape(common::get<U>(t)) << " ";
         print_output(o, t, common::type_sequence<Us...>{});
     }

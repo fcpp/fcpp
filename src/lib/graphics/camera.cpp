@@ -125,7 +125,7 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
     }
 }
 
-void Camera::keyboardInput(int key, bool first, float deltaTime, int mods)
+bool Camera::keyboardInput(int key, bool first, float deltaTime, int mods)
 {
     float velocity = m_depth * deltaTime * ((mods & GLFW_MOD_SHIFT) > 0 ? 0.05 : 0.5);
     switch (key) {
@@ -150,7 +150,10 @@ void Camera::keyboardInput(int key, bool first, float deltaTime, int mods)
         case GLFW_KEY_C:
             if (first) applyViewDefault();
             break;
+        default:
+            return false;
     }
+    return true;
 }
 
 

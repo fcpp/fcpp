@@ -69,7 +69,7 @@ class Camera {
     void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
 
     //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the camera.
-    void keyboardInput(int key, bool first, float deltaTime, int mods);
+    bool keyboardInput(int key, bool first, float deltaTime, int mods);
 
 private:
     //! @brief Camera's current mouse sensitivity.

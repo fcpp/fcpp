@@ -794,17 +794,17 @@ void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mous
     m_camera.mouseInput(x, y, xFirst, yFirst, type, mods);
 }
 
-void Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
+bool Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     // Process renderer's input
     switch (key) {
         // show/hide grid
         case GLFW_KEY_G:
             if (first) m_gridShow = not m_gridShow;
-            break;
+            return true;;
     }
 
     // Process camera's input
-    m_camera.keyboardInput(key, first, deltaTime, mods);
+    return m_camera.keyboardInput(key, first, deltaTime, mods);
 }
 
 void Renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight) {

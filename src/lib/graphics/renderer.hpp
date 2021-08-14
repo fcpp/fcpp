@@ -109,7 +109,7 @@ namespace fcpp {
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods);
 
             //! @brief Given the key stroke, the press status and a deltaTime, it manages keyboard input for the renderer and other classes.
-            void keyboardInput(int key, bool first, float deltaTime, int mods);
+            bool keyboardInput(int key, bool first, float deltaTime, int mods);
 
             //! @brief It resizes the viewport, given the new width and height values.
             void viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight);

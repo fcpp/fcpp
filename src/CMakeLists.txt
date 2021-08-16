@@ -4,12 +4,14 @@ cmake_minimum_required(VERSION 3.9)
 # HELPER FUNCTIONS #
 ####################
 
-function(fcpp_gui_copy target source dest folder)
-    add_custom_command(
-        TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${source}/${folder} ${dest}/${folder}
-    )
+function(fcpp_copy target source dest folder)
+    if(EXISTS ${source}/${folder})
+        add_custom_command(
+            TARGET ${target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${source}/${folder} ${dest}/${folder}
+        )
+    endif()
 endfunction()
 
 macro(fcpp_setup)
@@ -35,10 +37,11 @@ function(fcpp_target target_name target_executable enable_gui)
     set_target_properties(${target_name} PROPERTIES PREFIX "run/")
     if(${enable_gui} STREQUAL ON)
         if(FCPP_BUILD_GL)
-            fcpp_gui_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} textures)
+            fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} textures)
             target_compile_options(${target_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
         endif()
     endif()
+    fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
 endfunction()
 
 function(fcpp_test target_name target_executable)
@@ -72,6 +75,9 @@ fcpp_setup()
 set(
     SOURCE_LIST
     lib/beautify.cpp
+    lib/cloud.cpp
+    lib/cloud/graph_connector.cpp
+    lib/cloud/graph_spawner.cpp
     lib/common.cpp
     lib/common/algorithm.cpp
     lib/common/multitype_map.cpp
@@ -103,6 +109,7 @@ set(
     lib/data.cpp
     lib/data/color.cpp
     lib/data/field.cpp
+    lib/data/hyperloglog.cpp
     lib/data/shape.cpp
     lib/data/tuple.cpp
     lib/data/vec.cpp
@@ -147,8 +154,8 @@ else(WIN32)
 endif(WIN32)
 target_include_directories(fcpp PUBLIC .)
 if(FCPP_BUILD_GL)
-    fcpp_gui_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} shaders)
-    fcpp_gui_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} fonts)
+    fcpp_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} shaders)
+    fcpp_copy(fcpp ${PROJECT_SOURCE_DIR}/lib/graphics ${CMAKE_BINARY_DIR} fonts)
 endif(FCPP_BUILD_GL)
 
 ######################
@@ -226,6 +233,8 @@ if(FCPP_BUILD_TESTS)
     if(FCPP_INTERNAL_TESTS)
         set(
             TEST_FILES
+            test/cloud/graph_connector.cpp
+            test/cloud/graph_spawner.cpp
             test/common/algorithm.cpp
             test/common/multitype_map.cpp
             test/common/mutex.cpp
@@ -254,6 +263,7 @@ if(FCPP_BUILD_TESTS)
             test/coordination/utils.cpp
             test/data/color.cpp
             test/data/field.cpp
+            test/data/hyperloglog.cpp
             test/data/tuple.cpp
             test/data/vec.cpp
             test/deployment/hardware_connector.cpp

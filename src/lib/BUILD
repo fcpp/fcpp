@@ -70,6 +70,7 @@ cc_library(
     deps = [
         "//lib/data:color",
         "//lib/data:field",
+        "//lib/data:hyperloglog",
         "//lib/data:shape",
         "//lib/data:tuple",
         "//lib/data:vec",
@@ -110,6 +111,7 @@ cc_library(
         "//lib:option",
         "//lib:settings",
         "//lib:simulation",
+        "//lib:cloud",
     ],
     visibility = [
         '//visibility:public',
@@ -167,6 +169,20 @@ cc_library(
         "//lib/simulation:simulated_connector",
         "//lib/simulation:simulated_positioner",
         "//lib/simulation:spawner",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'cloud',
+    hdrs = ['cloud.hpp'],
+    srcs = ['cloud.cpp'],
+    deps = [
+        "//lib:component",
+        "//lib/cloud:graph_connector",
+        "//lib/cloud:graph_spawner",
     ],
     visibility = [
         '//visibility:public',

@@ -2,7 +2,7 @@
 
 /**
  * @file shader.hpp
- * @brief Implementation of the `Shader` class.
+ * @brief Implementation of the `shader` class.
  */
 
 #ifndef FCPP_GRAPHICS_SHADER_H
@@ -14,36 +14,39 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-class shader
-{
+//! @brief Class managing a shader program.
+class shader {
 private:
-    // Program ID
+    //! @brief Program ID.
     unsigned int m_ID;
 
 public:
-    // Constructor // builds and reads the shader
+    //! @brief Default constructor.
     shader();
+
+    //! @brief Constructor building and reading the shader.
     shader(const char* vertexPath, const char* fragmentPath);
 
-    // Copy constructor
+    //! @brief Copy constructor.
     shader(shader const& source);
 
-    // Move constructor
+    //! @brief Move constructor.
     shader(shader&& source);
 
-    // Copy assignment
+    //! @brief Copy assignment.
     shader& operator=(shader const& source);
 
-    // Move assignment
+    //! @brief Move assignment.
     shader& operator=(shader&& source);
 
-    // Destructor
+    //! @brief Destructor.
     ~shader();
 
-    // Use/Activate the shader
+    //! @brief Use/Activate the shader.
     void use() const;
 
-    // Uniform functions
+    //! @brief Uniform functions.
+    //! @{
     void setBool(const std::string &name, bool value) const;
     void setInt(const std::string &name, int value) const;
     void setFloat(const std::string &name, float value) const;
@@ -51,6 +54,7 @@ public:
     void setVec4(const std::string &name, const glm::vec4 &value) const;
     void setMat3(const std::string &name, const glm::mat3 &mat) const;
     void setMat4(const std::string &name, const glm::mat4 &mat) const;
+    //! @}
 };
 
 #endif // FCPP_GRAPHICS_SHADER_H

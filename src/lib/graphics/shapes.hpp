@@ -2,7 +2,7 @@
 
 /**
  * @file shapes.hpp
- * @brief Implementation of the shapes (see \ref shape) as triangle lists.
+ * @brief Implementation of the `shapes` class holding supported shapes (see \ref fcpp::shape "shape") as triangle lists.
  */
 
 #ifndef FCPP_GRAPHICS_SHAPES_H_

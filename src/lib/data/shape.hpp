@@ -1,5 +1,10 @@
 // Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
+/**
+ * @file shape.hpp
+ * @brief Implementation of the `shape` enum and helper functions.
+ */
+
 #ifndef FCPP_DATA_SHAPE_H_
 #define FCPP_DATA_SHAPE_H_
 

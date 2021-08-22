@@ -1,17 +1,21 @@
 // Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
+/**
+ * @file camera.hpp
+ * @brief Implementation of the `camera` class.
+ */
+
 #ifndef FCPP_GRAPHICS_CAMERA_H
 #define FCPP_GRAPHICS_CAMERA_H
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <vector>
-
-#include "lib/graphics/input_types.hpp"
 
 
 namespace fcpp {
+
+//! @brief Supported mouse input type.
+enum class mouse_type { hover, click, drag, scroll };
 
 //! @brief Default camera's depth
 constexpr float CAM_DEFAULT_DEPTH{ 10.0f };
@@ -36,10 +40,10 @@ constexpr float CAM_DEFAULT_FOV{ 45.0f };
 
 
 //! @brief Camera class with integrated view matrix.
-class Camera {
+class camera {
   public:
     //! @brief Camera's constructor, with default values for the camera's initial vectors.
-    Camera();
+    camera();
 
     //! @brief It sets camera's default and current view and projection matrix.
     void setViewDefault(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), float depth = CAM_DEFAULT_DEPTH, glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = CAM_DEFAULT_YAW, float pitch = CAM_DEFAULT_PITCH);
@@ -87,7 +91,7 @@ private:
     //! @brief The screen aspect ratio.
     float m_aspectRatio;
 
-    //! @brief Camera's view matrix; all trasnformations are made on this one.
+    //! @brief Camera's view matrix; all transformations are made on this one.
     glm::mat4 m_view;
 
     //! @brief Camera's default view matrix.

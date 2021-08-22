@@ -1,5 +1,10 @@
 // Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
+/**
+ * @file color.hpp
+ * @brief Implementation of the `color` class.
+ */
+
 #ifndef FCPP_DATA_COLOR_H_
 #define FCPP_DATA_COLOR_H_
 

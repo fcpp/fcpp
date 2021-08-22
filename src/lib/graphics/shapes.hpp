@@ -1,5 +1,10 @@
 // Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
+/**
+ * @file shapes.hpp
+ * @brief Implementation of the shapes (see \ref shape) as triangle lists.
+ */
+
 #ifndef FCPP_GRAPHICS_SHAPES_H_
 #define FCPP_GRAPHICS_SHAPES_H_
 
@@ -58,10 +63,10 @@ struct VertexData {
 };
 
 //! @brief Class holding the collections of vertices for every shape.
-class Shapes {
+class shapes {
 public:
     //! @brief Constructor.
-    inline Shapes() {
+    inline shapes() {
         tetr(m_vertices[(size_t)shape::tetrahedron]);
         cube(m_vertices[(size_t)shape::cube]);
         octa(m_vertices[(size_t)shape::octahedron]);

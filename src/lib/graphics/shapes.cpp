@@ -89,7 +89,7 @@ namespace {
 }
 
 //! @brief Generates vertex data for a tetrahedron.
-void Shapes::tetr(VertexData& v) {
+void shapes::tetr(VertexData& v) {
     float sq2 = sqrt(2);
     float sq3 = sqrt(3);
     float sq6 = sq2*sq3;
@@ -163,7 +163,7 @@ namespace {
 }
 
 //! @brief Generates vertex data for a cube.
-void Shapes::cube(VertexData& v) {
+void shapes::cube(VertexData& v) {
     // border area
     push_rectangle(v, +0.50f, 0,
                       -0.50f, -0.50f,
@@ -185,7 +185,7 @@ void Shapes::cube(VertexData& v) {
 }
 
 //! @brief Generates vertex data for a octahedron.
-void Shapes::octa(VertexData& v) {
+void shapes::octa(VertexData& v) {
     // border area
     std::vector<vec<3>> vx = {
         {0, 1, 0},
@@ -251,7 +251,7 @@ namespace {
 }
 
 //! @brief Generates vertex data for a icosahedric dome.
-void Shapes::dome(VertexData& v, size_t k) {
+void shapes::dome(VertexData& v, size_t k) {
     float le = atan(0.5);
     float lp = 2*atan(1);
     // border area
@@ -282,7 +282,7 @@ void Shapes::dome(VertexData& v, size_t k) {
 }
 
 //! @brief Generates vertex data for a star.
-void Shapes::star(VertexData& v) {
+void shapes::star(VertexData& v) {
     float sq05 = sqrt(0.5);
     // border area
     for (int z=-1; z<=1; z+=2) {

@@ -8,7 +8,6 @@
 #ifndef FCPP_SIMULATION_DISPLAYER_H_
 #define FCPP_SIMULATION_DISPLAYER_H_
 
-#include <cassert>
 #include <cmath>
 #include <cstring>
 
@@ -27,10 +26,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <stb_image/stb_image.h>
 
 #include "lib/common/algorithm.hpp"
 #include "lib/common/ostream.hpp"
@@ -38,8 +34,6 @@
 #include "lib/data/field.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/graphics/renderer.hpp"
-#include "lib/graphics/shapes.hpp"
-#include "lib/graphics/input_types.hpp"
 #endif
 
 
@@ -333,8 +327,8 @@ class info_window {
     //! @brief The unique identifier of the displayed device.
     device_t m_uid;
 
-    //! @brief Window Renderer object.
-    internal::Renderer m_renderer;
+    //! @brief Window renderer object.
+    internal::renderer m_renderer;
 
     //! @brief Whether the window is alive and running.
     bool m_running = true;
@@ -716,8 +710,8 @@ struct displayer {
                 } else P::net::update();
             }
 
-            //! @brief Returns net's Renderer object.
-            internal::Renderer const& getRenderer() {
+            //! @brief Returns net's renderer object.
+            internal::renderer const& getRenderer() {
                 return m_renderer;
             }
 
@@ -1028,8 +1022,8 @@ struct displayer {
             //! @brief The step between refresh times.
             times_t m_step;
 
-            //! @brief Net's Renderer object; it has the responsability of calling OpenGL functions.
-            internal::Renderer m_renderer;
+            //! @brief Net's renderer object; it has the responsability of calling OpenGL functions.
+            internal::renderer m_renderer;
 
             //! @brief The running node-info windows.
             std::vector<std::unique_ptr<info_window<F>>> m_info;

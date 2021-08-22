@@ -1,14 +1,20 @@
 // Copyright © 2021 Luigi Rapetta. All Rights Reserved.
 
+/**
+ * @file shader.hpp
+ * @brief Implementation of the `Shader` class.
+ */
+
 #ifndef FCPP_GRAPHICS_SHADER_H
 #define FCPP_GRAPHICS_SHADER_H
+
+#include <string>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <string>
 
-class Shader
+class shader
 {
 private:
     // Program ID
@@ -16,23 +22,23 @@ private:
 
 public:
     // Constructor // builds and reads the shader
-    Shader();
-    Shader(const char* vertexPath, const char* fragmentPath);
+    shader();
+    shader(const char* vertexPath, const char* fragmentPath);
 
     // Copy constructor
-    Shader(Shader const& source);
+    shader(shader const& source);
 
     // Move constructor
-    Shader(Shader&& source);
+    shader(shader&& source);
 
     // Copy assignment
-    Shader& operator=(Shader const& source);
+    shader& operator=(shader const& source);
 
     // Move assignment
-    Shader& operator=(Shader&& source);
+    shader& operator=(shader&& source);
 
     // Destructor
-    ~Shader();
+    ~shader();
 
     // Use/Activate the shader
     void use() const;

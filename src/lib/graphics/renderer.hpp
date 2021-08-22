@@ -1,16 +1,20 @@
 // Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
+/**
+ * @file renderer.hpp
+ * @brief Implementation of the `renderer` class.
+ */
+
 #ifndef FCPP_GRAPHICS_RENDERER_H_
 #define FCPP_GRAPHICS_RENDERER_H_
 
-#include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image/stb_image.h>
 #include <ft2build.h>
@@ -20,7 +24,6 @@
 #include "lib/graphics/camera.hpp"
 #include "lib/graphics/shader.hpp"
 #include "lib/graphics/shapes.hpp"
-#include "lib/graphics/input_types.hpp"
 
 
 namespace fcpp {
@@ -40,13 +43,13 @@ namespace fcpp {
         };
 
         //! @brief Renderer class; it has the responsability of calling OpenGL directives.
-        class Renderer {
+        class renderer {
         public:
             //! @brief Renderer constructor, with GLFW and OpenGL initializations.
-            Renderer(size_t antialias, std::string name, bool master = true, GLFWwindow* masterPtr = NULL);
+            renderer(size_t antialias, std::string name, bool master = true, GLFWwindow* masterPtr = NULL);
 
             //! @brief Renderer destructor closing the window.
-            ~Renderer();
+            ~renderer();
 
             //! @brief It initializes the context on the current thread.
             void initializeContext(bool master = true);
@@ -87,14 +90,14 @@ namespace fcpp {
             //! @brief Returns the render scale.
             double getRenderScale();
 
-            //! @brief Returns the pointer to the Renderer's m_window
+            //! @brief Returns the pointer to the renderer's m_window
             GLFWwindow* getWindow() const;
 
             //! @brief It returns the reference of the camera object.
-            Camera& getCamera();
+            camera& getCamera();
 
             //! @brief It returns the (constant) reference of the camera object.
-            Camera const& getCamera() const;
+            camera const& getCamera() const;
 
             //! @brief It loads and sets the new texture to be displayed on the grid's plane.
             bool setGridTexture(std::string path);
@@ -161,7 +164,7 @@ namespace fcpp {
             static const glm::vec3 LIGHT_COLOR;
 
             //! @brief It contains all the vertex information of the standard shapes.
-            static Shapes s_shapes;
+            static shapes s_shapes;
 
             //! @brief Vertex Buffer Objects for standard shapes; it can be shared among several contexts.
             static unsigned int s_shapeVBO[(int)shape::SIZE];
@@ -199,7 +202,7 @@ namespace fcpp {
             //! @brief The pointer to the hand-shaped cursor object.
             static GLFWcursor* s_cursorHand;
 
-            //! @brief It initializes all the static structures and variables, common to the Renderer instances.
+            //! @brief It initializes all the static structures and variables, common to the renderer instances.
             static void initializeCommon();
 
             //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
@@ -235,20 +238,20 @@ namespace fcpp {
             //! @brief Vertex Array Object dedicated to font rendering; it's per context and it can't be shared with others.
             unsigned int m_fontVAO;
 
-            //! @brief Vertex Buffer Object dedicated to font rendering; it's per Renderer and it shouldn't be shared with others.
+            //! @brief Vertex Buffer Object dedicated to font rendering; it's per renderer and it shouldn't be shared with others.
             unsigned int m_fontVBO;
 
             //! @brief Main shader program, with diffuse lighting caluclations and color info; it's per context and it shouldn't be shared with others.
-            Shader m_shaderProgramDiff;
+            shader m_shaderProgramDiff;
 
             //! @brief Additional shader program used for simple shapes and uniform color value; it's per context and it shouldn't be shared with others.
-            Shader m_shaderProgramCol;
+            shader m_shaderProgramCol;
 
             //! @brief Additional shader program used for texture rendering; it's per context and it shouldn't be shared with others.
-            Shader m_shaderProgramTexture;
+            shader m_shaderProgramTexture;
 
             //! @brief Additional shader program used for fonts; it's per context and it shouldn't be shared with others.
-            Shader m_shaderProgramFont;
+            shader m_shaderProgramFont;
 
             //! @brief Current width of the window.
             int m_windowWidth;
@@ -284,7 +287,7 @@ namespace fcpp {
             glm::vec4 m_foreground;
 
             //! @brief Camera object of the scene
-            Camera m_camera;
+            camera m_camera;
 
             //! @brief Euclid's algorithm to get the greatest common divisor.
             int euclid(int a, int b);

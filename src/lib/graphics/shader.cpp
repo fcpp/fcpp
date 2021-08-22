@@ -3,13 +3,12 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
+
 #include "lib/graphics/shader.hpp"
 
-Shader::Shader() : m_ID{ 0 } { }
+shader::shader() : m_ID{ 0 } { }
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath)
+shader::shader(const char* vertexPath, const char* fragmentPath)
 {
     /* RETRIEVE SOURCE CODE */
     std::string vertexCode;
@@ -90,11 +89,11 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
     glDeleteShader(fragment);
 }
 
-Shader::Shader(Shader const& source) : m_ID{ source.m_ID } { }
+shader::shader(shader const& source) : m_ID{ source.m_ID } { }
 
-Shader::Shader(Shader&& source) : m_ID{ source.m_ID } { source.m_ID = 0; }
+shader::shader(shader&& source) : m_ID{ source.m_ID } { source.m_ID = 0; }
 
-Shader& Shader::operator=(Shader const& source) {
+shader& shader::operator=(shader const& source) {
     // Self-assignment detection
     if (&source != this) {
         m_ID = source.m_ID;
@@ -103,7 +102,7 @@ Shader& Shader::operator=(Shader const& source) {
     return *this;
 }
 
-Shader& Shader::operator=(Shader&& source) {
+shader& shader::operator=(shader&& source) {
     // Self-assignment detection
     if (&source != this) {
         m_ID = source.m_ID;
@@ -113,46 +112,46 @@ Shader& Shader::operator=(Shader&& source) {
     return *this;
 }
 
-Shader::~Shader() {
+shader::~shader() {
     if(glfwGetCurrentContext() != NULL) glDeleteProgram(m_ID);
 }
 
-void Shader::use() const
+void shader::use() const
 {
     glUseProgram(m_ID);
 }
 
-void Shader::setBool(std::string const& name, bool value) const
+void shader::setBool(std::string const& name, bool value) const
 {
     glUniform1i(glGetUniformLocation(m_ID, name.c_str()), (int)value);
 }
 
-void Shader::setInt(std::string const& name, int value) const
+void shader::setInt(std::string const& name, int value) const
 {
     glUniform1i(glGetUniformLocation(m_ID, name.c_str()), value);
 }
 
-void Shader::setFloat(std::string const& name, float value) const
+void shader::setFloat(std::string const& name, float value) const
 {
     glUniform1f(glGetUniformLocation(m_ID, name.c_str()), value);
 }
 
-void Shader::setVec3(std::string const& name, glm::vec3 const& value) const
+void shader::setVec3(std::string const& name, glm::vec3 const& value) const
 {
     glUniform3fv(glGetUniformLocation(m_ID, name.c_str()), 1, &value[0]);
 }
 
-void Shader::setVec4(std::string const& name, glm::vec4 const& value) const
+void shader::setVec4(std::string const& name, glm::vec4 const& value) const
 {
     glUniform4fv(glGetUniformLocation(m_ID, name.c_str()), 1, &value[0]);
 }
 
-void Shader::setMat3(std::string const& name, glm::mat3 const& mat) const
+void shader::setMat3(std::string const& name, glm::mat3 const& mat) const
 {
     glUniformMatrix3fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
-void Shader::setMat4(std::string const& name, glm::mat4 const& mat) const
+void shader::setMat4(std::string const& name, glm::mat4 const& mat) const
 {
     glUniformMatrix4fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }

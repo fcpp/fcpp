@@ -1,25 +1,20 @@
 // Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
-#include <vector>
-#include <iostream>
+#include <algorithm>
 
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/transform.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include "lib/graphics/camera.hpp"
-#include "lib/graphics/input_types.hpp"
 
 // using namespace fcpp to prevent very verbose code...
 using namespace fcpp;
 
 
 /* --- CONSTRUCTOR --- */
-Camera::Camera()
+camera::camera()
 : m_mouseSensitivity{ CAM_DEFAULT_SENSITIVITY },
   m_depth{ CAM_DEFAULT_DEPTH },
   m_depthDefault{ CAM_DEFAULT_DEPTH },
@@ -32,7 +27,7 @@ Camera::Camera()
 
 
 /* --- PUBLIC FUNCTIONS --- */
-void Camera::setViewDefault(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch)
+void camera::setViewDefault(glm::vec3 position, float depth, glm::vec3 worldUp, float yaw, float pitch)
 {
     // Calculate the front vector
     glm::vec3 calcFront;
@@ -55,41 +50,41 @@ void Camera::setViewDefault(glm::vec3 position, float depth, glm::vec3 worldUp, 
     updatePerspective();
 }
 
-void Camera::applyViewDefault() {
+void camera::applyViewDefault() {
     m_view = m_viewDefault;
     m_depth = m_depthDefault;
     updatePerspective();
 }
 
-glm::mat4 const& Camera::getView() const {
+glm::mat4 const& camera::getView() const {
     return m_view;
 }
 
-glm::mat4 const& Camera::getPerspective() const {
+glm::mat4 const& camera::getPerspective() const {
     return m_perspective;
 }
 
-glm::mat4 const& Camera::getOrthographic() const {
+glm::mat4 const& camera::getOrthographic() const {
     return m_ortho;
 }
 
-glm::vec3 Camera::getPosition() const {
+glm::vec3 camera::getPosition() const {
     glm::vec4 col{ glm::column(glm::affineInverse(m_view), 3) };
     return glm::vec3{ col.x, col.y, col.z };
 }
 
-float Camera::getDepth() const {
+float camera::getDepth() const {
     return m_depth;
 }
 
-void Camera::setScreen(float width, float height) {
+void camera::setScreen(float width, float height) {
     m_diagonal = std::sqrt(width*width + height*height) / 2;
     m_aspectRatio = width / height;
     updatePerspective();
     updateOrthographic(width, height);
 }
 
-void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods)
+void camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods)
 {
     switch (type) {
         case mouse_type::scroll:
@@ -125,7 +120,7 @@ void Camera::mouseInput(double x, double y, double xFirst, double yFirst, mouse_
     }
 }
 
-bool Camera::keyboardInput(int key, bool first, float deltaTime, int mods)
+bool camera::keyboardInput(int key, bool first, float deltaTime, int mods)
 {
     float velocity = m_depth * deltaTime * ((mods & GLFW_MOD_SHIFT) > 0 ? 0.05 : 0.5);
     switch (key) {
@@ -158,10 +153,10 @@ bool Camera::keyboardInput(int key, bool first, float deltaTime, int mods)
 
 
 /* --- PRIVATE METHODS --- */
-void Camera::updatePerspective() {
+void camera::updatePerspective() {
     m_perspective = glm::perspective(glm::radians(CAM_DEFAULT_FOV), m_aspectRatio, m_depth / 32, m_depth * 32);
 }
 
-void Camera::updateOrthographic(float width, float height) {
+void camera::updateOrthographic(float width, float height) {
     m_ortho = glm::ortho(0.0f, width, 0.0f, height);
 }

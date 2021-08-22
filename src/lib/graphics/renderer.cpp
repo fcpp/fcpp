@@ -1,24 +1,10 @@
 // Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
-#include <thread>
+#include <stdexcept>
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <stb_image/stb_image.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
-#include "lib/graphics/camera.hpp"
 #include "lib/graphics/renderer.hpp"
-#include "lib/graphics/shader.hpp"
-#include "lib/graphics/shapes.hpp"
-#include "lib/graphics/input_types.hpp"
 
 
 // using namespace fcpp and fcpp::internal to prevent very verbose code...
@@ -28,46 +14,46 @@ using namespace fcpp::internal;
 
 /* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
-    const std::string Renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
-    const std::string Renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
-    const std::string Renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
-    const std::string Renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
-    const std::string Renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
-    const std::string Renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
-    const std::string Renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
-    const std::string Renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
-    const std::string Renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
-    const std::string Renderer::TEXTURE_PATH{ ".\\textures\\" };
+    const std::string renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
+    const std::string renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
+    const std::string renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
+    const std::string renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
+    const std::string renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
+    const std::string renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
+    const std::string renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
+    const std::string renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
+    const std::string renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
+    const std::string renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
-    const std::string Renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
-    const std::string Renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
-    const std::string Renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
-    const std::string Renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
-    const std::string Renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
-    const std::string Renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
-    const std::string Renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
-    const std::string Renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
-    const std::string Renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
-    const std::string Renderer::TEXTURE_PATH{ "./textures/" };
+    const std::string renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
+    const std::string renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
+    const std::string renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
+    const std::string renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
+    const std::string renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
+    const std::string renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
+    const std::string renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
+    const std::string renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
+    const std::string renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
+    const std::string renderer::TEXTURE_PATH{ "./textures/" };
 #endif
-    const glm::vec3 Renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
-    const glm::vec3 Renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
+    const glm::vec3 renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
+    const glm::vec3 renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
 
 
 /* --- PRIVATE STATIC VARIABLES --- */
-int Renderer::s_planeIndexSize{ 0 };
-int Renderer::s_gridNormIndexSize{ 0 };
-int Renderer::s_gridHighIndexSize{ 0 };
-bool Renderer::s_commonIsReady{ false };
-bool Renderer::s_gridIsReady{ false };
-Shapes Renderer::s_shapes{};
-unsigned int Renderer::s_shapeVBO[(int)shape::SIZE];
-unsigned int Renderer::s_meshVBO[(int)vertex::SIZE];
-unsigned int Renderer::s_meshEBO[(int)index::SIZE];
-std::unordered_map<char, glyph> Renderer::s_glyphs{};
-GLFWcursor* Renderer::s_cursorArrow;
-GLFWcursor* Renderer::s_cursorCross;
-GLFWcursor* Renderer::s_cursorHand;
+int renderer::s_planeIndexSize{ 0 };
+int renderer::s_gridNormIndexSize{ 0 };
+int renderer::s_gridHighIndexSize{ 0 };
+bool renderer::s_commonIsReady{ false };
+bool renderer::s_gridIsReady{ false };
+shapes renderer::s_shapes{};
+unsigned int renderer::s_shapeVBO[(int)shape::SIZE];
+unsigned int renderer::s_meshVBO[(int)vertex::SIZE];
+unsigned int renderer::s_meshEBO[(int)index::SIZE];
+std::unordered_map<char, glyph> renderer::s_glyphs{};
+GLFWcursor* renderer::s_cursorArrow;
+GLFWcursor* renderer::s_cursorCross;
+GLFWcursor* renderer::s_cursorHand;
 
 
 /* --- LOCAL FUNCTIONS --- */
@@ -79,7 +65,7 @@ namespace {
 
 
 /* --- PRIVATE STATIC FUNCTIONS --- */
-void Renderer::initializeCommon() {
+void renderer::initializeCommon() {
     if (!s_commonIsReady) {
         // Mark common structures as ready
         s_commonIsReady = true;
@@ -98,7 +84,8 @@ void Renderer::initializeCommon() {
     }
 }
 
-unsigned int Renderer::loadTexture(std::string path) {
+unsigned int renderer::loadTexture(std::string path) {
+    if (path == "") return 0;
     unsigned int texture{ 0 };
     stbi_set_flip_vertically_on_load(true);
     // Load texture data
@@ -125,7 +112,7 @@ unsigned int Renderer::loadTexture(std::string path) {
     return texture;
 }
 
-bool Renderer::unloadTexture(unsigned int id) {
+bool renderer::unloadTexture(unsigned int id) {
     unsigned char isTexture{ glIsTexture(id) };
     bool success{ isTexture == GL_TRUE };
     glDeleteTextures(1, &id); // be aware: glDeleteTextures() silently ignores 0's and names that do not correspond to existing textures
@@ -134,7 +121,7 @@ bool Renderer::unloadTexture(unsigned int id) {
     return success;
 }
 
-void Renderer::allocateGlyphTextures() {
+void renderer::allocateGlyphTextures() {
     // Initialize FreeType
     FT_Library ftLib;
     if (FT_Init_FreeType(&ftLib))
@@ -187,7 +174,7 @@ void Renderer::allocateGlyphTextures() {
     FT_Done_FreeType(ftLib);
 }
 
-void Renderer::allocateShapeVertex() {
+void renderer::allocateShapeVertex() {
     // Generate VBOs for standard shapes
     glGenBuffers((int)shape::SIZE, s_shapeVBO);
 
@@ -202,7 +189,7 @@ void Renderer::allocateShapeVertex() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void Renderer::allocateMeshVertex() {
+void renderer::allocateMeshVertex() {
     // Generate VBOs and EBOs for general meshes
     glGenBuffers((int)vertex::SIZE, s_meshVBO);
     glGenBuffers((int)index::SIZE, s_meshEBO);
@@ -221,7 +208,7 @@ void Renderer::allocateMeshVertex() {
 
 
 /* --- CONSTRUCTOR --- */
-Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* masterPtr) :
+renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* masterPtr) :
     m_windowWidth{ SCR_DEFAULT_WIDTH },
     m_windowHeight{ SCR_DEFAULT_HEIGHT },
     m_renderScale{ 1.0 },
@@ -259,7 +246,7 @@ Renderer::Renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 
 
 /* --- DESTRUCTOR --- */
-Renderer::~Renderer() {
+renderer::~renderer() {
     // Destroy window and all associated resources (to do on main thread).
     glfwDestroyWindow(m_window);
 
@@ -276,7 +263,7 @@ Renderer::~Renderer() {
 
 
 /* --- PRIVATE FUNCTIONS --- */
-int Renderer::euclid(int a, int b) {
+int renderer::euclid(int a, int b) {
     int r;
     while(b != 0) //repeat until b is 0
     {
@@ -287,7 +274,7 @@ int Renderer::euclid(int a, int b) {
     return a; //the result is a when b is equal to 0
 }
 
-void Renderer::generateShapeAttributePointers() {
+void renderer::generateShapeAttributePointers() {
     // Generate VAOs and VBOs for standard shapes
     glGenVertexArrays((int)shape::SIZE, m_shapeVAO);
 
@@ -307,7 +294,7 @@ void Renderer::generateShapeAttributePointers() {
     }
 }
 
-void Renderer::generateMeshAttributePointers() {
+void renderer::generateMeshAttributePointers() {
     // Generate VAOs for general meshes
     glGenVertexArrays((int)vertex::SIZE, m_meshVAO);
 
@@ -328,7 +315,7 @@ void Renderer::generateMeshAttributePointers() {
     glBindVertexArray(0);
 }
 
-void Renderer::generateFontBuffers() {
+void renderer::generateFontBuffers() {
     // Generate VAO and VBO
     glGenVertexArrays(1, &m_fontVAO);
     glGenBuffers(1, &m_fontVBO);
@@ -343,19 +330,19 @@ void Renderer::generateFontBuffers() {
     glBindVertexArray(0);
 }
 
-void Renderer::generateShaderPrograms() {
+void renderer::generateShaderPrograms() {
     // Generate actual shader programs
     if (m_master) {
-        m_shaderProgramDiff = Shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
-        m_shaderProgramCol = Shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
-        m_shaderProgramTexture = Shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
+        m_shaderProgramDiff = shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
+        m_shaderProgramCol = shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
+        m_shaderProgramTexture = shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
     }
-    m_shaderProgramFont = Shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
+    m_shaderProgramFont = shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 }
 
 
 /* --- PUBLIC FUNCTIONS --- */
-void Renderer::initializeContext(bool master) {
+void renderer::initializeContext(bool master) {
     // Set window's context as thread's current
     glfwMakeContextCurrent(m_window);
 
@@ -400,7 +387,7 @@ void Renderer::initializeContext(bool master) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::swapAndNext() {
+void renderer::swapAndNext() {
     // Swap double buffers, check and call events
     glfwSwapBuffers(m_window);
     if (m_master) glfwPollEvents();
@@ -414,7 +401,7 @@ void Renderer::swapAndNext() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) {
+void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) {
     // Initialize grid and plane buffers if they are not already
     if (!s_gridIsReady) {
         // The grid is initiated
@@ -526,7 +513,7 @@ void Renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
     }
 }
 
-void Renderer::drawGrid(float planeAlpha) const {
+void renderer::drawGrid(float planeAlpha) const {
     if (s_gridIsReady) {
         // Create matrices (used several times)
         glm::mat4 const& projection{ m_camera.getPerspective() };
@@ -588,7 +575,7 @@ void Renderer::drawGrid(float planeAlpha) const {
     }
 }
 
-void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<color> const& c) const {
+void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<color> const& c) const {
     // Create matrices (used several times)
     glm::mat4 const& projection{ m_camera.getPerspective() };
     glm::mat4 const& view{ m_camera.getView() };
@@ -648,7 +635,7 @@ void Renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
 }
 
 //! @brief It draws a star of lines, given the center and sides.
-void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const {
+void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const {
     // Create matrices (used several times)
     glm::mat4 const& projection{ m_camera.getPerspective() };
     glm::mat4 const& view{ m_camera.getView() };
@@ -675,7 +662,7 @@ void Renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glDrawArrays(GL_LINES, 0, 2 * np.size());
 }
 
-void Renderer::drawText(std::string text, float x, float y, float scale) const {
+void renderer::drawText(std::string text, float x, float y, float scale) const {
     // Scale coordinates to renderbuffer's size
     x *= m_renderScale;
     y *= m_renderScale;
@@ -724,43 +711,43 @@ void Renderer::drawText(std::string text, float x, float y, float scale) const {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-float Renderer::getAspectRatio() {
+float renderer::getAspectRatio() {
     return (float)(m_windowWidth) / (float)(m_windowHeight);
 }
 
-int Renderer::getWindowWidth() {
+int renderer::getWindowWidth() {
     return m_windowWidth;
 }
 
-int Renderer::getWindowHeight() {
+int renderer::getWindowHeight() {
     return m_windowHeight;
 }
 
-int Renderer::getFramebufferWidth() {
+int renderer::getFramebufferWidth() {
     return m_framebufferWidth;
 }
 
-int Renderer::getFramebufferHeight() {
+int renderer::getFramebufferHeight() {
     return m_framebufferHeight;
 }
 
-double Renderer::getRenderScale() {
+double renderer::getRenderScale() {
     return m_renderScale;
 }
 
-GLFWwindow* Renderer::getWindow() const {
+GLFWwindow* renderer::getWindow() const {
     return m_window;
 }
 
-Camera& Renderer::getCamera() {
+camera& renderer::getCamera() {
     return m_camera;
 }
 
-Camera const& Renderer::getCamera() const {
+camera const& renderer::getCamera() const {
     return m_camera;
 }
 
-bool Renderer::setGridTexture(std::string path) {
+bool renderer::setGridTexture(std::string path) {
     bool success{ false };
     unsigned int loadedId{ loadTexture(path) };
     if (loadedId != 0) {
@@ -772,18 +759,18 @@ bool Renderer::setGridTexture(std::string path) {
     return success;
 }
 
-void Renderer::setLightPosition(glm::vec3& newPos) {
+void renderer::setLightPosition(glm::vec3& newPos) {
     m_lightPos = newPos;
 }
 
-void Renderer::setStandardCursor(bool selection, bool setNow) {
+void renderer::setStandardCursor(bool selection, bool setNow) {
     if (selection) m_standardCursor = s_cursorCross;
     else m_standardCursor = s_cursorArrow;
 
     if (setNow) glfwSetCursor(m_window, m_standardCursor);
 }
 
-void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
+void renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
     // Set proper cursor shape
     if (type == mouse_type::click) {
         if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) glfwSetCursor(m_window, s_cursorHand);
@@ -794,7 +781,7 @@ void Renderer::mouseInput(double x, double y, double xFirst, double yFirst, mous
     m_camera.mouseInput(x, y, xFirst, yFirst, type, mods);
 }
 
-bool Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
+bool renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     // Process renderer's input
     switch (key) {
         // show/hide grid
@@ -807,7 +794,7 @@ bool Renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     return m_camera.keyboardInput(key, first, deltaTime, mods);
 }
 
-void Renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight) {
+void renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight) {
     if (m_master) glViewport(0, 0, fbWidth, fbHeight);
     else m_resizeOnSwap = true;
     m_windowWidth = winWidth;

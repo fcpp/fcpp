@@ -33,10 +33,10 @@ namespace tags {
     struct half_radius;
 
     //! @brief Node initialisation tag associating to a network rank.
-    struct network_rank;
+    struct network_rank {};
 
     //! @brief Node initialisation tag associating to the ratio to full power.
-    struct power_ratio;
+    struct power_ratio {};
 }
 
 }

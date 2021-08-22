@@ -355,7 +355,7 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
         print(o, f, common::tags::skip_tags<>());
     }
 
-    //! @brief Prints the content of the tagged tuple in dictionary format.
+    //! @brief Prints the content of the tagged tuple in arrowhead format.
     template <typename O>
     void print(O& o) const {
         print(o, arrowhead_tuple);

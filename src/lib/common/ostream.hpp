@@ -13,6 +13,7 @@
 #include <map>
 #include <ostream>
 #include <set>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -26,11 +27,12 @@
 namespace fcpp {
 
 namespace details {
+    //! @brief Converts a real type to a string representation.
     template <typename T>
     std::string real2str(T x) {
         if (std::isfinite(x)) {
             std::string s;
-            if (x == 0) return "0";
+            if (x == 0) return "0.00";
             if (x < 0) {
                 s.push_back('-');
                 x = -x;
@@ -60,8 +62,14 @@ namespace details {
     }
 }
 
-//! @brief String conversion of numeric types.
+//! @brief String conversion of basic types.
 //! @{
+inline std::string to_string(char x) {
+    return {x};
+}
+inline std::string to_string(char const* x) {
+    return x;
+}
 inline std::string to_string(int x) {
     return std::to_string(x);
 }
@@ -91,6 +99,15 @@ inline std::string to_string(long double x) {
 }
 //! @}
 
+namespace details {
+    //! @brief Enables a template resolution if T has a to_string function.
+    template <typename... Ts>
+    using if_stringable = std::enable_if_t<
+        fcpp::common::all_true<
+            std::is_same<std::decay_t<decltype(to_string(common::escape(std::declval<Ts>())))>, std::string>::value...
+        >
+    >;
+}
 
 template <typename T>
 class field;
@@ -209,9 +226,24 @@ namespace details {
     //! @}
 
     //! @brief Converts to string an indexable structure.
+    inline std::string indexed_stringify(fcpp_tag) {
+        return "";
+    }
+    template <typename T>
+    inline std::string indexed_stringify(fcpp_tag, T const& x) {
+        return to_string(x);
+    }
+    template <typename T, typename... Ts>
+    inline std::string indexed_stringify(fcpp_tag, T const& x, Ts const&... xs) {
+        return to_string(x) + "; " + indexed_stringify(fcpp_tag{}, xs...);
+    }
     template <typename T, size_t... is, typename tag>
-    inline std::string indexed_stringify(const char* delim, T const& x, std::index_sequence<is...>, tag) {
-        return iterable_stringify(delim, std::vector<std::string>{to_string(common::escape(get<is>(x, tag{})))...}, "; ");
+    inline std::string indexed_stringify(const char* delim, T const& x, std::index_sequence<is...>, tag t) {
+        return delim[0] + indexed_stringify(fcpp_tag{}, common::escape(get<is>(x, t))...) + delim[1];
+    }
+    template <typename... Ts>
+    inline std::string multi_stringify(const char* delim, Ts const&... xs) {
+        return delim[0] + indexed_stringify(fcpp_tag{}, xs...) + delim[1];
     }
 
     //! @brief Prints an indexable structure.
@@ -237,6 +269,16 @@ namespace details {
     //! @}
 
     //! @brief Prints a self-printable structure.
+    template <typename T, typename... tags>
+    std::string printable_stringify(const char* delim, T const& c, tags...) {
+        std::stringstream ss;
+        ss << delim[0];
+        c.print(ss, tags{}...);
+        ss << delim[1];
+        return ss.str();
+    }
+
+    //! @brief Prints a self-printable structure.
     template <typename O, typename T, typename... tags>
     O& printable_print(O& o, const char* delim, T const& c, tags...) {
         o << delim[0];
@@ -253,6 +295,11 @@ namespace details {
  * @brief Namespace of the C++ standard library.
  */
 namespace std {
+    //! @brief Converting strings to strings.
+    inline std::string to_string(std::string x) {
+        return x;
+    }
+
     //! @brief Printing arrays.
     template <typename O, typename T, size_t n, typename = fcpp::common::if_ostream<O>>
     O& operator<<(O& o, const std::array<T, n>& v) {
@@ -260,7 +307,7 @@ namespace std {
     }
 
     //! @brief Converting arrays to strings.
-    template <typename T, size_t n>
+    template <typename T, size_t n, typename = fcpp::details::if_stringable<T>>
     std::string to_string(std::array<T, n> const& v) {
         return fcpp::details::iterable_stringify("[]", v);
     }
@@ -272,7 +319,7 @@ namespace std {
     }
 
     //! @brief Converting pairs to strings.
-    template <typename T, typename U>
+    template <typename T, typename U, typename = fcpp::details::if_stringable<T, U>>
     std::string to_string(std::pair<T, U> const& p) {
         return fcpp::details::indexed_stringify("()", p, std::make_index_sequence<2>{}, fcpp::details::std_tag{});
     }
@@ -284,7 +331,7 @@ namespace std {
     }
 
     //! @brief Converting tuples to strings.
-    template <typename... Ts>
+    template <typename... Ts, typename = fcpp::details::if_stringable<Ts...>>
     std::string to_string(std::tuple<Ts...> const& t) {
         return fcpp::details::indexed_stringify("()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::std_tag{});
     }
@@ -296,7 +343,7 @@ namespace std {
     }
 
     //! @brief Converting vectors to strings.
-    template <typename T>
+    template <typename T, typename = fcpp::details::if_stringable<T>>
     std::string to_string(std::vector<T> const& v) {
         return fcpp::details::iterable_stringify("[]", v);
     }
@@ -308,7 +355,7 @@ namespace std {
     }
 
     //! @brief Converting ordered sets to strings.
-    template <typename T>
+    template <typename T, typename = fcpp::details::if_stringable<T>>
     std::string to_string(std::set<T> const& s) {
         return fcpp::details::iterable_stringify("{}", s);
     }
@@ -320,7 +367,7 @@ namespace std {
     }
 
     //! @brief Converting unordered sets to strings.
-    template <typename T>
+    template <typename T, typename = fcpp::details::if_stringable<T>>
     std::string to_string(std::unordered_set<T> const& s) {
         return fcpp::details::iterable_stringify("{}", s);
     }
@@ -332,7 +379,7 @@ namespace std {
     }
 
     //! @brief Converting maps to strings.
-    template <typename K, typename V>
+    template <typename K, typename V, typename = fcpp::details::if_stringable<K, V>>
     std::string to_string(std::map<K,V> const& m) {
         return fcpp::details::pair_iterable_stringify("{}", m);
     }
@@ -344,7 +391,7 @@ namespace std {
     }
 
     //! @brief Converting unordered maps to strings.
-    template <typename K, typename V>
+    template <typename K, typename V, typename = fcpp::details::if_stringable<K, V>>
     std::string to_string(std::unordered_map<K,V> const& m) {
         return fcpp::details::pair_iterable_stringify("{}", m);
     }
@@ -367,7 +414,7 @@ namespace fcpp {
     }
 
     //! @brief Converting fields to strings.
-    template <typename T>
+    template <typename T, typename = fcpp::details::if_stringable<T>>
     std::string to_string(field<T> const& x) {
         std::string s = "{";
         for (size_t i = 0; i < details::get_ids(x).size() and i < FCPP_FIELD_DRAW_LIMIT and s.size() < 10*FCPP_FIELD_DRAW_LIMIT; ++i) {
@@ -392,7 +439,7 @@ namespace fcpp {
     }
 
     //! @brief Converting tuples to strings.
-    template <typename... Ts>
+    template <typename... Ts, typename = fcpp::details::if_stringable<Ts...>>
     std::string to_string(tuple<Ts...> const& t) {
         return fcpp::details::indexed_stringify("()", t, std::make_index_sequence<sizeof...(Ts)>{}, fcpp::details::fcpp_tag{});
     }
@@ -417,16 +464,34 @@ namespace fcpp {
             return fcpp::details::printable_print(o, "()", m);
         }
 
+        //! @brief Converting multitype maps to strings.
+        template <typename T, typename... Ts, typename = fcpp::details::if_stringable<T, Ts...>>
+        std::string to_string(multitype_map<T, Ts...> const& m) {
+            return fcpp::details::printable_stringify("()", m);
+        }
+
         //! @brief Printing random access maps.
         template <typename O, typename K, typename T, typename H, typename P, typename A, typename = if_ostream<O>>
         O& operator<<(O& o, random_access_map<K,T,H,P,A> const& m) {
             return fcpp::details::pair_iterable_print(o, "{}", m);
         }
 
+        //! @brief Converting random access maps to strings.
+        template <typename K, typename T, typename H, typename P, typename A, typename = fcpp::details::if_stringable<K, T>>
+        std::string to_string(random_access_map<K,T,H,P,A> const& m) {
+            return fcpp::details::pair_iterable_stringify("{}", m);
+        }
+
         //! @brief Printing tagged tuples in arrowhead format.
         template <typename O, typename S, typename T, typename = if_ostream<O>>
         O& operator<<(O& o, tagged_tuple<S,T> const& t) {
             return fcpp::details::printable_print(o, "()", t);
+        }
+
+        //! @brief Converting tagged tuples to strings.
+        template <typename S, typename T>
+        std::string to_string(tagged_tuple<S,T> const& t) {
+            return fcpp::details::printable_stringify("()", t);
         }
     }
 
@@ -438,11 +503,23 @@ namespace fcpp {
             return fcpp::details::printable_print(o, "()", c);
         }
 
+        //! @brief Converting calculus contexts to strings.
+        template <bool b, bool d, typename... Ts>
+    std::string to_string(context<b, d, Ts...> const& c) {
+            return fcpp::details::printable_stringify("()", c);
+        }
+
         //! @brief Printing content of flat pointers.
         template <typename O, typename T, bool is_flat, typename = common::if_ostream<O>>
         O& operator<<(O& o, const flat_ptr<T, is_flat>& p) {
             o << common::escape(*p);
             return o;
+        }
+
+        //! @brief Converting flat pointers to strings.
+        template <typename T, bool is_flat, typename = fcpp::details::if_stringable<T>>
+        std::string to_string(flat_ptr<T, is_flat> const& p) {
+            return fcpp::details::indexed_stringify(fcpp::details::fcpp_tag{}, common::escape(*p));
         }
 
         //! @brief Printing identical twin objects.
@@ -452,11 +529,23 @@ namespace fcpp {
             return o;
         }
 
+        //! @brief Converting identical twin objects to strings.
+        template <typename T, typename = fcpp::details::if_stringable<T>>
+        std::string to_string(twin<T,true> const& t) {
+            return fcpp::details::multi_stringify("()", common::escape(t.first()));
+        }
+
         //! @brief Printing different twin objects.
         template <typename O, typename T, typename = common::if_ostream<O>>
         O& operator<<(O& o, twin<T,false> const& t) {
             o << "(" << common::escape(t.first()) << "; " << common::escape(t.second()) << ")";
             return o;
+        }
+
+        //! @brief Converting different twin objects to strings.
+        template <typename T, typename = fcpp::details::if_stringable<T>>
+        std::string to_string(twin<T,false> const& t) {
+            return fcpp::details::multi_stringify("()", common::escape(t.first()), common::escape(t.second()));
         }
     }
 }

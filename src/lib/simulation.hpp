@@ -29,14 +29,24 @@ namespace component {
 /**
  * @brief Combination of components for batch simulations.
  *
- * It can be instantiated as `batch_simulator<options...>::net`.
+ * It can be instantiated and run as:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * using net_t = batch_simulator<decl_opts...>::net;
+ * net_t network{common::make_tagged_tuple<init_opts...>(init_vals...)};
+ * network.run();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 DECLARE_COMBINE(batch_simulator, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
 
 /**
  * @brief Combination of components for interactive simulations.
  *
- * It can be instantiated as `interactive_simulator<options...>::net`.
+ * It can be instantiated and run as:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * using net_t = interactive_simulator<decl_opts...>::net;
+ * net_t network{common::make_tagged_tuple<init_opts...>(init_vals...)};
+ * network.run();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 DECLARE_COMBINE(interactive_simulator, displayer, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
 

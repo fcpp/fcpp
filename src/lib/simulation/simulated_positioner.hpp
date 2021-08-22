@@ -72,7 +72,7 @@ namespace details {
  * - \ref tags::a associates to a starting acceleration (defaults to the null vector).
  * - \ref tags::f associates to a starting friction coefficient (defaults to zero).
  *
- * Vectors are modelled as \ref position objects. Position \f$ x \f$ evolves as per the differential equation \f$ x'' = a - f x' \f$ of uniformily accelerated viscous motion.
+ * Vectors are modelled as \ref vec objects. Position \f$ x \f$ evolves as per the differential equation \f$ x'' = a - f x' \f$ of uniformily accelerated viscous motion.
  */
 template <class... Ts>
 struct simulated_positioner {

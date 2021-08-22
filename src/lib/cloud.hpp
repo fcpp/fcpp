@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
 
 /**
  * @file cloud.hpp
@@ -17,16 +17,23 @@
  */
 namespace fcpp {
 
-    //! @brief Namespace for all FCPP components.
-    namespace component {
+//! @brief Namespace for all FCPP components.
+namespace component {
 
-        /**
-         * @brief Combination of components for batch graph simulations.
-         *
-         * It can be instantiated as `batch_graph_simulator<options...>::net`.
+/**
+ * @brief Combination of components for batch graph simulations.
+ *
+ * It can be instantiated and run as:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * using net_t = batch_graph_simulator<decl_opts...>::net;
+ * net_t network{common::make_tagged_tuple<init_opts...>(init_vals...)};
+ * network.run();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          */
-        DECLARE_COMBINE(batch_graph_simulator, calculus, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
-    }
+DECLARE_COMBINE(batch_graph_simulator, calculus, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
+
+}
+
 }
 
 #endif // FCPP_CLOUD_H_

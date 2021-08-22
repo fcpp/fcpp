@@ -135,7 +135,14 @@ function mkdoc() {
     if [ ! -d doc ]; then
         mkdir doc
     fi
-    reporter doxygen Doxyfile
+    echo -e "\033[4mdoxygen Doxyfile\033[0m" >&2
+    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented"
+    ndoc=`cat tmpdoc.err | grep "is not documented" | wc -l | tr -cd '0-9'`
+    if [ $ndoc -gt 0 ]; then
+        echo -e "\033[1m$ndoc items are not documented:\033[0m" >&2
+        cat tmpdoc.err | grep "is not documented"
+    fi
+    rm tmpdoc.err
 }
 
 function parseopt() {

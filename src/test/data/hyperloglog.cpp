@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
 
 #include <cassert>
 #include <cmath>

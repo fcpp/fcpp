@@ -186,7 +186,6 @@ class multiple<N, E, false> {
         std::sort(pending.begin(), pending.end(), std::greater<times_t>{});
     }
 };
-//! @}
 /**
  * @brief With parameters as numeric template parameters.
  * @param n The number of events.

@@ -141,7 +141,7 @@ class option {
  * The recursive definition is given from three arguments:
  * - the list index `i` to be generated;
  * - the value previously generated `prev`;
- * - a \ref tagged_tuple `tup` of parameters.
+ * - a \ref common::tagged_tuple "tagged_tuple" `tup` of parameters.
  * The recursive definition returns an `option<T>`, so that
  * `return {}` stops the recursion while `return v` provides a new item on the list.
  *
@@ -356,7 +356,7 @@ namespace details {
  * @brief Runs a series of experiments.
  *
  * @param T The combination(s) of components to be tested.
- * @param e An execution policy (see \ref sequential_execution, \ref parallel_execution, \ref general_execution, \ref dynamic_execution).
+ * @param e An execution policy (see \ref common::tags::sequential_execution "sequential_execution", \ref common::tags::parallel_execution "parallel_execution", \ref common::tags::general_execution "general_execution", \ref common::tags::dynamic_execution "dynamic_execution").
  * @param vs Sequences of tagged tuples, to be used to initialise the various runs.
  */
 //! @{

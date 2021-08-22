@@ -132,7 +132,8 @@ class info_window {
             "acceleration",
             "friction",
             "nbr_dist",
-            "nbr_vec"
+            "nbr_vec",
+            "connector_data"
         };
         m_keys.insert(m_keys.end(), vk.begin(), vk.end());
         size_t ml = 0;
@@ -186,20 +187,21 @@ class info_window {
         update_values(
             fcpp::details::get_context(n).second().align(n.uid),
             n.storage_tuple(),
-            "",
+            "#@>---<@#",
             n.previous_time(),
             n.current_time(),
             n.next_time(),
             n.frequency(),
             n.message_time(),
-            "",
+            "#@>---<@#",
             n.position(),
             n.velocity(),
             n.propulsion(),
             n.acceleration(),
             n.friction(),
             n.nbr_dist(),
-            n.nbr_vec()
+            n.nbr_vec(),
+            n.connector_data()
         );
     }
 
@@ -278,7 +280,7 @@ class info_window {
 
     //! @brief Converts value to string (string case).
     inline std::string stringify(std::string const& x, std::string const&) {
-        return x;
+        return x == "#@>---<@#" ? "" : "\"" + x + "\"";
     }
 
     //! @brief Converts value to string (stringable case).
@@ -586,6 +588,7 @@ struct displayer {
                 m_mouseRight{ 0 },
                 m_links{ false },
                 m_pointer{ true },
+                m_legenda{ false },
                 m_texture( common::get_or<tags::texture>(t, "") ),
                 m_deltaTime{ 0.0f },
                 m_lastFrame{ 0.0f },
@@ -671,7 +674,8 @@ struct displayer {
                                 {"Q/E",         "move the camera forward/backward"},
                                 {"right-click", "drag to rotate the simulation plane"},
                                 {"scroll",      "zoom in and out of the simulation plane"},
-                                {"left-shift",  "added to camera commands for precision control"}
+                                {"left-shift",  "added to camera commands for precision control"},
+                                {"other keys",  "show/hide the command legenda"}
                             };
                             size_t ml = 0;
                             for (auto const& line : text) ml = max(ml, line.first.size());
@@ -995,7 +999,7 @@ struct displayer {
                         break;
                     default:
                         // pass key to renderer
-                        if (not m_renderer.keyboardInput(key, first, deltaTime, mods) and first and not justoutoflegenda) {
+                        if (not m_renderer.keyboardInput(key, first, deltaTime, mods) and first and not justoutoflegenda and key != GLFW_KEY_LEFT_SHIFT and key != GLFW_KEY_RIGHT_SHIFT) {
                             // unrecognised key: stop simulation for legenda
                             P::net::frequency(0);
                             m_hoveredNode = -1;

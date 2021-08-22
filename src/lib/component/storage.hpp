@@ -86,7 +86,7 @@ struct storage {
             /**
              * @brief Write access to stored data.
              *
-             * @param T The tag corresponding to the data to be accessed.
+             * @tparam T The tag corresponding to the data to be accessed.
              */
             template <typename T>
             auto& storage() {
@@ -97,7 +97,7 @@ struct storage {
             /**
              * @brief Const access to stored data.
              *
-             * @param T The tag corresponding to the data to be accessed.
+             * @tparam T The tag corresponding to the data to be accessed.
              */
             template <typename T>
             auto const& storage() const {
@@ -108,7 +108,7 @@ struct storage {
             /**
              * @brief Write access to stored data.
              *
-             * @param T The tag corresponding to the data to be accessed.
+             * @tparam T The tag corresponding to the data to be accessed.
              */
             template <typename T>
             auto& storage(T) {
@@ -119,7 +119,7 @@ struct storage {
             /**
              * @brief Const access to stored data.
              *
-             * @param T The tag corresponding to the data to be accessed.
+             * @tparam T The tag corresponding to the data to be accessed.
              */
             template <typename T>
             auto const& storage(T) const {

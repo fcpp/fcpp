@@ -28,7 +28,12 @@ namespace component {
 /**
  * @brief Combination of components for deployments.
  *
- * It can be instantiated as `deployment<options...>::net`.
+ * It can be instantiated and run as:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * using net_t = deployment<decl_opts...>::net;
+ * net_t network{common::make_tagged_tuple<init_opts...>(init_vals...)};
+ * network.run();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 DECLARE_COMBINE(deployment, calculus, hardware_logger, storage, hardware_connector, timer, scheduler, hardware_identifier, randomizer);
 

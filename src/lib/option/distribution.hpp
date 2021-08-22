@@ -115,7 +115,7 @@ namespace details {
 /**
  * Function uniformily creating instances of real distributions in `<random>` based on mean and deviation.
  *
- * @param D    A distribution template in `<random>`.
+ * @tparam D   A distribution template in `<random>`.
  * @param mean The required mean of the distribution.
  * @param dev  The standard deviation of the distribution.
  */
@@ -147,7 +147,7 @@ namespace details {
  * To be used as `CONSTANT_DISTRIBUTION(hello_distr, string, "hello");`.
  *
  * @param name The name of the distribution
- * @param T The result type.
+ * @param R The result type.
  * @param val The constant value.
  */
 #define CONSTANT_DISTRIBUTION(name, R, val)         \

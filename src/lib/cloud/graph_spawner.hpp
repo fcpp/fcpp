@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_spawner.hpp
@@ -55,6 +55,7 @@ namespace details {
     //! @brief Makes an istream reference from a stream pointer.
     std::shared_ptr<std::istream> make_istream(std::istream* i);
 }
+//! @endcond
 
 /**
  * @brief Component handling generation of nodes from a graph.

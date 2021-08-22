@@ -201,7 +201,7 @@ class hyperloglog_counter {
         for (size_t i=counter_word_size; i-- != 0;) m_data[i] ^= (m_data[i] ^ c.m_data[i]) & mask[i];
     }
 
-    //! @Brief Inserts a range of elements.
+    //! @brief Inserts a range of elements.
     template <typename I>
     void insert(I first, I last) {
         for (I it = first; it != last; ++it)

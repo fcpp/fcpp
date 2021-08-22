@@ -40,7 +40,7 @@ namespace tags {
 /**
  * @brief Component handling random number generation.
  *
- * A \ref physical_connector, \ref logger, \ref scheduler, \ref spawner component should not be a parent of a \ref randomizer to avoid using \ref crand in them instead of the given generator type.
+ * A \ref simulated_connector, \ref logger, \ref scheduler, \ref spawner component should not be a parent of a \ref randomizer to avoid using \ref crand in them instead of the given generator type.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::generator defines a random number generator type (defaults to `std::mt19937_64`).

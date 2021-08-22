@@ -128,7 +128,7 @@ namespace details {
 /**
  * @brief Component handling message exchanges between nodes.
  *
- * Requires a \ref physical_position parent component.
+ * Requires a \ref simulated_positioner parent component.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *

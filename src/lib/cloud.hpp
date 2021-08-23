@@ -32,6 +32,20 @@ namespace component {
          */
 DECLARE_COMBINE(batch_graph_simulator, calculus, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
 
+/**
+ * @brief Combination of components for batch graph simulations with a graphical interface.
+ *
+ * It can be instantiated and run as:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * using net_t = interactive_graph_simulator<decl_opts...>::net;
+ * net_t network{common::make_tagged_tuple<init_opts...>(init_vals...)};
+ * network.run();
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+DECLARE_COMBINE(interactive_graph_simulator, displayer, calculus, simulated_positioner, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
+
+}
+
 }
 
 }

@@ -11,6 +11,8 @@
 #include "lib/component.hpp"
 #include "lib/cloud/graph_connector.hpp"
 #include "lib/cloud/graph_spawner.hpp"
+#include "lib/simulation/displayer.hpp"
+#include "lib/simulation/simulated_positioner.hpp"
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -43,8 +45,6 @@ DECLARE_COMBINE(batch_graph_simulator, calculus, graph_connector, timer, schedul
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 DECLARE_COMBINE(interactive_graph_simulator, displayer, calculus, simulated_positioner, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
-
-}
 
 }
 

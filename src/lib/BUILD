@@ -8,6 +8,22 @@ cc_library(
 )
 
 cc_library(
+    name = 'cloud',
+    hdrs = ['cloud.hpp'],
+    srcs = ['cloud.cpp'],
+    deps = [
+        "//lib:component",
+        "//lib/cloud:graph_connector",
+        "//lib/cloud:graph_spawner",
+        "//lib/simulation:displayer",
+        "//lib/simulation:simulated_positioner",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'common',
     hdrs = ['common.hpp'],
     srcs = ['common.cpp'],
@@ -169,20 +185,6 @@ cc_library(
         "//lib/simulation:simulated_connector",
         "//lib/simulation:simulated_positioner",
         "//lib/simulation:spawner",
-    ],
-    visibility = [
-        '//visibility:public',
-    ],
-)
-
-cc_library(
-    name = 'cloud',
-    hdrs = ['cloud.hpp'],
-    srcs = ['cloud.cpp'],
-    deps = [
-        "//lib:component",
-        "//lib/cloud:graph_connector",
-        "//lib/cloud:graph_spawner",
     ],
     visibility = [
         '//visibility:public',

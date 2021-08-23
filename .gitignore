@@ -1,11 +1,10 @@
 *.pyc
 #*
 .#*
-bazel-*
-_bazel_*
-build/
 bin/
 doc/
+output/
 .vagrant/
 .DS_Store
-
+bazel-*
+_bazel_*

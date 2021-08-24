@@ -520,7 +520,7 @@ void renderer::drawGrid(float planeAlpha) const {
         glm::mat4 const& view{ m_camera.getView() };
         glm::mat4 model{ 1.0f };
 
-        if ((m_gridShow & 2) == 2) {
+        if ((m_gridShow & 1) == 1) {
             // Set up shader program
             m_shaderProgramCol.use();
             m_shaderProgramCol.setMat4("u_projection", projection);
@@ -616,7 +616,7 @@ void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
     }
 
     // Draw pin
-    if (p.z > 0 and (m_gridShow & 1) == 1) {
+    if (p.z > 0 and (m_gridShow & 2) == 2) {
         float pinData[] = {
             p.x, p.y, p.z,
             p.x, p.y, 0.0f

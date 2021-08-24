@@ -1,10 +1,5 @@
 #!/bin/bash
 
-plot_builder="plotter/plot_builder.py"
-if ! [ -f $plot_builder ]; then
-    plot_builder="extras/$plot_builder"
-fi
-
 function usage() {
     echo -e "\033[4musage:\033[0m"
     echo -e "    \033[1m./make.sh [options...] command [parameters...]\033[0m"
@@ -376,6 +371,65 @@ while [ "$1" != "" ]; do
         quitter
     elif [ "$1" == "run" ]; then
         shift 1
+        function monitor() {
+            pid=$1
+            name=$2
+            file=$3
+            raw=$4
+            trap ctrl_c INT
+            function ctrl_c() {
+                echo -e "\n\033[J"
+                kill -9 $pid 2>&1
+                exit 1
+            }
+            echo -e "\033[4mRUNNING: CPU TIME     RAM (NOW)   (AVG)   (MAX)   FILES   LINES\033[0m"
+            num=0
+            max=0
+            sum=0
+            while true; do
+                tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
+                m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
+                if [ "$m" == "" ]; then break; else mem=$m; fi
+                num=$[num+1]
+                sum=$[sum+mem]
+                mem=$[(mem+511)/1024]
+                max=$[max > mem ? max : mem]
+                avg=$[((sum+511)/1024 + num/2)/ num]
+                fil=`ls $raw | grep $"$name.*\.txt" | wc -l`
+                if [ "$fil" -gt 1000 ]; then
+                    row="?"
+                elif [ "$fil" -eq 0 ]; then
+                    row=0
+                else
+                    row=`cat $raw/$name*.txt | grep -v "^#" | wc -l`
+                fi
+                echo -e "         `timeformat $tim`s   `ramformat $mem` `ramformat $avg` `ramformat $max` `numformat $fil 7` `numformat $row 7`\n\033[J"
+                ( cat $file.txt | tail -n 10 | cut -c 1-`tput cols`; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 10
+                if [ `cat $file.err | wc -c` -eq 0 ]; then
+                    echo -e "\n"
+                else
+                    echo -e "\n\033[4mSTDERR:\033[0m"
+                fi
+                ( cat $file.err | tail -n  5 | cut -c 1-`tput cols`; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 5
+                echo -en "\033[19A"
+                sleep 1
+            done
+            echo -e "\n\033[J"
+            if [ `cat $file.txt | grep 'import "plot.asy" as plot;' | wc -l` -eq 1 ]; then
+                asy=`basename $file`
+                cp $file.txt plot/$asy.asy
+                cd plot
+                asy $asy.asy -f pdf
+                cd ..
+            fi
+            if [ `cat $file.txt | wc -c` -eq 0 ]; then
+                rm $file.txt
+            fi
+            if [ `cat $file.err | wc -c` -eq 0 ]; then
+                rm $file.err
+            fi
+            mv $raw/${name}_*.txt output/raw/
+        }
         if [ $builder == cmake ]; then
             cmake_builder "$@"
             shift $?
@@ -384,62 +438,14 @@ while [ "$1" != "" ]; do
                     quitter
                 fi
                 name="${target:8}"
-                file="output/raw/$name"
-                mkdir -p output/raw
+                file="output/$name"
+                raw="bin/output"
+                mkdir -p bin/output output/raw
                 cd bin
                 echo -e "\033[1;4m$target\033[0m\n"
                 run/$name > ../$file.txt 2> ../$file.err & pid=$!
                 cd ..
-                trap ctrl_c INT
-                function ctrl_c() {
-                    echo -e "\n\033[J"
-                    kill -9 $pid 2>&1
-                    exit 1
-                }
-                echo -e "\033[4mRUNNING: CPU TIME     RAM (NOW)   (AVG)   (MAX)   FILES   LINES\033[0m"
-                num=0
-                max=0
-                sum=0
-                while true; do
-                    tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
-                    m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
-                    if [ "$m" == "" ]; then break; else mem=$m; fi
-                    num=$[num+1]
-                    sum=$[sum+mem]
-                    mem=$[(mem+511)/1024]
-                    max=$[max > mem ? max : mem]
-                    avg=$[((sum+511)/1024 + num/2)/ num]
-                    fil=`ls output/raw | grep $"$name.*\.txt" | wc -l`
-                    if [ "$fil" -gt 1000 ]; then
-                        row="?"
-                    else
-                        row=`cat output/raw/$name*.txt | grep -v "^#" | wc -l`
-                    fi
-                    echo -e "         `timeformat $tim`s   `ramformat $mem` `ramformat $avg` `ramformat $max` `numformat $fil 7` `numformat $row 7`\n\033[J"
-                    ( cat $file.txt | tail -n 10 | cut -c 1-`tput cols`; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 10
-                    if [ `cat $file.err | wc -c` -eq 0 ]; then
-                        echo -e "\n"
-                    else
-                        echo -e "\n\033[4mSTDERR:\033[0m"
-                    fi
-                    ( cat $file.err | tail -n  5 | cut -c 1-`tput cols`; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 5
-                    echo -en "\033[19A"
-                    sleep 1
-                done
-                echo -e "\n\033[J"
-                if [ `cat $file.txt | grep 'import "plot.asy" as plot;' | wc -l` -eq 1 ]; then
-                    asy=`basename $file`
-                    cp $file.txt plot/$asy.asy
-                    cd plot
-                    asy $asy.asy -f pdf
-                    cd ..
-                fi
-                if [ `cat $file.txt | wc -c` -eq 0 ]; then
-                    rm $file.txt
-                fi
-                if [ `cat $file.err | wc -c` -eq 0 ]; then
-                    rm $file.err
-                fi
+                monitor $pid $name $file $raw
             done
         else
             parseopt "$@"
@@ -451,65 +457,17 @@ while [ "$1" != "" ]; do
                 echo -e "\033[1mtarget is not unique\033[0m"
                 echo $targets | tr ' ' '\n' | sed 's|^|//|'
             else
-                shift 1
-                plots=( )
-                while [ `echo "$1" | grep '(' | wc -l` -gt 0 ]; do
-                    plots=( "${plots[@]}" "$1" )
-                    shift 1
-                done
                 name=`echo $targets | sed 's|.*:||'`
-                file="output/raw/$name.txt"
+                file="output/$name"
+                raw="output"
                 built=`echo bazel-bin/$targets | tr ':' '/'`
                 builder build $targets
                 if [ ${#exitcodes[@]} -gt 0 ]; then
                     quitter
                 fi
                 mkdir -p output/raw
-                $built "$@" > $file & pid=$!
-                trap ctrl_c INT
-                function ctrl_c() {
-                    echo -e "\n\033[J"
-                    kill -9 $pid 2>&1
-                    exit 1
-                }
-                echo -e "\033[4mRUNNING: CPU TIME     RAM (NOW)   (AVG)   (MAX)   FILES   LINES\033[0m"
-                num=0
-                max=0
-                sum=0
-                while true; do
-                    tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
-                    m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
-                    if [ "$m" == "" ]; then break; else mem=$m; fi
-                    num=$[num+1]
-                    sum=$[sum+mem]
-                    mem=$[(mem+511)/1024]
-                    max=$[max > mem ? max : mem]
-                    avg=$[((sum+511)/1024 + num/2)/ num]
-                    fil=`ls output/raw | grep $"$name.*\.txt" | wc -l`
-                    if [ "$fil" -gt 1000 ]; then
-                        row="?"
-                    else
-                        row=`cat output/raw/$name*.txt | grep -v "^#" | wc -l`
-                    fi
-                    echo -e "         `timeformat $tim`s   `ramformat $mem` `ramformat $avg` `ramformat $max` `numformat $fil 7` `numformat $row 7`\n\033[J"
-                    ( cat $file | tail -n 10 | cut -c 1-`tput cols`; echo -e "\n\n\n\n\n\n\n\n\n" ) | head -n 10
-                    echo -en "\033[12A"
-                    sleep 1
-                done
-                echo -e "\n\033[J"
-                if [ `cat $file | wc -c` -eq 0 ]; then
-                    rm $file
-                fi
-                if [ "${#plots[@]}" -gt 0 ]; then
-                    v=`ls output/$name-*.asy | sed "s|^output/$name-||;s|.asy$||" | sort -n | tail -n 1`
-                    v=$[v+1]
-                    $plot_builder output/raw/$name*.txt "${plots[@]}" > output/$name-$v.asy
-                    cp plotter/plot.asy output/
-                    cd output
-                    asy $name-$v.asy -f pdf
-                    rm plot.asy
-                    cd ..
-                fi
+                $built > $file.txt 2> $file.err & pid=$!
+                monitor $pid $name $file $raw
             fi
         fi
         quitter

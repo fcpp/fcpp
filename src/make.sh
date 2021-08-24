@@ -428,7 +428,10 @@ while [ "$1" != "" ]; do
             if [ `cat $file.err | wc -c` -eq 0 ]; then
                 rm $file.err
             fi
-            mv $raw/${name}_*.txt output/raw/
+            nnn=`echo $raw/${name}_*.txt`
+            if [ "$nnn" != "$raw/${name}_*.txt" ]; then
+                mv $raw/${name}_*.txt output/raw/
+            fi
         }
         if [ $builder == cmake ]; then
             cmake_builder "$@"

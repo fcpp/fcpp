@@ -214,7 +214,7 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     m_renderScale{ 1.0 },
     m_master{ master },
     m_resizeOnSwap{ false },
-    m_gridShow{ true },
+    m_gridShow{ 3 },
     m_gridTexture{ 0 },
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
@@ -520,7 +520,7 @@ void renderer::drawGrid(float planeAlpha) const {
         glm::mat4 const& view{ m_camera.getView() };
         glm::mat4 model{ 1.0f };
 
-        if (m_gridShow) {
+        if ((m_gridShow & 2) == 2) {
             // Set up shader program
             m_shaderProgramCol.use();
             m_shaderProgramCol.setMat4("u_projection", projection);
@@ -616,7 +616,7 @@ void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
     }
 
     // Draw pin
-    if (p.z > 0 and m_gridShow) {
+    if (p.z > 0 and (m_gridShow & 1) == 1) {
         float pinData[] = {
             p.x, p.y, p.z,
             p.x, p.y, 0.0f
@@ -786,8 +786,8 @@ bool renderer::keyboardInput(int key, bool first, float deltaTime, int mods) {
     switch (key) {
         // show/hide grid
         case GLFW_KEY_G:
-            if (first) m_gridShow = not m_gridShow;
-            return true;;
+            if (first) m_gridShow = (m_gridShow+1) & 3;
+            return true;
     }
 
     // Process camera's input

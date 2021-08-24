@@ -272,7 +272,7 @@ namespace fcpp {
             unsigned int m_gridTexture;
 
             //! @brief It states if the grid should be drawn.
-            bool m_gridShow;
+            char m_gridShow;
 
             //! @brief It's the cursor's standard shape, in idle.
             GLFWcursor* m_standardCursor;

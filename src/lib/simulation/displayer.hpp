@@ -672,7 +672,7 @@ struct displayer {
                                 {"other keys",  "show/hide the command legenda"}
                             };
                             size_t ml = 0;
-                            for (auto const& line : text) ml = max(ml, line.first.size());
+                            for (auto const& line : text) ml = std::max(ml, line.first.size());
                             ml += 2;
                             for (auto& line : text) while (line.first.size() < ml) line.first.push_back(' ');
                             for (size_t i = 0; i < text.size(); ++i) {

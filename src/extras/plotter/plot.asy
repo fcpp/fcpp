@@ -228,6 +228,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         label(pic, scale(0.5)*(logmode ? "$10^{"+s+"}$" : s), (0,ry), align=W);
     }
     int common_suffix = rfind(names[0], " ");
+    string append_suffix = "";
     if (common_suffix > 0) {
         string suffix = substr(names[0], common_suffix);
         common_suffix = length(names[0]) - common_suffix;
@@ -237,9 +238,23 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
                 break;
             }
     }
+    if (common_suffix == 0) {
+        common_suffix = rfind(names[0], "-");
+        append_suffix = ")";
+        if (common_suffix > 0) {
+            string suffix = substr(names[0], common_suffix);
+            common_suffix = length(names[0]) - common_suffix;
+            for (int i=1; i<names.length; ++i)
+                if (substr(names[i], length(names[i])-common_suffix) != suffix) {
+                    common_suffix = 0;
+                    break;
+                }
+        }
+    }
     for (int i=0; i<names.length; ++i) {
-        if (common_suffix > 0)
-            names[i] = substr(names[i], 0, length(names[i])-common_suffix);
+        if (common_suffix > 0) {
+            names[i] = substr(names[i], 0, length(names[i])-common_suffix) + append_suffix;
+        }
         for (int j=0; j<10; ++j)
             names[i] = replace(names[i], "<"+string(j)+">", " "+string(j));
     }

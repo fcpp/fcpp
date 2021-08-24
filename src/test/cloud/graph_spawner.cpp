@@ -17,11 +17,17 @@
 using namespace fcpp;
 using namespace component::tags;
 
+// Side of the deployment area.
+constexpr size_t side = 300;
+// The distribution of initial node positions (random in a given rectangle).
+using rectangle_d = distribution::rect_n<1, 0, 0, side, side>;
+
 struct tag {};
 struct gat {};
 struct oth {};
 
 struct url {};
+struct x {};
 
 template <int O>
 using combo1 = component::combine_spec<
@@ -39,7 +45,8 @@ using combo1 = component::combine_spec<
 template <int O>
 using combo2 = component::combine_spec<
     component::graph_spawner<
-        node_attributes<url,std::string,uid,device_t>
+        node_attributes<url,std::string,uid,device_t>,
+        init<x,rectangle_d> // initialise position randomly in a rectangle for new nodes
     >,
     component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
@@ -56,7 +63,7 @@ std::string twonodes =
 
 std::string onearc = "0	1";
 
-MULTI_TEST(SpawnerTest, Sequence, O, 3) {
+MULTI_TEST(GraphSpawnerTest, Sequence, O, 3) {
     std::stringstream ssnodes(twonodes);
     std::stringstream ssarcs(onearc);
 

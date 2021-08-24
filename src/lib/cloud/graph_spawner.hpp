@@ -34,6 +34,10 @@ namespace tags {
     template <typename... Ts>
     struct node_attributes {};
 
+    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions.
+    template <typename... Ts>
+    struct init;
+
     //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes.
     struct nodesinput {};
 

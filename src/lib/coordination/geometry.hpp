@@ -123,29 +123,27 @@ template <size_t n> using rectangle_walk_t = common::export_list<vec<n>>;
 
 
 /**
- * @brief Computes the elastic force tying a node to a target.
+ * @brief Computes the elastic force tying a node to a point.
  *
- * The length and strength arguments need to be convertible to `real_t` or `field<real_t>`.
  * The result is designed to be set as node.propulsion().
  */
-template <typename node_t, size_t n, typename A, typename B>
-inline vec<n> target_elastic_force(node_t& node, trace_t, vec<n> const& target, A const& length, B const& strength) {
-    vec<n> v = target - node.position();
+template <typename node_t, size_t n>
+inline vec<n> point_elastic_force(node_t& node, trace_t, vec<n> const& point, real_t length, real_t strength) {
+    vec<n> v = point - node.position();
     real_t d = norm(v);
     return v * ((1-length/d)*strength);
 }
 
-//! @brief Export list for target_elastic_force.
-using target_elastic_force_t = common::export_list<>;
+//! @brief Export list for point_elastic_force.
+using point_elastic_force_t = common::export_list<>;
 
 /**
- * @brief Computes the elastic force tying a node to a wall on the line p -- q.
+ * @brief Computes the elastic force tying a node to a line p -- q.
  *
- * The length and strength arguments need to be convertible to `real_t` or `field<real_t>`.
  * The result is designed to be set as node.propulsion().
  */
-template <typename node_t, size_t n, typename A, typename B>
-inline vec<n> wall_elastic_force(node_t& node, trace_t, vec<n> const& p, vec<n> const& q, A const& length, B const& strength) {
+template <typename node_t, size_t n>
+inline vec<n> line_elastic_force(node_t& node, trace_t, vec<n> const& p, vec<n> const& q, real_t length, real_t strength) {
     vec<n> l = q - p;
     vec<n> v = node.position() - p;
     v = ((v * l) / abs(l)) * l - v;
@@ -153,8 +151,23 @@ inline vec<n> wall_elastic_force(node_t& node, trace_t, vec<n> const& p, vec<n> 
     return v * ((1-length/d)*strength);
 }
 
-//! @brief Export list for wall_elastic_force.
-using wall_elastic_force_t = common::export_list<>;
+//! @brief Export list for line_elastic_force.
+using line_elastic_force_t = common::export_list<>;
+
+/**
+ * @brief Computes the elastic force tying a node to a plane in p with perpendicular q.
+ *
+ * The result is designed to be set as node.propulsion().
+ */
+template <typename node_t, size_t n>
+inline vec<n> plane_elastic_force(node_t& node, trace_t, vec<n> const& p, vec<n> const& q, real_t length, real_t strength) {
+    vec<n> v = (((p - node.position()) * q) / abs(q)) * q;
+    real_t d = norm(v);
+    return v * ((1-length/d)*strength);
+}
+
+//! @brief Export list for plane_elastic_force.
+using plane_elastic_force_t = common::export_list<>;
 
 /**
  * @brief Computes the total elastic forces tying a node to its neighbours.
@@ -173,6 +186,58 @@ inline typename node_t::position_type neighbour_elastic_force(node_t& node, trac
 
 //! @brief Export list for neighbour_elastic_force.
 using neighbour_elastic_force_t = common::export_list<>;
+
+/**
+ * @brief Computes the gravitational force tying a node to a point.
+ *
+ * Can model a repulsive force if mass is negative.
+ * The result is designed to be set as node.propulsion().
+ */
+template <typename node_t, size_t n, typename A, typename B>
+inline vec<n> point_gravitational_force(node_t& node, trace_t, vec<n> const& point, real_t mass) {
+    vec<n> v = point - node.position();
+    real_t d = norm(v);
+    return v * (mass / (d*d*d));
+}
+
+//! @brief Export list for point_gravitational_force.
+using point_gravitational_force_t = common::export_list<>;
+
+/**
+ * @brief Computes the total gravitational force tying a node to its neighbours.
+ *
+ * Can model a repulsive force if mass is negative.
+ * The result is designed to be set as node.propulsion().
+ */
+template <typename node_t>
+inline typename node_t::position_type neighbour_gravitational_force(node_t& node, trace_t call_point, real_t mass) {
+    using vec_t = typename node_t::position_type;
+    return sum_hood(node, call_point, map_hood([](vec_t v, real_t m){
+        real_t d = norm(v);
+        return v * (m / (d*d*d));
+    }, node.nbr_vec(), nbr(node, call_point, mass)), vec_t{});
+}
+
+//! @brief Export list for neighbour_gravitational_force.
+using neighbour_gravitational_force_t = common::export_list<real_t>;
+
+/**
+ * @brief Computes the total charged force tying a node to its neighbours.
+ *
+ * Whether nodes are attracted or repulsed depends on the product of their charges.
+ * The result is designed to be set as node.propulsion().
+ */
+template <typename node_t>
+inline typename node_t::position_type neighbour_charged_force(node_t& node, trace_t call_point, real_t mass, real_t charge) {
+    using vec_t = typename node_t::position_type;
+    return sum_hood(node, call_point, map_hood([=](vec_t v, real_t c){
+        real_t d = norm(v);
+        return v * (-(c*charge) / (mass*d*d*d));
+    }, node.nbr_vec(), nbr(node, call_point, charge)), vec_t{});
+}
+
+//! @brief Export list for neighbour_charged_force.
+using neighbour_charged_force_t = common::export_list<real_t>;
 
 
 }

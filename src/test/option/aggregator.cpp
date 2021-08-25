@@ -57,6 +57,25 @@ TEST(AggregatorTest, Distinct) {
     EXPECT_EQ(0ULL, common::get<tag_t>(v.result<tag>()));
 }
 
+TEST(AggregatorTest, List) {
+    using aggr_t = aggregator::list<int>;
+    using res_t = aggr_t::result_type<tag>;
+    using tag_t = res_t::tags::front;
+    std::stringstream ss;
+    aggr_t v;
+    v.header(ss, "tag");
+    EXPECT_EQ("list(tag) ", ss.str());
+
+    aggr_t vs[4];
+    for (int t = 0; t < 4; ++t)
+        for (int i = t; i < 7; i += 4)
+            vs[t].insert(i*i);
+    for (int t = 0; t < 4; ++t)
+        v += vs[t];
+    std::vector<int> r = {0, 1, 4, 9, 16, 25, 36};
+    EXPECT_EQ(r, common::get<tag_t>(v.result<tag>()));
+}
+
 TEST(AggregatorTest, Sum) {
     {
         using aggr_t = aggregator::sum<int>;

@@ -124,10 +124,10 @@ bool camera::keyboardInput(int key, bool first, float deltaTime, int mods)
 {
     float velocity = m_depth * deltaTime * ((mods & GLFW_MOD_SHIFT) > 0 ? 0.05 : 0.5);
     switch (key) {
-        case GLFW_KEY_W:
+        case GLFW_KEY_E:
             m_view = glm::translate(glm::vec3(0.0f, 0.0f, velocity)) * m_view;
             break;
-        case GLFW_KEY_S:
+        case GLFW_KEY_Q:
             m_view = glm::translate(glm::vec3(0.0f, 0.0f, -velocity)) * m_view;
             break;
         case GLFW_KEY_A:
@@ -136,10 +136,10 @@ bool camera::keyboardInput(int key, bool first, float deltaTime, int mods)
         case GLFW_KEY_D:
             m_view = glm::translate(glm::vec3(-velocity, 0.0f, 0.0f)) * m_view;
             break;
-        case GLFW_KEY_E:
+        case GLFW_KEY_W:
             m_view = glm::translate(glm::vec3(0.0f, -velocity, 0.0f)) * m_view;
             break;
-        case GLFW_KEY_Q:
+        case GLFW_KEY_S:
             m_view = glm::translate(glm::vec3(0.0f, velocity, 0.0f)) * m_view;
             break;
         case GLFW_KEY_C:

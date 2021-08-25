@@ -383,7 +383,7 @@ struct logger {
                 std::vector<tuple_type> thread_aggregators(m_threads);
                 auto a = n.node_begin();
                 auto b = n.node_end();
-                common::parallel_for(common::tags::general_execution<parallel>(m_threads), b-a, [&thread_aggregators,&a,this] (size_t i, size_t t) {
+                common::parallel_for(common::tags::parallel_execution(m_threads), b-a, [&thread_aggregators,&a,this] (size_t i, size_t t) {
                     aggregator_insert_impl(thread_aggregators[t], a[i].second.storage_tuple(), t_tags());
                 });
                 for (size_t i=0; i<m_threads; ++i)

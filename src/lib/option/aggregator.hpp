@@ -179,6 +179,76 @@ class distinct {
 };
 
 
+//! @brief Aggregates values by listing them in aggregation order (erasing is not supported, combination is only supported sequentially).
+template <typename T>
+class list {
+  public:
+    //! @brief The type of values aggregated.
+    using type = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = common::tagged_tuple_t<list<U>, std::vector<T>>;
+
+    //! @brief Default constructor.
+    list() = default;
+
+    //! @brief Combines aggregated values (cannot combine with a combination).
+    list& operator+=(list const& o) {
+        assert(o.m_items.size() == 1);
+        m_items.push_back(std::move(o.m_items[0]));
+        return *this;
+    }
+
+    //! @brief Erases a value from the aggregation set (not supported).
+    void erase(T) {
+        assert(false);
+    }
+
+    //! @brief Inserts a new value to be aggregated (disabled on combines lists).
+    void insert(T value) {
+        if (m_items.empty()) m_items.emplace_back();
+        assert(m_items.size() == 1);
+        m_items[0].push_back(value);
+    }
+
+    //! @brief The results of aggregation (assumes lists have similar lengths).
+    template <typename U>
+    result_type<U> result() const {
+        for (int t = 1; t < m_items.size(); ++t)
+            assert(m_items[t-1].size() >= m_items[t].size() and m_items[t].size() >= m_items[0].size() - 1);
+        std::vector<T> v;
+        for (int i = 0; i < m_items.back().size(); ++i)
+            for (int t = 0; t < m_items.size(); ++t)
+                v.push_back(m_items[t][i]);
+        for (int t = 0; m_items.back().size() < m_items[t].size(); ++t)
+            v.push_back(m_items[t].back());
+        return {std::move(v)};
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        return "list";
+    }
+
+    //! @brief Outputs the aggregator description.
+    template <typename O>
+    void header(O& os, std::string tag) const {
+        os << details::header(tag, name());
+    }
+
+    //! @brief Printed results of aggregation.
+    template <typename O>
+    void output(O& os) const {
+        os << std::get<0>(result<void>()) << " ";
+    }
+
+  private:
+    //! @brief The list of items (in a per-thread basis).
+    std::vector<std::vector<T>> m_items;
+};
+
+
 //! @brief Aggregates values by summing them.
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class sum {

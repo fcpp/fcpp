@@ -213,7 +213,7 @@ real_t norm(vec<n> const& x) {
 }
 
 template <size_t n>
-real_t unit(vec<n> const& x) {
+vec<n> unit(vec<n> const& x) {
     return x / norm(x);
 }
 

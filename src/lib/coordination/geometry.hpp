@@ -122,6 +122,59 @@ inline vec<n> rectangle_walk(node_t& node, trace_t call_point, vec<n> const& low
 template <size_t n> using rectangle_walk_t = common::export_list<vec<n>>;
 
 
+/**
+ * @brief Computes the elastic force tying a node to a target.
+ *
+ * The length and strength arguments need to be convertible to `real_t` or `field<real_t>`.
+ * The result is designed to be set as node.propulsion().
+ */
+template <typename node_t, size_t n, typename A, typename B>
+inline vec<n> target_elastic_force(node_t& node, trace_t, vec<n> const& target, A const& length, B const& strength) {
+    vec<n> v = target - node.position();
+    real_t d = norm(v);
+    return v * ((1-length/d)*strength);
+}
+
+//! @brief Export list for target_elastic_force.
+using target_elastic_force_t = common::export_list<>;
+
+/**
+ * @brief Computes the elastic force tying a node to a wall on the line p -- q.
+ *
+ * The length and strength arguments need to be convertible to `real_t` or `field<real_t>`.
+ * The result is designed to be set as node.propulsion().
+ */
+template <typename node_t, size_t n, typename A, typename B>
+inline vec<n> wall_elastic_force(node_t& node, trace_t, vec<n> const& p, vec<n> const& q, A const& length, B const& strength) {
+    vec<n> l = q - p;
+    vec<n> v = node.position() - p;
+    v = ((v * l) / abs(l)) * l - v;
+    real_t d = norm(v);
+    return v * ((1-length/d)*strength);
+}
+
+//! @brief Export list for wall_elastic_force.
+using wall_elastic_force_t = common::export_list<>;
+
+/**
+ * @brief Computes the total elastic forces tying a node to its neighbours.
+ *
+ * The length and strength arguments need to be convertible to `real_t` or `field<real_t>`.
+ * The result is designed to be set as node.propulsion().
+ */
+template <typename node_t, typename A, typename B>
+inline typename node_t::position_type neighbour_elastic_force(node_t& node, trace_t call_point, A const& length, B const& strength) {
+    using vec_t = typename node_t::position_type;
+    return sum_hood(node, call_point, map_hood([](vec_t v, real_t l, real_t s){
+        real_t d = norm(v);
+        return v * ((1-l/d)*s);
+    }, node.nbr_vec(), length, strength), vec_t{});
+}
+
+//! @brief Export list for neighbour_elastic_force.
+using neighbour_elastic_force_t = common::export_list<>;
+
+
 }
 
 

@@ -33,6 +33,7 @@ template <int O>
 using combo1 = component::combine_spec<
     component::graph_spawner<
         node_attributes<url,std::string,uid,device_t>
+        //        init<x,rectangle_d> // initialise position randomly in a rectangle for new nodes
     >,
     component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
@@ -45,8 +46,8 @@ using combo1 = component::combine_spec<
 template <int O>
 using combo2 = component::combine_spec<
     component::graph_spawner<
-        node_attributes<url,std::string,uid,device_t>,
-        init<x,rectangle_d> // initialise position randomly in a rectangle for new nodes
+        node_attributes<url,std::string,uid,device_t>
+        //        init<x,rectangle_d> // initialise position randomly in a rectangle for new nodes
     >,
     component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<

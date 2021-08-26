@@ -80,6 +80,9 @@ struct graph_spawner {
     using attributes_type = std::conditional_t<std::is_same<attributes_tag_type, common::type_sequence<>>::value, common::option_types<tags::tuple_store, Ts...>, attributes_tag_type>;
     using attributes_tuple_type = common::tagged_tuple_t<attributes_type>;
 
+    //! @brief Node initialisation tags and generating distributions as tagged tuples.
+    using init_tag_type = common::option_types<tags::init, Ts...>;
+    using init_tuple_type = common::tagged_tuple_t<init_tag_type>;
 
     /**
      * @brief The actual component.
@@ -107,9 +110,13 @@ struct graph_spawner {
                 P::net(t),
                 m_start(common::get_or<tags::start>(t, 0)),
                 m_nodesstream(details::make_istream(common::get_or<tags::nodesinput>(t, "index"))),
-                m_arcsstream(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs"))) {
+                m_arcsstream(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs")))
+                //                m_distributions(common::get<tags::init>(t))
+                //                m_distributions(t)
+                //m_distributions(common::get_or<tags::init>(t,common::make_tagged_tuple<>())) {
+                //                m_distributions(common::get_or<tags::init>(t,nullptr)) {
+            {
                 read_nodes();
-
                 read_arcs();
             }
 
@@ -180,6 +187,9 @@ struct graph_spawner {
 
             //! @brief The stream describing graph arcs.
             std::shared_ptr<std::istream> m_arcsstream;
+
+            //! @brief The generator tuple.
+            init_tuple_type m_distributions;
         };
     };
 };

@@ -94,8 +94,10 @@ struct hardware_connector {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(connector);
         CHECK_COMPONENT(randomizer);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

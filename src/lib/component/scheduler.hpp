@@ -58,9 +58,11 @@ struct scheduler {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(scheduler);
         AVOID_COMPONENT(scheduler,timer);
         CHECK_COMPONENT(randomizer);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

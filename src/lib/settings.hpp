@@ -247,16 +247,22 @@ namespace fcpp {
     constexpr real_t NAN = std::numeric_limits<real_t>::quiet_NaN();
 
 #if   FCPP_DEVICE == 8
+    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint8_t device_t;
 #elif FCPP_DEVICE == 16
+    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint16_t device_t;
 #elif FCPP_DEVICE == 24
+    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint32_t device_t;
 #elif FCPP_DEVICE == 32
+    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint32_t device_t;
 #elif FCPP_DEVICE == 48
+    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint64_t device_t;
 #elif FCPP_DEVICE == 64
+    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
     typedef uint64_t device_t;
 #else
     static_assert(false, "invalid value for FCPP_DEVICE");
@@ -265,10 +271,13 @@ namespace fcpp {
 #endif
 
 #if   FCPP_HOPS == 8
+    //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
     typedef int8_t hops_t;
 #elif FCPP_HOPS == 16
+    //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
     typedef int16_t hops_t;
 #elif FCPP_HOPS == 32
+    //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
     typedef int32_t hops_t;
 #else
     static_assert(false, "invalid value for FCPP_HOPS");

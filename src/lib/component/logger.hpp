@@ -199,11 +199,13 @@ struct logger {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(logger);
         REQUIRE_COMPONENT(logger,storage);
         REQUIRE_COMPONENT_IF(logger,identifier, not value_push);
         AVOID_COMPONENT(logger,timer);
         CHECK_COMPONENT(randomizer);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

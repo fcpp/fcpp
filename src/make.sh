@@ -131,11 +131,14 @@ function mkdoc() {
         mkdir doc
     fi
     echo -e "\033[4mdoxygen Doxyfile\033[0m" >&2
-    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented"
-    ndoc=`cat tmpdoc.err | grep "is not documented" | wc -l | tr -cd '0-9'`
+    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$"
+    ndoc=`cat tmpdoc.err | grep "is not documented.$" | wc -l | tr -cd '0-9'`
     if [ $ndoc -gt 0 ]; then
+        cat tmpdoc.err | grep "is not documented" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |;s| is not documented.||' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|' | sort | uniq > tmpdoc2.err
+        mv tmpdoc2.err tmpdoc.err
+        ndoc=`cat tmpdoc.err | wc -l | tr -cd '0-9'`
         echo -e "\033[1m$ndoc items are not documented:\033[0m" >&2
-        cat tmpdoc.err | grep "is not documented"
+        cat tmpdoc.err
     fi
     rm tmpdoc.err
 }

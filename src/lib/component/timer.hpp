@@ -67,8 +67,10 @@ struct timer {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(timer);
         AVOID_COMPONENT(timer,connector);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

@@ -192,11 +192,13 @@ struct simulated_connector {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(connector);
         REQUIRE_COMPONENT(connector,positioner);
         CHECK_COMPONENT(identifier);
         CHECK_COMPONENT(randomizer);
         CHECK_COMPONENT(scheduler);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

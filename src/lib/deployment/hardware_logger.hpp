@@ -95,8 +95,10 @@ struct hardware_logger {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(logger);
         REQUIRE_COMPONENT(logger,storage);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

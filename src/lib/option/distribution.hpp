@@ -26,36 +26,46 @@ namespace fcpp {
 
 //! @brief Lightweight interface for C random generators to C++ distributions.
 struct crand {
+    //! @brief The data produced by the generator.
     using result_type = uint16_t;
 
+    //! @brief Default constructor.
     crand() {}
 
+    //! @brief Constructor with seed.
     crand(result_type val) {
         srand(val);
     }
 
+    //! @brief The minimum generated value.
     static constexpr result_type min() {
         return 0;
     }
 
+    //! @brief The maximum generated value.
     static constexpr result_type max() {
         return 65535;
     }
 
+    //! @brief Feeds a given seed.
     inline void seed(result_type val = 0) {
         srand(val);
     }
 
+    //! @brief Generates a new element.
     inline result_type operator()() {
         return rand() & 65535;
     }
 
+    //! @brief Discards bits of random data.
     inline void discard(unsigned long long) {}
 
+    //! @brief Equality operator.
     inline bool operator==(const crand&) {
         return true;
     }
 
+    //! @brief Inequality operator.
     inline bool operator!=(const crand&) {
         return false;
     }
@@ -156,7 +166,7 @@ struct name {                               \
 }
 
 
-//! @brief Constant distribution.
+//! @name Constant distribution.
 //! @{
 /**
  * @brief With value as distribution.
@@ -164,17 +174,21 @@ struct name {                               \
  */
 template <typename D>
 struct constant {
+    //! @brief Result type.
     using type = typename D::type;
 
+    //! @brief Constructor.
     template <typename G, typename S, typename T>
     constant(G&& g, common::tagged_tuple<S,T> const& t) : val(details::call_distr<D>(g, t)) {}
 
+    //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&&, T&&) {
         return val;
     }
 
   private:
+    //! @brief The constant value.
     type val;
 };
 /**
@@ -186,28 +200,35 @@ struct constant {
  */
 template <typename R, intmax_t num, intmax_t den = 1, typename val_tag = void>
 struct constant_n {
+    //! @brief Result type.
     using type = R;
 
+    //! @brief Constructor.
     template <typename G, typename S, typename T>
     constant_n(G&&, common::tagged_tuple<S,T> const& t) : val(common::get_or<val_tag>(t, (type)num / (type)den)) {}
 
+    //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&&, T&&) {
         return val;
     }
 
   private:
+    //! @brief The constant value.
     type val;
 };
 //! @cond INTERNAL
 //! @brief With value as numeric template parameter (optimisation for no given tag).
 template <typename R, intmax_t num, intmax_t den>
 struct constant_n<R, num, den, void> {
+    //! @brief Result type.
     using type = R;
 
+    //! @brief Constructor.
     template <typename G, typename T>
     constant_n(G&&, T&&) {}
 
+    //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&&, T&&) {
         return (type)num / (type)den;
@@ -221,23 +242,27 @@ struct constant_n<R, num, den, void> {
  */
 template <typename R, typename val_tag>
 struct constant_i {
+    //! @brief Result type.
     using type = R;
 
+    //! @brief Constructor.
     template <typename G, typename S, typename T>
     constant_i(G&&, common::tagged_tuple<S,T> const& t) : val(common::get_or<val_tag>(t, type())) {}
 
+    //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&&, T&&) {
         return val;
     }
 
   private:
+    //! @brief The constant value.
     type val;
 };
 //! @}
 
 
-//! @brief Variable distribution, varying the distribution parameters at every call.
+//! @name Variable distribution, varying the distribution parameters at every call.
 //! @{
 /**
  * @brief With value as distribution.
@@ -245,11 +270,14 @@ struct constant_i {
  */
 template <typename D>
 struct variable {
+    //! @brief Result type.
     using type = typename D::type;
 
+    //! @brief Constructor.
     template <typename G, typename T>
     variable(G&&, T&&) {}
 
+    //! @brief Generator function.
     template <typename G, typename S, typename T>
     type operator()(G&& g, common::tagged_tuple<S,T> const& t) {
         return details::call_distr<D>(g, t);
@@ -267,7 +295,7 @@ using variable_i = variable<constant_i<R, val_tag>>;
 
 /**
  * @brief Standard real distribution.
- * @param std_dist The standard distribution in <random>.
+ * @param std_dist The standard distribution in the `<random>` header.
  * @param mean     The mean of the distribution (as distribution).
  * @param dev      The standard deviation of the distribution (as distribution).
  * @param mean_tag The tag corresponding to the mean in initialisation values.
@@ -278,22 +306,26 @@ class standard {
     static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
 
   public:
+    //! @brief Result type.
     using type = typename mean::type;
 
+    //! @brief Constructor.
     template <typename G, typename S, typename T>
     standard(G&& g, common::tagged_tuple<S,T> const& t) : m_d(make<std_dist>((type)common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), (type)common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
 
+    //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&& g, T&&) {
         return m_d(g);
     }
 
   private:
+    //! @brief The distribution.
     std_dist<type> m_d;
 };
 
 
-//! @brief Uniform real distribution.
+//! @name Uniform real distribution.
 //! @{
 /**
  * @brief With mean and deviation as distributions.
@@ -326,7 +358,7 @@ using uniform_i = uniform<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>
 //! @}
 
 
-//! @brief Uniform real distribution set up through extremes instead of mean and deviation.
+//! @name Uniform real distribution set up through extremes instead of mean and deviation.
 //! @{
 /**
  * @brief With mean and deviation as distributions.
@@ -340,17 +372,21 @@ class interval {
     static_assert(std::is_same<typename min::type, typename max::type>::value, "min and max of different type");
 
   public:
+    //! @brief Result type.
     using type = typename min::type;
 
+    //! @brief Constructor.
     template <typename G, typename S, typename T>
     interval(G&& g, common::tagged_tuple<S,T> const& t) : m_d{common::get_or<min_tag>(t,details::call_distr<min>(g, t)), common::get_or<max_tag>(t,details::call_distr<max>(g, t))} {}
 
+    //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&& g, T&&) {
         return m_d(g);
     }
 
   private:
+    //! @brief The distribution.
     std::uniform_real_distribution<type> m_d;
 };
 /**
@@ -375,7 +411,7 @@ using interval_i = interval<constant_n<T, 0>, constant_n<T, 0>, min_tag, max_tag
 //! @}
 
 
-//! @brief Normal real distribution.
+//! @name Normal real distribution.
 //! @{
 /**
  * @brief With mean and deviation as distributions.
@@ -408,7 +444,7 @@ using normal_i = normal<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>;
 //! @}
 
 
-//! @brief Exponential real distribution.
+//! @name Exponential real distribution.
 //! @{
 /**
  * @brief With mean as distribution.
@@ -418,17 +454,21 @@ using normal_i = normal<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>;
 template <typename mean, typename mean_tag = void>
 class exponential {
   public:
+    //! @brief Result type.
     using type = typename mean::type;
 
+    //! @brief Constructor.
     template <typename G, typename S, typename T>
     exponential(G&& g, common::tagged_tuple<S,T> const& t) : m_d(1/common::get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
 
+    //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&& g, T&&) {
         return m_d(g);
     }
 
   private:
+    //! @brief The distribution.
     std::exponential_distribution<type> m_d;
 };
 /**
@@ -450,7 +490,7 @@ using exponential_i = exponential<constant_n<T, 0>, mean_tag>;
 //! @}
 
 
-//! @brief Weibull real distribution.
+//! @name Weibull real distribution.
 //! @{
 /**
  * @brief With mean and deviation as distributions.
@@ -492,10 +532,13 @@ using weibull_i = weibull<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>
  */
 template <typename D>
 struct positive : public D {
+    //! @brief Result type.
     using type = typename D::type;
 
+    //! @brief Constructor.
     using D::D;
 
+    //! @brief Generator function.
     template <typename G, typename S, typename T>
     type operator()(G&& g, common::tagged_tuple<S,T> const& t) {
         type x = D::operator()(g, t);
@@ -504,7 +547,7 @@ struct positive : public D {
 };
 
 
-//! @brief Generates points given coordinates.
+//! @name Generates points given coordinates.
 //! @{
 /**
  * @brief With coordinates as distributions.
@@ -516,22 +559,27 @@ struct positive : public D {
 template <typename... Ds>
 class point {
   public:
+    //! @brief Result type.
     using type = vec<sizeof...(Ds)>;
 
+    //! @brief Constructor.
     template <typename G, typename S, typename T>
     point(G&& g, common::tagged_tuple<S,T> const& t) : m_distributions{Ds{g,t}...} {}
 
+    //! @brief Generator function.
     template <typename G, typename S, typename T>
     type operator()(G&& g, common::tagged_tuple<S,T> const& t) {
         return call_impl(g, t, std::make_index_sequence<sizeof...(Ds)>{});
     }
 
   private:
+    //! @brief Helper generator function.
     template <typename G, typename S, typename T, size_t... i>
     type call_impl(G&& g, common::tagged_tuple<S,T> const& t, std::index_sequence<i...>) {
         return {std::get<i>(m_distributions)(g, t)...};
     }
 
+    //! @brief The distributions.
     std::tuple<Ds...> m_distributions;
 };
 /**
@@ -550,7 +598,7 @@ using point_i = point<constant_i<real_t, x_tag>...>;
 //! @}
 
 
-//! @brief Generates points in a rectangle given its extremes.
+//! @name Generates points in a rectangle given its extremes.
 //! @{
 //! @cond INTERNAL
 namespace details {

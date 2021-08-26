@@ -67,11 +67,13 @@ struct randomizer {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(randomizer);
         AVOID_COMPONENT(randomizer,connector);
         AVOID_COMPONENT(randomizer,logger);
         AVOID_COMPONENT(randomizer,scheduler);
         AVOID_COMPONENT(randomizer,spawner);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

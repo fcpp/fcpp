@@ -53,7 +53,9 @@ struct storage {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(storage);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -81,7 +83,9 @@ struct storage {
                 return m_storage;
             }
 
+            //! @cond INTERNAL
             #define MISSING_TYPE_MESSAGE "\033[1m\033[4munsupported tag access (add A to storage tag list)\033[0m"
+            //! @endcond
 
             /**
              * @brief Write access to stored data.

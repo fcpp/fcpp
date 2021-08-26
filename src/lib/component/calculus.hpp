@@ -162,7 +162,9 @@ struct calculus {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(calculus);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -274,6 +276,7 @@ struct calculus {
 
 //! @name field operators
 //! @{
+
 //! @brief Computes the restriction of a local to the current domain.
 template <typename node_t, typename A, typename = if_local<A>>
 inline A align(const node_t&, trace_t, A&& x) {
@@ -407,6 +410,7 @@ field<device_t> nbr_uid(node_t& node, trace_t call_point) {
     vals.insert(vals.end(), ids.begin(), ids.end());
     return details::make_field(std::move(ids), std::move(vals));
 }
+
 //! @}
 
 

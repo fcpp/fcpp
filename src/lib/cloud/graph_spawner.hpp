@@ -88,8 +88,10 @@ struct graph_spawner {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(spawner);
         REQUIRE_COMPONENT(spawner,identifier);
+        //! @endcond
 
         //! @brief The local part of the component.
         using node = typename P::node;

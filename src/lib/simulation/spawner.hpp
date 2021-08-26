@@ -109,7 +109,7 @@ struct spawner {
                     times_t t = m_schedule.next();
                     while (t == m_schedule.next()) {
                         size_t i = m_schedule.next_sequence();
-                        m_schedule.step(get_generator(has_randomizer<P>{}, *this));
+                        m_schedule.step(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                         call_distribution(i, t, inert_type{});
                     }
                 } else P::net::update();
@@ -154,7 +154,7 @@ struct spawner {
             template <size_t i>
             inline void call_distribution(size_t j, times_t t, std::index_sequence<i>) {
                 assert(i == j);
-                P::net::node_emplace(push_time(std::get<i>(m_distributions)(get_generator(has_randomizer<P>{}, *this)), t));
+                P::net::node_emplace(push_time(std::get<i>(m_distributions)(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{}), t));
             }
 
             //! @brief Emplaces a node generated through the j-th distribution.

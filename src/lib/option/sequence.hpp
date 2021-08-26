@@ -12,6 +12,7 @@
 #include <array>
 #include <functional>
 #include <limits>
+#include <queue>
 #include <type_traits>
 #include <vector>
 
@@ -33,6 +34,9 @@ namespace sequence {
 //! @cond INTERNAL
 namespace details {
     using distribution::details::call_distr;
+
+    struct none_tag {};
+    constexpr none_tag none{};
 }
 //! @endcond
 
@@ -42,13 +46,9 @@ struct never {
     //! @brief The type of results generated.
     using type = times_t;
 
-    //! @brief Default constructor.
-    template <typename G>
-    never(G&&) {}
-
     //! @brief Tagged tuple constructor.
-    template <typename G, typename S, typename T>
-    never(G&&, const common::tagged_tuple<S,T>&) {}
+    template <typename G, typename T>
+    never(G&&, T&&) {}
 
     //! @brief Check whether the sequence is finished.
     bool empty() const {
@@ -56,17 +56,17 @@ struct never {
     }
 
     //! @brief Returns next event, without stepping over.
-    times_t next() const {
+    type next() const {
         return TIME_MAX; // no event to schedule
     }
 
     //! @brief Steps over to next event, without returning.
-    template <typename G>
-    void step(G&&) {}
+    template <typename G, typename T>
+    void step(G&&, T&&) {}
 
     //! @brief Returns next event, stepping over.
-    template <typename G>
-    times_t operator()(G&&) {
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
         return TIME_MAX; // no event to schedule
     }
 };
@@ -92,10 +92,6 @@ class multiple<N, E, true> {
     //! @brief The type of results generated.
     using type = times_t;
 
-    //! @brief Default constructor.
-    template <typename G>
-    multiple(G&& g) : t(details::call_distr<E>(g)), i(details::call_distr<N>(g)) {}
-
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     multiple(G&& g, common::tagged_tuple<S,T> const& tup) : t(details::call_distr<E>(g,tup)), i(details::call_distr<N>(g,tup)) {}
@@ -106,22 +102,22 @@ class multiple<N, E, true> {
     }
 
     //! @brief Returns next event, without stepping over.
-    times_t next() const {
+    type next() const {
         return (i > 0) ? t : TIME_MAX;
     }
 
     //! @brief Steps over to next event, without returning.
-    template <typename G>
-    void step(G&&) {
+    template <typename G, typename T>
+    void step(G&&, T&&) {
         if (i > 0) --i;
     }
 
     //! @brief Returns next event, stepping over.
-    template <typename G>
-    times_t operator()(G&&) {
-        times_t nt = next();
-        step(nullptr);
-        return nt;
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
+        type x = next();
+        step(details::none, details::none);
+        return x;
     }
 
   private:
@@ -141,13 +137,9 @@ class multiple<N, E, false> {
     //! @brief The type of results generated.
     using type = times_t;
 
-    //! @brief Default constructor.
-    template <typename G>
-    multiple(G&& g) : multiple(g, E{g}, N{g}) {}
-
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    multiple(G&& g, common::tagged_tuple<S,T> const& tup) : multiple(g, E{g,tup}, N{g,tup}) {}
+    multiple(G&& g, common::tagged_tuple<S,T> const& tup) : multiple(g, tup, E{g,tup}, N{g,tup}) {}
 
     //! @brief Check whether the sequence is finished.
     bool empty() const {
@@ -155,22 +147,22 @@ class multiple<N, E, false> {
     }
 
     //! @brief Returns next event, without stepping over.
-    times_t next() const {
+    type next() const {
         return pending.empty() ? TIME_MAX : pending.back();
     }
 
     //! @brief Steps over to next event, without returning.
-    template <typename G>
-    void step(G&&) {
+    template <typename G, typename T>
+    void step(G&&, T&&) {
         if (not pending.empty()) pending.pop_back();
     }
 
     //! @brief Returns next event, stepping over.
-    template <typename G>
-    times_t operator()(G&&) {
-        times_t nt = next();
-        step(nullptr);
-        return nt;
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
+        type x = next();
+        step(details::none, details::none);
+        return x;
     }
 
   private:
@@ -178,11 +170,11 @@ class multiple<N, E, false> {
     std::vector<times_t> pending;
 
     //! @brief Auxiliary constructor.
-    template <typename G>
-    multiple(G&& g, E&& distr, N&& n) {
-        size_t num = n(g);
+    template <typename G, typename T>
+    multiple(G&& g, T const& tup, E&& distr, N&& n) {
+        size_t num = n(g, tup);
         pending.reserve(num);
-        for (size_t j=0; j<num; ++j) pending.push_back(distr(g));
+        for (size_t j=0; j<num; ++j) pending.push_back(distr(g, tup));
         std::sort(pending.begin(), pending.end(), std::greater<times_t>{});
     }
 };
@@ -218,12 +210,6 @@ class list {
     //! @brief The type of results generated.
     using type = times_t;
 
-    //! @brief Default constructor.
-    template <typename G>
-    list(G&& g) : pending({details::call_distr<Ds>(g)...}) {
-        std::sort(pending.begin(), pending.end());
-    }
-
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     list(G&& g, common::tagged_tuple<S,T> const& tup) : pending({details::call_distr<Ds>(g,tup)...}) {
@@ -236,22 +222,22 @@ class list {
     }
 
     //! @brief Returns next event, without stepping over.
-    times_t next() const {
+    type next() const {
         return (i < sizeof...(Ds)) ? pending[i] : TIME_MAX;
     }
 
     //! @brief Steps over to next event, without returning.
-    template <typename G>
-    void step(G&&) {
+    template <typename G, typename T>
+    void step(G&&, T&&) {
         ++i;
     }
 
     //! @brief Returns next event, stepping over.
-    template <typename G>
-    times_t operator()(G&&) {
-        times_t nt = next();
-        ++i;
-        return nt;
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
+        type x = next();
+        step(details::none, details::none);
+        return x;
     }
 
   private:
@@ -297,14 +283,6 @@ class periodic {
     //! @brief The type of results generated.
     using type = times_t;
 
-    //! @brief Default constructor.
-    template <typename G>
-    periodic(G&& g) : dp(g) {
-        n  = details::call_distr<N>(g);
-        te = details::call_distr<E>(g);
-        t  = details::call_distr<S>(g);
-    }
-
     //! @brief Tagged tuple constructor.
     template <typename G, typename U, typename T>
     periodic(G&& g, common::tagged_tuple<U,T> const& tup) : dp(g,tup) {
@@ -319,24 +297,23 @@ class periodic {
     }
 
     //! @brief Returns next event, without stepping over.
-    times_t next() const {
+    type next() const {
         return (i < n and t <= te) ? t : TIME_MAX;
     }
 
     //! @brief Steps over to next event, without returning.
-    template <typename G>
-    void step(G&& g) {
+    template <typename G, typename U, typename T>
+    void step(G&& g, common::tagged_tuple<U,T> const& tup) {
         ++i;
-        t += dp(g);
+        t += dp(g, t);
     }
 
     //! @brief Returns next event, stepping over.
-    template <typename G>
-    times_t operator()(G&& g) {
-        times_t nt = next();
-        ++i;
-        t += dp(g);
-        return nt;
+    template <typename G, typename U, typename T>
+    type operator()(G&& g, common::tagged_tuple<U,T> const& tup) {
+        type x = next();
+        step(std::forward<G>(g), tup);
+        return x;
     }
 
   private:
@@ -387,6 +364,10 @@ namespace details {
     U&& arg_expander(U&& x) {
         return std::forward<U>(x);
     }
+
+    // Helper function ignoring its arguments.
+    template <class... Ts>
+    void ignore(const Ts&...) {}
 }
 //! @endcond
 
@@ -403,93 +384,78 @@ class merge {
     //! @brief The type of results generated.
     using type = times_t;
 
-    //! @brief Default constructor.
-    template <typename G>
-    merge(G&& g) : m_generators{details::arg_expander<Ss>(g)...} {
-        set_next(std::make_index_sequence<sizeof...(Ss)>{});
-    }
+    //! @brief The number of sequences merged.
+    constexpr static size_t size = sizeof...(Ss);
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     merge(G&& g, common::tagged_tuple<S,T> const& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
-        set_next(std::make_index_sequence<sizeof...(Ss)>{});
+        fill_queue(std::make_index_sequence<size>{});
     }
 
     //! @brief Check whether the sequence is finished.
     bool empty() const {
-        return m_next == TIME_MAX;
+        return next() == TIME_MAX;
     }
 
     //! @brief Returns next event, without stepping over.
-    times_t next() const {
-        return m_next;
+    type next() const {
+        return m_queue.top().first;
     }
 
     //! @brief Returns the index of the subsequence generating the next event.
     size_t next_sequence() const {
-        return next_sequence(std::make_index_sequence<sizeof...(Ss)>{});
+        return m_queue.top().second;
     }
 
     //! @brief Steps over to next event, without returning.
-    template <typename G>
-    void step(G&& g) {
-        step(std::forward<G>(g), std::make_index_sequence<sizeof...(Ss)>{});
-        set_next(std::make_index_sequence<sizeof...(Ss)>{});
+    template <typename G, typename S, typename T>
+    void step(G&& g, common::tagged_tuple<S,T> const& tup) {
+        step(std::forward<G>(g), tup, std::index_sequence<0, size>{});
     }
 
     //! @brief Returns next event, stepping over.
-    template <typename G>
-    times_t operator()(G&& g) {
-        times_t nt = next();
-        step(std::forward<G>(g));
-        return nt;
+    template <typename G, typename S, typename T>
+    type operator()(G&& g, common::tagged_tuple<S,T> const& tup) {
+        type x = next();
+        step(std::forward<G>(g), tup);
+        return x;
     }
 
   private:
-    //! @brief Steps over a given sub-sequence.
-    template <typename G, size_t i>
-    void step(G&& g, std::index_sequence<i>) {
-        assert(std::get<i>(m_generators).next() == m_next);
-        std::get<i>(m_generators).step(std::forward<G>(g));
-    }
+    //! @brief The type used to indicate an event in the queue.
+    using event_t = std::pair<times_t, size_t>;
 
-    //! @brief Steps over a sub-sequence among a list of possible ones.
-    template <typename G, size_t i1, size_t i2, size_t... is>
-    void step(G&& g, std::index_sequence<i1, i2, is...>) {
-        if (std::get<i1>(m_generators).next() == m_next)
-            std::get<i1>(m_generators).step(std::forward<G>(g));
-        else
-            step(std::forward<G>(g), std::index_sequence<i2, is...>{});
-    }
-
-    //! @brief Computes the next event.
+    //! @brief Initially fills up the queue.
     template <size_t... is>
-    void set_next(std::index_sequence<is...>) {
-        std::array<times_t, sizeof...(Ss)> v{std::get<is>(m_generators).next()...};
-        m_next = *std::min_element(v.begin(), v.end());
+    inline void fill_queue(std::index_sequence<is...>) {
+        details::ignore((m_queue.emplace(std::get<is>(m_generators).next(), is),0)...);
     }
 
-    //! @brief Returns the index of the subsequence generating the next event.
-    template <size_t i>
-    size_t next_sequence(std::index_sequence<i>) const {
-        assert(std::get<i>(m_generators).next() == m_next);
-        return i;
+    //! @brief Steps over a given sub-sequence.
+    template <typename G, typename T, size_t i, size_t j>
+    inline std::enable_if_t<j == i+1> step(G&& g, T const& tup, std::index_sequence<i, j>) {
+        assert(m_queue.top().second == i);
+        m_queue.pop();
+        std::get<i>(m_generators).step(std::forward<G>(g), tup);
+        m_queue.emplace(std::get<i>(m_generators).next(), i);
     }
 
-    //! @brief Returns the index of the subsequence generating the next event.
-    template <size_t i1, size_t i2, size_t... is>
-    size_t next_sequence(std::index_sequence<i1, i2, is...>) const {
-        if (std::get<i1>(m_generators).next() == m_next)
-            return i1;
+    //! @brief Steps over a sub-sequence among an interval of possible ones.
+    template <typename G, typename T, size_t i, size_t j>
+    inline std::enable_if_t<(j > i+1)> step(G&& g, T const& tup, std::index_sequence<i, j>) {
+        constexpr size_t k = (i + j) / 2;
+        if (m_queue.top().second < k)
+            step(std::forward<G>(g), tup, std::index_sequence<i, k>{});
         else
-            return next_sequence(std::index_sequence<i2, is...>{});
+            step(std::forward<G>(g), tup, std::index_sequence<k, j>{});
     }
 
     //! @brief Tuple of sequence generators.
     std::tuple<Ss...> m_generators;
 
-    //! @brief The next event to come.
-    times_t m_next;
+    //! @brief The queue of events to come by generator.
+    std::priority_queue<event_t, std::vector<event_t>, std::greater<event_t>> m_queue;
 };
 
 //! @brief Optimisation for a single sequence.
@@ -537,17 +503,6 @@ namespace details {
         //! @brief The type of results generated.
         using type = vec<n>;
 
-        //! @brief Default constructor.
-        template <typename G>
-        grid(G&& g) : m_i(0) {
-            m_init = {details::call_distr<Ls>(g)...};
-            m_step = {details::call_distr<Us>(g)...};
-            m_mods = {details::call_distr<Ns>(g)...};
-            for (size_t i=0; i<n; ++i) m_step[i] = (m_step[i]-m_init[i])/std::max(m_mods[i]-1, size_t(1));
-            m_divs[0] = 1;
-            for (size_t i=1; i<n; ++i) m_divs[i] = m_divs[i-1]*m_mods[i-1];
-        }
-
         //! @brief Tagged tuple constructor.
         template <typename G, typename S, typename T>
         grid(G&& g, common::tagged_tuple<S,T> const& tup) : m_i(0) {
@@ -572,17 +527,17 @@ namespace details {
         }
 
         //! @brief Steps over to next element, without returning.
-        template <typename G>
-        void step(G&&) {
+        template <typename G, typename T>
+        void step(G&&, T&&) {
             ++m_i;
         }
 
         //! @brief Returns next element, stepping over.
-        template <typename G>
-        type operator()(G&& g) {
-            vec<n> p = next();
-            step(g);
-            return p;
+        template <typename G, typename T>
+        type operator()(G&&, T&&) {
+            type x = next();
+            step(details::none, details::none);
+            return x;
         }
 
       private:
@@ -731,17 +686,6 @@ class circle {
     //! @brief The type for rotations.
     using rotation_type = std::conditional_t<n == 2, details::angle, common::quaternion>;
 
-    //! @brief Default constructor.
-    template <typename G>
-    circle(G&& g) {
-        m_c = details::call_distr<C>(g);
-        auto r = details::call_distr<R>(g);
-        m_p = details::perpendicular(r);
-        m_i = details::call_distr<N>(g);
-        m_r0 = rotation_type(2*acos(-1)/m_i, r.data);
-        m_r = rotation_type(1);
-    }
-
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
     circle(G&& g, common::tagged_tuple<S,T> const& t) {
@@ -764,18 +708,18 @@ class circle {
     }
 
     //! @brief Steps over to next element, without returning.
-    template <typename G>
-    void step(G&&) {
+    template <typename G, typename T>
+    void step(G&&, T&&) {
         m_r *= m_r0;
         --m_i;
     }
 
     //! @brief Returns next element, stepping over.
-    template <typename G>
-    type operator()(G&& g) {
-        type p = next();
-        step(g);
-        return p;
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
+        type x = next();
+        step(details::none, details::none);
+        return x;
     }
 
   private:

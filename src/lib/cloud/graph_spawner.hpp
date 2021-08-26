@@ -16,7 +16,7 @@
 
 #include "lib/component/base.hpp"
 #include "lib/component/storage.hpp"
-
+#include "lib/option/sequence.hpp"
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -98,6 +98,7 @@ struct graph_spawner {
         //! @cond INTERNAL
         DECLARE_COMPONENT(spawner);
         REQUIRE_COMPONENT(spawner,identifier);
+        CHECK_COMPONENT(randomizer);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -111,18 +112,34 @@ struct graph_spawner {
             net(const common::tagged_tuple<S,T>& t) :
                 P::net(t),
                 m_start(common::get_or<tags::start>(t, 0)),
+                m_arcsstream(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs"))),
                 m_nodesstream(details::make_istream(common::get_or<tags::nodesinput>(t, "index"))),
-                m_arcsstream(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs")))
-                //                m_distributions(common::get<tags::init>(t))
-                //                m_distributions(t)
-                //m_distributions(common::get_or<tags::init>(t,common::make_tagged_tuple<>())) {
-                //                m_distributions(common::get_or<tags::init>(t,nullptr)) {
+                m_distributions(build_distributions(t, typename init_tuple_type::tags(), typename init_tuple_type::types()))
             {
                 read_nodes();
                 read_arcs();
             }
 
           private: // implementation details
+            //! @brief Returns the `randomizer` generator if available.
+            template <typename N>
+            inline auto& get_generator(std::true_type, N& n) {
+                return n.generator();
+            }
+
+            //! @brief Returns a `crand` generator otherwise.
+            template <typename N>
+            inline crand get_generator(std::false_type, N&) {
+                return {};
+            }
+
+            //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
+            template <typename S, typename T, typename... Ss, typename... Us>
+            common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>
+            build_distributions(common::tagged_tuple<S,T> const& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
+                return {Us{get_generator(has_randomizer<P>{}, *this),t}...};
+            }
+
             //! @brief Adds a `start` time to a node file tuple (if not present in the file).
             template <typename S, typename T>
             auto push_time(const common::tagged_tuple<S,T>& tup, common::type_sequence<>) {

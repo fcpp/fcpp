@@ -166,7 +166,7 @@ struct hardware_connector {
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
-                m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this));
+                m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 if (not message_push) {
                     std::vector<message_type> mv = m_network.receive();
                     common::unlock_guard<parallel> l(P::node::mutex);

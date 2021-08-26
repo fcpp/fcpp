@@ -291,7 +291,7 @@ struct logger {
                     print_output(t_tags());
                     *m_stream << std::endl;
                     data_plotter(std::is_same<plot_type, plot::none>{}, t_tags{});
-                    m_schedule.step(get_generator(has_randomizer<P>{}, *this));
+                    m_schedule.step(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                     if (not value_push) m_aggregators = tuple_type{};
                 } else P::net::update();
             }

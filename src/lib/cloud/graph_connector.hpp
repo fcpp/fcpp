@@ -194,7 +194,7 @@ struct graph_connector {
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
-                m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this));
+                m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 P::node::round_start(t);
             }
 

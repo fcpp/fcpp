@@ -119,7 +119,7 @@ namespace details {
  * @param mean The required mean of the distribution.
  * @param dev  The standard deviation of the distribution.
  */
-template <template<typename> class D, typename T>
+template <template<class> class D, typename T>
 D<T> make(T mean, T dev) {
     return details::make(common::type_sequence<D<T>>(), mean, dev);
 }
@@ -127,16 +127,10 @@ D<T> make(T mean, T dev) {
 
 //! @cond INTERNAL
 namespace details {
-    template <typename R, typename G>
-    typename R::type call_distr(G&& g) {
-        R dist{g};
-        return dist(g);
-    }
-
     template <typename R, typename G, typename S, typename T>
     typename R::type call_distr(G&& g, common::tagged_tuple<S,T> const& t) {
         R dist{g, t};
-        return dist(g);
+        return dist(g, t);
     }
 }
 //! @endcond
@@ -150,17 +144,15 @@ namespace details {
  * @param R The result type.
  * @param val The constant value.
  */
-#define CONSTANT_DISTRIBUTION(name, R, val)         \
-struct name {                                       \
-    using type = R;                                 \
-    template <typename G>                           \
-    name(G&&) {}                                     \
-    template <typename G, typename S, typename T>   \
-    name(G&&, const common::tagged_tuple<S,T>&) {}     \
-    template <typename G>                           \
-    type operator()(G&&) {                           \
-        return val;                                 \
-    }                                               \
+#define CONSTANT_DISTRIBUTION(name, R, val) \
+struct name {                               \
+    using type = R;                         \
+    template <typename G, typename T>       \
+    name(G&&, T&&) {}                       \
+    template <typename G, typename T>       \
+    type operator()(G&&, T&&) {             \
+        return val;                         \
+    }                                       \
 }
 
 
@@ -174,14 +166,11 @@ template <typename D>
 struct constant {
     using type = typename D::type;
 
-    template <typename G>
-    constant(G&& g) : val(details::call_distr<D>(g)) {}
-
     template <typename G, typename S, typename T>
     constant(G&& g, common::tagged_tuple<S,T> const& t) : val(details::call_distr<D>(g, t)) {}
 
-    template <typename G>
-    type operator()(G&&) {
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
         return val;
     }
 
@@ -199,14 +188,11 @@ template <typename R, intmax_t num, intmax_t den = 1, typename val_tag = void>
 struct constant_n {
     using type = R;
 
-    template <typename G>
-    constant_n(G&&) : val((type)num / (type)den) {}
-
     template <typename G, typename S, typename T>
     constant_n(G&&, common::tagged_tuple<S,T> const& t) : val(common::get_or<val_tag>(t, (type)num / (type)den)) {}
 
-    template <typename G>
-    type operator()(G&&) {
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
         return val;
     }
 
@@ -219,14 +205,11 @@ template <typename R, intmax_t num, intmax_t den>
 struct constant_n<R, num, den, void> {
     using type = R;
 
-    template <typename G>
-    constant_n(G&&) {}
+    template <typename G, typename T>
+    constant_n(G&&, T&&) {}
 
-    template <typename G, typename S, typename T>
-    constant_n(G&&, const common::tagged_tuple<S,T>&) {}
-
-    template <typename G>
-    type operator()(G&&) {
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
         return (type)num / (type)den;
     }
 };
@@ -240,14 +223,11 @@ template <typename R, typename val_tag>
 struct constant_i {
     using type = R;
 
-    template <typename G>
-    constant_i(G&&) : val() {}
-
     template <typename G, typename S, typename T>
     constant_i(G&&, common::tagged_tuple<S,T> const& t) : val(common::get_or<val_tag>(t, type())) {}
 
-    template <typename G>
-    type operator()(G&&) {
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
         return val;
     }
 
@@ -255,6 +235,62 @@ struct constant_i {
     type val;
 };
 //! @}
+
+
+//! @brief Variable distribution, varying the distribution parameters at every call.
+//! @{
+/**
+ * @brief With value as distribution.
+ * @param D The value (as distribution).
+ */
+template <typename D>
+struct variable {
+    using type = typename D::type;
+
+    template <typename G, typename T>
+    variable(G&&, T&&) {}
+
+    template <typename G, typename S, typename T>
+    type operator()(G&& g, common::tagged_tuple<S,T> const& t) {
+        return details::call_distr<D>(g, t);
+    }
+};
+/**
+ * @brief With value at initialisation.
+ * @param R The result type.
+ * @param val_tag The tag corresponding to the value in initialisation values.
+ */
+template <typename R, typename val_tag>
+using variable_i = variable<constant_i<R, val_tag>>;
+//! @}
+
+
+/**
+ * @brief Standard real distribution.
+ * @param std_dist The standard distribution in <random>.
+ * @param mean     The mean of the distribution (as distribution).
+ * @param dev      The standard deviation of the distribution (as distribution).
+ * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ */
+template <template<class> class std_dist, typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
+class standard {
+    static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
+
+  public:
+    using type = typename mean::type;
+
+    template <typename G, typename S, typename T>
+    standard(G&& g, common::tagged_tuple<S,T> const& t) : m_d(make<std_dist>((type)common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), (type)common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
+
+    template <typename G, typename T>
+    type operator()(G&& g, T&&) {
+        return m_d(g);
+    }
+
+  private:
+    std_dist<type> m_d;
+};
 
 
 //! @brief Uniform real distribution.
@@ -267,26 +303,7 @@ struct constant_i {
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
-class uniform {
-    static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
-
-  public:
-    using type = typename mean::type;
-
-    template <typename G>
-    uniform(G&& g) : m_d(make<std::uniform_real_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
-
-    template <typename G, typename S, typename T>
-    uniform(G&& g, common::tagged_tuple<S,T> const& t) : m_d(make<std::uniform_real_distribution>((type)common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), (type)common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
-
-    template <typename G>
-    type operator()(G&& g) {
-        return m_d(g);
-    }
-
-  private:
-    std::uniform_real_distribution<type> m_d;
-};
+using uniform = standard<std::uniform_real_distribution, mean, dev, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as numeric template parameters.
  * @param T        The type returned by the distribution.
@@ -325,14 +342,11 @@ class interval {
   public:
     using type = typename min::type;
 
-    template <typename G>
-    interval(G&& g) : m_d{details::call_distr<min>(g), details::call_distr<max>(g)} {}
-
     template <typename G, typename S, typename T>
     interval(G&& g, common::tagged_tuple<S,T> const& t) : m_d{common::get_or<min_tag>(t,details::call_distr<min>(g, t)), common::get_or<max_tag>(t,details::call_distr<max>(g, t))} {}
 
-    template <typename G>
-    type operator()(G&& g) {
+    template <typename G, typename T>
+    type operator()(G&& g, T&&) {
         return m_d(g);
     }
 
@@ -371,27 +385,7 @@ using interval_i = interval<constant_n<T, 0>, constant_n<T, 0>, min_tag, max_tag
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
-class normal {
-    static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
-
-  public:
-    using type = typename mean::type;
-
-  public:
-    template <typename G>
-    normal(G&& g) : m_d(details::call_distr<mean>(g), details::call_distr<dev>(g)) {}
-
-    template <typename G, typename S, typename T>
-    normal(G&& g, common::tagged_tuple<S,T> const& t) : m_d(common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), common::get_or<dev_tag>(t,details::call_distr<dev>(g, t))) {}
-
-    template <typename G>
-    type operator()(G&& g) {
-        return m_d(g);
-    }
-
-  private:
-    std::normal_distribution<type> m_d;
-};
+using normal = standard<std::normal_distribution, mean, dev, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as numeric template parameters.
  * @param T        The type returned by the distribution.
@@ -426,14 +420,11 @@ class exponential {
   public:
     using type = typename mean::type;
 
-    template <typename G>
-    exponential(G&& g) : m_d(1/details::call_distr<mean>(g)) {}
-
     template <typename G, typename S, typename T>
     exponential(G&& g, common::tagged_tuple<S,T> const& t) : m_d(1/common::get_or<mean_tag>(t, details::call_distr<mean>(g, t))) {}
 
-    template <typename G>
-    type operator()(G&& g) {
+    template <typename G, typename T>
+    type operator()(G&& g, T&&) {
         return m_d(g);
     }
 
@@ -469,26 +460,7 @@ using exponential_i = exponential<constant_n<T, 0>, mean_tag>;
  * @param dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
-class weibull {
-    static_assert(std::is_same<typename mean::type, typename dev::type>::value, "mean and deviation of different type");
-
-  public:
-    using type = typename mean::type;
-
-    template <typename G>
-    weibull(G&& g) : m_d(make<std::weibull_distribution>(details::call_distr<mean>(g), details::call_distr<dev>(g))) {}
-
-    template <typename G, typename S, typename T>
-    weibull(G&& g, common::tagged_tuple<S,T> const& t) : m_d(make<std::weibull_distribution>((type)common::get_or<mean_tag>(t,details::call_distr<mean>(g, t)), (type)common::get_or<dev_tag>(t,details::call_distr<dev>(g, t)))) {}
-
-    template <typename G>
-    type operator()(G&& g) {
-        return m_d(g);
-    }
-
-  private:
-    std::weibull_distribution<type> m_d;
-};
+using weibull = standard<std::weibull_distribution, mean, dev, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as numeric template parameters.
  * @param T        The type returned by the distribution.
@@ -524,10 +496,10 @@ struct positive : public D {
 
     using D::D;
 
-    template <typename G>
-    type operator()(G&& g) {
-        type t = D::operator()(g);
-        return (t >= 0) ? t : operator()(g);
+    template <typename G, typename S, typename T>
+    type operator()(G&& g, common::tagged_tuple<S,T> const& t) {
+        type x = D::operator()(g, t);
+        return (x >= 0) ? x : operator()(g, t);
     }
 };
 
@@ -546,21 +518,18 @@ class point {
   public:
     using type = vec<sizeof...(Ds)>;
 
-    template <typename G>
-    point(G&& g) : m_distributions{Ds{g}...} {}
-
     template <typename G, typename S, typename T>
     point(G&& g, common::tagged_tuple<S,T> const& t) : m_distributions{Ds{g,t}...} {}
 
-    template <typename G>
-    type operator()(G&& g) {
-        return call_impl(g, std::make_index_sequence<sizeof...(Ds)>{});
+    template <typename G, typename S, typename T>
+    type operator()(G&& g, common::tagged_tuple<S,T> const& t) {
+        return call_impl(g, t, std::make_index_sequence<sizeof...(Ds)>{});
     }
 
   private:
-    template <typename G, size_t... i>
-    type call_impl(G&& g, std::index_sequence<i...>) {
-        return {std::get<i>(m_distributions)(g)...};
+    template <typename G, typename S, typename T, size_t... i>
+    type call_impl(G&& g, common::tagged_tuple<S,T> const& t, std::index_sequence<i...>) {
+        return {std::get<i>(m_distributions)(g, t)...};
     }
 
     std::tuple<Ds...> m_distributions;

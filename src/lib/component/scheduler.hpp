@@ -87,7 +87,7 @@ struct scheduler {
             void update() {
                 if (m_schedule.next() < P::node::next()) {
                     times_t t = P::node::as_final().next();
-                    m_schedule.step(get_generator(has_randomizer<P>{}, *this));
+                    m_schedule.step(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                     P::node::round(t);
                 } else P::node::update();
             }

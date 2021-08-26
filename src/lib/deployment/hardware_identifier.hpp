@@ -66,9 +66,11 @@ struct hardware_identifier {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(identifier);
         DECLARE_COMPONENT(spawner);
         AVOID_COMPONENT(identifier,timer);
+        //! @endcond
 
         //! @brief The local part of the component.
         using node = typename P::node;

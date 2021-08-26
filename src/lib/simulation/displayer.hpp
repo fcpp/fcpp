@@ -1091,14 +1091,15 @@ struct displayer {
     };
 };
 #else
-/**
- * @brief Inert version of the displayer component.
- */
+//! @brief Inert version of the displayer component.
 template <class... Ts>
 struct displayer {
+    //! @brief The actual component.
     template <typename F, typename P>
     struct component : public P {
+        //! @brief The local part of the component.
         using node = typename P::node;
+        //! @brief The global part of the component.
         using net = typename P::net;
     };
 };

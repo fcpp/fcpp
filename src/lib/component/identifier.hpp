@@ -163,8 +163,10 @@ struct identifier {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(identifier);
         AVOID_COMPONENT(identifier,timer);
+        //! @endcond
 
         //! @brief The local part of the component.
         using node = typename P::node;

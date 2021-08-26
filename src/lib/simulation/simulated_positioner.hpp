@@ -90,7 +90,9 @@ struct simulated_positioner {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         DECLARE_COMPONENT(positioner);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -101,7 +103,9 @@ struct simulated_positioner {
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<positioner_tag, position_type>;
 
+            //! @cond INTERNAL
             #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::x node initialisation tag\033[0m"
+            //! @endcond
 
             //! @{
             /**

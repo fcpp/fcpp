@@ -31,6 +31,7 @@ namespace fcpp {
  * (always evaluating both arguments).
  */
 //! @{
+
 //! @brief local guard, arguments of same type
 template <typename A>
 A const& mux(bool b, A const& x, A const& y) {
@@ -53,6 +54,7 @@ to_field<A> mux(field<bool> b, A const& x, B const& y) {
         return b ? x : y;
     }, b, x, y);
 }
+
 //! @}
 
 
@@ -157,23 +159,28 @@ inline field<real_t> sqrt(field<real_t> const& f) {
 //! @brief Power.
 using std::pow;
 
-//! @brief Pointwise power.
+//! @name Pointwise power.
 //! @{
+
+//! @brief field arguments
 inline field<real_t> pow(field<real_t> const& base, field<real_t> const& exponent) {
     return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
+//! @brief real base, field exponent
 inline field<real_t> pow(real_t base, field<real_t> const& exponent) {
     return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
+//! @brief field base, real exponent
 inline field<real_t> pow(field<real_t> const& base, real_t exponent) {
     return map_hood([](real_t x, real_t y){
         return std::pow(x, y);
     }, base, exponent);
 }
+
 //! @}
 
 //! @brief Check for infinite values.
@@ -332,7 +339,7 @@ namespace tags {
 //! @brief Object indicating a missing argument.
 constexpr tags::nothing nothing{};
 
-//! @brief Reduces a field to a container of its constituent values skipping self in device order.
+//! @brief Reduces a field to a container of its constituent values skipping self in device order (void version).
 template <typename node_t, typename C, typename A>
 void list_hood(node_t& node, trace_t call_point, C& c, A const& a, tags::nothing) {
     fold_hood(node, call_point, [&] (to_local<A> const& x, char) -> char {
@@ -340,13 +347,14 @@ void list_hood(node_t& node, trace_t call_point, C& c, A const& a, tags::nothing
         return {};
     }, a, char{});
 }
+//! @brief Reduces a field to a container of its constituent values skipping self in device order (returning version).
 template <typename node_t, typename C, typename A>
 inline C list_hood(node_t& node, trace_t call_point, C&& c, A const& a, tags::nothing) {
     list_hood(node, call_point, c, a, nothing);
     return std::move(c);
 }
 
-//! @brief Reduces a field to a container of its constituent values with a default value for self in device order.
+//! @brief Reduces a field to a container of its constituent values with a default value for self in device order (void version).
 template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
 void list_hood(node_t& node, trace_t call_point, C& c, A const& a, B const& b) {
     bool done = false;
@@ -360,17 +368,19 @@ void list_hood(node_t& node, trace_t call_point, C& c, A const& a, B const& b) {
     }, a, char{});
     if (not done) common::uniform_insert(c, self(node, call_point, b));
 }
+//! @brief Reduces a field to a container of its constituent values with a default value for self in device order (returning version).
 template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
 inline C list_hood(node_t& node, trace_t call_point, C&& c, A const& a, B const& b) {
     list_hood(node, call_point, c, a, b);
     return std::move(c);
 }
 
-//! @brief Reduces a field to a container of its constituent values in device order.
+//! @brief Reduces a field to a container of its constituent values in device order (void version).
 template <typename node_t, typename C, typename A>
 inline void list_hood(node_t& node, trace_t call_point, C& c, A const& a) {
     list_hood(node, call_point, c, a, a);
 }
+//! @brief Reduces a field to a container of its constituent values in device order (returning version).
 template <typename node_t, typename C, typename A>
 inline C list_hood(node_t& node, trace_t call_point, C&& c, A const& a) {
     list_hood(node, call_point, c, a);

@@ -160,10 +160,17 @@ struct graph_spawner {
 
                 while (read_row(*m_nodesstream, row, typename attributes_tuple_type::tags{})) {
                     auto trow = push_time(row, typename attributes_tuple_type::tags::template intersect<tags::start>());
-                    P::net::node_emplace(trow);
+                    using tag_type = typename init_tuple_type::tags;
+                    using dist_type = std::decay_t<decltype(m_distributions)>;
+                    using res_type = std::decay_t<decltype(std::declval<dist_type>()(crand{}, common::tagged_tuple_t<>{}))>;
+                    using full_type = common::tagged_tuple_cat<attributes_tuple_type, res_type>;
+                    full_type tt;
+                    tt = trow;
+                    call_distribution(m_distributions, get_generator(has_randomizer<P>{}, *this), tt, tag_type{});
+
+                    P::net::node_emplace(tt);
                 }
             }
-
 
             inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<>) {
                 return true;
@@ -176,6 +183,17 @@ struct graph_spawner {
                     return false;
                 }
                 return read_row(is, row, common::type_sequence<Ss...>{});
+            }
+
+            //! @brief Calls a distribution, updating the tuple of results (empty case).
+            template <typename D, typename G, typename T>
+            inline void call_distribution(D&, G&&, T&, common::type_sequence<>) {}
+
+            //! @brief Calls a distribution, updating the tuple of results (general case).
+            template <typename D, typename G, typename T, typename S, typename... Ss>
+            inline void call_distribution(D& d, G&& g, T& t, common::type_sequence<S, Ss...>) {
+                common::get<S>(t) = common::get<S>(d)(g, t);
+                call_distribution(d, g, t, common::type_sequence<Ss...>{});
             }
 
             inline void read_arcs() {

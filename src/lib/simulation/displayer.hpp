@@ -228,6 +228,7 @@ class info_window {
             }
             else std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        glfwMakeContextCurrent(NULL);
     }
 
     //! @brief Updates the node info and draws it into the window.

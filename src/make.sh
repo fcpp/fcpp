@@ -391,8 +391,9 @@ while [ "$1" != "" ]; do
             sum=0
             while true; do
                 if [ "$platform" == "MinGW" ]; then
-                    tim=`ps -f -p $pid | sed -E 's|^[^:]* ([0-9]*:[^ ]*).*$|\1|' | tail -n +2 | tr -d ' \t\n'`
-                    m=`wmic process where processid=$pid get WorkingSetSize | tail -n +2 | tr -d ' \t\n'`
+                    tim=`ps -f -p $pid | sed -E 's|^[^:]* ([0-9]*:[^ ]*).*$|\1|' | tail -n +2 | tr -d ' \t\n\r'`
+                    m=`wmic process where processid=$pid get WorkingSetSize | tail -n +2 | tr -d ' \t\n\r'`
+                    m=$[m/1024]
                 else
                     tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
                     m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`

@@ -390,8 +390,13 @@ while [ "$1" != "" ]; do
             max=0
             sum=0
             while true; do
-                tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
-                m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
+                if [ "$platform" == "MinGW" ]; then
+                    tim=`ps -f -p $pid | sed -E 's|^[^:]* ([0-9]*:[^ ]*).*$|\1|' | tail -n +2 | tr -d ' \t\n'`
+                    m=`wmic process where processid=$pid get WorkingSetSize | tail -n +2 | tr -d ' \t\n'`
+                else
+                    tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
+                    m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
+                fi
                 if [ "$m" == "" ]; then break; else mem=$m; fi
                 num=$[num+1]
                 sum=$[sum+mem]

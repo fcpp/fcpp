@@ -48,8 +48,14 @@ namespace fcpp {
             //! @brief Renderer constructor, with GLFW and OpenGL initializations.
             renderer(size_t antialias, std::string name, bool master = true, GLFWwindow* masterPtr = NULL);
 
+            //! @brief Move constructor.
+            renderer(renderer&& source) = delete;
+
             //! @brief Renderer destructor closing the window.
             ~renderer();
+
+            //! @brief Move assignment.
+            renderer& operator=(renderer&& source) = delete;
 
             //! @brief It initializes the context on the current thread.
             void initializeContext(bool master = true);

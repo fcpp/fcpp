@@ -247,6 +247,8 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 
 /* --- DESTRUCTOR --- */
 renderer::~renderer() {
+    if (m_window == NULL) return;
+
     // Destroy window and all associated resources (to do on main thread).
     glfwDestroyWindow(m_window);
 

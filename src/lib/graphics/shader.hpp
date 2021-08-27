@@ -28,13 +28,13 @@ public:
     shader(const char* vertexPath, const char* fragmentPath);
 
     //! @brief Copy constructor.
-    shader(shader const& source);
+    shader(shader const&) = delete;
 
     //! @brief Move constructor.
     shader(shader&& source);
 
     //! @brief Copy assignment.
-    shader& operator=(shader const& source);
+    shader& operator=(shader const&) = delete;
 
     //! @brief Move assignment.
     shader& operator=(shader&& source);

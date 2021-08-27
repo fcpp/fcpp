@@ -632,7 +632,7 @@ void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
         glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glDrawArrays(GL_LINES, 0, 6);
+        glDrawArrays(GL_LINES, 0, 2);
     }
 }
 

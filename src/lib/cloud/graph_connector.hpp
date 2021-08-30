@@ -87,6 +87,8 @@ struct graph_connector {
     //! @brief Delay generator for sending messages after rounds.
     using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
 
+    using connection_data_type = common::tagged_tuple_t<>;
+
     /**
      * @brief The actual component.
      *
@@ -135,6 +137,16 @@ struct graph_connector {
 
             bool connected(device_t i) const {
                 return m_neighbours.first().count(i);
+            }
+
+            //! @brief Connector data.
+            connection_data_type& connector_data() {
+                return m_data;
+            }
+
+            //! @brief Connector data (const access).
+            connection_data_type const& connector_data() const {
+                return m_data;
             }
 
             //! @brief Returns the time of the next sending of messages.
@@ -250,6 +262,9 @@ struct graph_connector {
 
             //! @brief Sizes of messages received from neighbours.
             common::option<field<size_t>, message_size> m_nbr_msg_size;
+
+            //! @brief Data regulating the connection.
+            connection_data_type m_data;
         };
 
         //! @brief The global part of the component.

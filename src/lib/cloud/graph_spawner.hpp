@@ -159,16 +159,17 @@ struct graph_spawner {
                 attributes_tuple_type row;
 
                 while (read_row(*m_nodesstream, row, typename attributes_tuple_type::tags{})) {
-                    auto trow = push_time(row, typename attributes_tuple_type::tags::template intersect<tags::start>());
+                    //                    auto trow = push_time(row, typename attributes_tuple_type::tags::template intersect<tags::start>());
                     using tag_type = typename init_tuple_type::tags;
                     using dist_type = std::decay_t<decltype(m_distributions)>;
                     using res_type = std::decay_t<decltype(std::declval<dist_type>()(crand{}, common::tagged_tuple_t<>{}))>;
                     using full_type = common::tagged_tuple_cat<attributes_tuple_type, res_type>;
                     full_type tt;
-                    tt = trow;
+                    tt = row;
                     call_distribution(m_distributions, get_generator(has_randomizer<P>{}, *this), tt, tag_type{});
-
-                    P::net::node_emplace(tt);
+                    auto ttt = push_time(tt, typename attributes_tuple_type::tags::template intersect<tags::start>());
+                    device_t n = P::net::node_emplace(ttt);
+                    assert(P::net::node_at(n).next() == 0);
                 }
             }
 

@@ -44,7 +44,7 @@ DECLARE_COMBINE(batch_graph_simulator, calculus, graph_connector, timer, schedul
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(interactive_graph_simulator, displayer, calculus, simulated_positioner, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
+    DECLARE_COMBINE(interactive_graph_simulator, displayer, calculus, graph_connector, simulated_positioner, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
 
 }
 

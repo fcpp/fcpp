@@ -121,8 +121,12 @@ struct graph_connector {
                 m_send = TIME_MAX;
             }
 
-            //! @brief Destructor leaving the corresponding cell.
+            //! @brief Destructor
             ~node() {
+                while (!m_neighbours.first().empty()) {
+                    auto p = m_neighbours.first().begin();
+                    disconnect(p->first);
+                }
             }
 
             void connect(typename F::node *n) {

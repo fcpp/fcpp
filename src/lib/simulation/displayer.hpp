@@ -52,7 +52,7 @@ namespace tags {
     struct shape_tag {};
 
     //! @brief Declaration tag associating to the base shape of nodes.
-    template <size_t n>
+    template <intmax_t n>
     struct shape_val {};
 
     //! @brief Declaration tag associating to a storage tag regulating the size of nodes.
@@ -60,7 +60,7 @@ namespace tags {
     struct size_tag {};
 
     //! @brief Declaration tag associating to the base size of nodes.
-    template <size_t num, size_t den = 1>
+    template <intmax_t num, intmax_t den = 1>
     struct size_val {};
 
     //! @brief Declaration tag associating to storage tags regulating the colors of nodes.
@@ -68,11 +68,11 @@ namespace tags {
     struct color_tag {};
 
     //! @brief Declaration tag associating to the base colors of nodes.
-    template <size_t... cs>
+    template <intmax_t... cs>
     struct color_val {};
 
     //! @brief Declaration tag associating to the antialiasing factor.
-    template <size_t n>
+    template <intmax_t n>
     struct antialias {};
 
     //! @brief Declaration flag associating to whether parallelism is enabled.
@@ -381,13 +381,13 @@ struct displayer {
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
     //! @brief Antialiasing factor.
-    constexpr static size_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;
+    constexpr static intmax_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;
 
     //! @brief Storage tag regulating the shape of nodes.
     using shape_tag = common::option_type<tags::shape_tag, void, Ts...>;
 
     //! @brief Base shape of nodes (defaults to cube).
-    constexpr static shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<size_t>(shape::cube), Ts...>);
+    constexpr static shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<intmax_t>(shape::cube), Ts...>);
 
     //! @brief Storage tag regulating the size of nodes.
     using size_tag = common::option_type<tags::size_tag, void, Ts...>;
@@ -520,13 +520,13 @@ struct displayer {
             }
 
             //! @brief Pushes colors in an index sequence into a vector (base case).
-            void color_val_push(std::vector<color>&, common::index_sequence<>) const {}
+            void color_val_push(std::vector<color>&, common::number_sequence<>) const {}
 
             //! @brief Pushes colors in an index sequence into a vector (inductive case).
-            template <size_t i, size_t... is>
-            void color_val_push(std::vector<color>& c, common::index_sequence<i, is...>) const {
+            template <intmax_t i, intmax_t... is>
+            void color_val_push(std::vector<color>& c, common::number_sequence<i, is...>) const {
                 c.emplace_back(i);
-                color_val_push(c, common::index_sequence<is...>{});
+                color_val_push(c, common::number_sequence<is...>{});
             }
 
             //! @brief Pushes colors from storage tags into a vector (base case).

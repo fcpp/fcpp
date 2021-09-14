@@ -326,13 +326,13 @@ TEST(TraitsTest, Signature) {
 template <bool b>
 struct flagopt {};
 
-template <size_t i>
+template <intmax_t i>
 struct onenum {};
 
-template <size_t i, size_t j=1>
+template <intmax_t i, intmax_t j=1>
 struct twonum {};
 
-template <size_t... is>
+template <intmax_t... is>
 struct numopt {};
 
 template <typename T>
@@ -378,15 +378,15 @@ TEST(TraitsTest, Options) {
     f = common::option_float<twonum, 45, 10, int, hideseq, twonum<6>>;
     EXPECT_DOUBLE_EQ(f, 2.0);
     EXPECT_SAME(common::option_nums<numopt,void>,
-                common::index_sequence<>);
+                common::number_sequence<>);
     EXPECT_SAME(common::option_nums<numopt,void,numopt<2,3>,bool>,
-                common::index_sequence<2,3>);
+                common::number_sequence<2,3>);
     EXPECT_SAME(common::option_nums<numopt,void,numopt<2,3>,bool,numopt<>,numopt<4>>,
-                common::index_sequence<2,3,4>);
+                common::number_sequence<2,3,4>);
     EXPECT_SAME(common::option_nums<numopt,void,common::type_sequence<numopt<2,3>,bool,numopt<>>,numopt<4>>,
-                common::index_sequence<2,3,4>);
+                common::number_sequence<2,3,4>);
     EXPECT_SAME(common::option_nums<numopt,void,hideseq,numopt<>,numopt<4>>,
-                common::index_sequence<2,3,4>);
+                common::number_sequence<2,3,4>);
     EXPECT_SAME(common::option_type<onetype,std::string,void,char>,
                 std::string);
     EXPECT_SAME(common::option_type<onetype,std::string,void,char,onetype<int>,bool,onetype<void>>,

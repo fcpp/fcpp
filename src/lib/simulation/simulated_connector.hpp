@@ -45,7 +45,7 @@ namespace tags {
     struct delay {};
 
     //! @brief Declaration tag associating to the dimensionality of the space.
-    template <size_t n>
+    template <intmax_t n>
     struct dimension;
 
     //! @brief Declaration flag associating to whether message sizes should be emulated.
@@ -164,7 +164,7 @@ struct simulated_connector {
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
     //! @brief The dimensionality of the space.
-    constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
+    constexpr static intmax_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
     //! @brief Type for representing a position.
     using position_type = vec<dimension>;

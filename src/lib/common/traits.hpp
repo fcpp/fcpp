@@ -754,8 +754,10 @@ template <typename T>
 using type_unwrap = typename details::type_unwrap<T>::type;
 
 
-//! @brief Wraps a sequence of `size_t` values.
-using std::index_sequence;
+//! @brief Wraps a sequence of `intmax_t` values.
+template <intmax_t... xs>
+struct number_sequence {};
+
 
 //! @cond INTERNAL
 namespace details {
@@ -798,67 +800,67 @@ namespace details {
     struct option_flag<T,d,S,Ss...> : public option_flag<T,d,type_sequence_decay<S>,Ss...> {};
 
     // Extracts a numeric option (no arguments).
-    template <template<size_t> class T, size_t d, typename... Ss>
-    struct option_num : public std::integral_constant<size_t, d> {};
+    template <template<intmax_t> class T, intmax_t d, typename... Ss>
+    struct option_num : public std::integral_constant<intmax_t, d> {};
 
     // Extracts a numeric option (option in first place).
-    template <template<size_t> class T, size_t d, size_t i, typename... Ss>
-    struct option_num<T,d,T<i>,Ss...> : public std::integral_constant<size_t, i> {};
+    template <template<intmax_t> class T, intmax_t d, intmax_t i, typename... Ss>
+    struct option_num<T,d,T<i>,Ss...> : public std::integral_constant<intmax_t, i> {};
 
     // Extracts a numeric option (type sequence in first place).
-    template <template<size_t> class T, size_t d, typename... Ts, typename... Ss>
+    template <template<intmax_t> class T, intmax_t d, typename... Ts, typename... Ss>
     struct option_num<T,d,type_sequence<Ts...>,Ss...> : public option_num<T,d,Ts...,Ss...> {};
 
     // Extracts a numeric option (something else in first place).
-    template <template<size_t> class T, size_t d, typename S, typename... Ss>
+    template <template<intmax_t> class T, intmax_t d, typename S, typename... Ss>
     struct option_num<T,d,S,Ss...> : public option_num<T,d,type_sequence_decay<S>,Ss...> {};
 
     // Prepends indexes to an index sequence (general form).
-    template <typename T, size_t... is>
+    template <typename T, intmax_t... is>
     struct nums_prepend;
 
     // Prepends indexes to an index sequence (active form).
-    template <size_t... js, size_t... is>
-    struct nums_prepend<index_sequence<js...>, is...> {
-        using type = index_sequence<is..., js...>;
+    template <intmax_t... js, intmax_t... is>
+    struct nums_prepend<number_sequence<js...>, is...> {
+        using type = number_sequence<is..., js...>;
     };
 
     // Extracts a multinumeric option (no arguments).
-    template <template<size_t...> class T, typename... Ss>
+    template <template<intmax_t...> class T, typename... Ss>
     struct option_nums {
-        using type = index_sequence<>;
+        using type = number_sequence<>;
     };
 
     // Extracts a multinumeric option (option in first place).
-    template <template<size_t...> class T, size_t... is, typename... Ss>
+    template <template<intmax_t...> class T, intmax_t... is, typename... Ss>
     struct option_nums<T, T<is...>, Ss...> : public nums_prepend<typename option_nums<T, Ss...>::type, is...> {};
 
     // Extracts a multinumeric option (type sequence in first place).
-    template <template<size_t...> class T, typename... Ts, typename... Ss>
+    template <template<intmax_t...> class T, typename... Ts, typename... Ss>
     struct option_nums<T, type_sequence<Ts...>, Ss...> : public option_nums<T, Ts..., Ss...> {};
 
     // Extracts a multinumeric option (something else in first place).
-    template <template<size_t...> class T, typename S, typename... Ss>
+    template <template<intmax_t...> class T, typename S, typename... Ss>
     struct option_nums<T, S, Ss...> : public option_nums<T, type_sequence_decay<S>, Ss...> {};
 
     // Extracts a floating-point numeric option (no arguments).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ss>
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename... Ss>
     struct option_float {
         static constexpr double value = dnum / (double)dden;
     };
 
     // Extracts a floating-point numeric option (option in first place).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, size_t i, size_t j, typename... Ss>
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, intmax_t i, intmax_t j, typename... Ss>
     struct option_float<T,dnum,dden,T<i,j>,Ss...> {
         static constexpr double value = i / (double)j;
     };
 
     // Extracts a floating-point numeric option (type sequence in first place).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ts, typename... Ss>
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename... Ts, typename... Ss>
     struct option_float<T,dnum,dden,type_sequence<Ts...>,Ss...> : public option_float<T,dnum,dden,Ts...,Ss...> {};
 
     // Extracts a floating-point numeric option (something else in first place).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename S, typename... Ss>
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename S, typename... Ss>
     struct option_float<T,dnum,dden,S,Ss...> : public option_float<T,dnum,dden,type_sequence_decay<S>,Ss...> {};
 
     // Extracts a type option (no arguments).
@@ -952,8 +954,8 @@ constexpr bool option_flag = details::option_flag<T,d,Ss...>::value;
  * @param d Default value if the option is missing.
  * @param Ss Sequence of options.
  */
-template <template<size_t> class T, size_t d, typename... Ss>
-constexpr size_t option_num = details::option_num<T,d,Ss...>::value;
+template <template<intmax_t> class T, intmax_t d, typename... Ss>
+constexpr intmax_t option_num = details::option_num<T,d,Ss...>::value;
 
 /**
  * @brief Extracts a numeric or multi-numeric option from a sequence of options as an index sequence.
@@ -961,7 +963,7 @@ constexpr size_t option_num = details::option_num<T,d,Ss...>::value;
  * @param T Multi-numeric option name.
  * @param Ss Sequence of options.
  */
-template <template<size_t...> class T, typename... Ss>
+template <template<intmax_t...> class T, typename... Ss>
 using option_nums = typename details::option_nums<T, Ss...>::type;
 
 /**
@@ -972,7 +974,7 @@ using option_nums = typename details::option_nums<T, Ss...>::type;
  * @param dden Default denumerator of the value if the option is missing.
  * @param Ss Sequence of options.
  */
-template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ss>
+template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename... Ss>
 constexpr double option_float = details::option_float<T,dnum,dden,Ss...>::value;
 
 /**

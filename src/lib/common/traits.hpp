@@ -339,7 +339,7 @@ struct type_sequence<T, Ts...> {
 //! @brief Empty form, cannot extract elements and subsequences.
 template <>
 struct type_sequence<> {
-    template <int start, int end, int stride = 1>
+    template <int start, int end = -1, int stride = 1>
     using slice = type_sequence<>;
 
     template <typename... Ss>
@@ -886,7 +886,7 @@ struct number_sequence<x, xs...> {
 //! @brief Empty form, cannot extract elements and subsequences.
 template <>
 struct number_sequence<> {
-    template <int start, int end, int stride = 1>
+    template <int start, int end = -1, int stride = 1>
     using slice = number_sequence<>;
 
     template <intmax_t... ys>

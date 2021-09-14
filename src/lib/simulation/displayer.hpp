@@ -71,6 +71,10 @@ namespace tags {
     template <intmax_t... cs>
     struct color_val {};
 
+    //! @brief Declaration tag associating to the bounding coordinates of the grid area.
+    template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax>
+    struct area;
+
     //! @brief Declaration tag associating to the antialiasing factor.
     template <intmax_t n>
     struct antialias {};
@@ -78,6 +82,12 @@ namespace tags {
     //! @brief Declaration flag associating to whether parallelism is enabled.
     template <bool b>
     struct parallel;
+
+    //! @brief Net initialisation tag associating to the minimum coordinates of the grid area.
+    struct area_min {};
+
+    //! @brief Net initialisation tag associating to the maximum coordinates of the grid area.
+    struct area_max {};
 
     //! @brief Net initialisation tag associating to the main name of a component composition instance.
     struct name;
@@ -351,6 +361,27 @@ class info_window {
 };
 
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief Converts a number sequence to a vec (general form).
+    template <typename T>
+    struct numseq_to_vec;
+    //! @brief Converts a number sequence to a vec (active form).
+    template <intmax_t... xs>
+    struct numseq_to_vec<common::number_sequence<xs...>> {
+        constexpr static auto value = make_vec(xs...);
+    };
+    //! @brief Converts a vec to a glm 3D vector, filling missing coordinates with x.
+    template <size_t n>
+    inline glm::vec3 vec_to_glm(vec<n> v, float x) {
+        glm::vec3 w(x, x, x);
+        for (size_t i=0; i<n; ++i) w[i] = v[i];
+        return w;
+    }
+}
+//! @endcond
+
+
 /**
  * @brief Component representing the simulation status graphically.
  *
@@ -363,12 +394,15 @@ class info_window {
  * - \ref tags::size_val defines the base size of nodes (defaults to 1).
  * - \ref tags::color_tag defines storage tags regulating the colors of nodes (defaults to none).
  * - \ref tags::color_val defines the base colors of nodes (defaults to none).
- * - \ref tags::antialias defines the the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
+ * - \ref tags::area defines the bounding coordinates of the grid area (defaults to the minimal area covering initial nodes).
+ * - \ref tags::antialias defines the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  *
  * <b>Net initialisation tags:</b>
+ * - \ref tags::area_min associates to the the minimum coordinates of the grid area (defaults to the value in \ref tags::area).
+ * - \ref tags::area_max associates to the the maximum coordinates of the grid area (defaults to the value in \ref tags::area).
  * - \ref tags::refresh_rate associates to the refresh rate (0 for opportunistic frame refreshing, defaults to \ref FCPP_REFRESH_RATE).
  * - \ref tags::texture associates to the texture to be used for the reference plane (defaults to none).
  * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).
@@ -379,6 +413,17 @@ template <class... Ts>
 struct displayer {
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Bounding coordinates of the grid area.
+    using area = common::option_nums<tags::area, Ts...>;
+
+    static_assert(area::size == 4 or area::size == 0, "the bounding coordinates must be 4 integers");
+
+    //! @brief Vector of minimum coordinate of the grid area.
+    constexpr static auto area_min = details::numseq_to_vec<typename area::template slice<0, area::size/2>>::value;
+
+    //! @brief Vector of maximum coordinate of the grid area.
+    constexpr static auto area_max = details::numseq_to_vec<typename area::template slice<area::size/2>>::value;
 
     //! @brief Antialiasing factor.
     constexpr static intmax_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;
@@ -574,8 +619,8 @@ struct displayer {
                 m_threads( common::get_or<tags::threads>(t, FCPP_THREADS) ),
                 m_refresh{ 0 },
                 m_step( common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) ),
-                m_viewport_max{ -INF, -INF, -INF },
-                m_viewport_min{ +INF, +INF, +INF },
+                m_viewport_max{ details::vec_to_glm(common::get_or<tags::area_max>(t, area_max), -INF) },
+                m_viewport_min{ details::vec_to_glm(common::get_or<tags::area_min>(t, area_min), +INF) },
                 m_rayCast{ 0.0, 0.0, 0.0 },
                 m_renderer{antialias, common::get_or<tags::name>(t, "FCPP")},
                 m_mouseLastX{ 0.0f },
@@ -617,9 +662,11 @@ struct displayer {
                     if (not m_legenda) {
                         PROFILE_COUNT("displayer/nodes");
                         if (rt == 0) {
-                            common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
-                                viewport_update(n_beg[i].second.cache_position(t));
-                            });
+                            if (area_min.dimension == 0)
+                                common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                                    viewport_update(n_beg[i].second.cache_position(t));
+                                });
+                            else m_viewport_min[2] = m_viewport_max[2] = 0;
                         } else {
                             if (m_pointer) highlightHoveredNode();
                             common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {

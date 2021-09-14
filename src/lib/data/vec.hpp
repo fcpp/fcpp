@@ -265,7 +265,7 @@ bool operator>=(vec<n> const& x, real_t b) {
 
 //! @brief Creates a vector from its arguments.
 template <typename... Ts>
-vec<sizeof...(Ts)> make_vec(Ts... xs) {
+constexpr vec<sizeof...(Ts)> make_vec(Ts... xs) {
     return {real_t(xs)...};
 }
 

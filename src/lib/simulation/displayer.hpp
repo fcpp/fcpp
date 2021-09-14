@@ -427,7 +427,10 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {
+                m_colors.resize(std::max(size_t(1), color_val::size + color_tag::size));
+                color_val_put(m_colors, common::number_sequence<0>{}, color_val{});
+            }
 
             //! @brief Caches the current position for later use.
             glm::vec3 const& cache_position(times_t t) {
@@ -465,11 +468,9 @@ struct displayer {
                 P::node::round_end(t);
                 PROFILE_COUNT("displayer");
                 // update color list
-                m_colors.clear();
-                color_val_push(m_colors, color_val{});
-                color_tag_push(m_colors, color_tag{});
-                if (m_colors.empty()) m_colors.emplace_back(0.0f, 0.0f, 0.0f, 1.0f); // black if nothing else
-                if (m_highlight) for (color& c : m_colors) for (size_t i=0; i<3; ++i) c.rgba[i] = (c.rgba[i]+1)/2;
+                color_tag_put(m_colors, common::number_sequence<color_val::size>{}, color_tag{});
+                if (m_highlight) for (size_t j=color_val::size; j<color_val::size+color_tag::size; ++j)
+                    for (size_t i=0; i<3; ++i) m_colors[j].rgba[i] = (m_colors[j].rgba[i]+1)/2;
                 // update neighbours list
                 std::sort(m_nbr_uids.begin(), m_nbr_uids.end());
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
@@ -519,24 +520,26 @@ struct displayer {
                 return { p[0], p[1], 0 };
             }
 
-            //! @brief Pushes colors in an index sequence into a vector (base case).
-            void color_val_push(std::vector<color>&, common::number_sequence<>) const {}
+            //! @brief Pushes colors in a number sequence into a vector (base case).
+            template <intmax_t i>
+            inline void color_val_put(std::vector<color>&, common::number_sequence<i>, common::number_sequence<>) const {}
 
-            //! @brief Pushes colors in an index sequence into a vector (inductive case).
-            template <intmax_t i, intmax_t... is>
-            void color_val_push(std::vector<color>& c, common::number_sequence<i, is...>) const {
-                c.emplace_back(i);
-                color_val_push(c, common::number_sequence<is...>{});
+            //! @brief Pushes colors in a number sequence into a vector (inductive case).
+            template <intmax_t i, intmax_t x, intmax_t... xs>
+            inline void color_val_put(std::vector<color>& c, common::number_sequence<i>, common::number_sequence<x, xs...>) const {
+                c[i] = color(x);
+                color_val_put(c, common::number_sequence<i+1>{}, common::number_sequence<xs...>{});
             }
 
             //! @brief Pushes colors from storage tags into a vector (base case).
-            void color_tag_push(std::vector<color>&, common::type_sequence<>) const {}
+            template <intmax_t i>
+            inline void color_tag_put(std::vector<color>&, common::number_sequence<i>, common::type_sequence<>) const {}
 
             //! @brief Pushes colors from storage tags into a vector (inductive case).
-            template <typename S, typename... Ss>
-            void color_tag_push(std::vector<color>& c, common::type_sequence<S, Ss...>) const {
-                c.emplace_back(P::node::storage(S{}));
-                color_tag_push(c, common::type_sequence<Ss...>{});
+            template <intmax_t i, typename S, typename... Ss>
+            inline void color_tag_put(std::vector<color>& c, common::number_sequence<i>, common::type_sequence<S, Ss...>) const {
+                c[i] = P::node::storage(S{});
+                color_tag_put(c, common::number_sequence<i+1>{}, common::type_sequence<Ss...>{});
             }
 
             //! @brief Whether the node is highlighted.

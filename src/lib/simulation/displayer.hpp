@@ -335,7 +335,7 @@ class info_window {
     bool m_running = true;
 
     //! @brief Whether the contents of the window have been modified.
-    bool m_modified = true;
+    bool m_modified = false;
 
     //! @brief Rendering thread.
     std::thread m_thread;

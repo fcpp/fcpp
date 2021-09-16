@@ -134,6 +134,7 @@ set(
     lib/simulation.cpp
     lib/simulation/batch.cpp
     lib/simulation/simulated_connector.cpp
+    lib/simulation/simulated_map.cpp
     lib/simulation/simulated_positioner.cpp
     lib/simulation/spawner.cpp
 )
@@ -284,6 +285,7 @@ if(FCPP_BUILD_TESTS)
             test/simulation/batch.cpp
             test/simulation/simulated_connector.cpp
             test/simulation/simulated_positioner.cpp
+            test/simulation/simulated_map.cpp
             test/simulation/spawner.cpp
         )
         foreach(TESTFILE IN LISTS TEST_FILES)

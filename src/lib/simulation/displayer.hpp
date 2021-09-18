@@ -72,7 +72,7 @@ namespace tags {
     struct color_val {};
 
     //! @brief Declaration tag associating to the bounding coordinates of the grid area.
-    template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax>
+    template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den = 1>
     struct area;
 
     //! @brief Declaration tag associating to the antialiasing factor.
@@ -366,10 +366,17 @@ namespace details {
     //! @brief Converts a number sequence to a vec (general form).
     template <typename T>
     struct numseq_to_vec;
+    //! @brief Converts a number sequence to a vec (empty form).
+    template <>
+    struct numseq_to_vec<common::number_sequence<>> {
+        constexpr static auto min = make_vec();
+        constexpr static auto max = make_vec();
+    };
     //! @brief Converts a number sequence to a vec (active form).
-    template <intmax_t... xs>
-    struct numseq_to_vec<common::number_sequence<xs...>> {
-        constexpr static auto value = make_vec(xs...);
+    template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
+    struct numseq_to_vec<common::number_sequence<xmin,ymin,xmax,ymax,den>> {
+        constexpr static auto min = make_vec(xmin/den,ymin/den);
+        constexpr static auto max = make_vec(xmax/den,ymax/den);
     };
     //! @brief Converts a vec to a glm 3D vector, filling missing coordinates with x.
     template <size_t n>
@@ -417,13 +424,13 @@ struct displayer {
     //! @brief Bounding coordinates of the grid area.
     using area = common::option_nums<tags::area, Ts...>;
 
-    static_assert(area::size == 4 or area::size == 0, "the bounding coordinates must be 4 integers");
+    static_assert(area::size == 5 or area::size == 0, "the bounding coordinates must be 4 integers");
 
     //! @brief Vector of minimum coordinate of the grid area.
-    constexpr static auto area_min = details::numseq_to_vec<typename area::template slice<0, area::size/2>>::value;
+    constexpr static auto area_min = details::numseq_to_vec<area>::min;
 
     //! @brief Vector of maximum coordinate of the grid area.
-    constexpr static auto area_max = details::numseq_to_vec<typename area::template slice<area::size/2>>::value;
+    constexpr static auto area_max = details::numseq_to_vec<area>::max;
 
     //! @brief Antialiasing factor.
     constexpr static intmax_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;

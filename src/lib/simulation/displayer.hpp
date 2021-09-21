@@ -9,6 +9,7 @@
 #define FCPP_SIMULATION_DISPLAYER_H_
 
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 
 #ifdef FCPP_GUI
@@ -426,12 +427,6 @@ struct displayer {
 
     static_assert(area::size == 5 or area::size == 0, "the bounding coordinates must be 4 integers");
 
-    //! @brief Vector of minimum coordinate of the grid area.
-    constexpr static auto area_min = details::numseq_to_vec<area>::min;
-
-    //! @brief Vector of maximum coordinate of the grid area.
-    constexpr static auto area_max = details::numseq_to_vec<area>::max;
-
     //! @brief Antialiasing factor.
     constexpr static intmax_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;
 
@@ -626,8 +621,6 @@ struct displayer {
                 m_threads( common::get_or<tags::threads>(t, FCPP_THREADS) ),
                 m_refresh{ 0 },
                 m_step( common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) ),
-                m_viewport_max{ details::vec_to_glm(common::get_or<tags::area_max>(t, area_max), -INF) },
-                m_viewport_min{ details::vec_to_glm(common::get_or<tags::area_min>(t, area_min), +INF) },
                 m_rayCast{ 0.0, 0.0, 0.0 },
                 m_renderer{antialias, common::get_or<tags::name>(t, "FCPP")},
                 m_mouseLastX{ 0.0f },
@@ -645,6 +638,8 @@ struct displayer {
                 m_lastFraction{ 0.0f },
                 m_FPS{ 0 } {
                     m_frameCounts.push_back(0);
+                    m_viewport_max = details::vec_to_glm(common::get_or<tags::area_max>(t, details::numseq_to_vec<area>::max), -INF);
+                    m_viewport_min = details::vec_to_glm(common::get_or<tags::area_min>(t, details::numseq_to_vec<area>::min), +INF);
                 }
 
             /**

@@ -664,7 +664,7 @@ struct displayer {
                     if (not m_legenda) {
                         PROFILE_COUNT("displayer/nodes");
                         if (rt == 0) {
-                            if (area_min.dimension == 0)
+                            if (m_viewport_min[0] > m_viewport_max[0])
                                 common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                                     viewport_update(n_beg[i].second.cache_position(t));
                                 });

@@ -81,12 +81,6 @@ struct simulated_map {
 
     static_assert(area::size == 5 or area::size == 0, "the bounding coordinates must be 4 integers");
 
-    //! @brief Vector of minimum coordinate of the grid area.
-    constexpr static auto area_min = details::numseq_to_vec_map<area>::min;
-
-    //! @brief Vector of maximum coordinate of the grid area.
-    constexpr static auto area_max = details::numseq_to_vec_map<area>::max;
-
     /**
      * @brief The actual component.
      *
@@ -118,6 +112,11 @@ struct simulated_map {
             template <typename S, typename T>
             net(common::tagged_tuple<S,T> const& t) : P::net(t) {
 
+                static_assert(std::is_same<decltype(common::get_or<tags::area_max>(t, details::numseq_to_vec_map<area>::max)), const vec<0>>::value, "no option area defined and no area_min and area_max defined either");
+
+                m_viewport_max = common::get_or<tags::area_max>(t, details::numseq_to_vec_map<area>::max);
+                m_viewport_min = common::get_or<tags::area_min>(t, details::numseq_to_vec_map<area>::min);
+
 
             }
 
@@ -137,13 +136,8 @@ struct simulated_map {
 
                 if(is_obstacle(node_position)) return node_position;
 
-                if(!is_in_area(node_position)){
+                if(!is_in_area(node_position)) return closest_obstacle(get_nearest_edge_position(node_position));
 
-                    auto nearest_in_area_position = get_nearest_edge_position(node_position);
-
-                    return (node_position - nearest_in_area_position) + (nearest_in_area_position - closest_obstacle(nearest_in_area_position));
-
-                }
 
                 index_type index = position_to_index(node_position);
 
@@ -167,127 +161,68 @@ struct simulated_map {
             //! @brief Type for representing a bitmap index.
             using index_type = std::array<size_t, 2>;
 
-            //! @brief Bitmap representation, a true value means there is an obstacle otherwise false
+            /**
+            * @brief Bitmap representation
+            * a true value means there is an obstacle otherwise false
+            */
             std::vector<std::vector<bool>> m_bitmap;
 
-            //! @brief Matrix containing data to implements closest_space() and closest_obstacle(), if a indexed position is empty it contains the nearest obstacle otherwise the nearest empty space position
+            /**
+            * @brief Matrix containing data to implements closest_space() and closest_obstacle()
+            * if a indexed position is empty it contains the nearest obstacle otherwise the nearest empty space position
+            */
             std::vector<std::vector<index_type>> m_closest;
 
+            //! @brief Vector of minimum coordinate of the grid area.
+            position_type m_viewport_max;
+
+            //! @brief Vector of maximum coordinate of the grid area.
+            position_type m_viewport_min;
+
+
             //! @brief Converts a node position to an equivalent bitmap index
-            index_type position_to_index(position_type position) {
+            inline index_type position_to_index(position_type const& position) {
 
-                return {std::round(position[0]), std::round(position[1])};
+                //linear scaling
+                auto new_x = (m_viewport_max[0] - m_viewport_min[0]) * ((position[0] - m_viewport_min[0]) / m_viewport_max[0] - m_viewport_min[0]);
+                auto new_y = (m_viewport_max[1] - m_viewport_min[1]) * ((position[1] - m_viewport_min[1]) / m_viewport_max[1] - m_viewport_min[1]);
 
-            }
-
-            //! @brief Converts a bitmap index to an equivalent node position
-            vec<2> index_to_position(index_type index, vec<2> position) {
-
-                return make_vec(index[0], index[1]);
+                return {std::round(new_x), std::round(new_y)};
 
             }
 
             //! @brief Converts a bitmap index to an equivalent node position
-            vec<3> index_to_position(index_type index, vec<3> starting_position) {
+            position_type index_to_position(index_type const& index , position_type const& position) {
 
-                return make_vec(index[0], index[1], starting_position[2]);
+                //linear scaling
+                auto x = (m_viewport_max[0] - m_viewport_min[0]) * (position[0] / ((m_viewport_max[0] - m_viewport_min[0]))) + m_viewport_min[0];
+                auto y = (m_viewport_max[1] - m_viewport_min[1]) * (position[1] / ((m_viewport_max[1] - m_viewport_min[1]))) + m_viewport_min[1];
+
+                position[0] = x;
+                position[1] = y;
+
+                return position;
 
             }
-
 
             //! @brief Checks if a position is contained in the predefined area
             bool is_in_area(position_type position){
 
-                return position >= area_min && position <= area_max;
+                for(int i = 0; i < 2;)
+                    if(position[i] < m_viewport_min[i] || position[i] > m_viewport_max[i])
+                        return false;
+
+                return true;
 
             }
 
-            //! @brief convert a vector to a 2d one (first overload)
-            vec<2> get_2d_vec(vec<2> vector) {
+            //! @brief Calculates the nearest in area position (edge position) starting from a generic node position
+            position_type& get_nearest_edge_position(position_type node_position){
 
-                return vector;
+                for(int i = 0; i < 2;)
+                    node_position[i] = std::min(std::max(node_position[i], m_viewport_min[i]), m_viewport_max[i]);
 
-            }
-
-            //! @brief convert a vector to a 2d one (second overload)
-            vec<2> get_2d_vec(vec<3> vector){
-
-                return make_vec(vector[0], vector[1]);
-
-            }
-
-            //! @brief calculates the nearest in area position (edge position) starting from a generic node position
-            vec<2> get_nearest_edge_position(position_type node_position){
-
-                auto min_distance = 0.0;
-                auto min_pos = node_position;
-                auto potential_min_pos = node_position;
-                auto bidimensional_pos = get_2d_vec(node_position);
-                auto i = 0.0;
-                auto y_starting_point = 0.0;
-                auto x_starting_point = 0.0;
-
-                //generates all points of the lower edge
-                for(i = area_min[0]; i <= area_max[0]; i++){
-
-                    potential_min_pos = make_vec(i, area_min[1]);
-
-                    if(min_distance >= distance(bidimensional_pos, potential_min_pos)){
-
-                        min_distance = distance(bidimensional_pos, potential_min_pos);
-                        min_pos = potential_min_pos;
-
-                    }
-
-                }
-
-                x_starting_point = i;
-
-                //generates all points of the left edge
-                for(i = area_min[1]; i <= area_max[1]; i++){
-
-                    potential_min_pos = make_vec(area_min[0], i);
-
-                    if(min_distance >= distance(bidimensional_pos, potential_min_pos)){
-
-                        min_distance = distance(bidimensional_pos, potential_min_pos);
-                        min_pos = potential_min_pos;
-
-                    }
-
-                }
-
-                y_starting_point = i;
-
-                //generates all points of the upper edge
-                for(i = area_min[0]; i <= area_max[0]; i++){
-
-                    potential_min_pos = make_vec(i, y_starting_point);
-
-                    if(min_distance >= distance(bidimensional_pos, potential_min_pos)){
-
-                        min_distance = distance(bidimensional_pos, potential_min_pos);
-                        min_pos = potential_min_pos;
-
-                    }
-
-                }
-
-                //generates all points of the right edge
-                for(i = area_min[0]; i <= area_max[1]; i++){
-
-                    potential_min_pos = make_vec(x_starting_point, i);
-
-                    if(min_distance >= distance(bidimensional_pos, potential_min_pos)){
-
-                        min_distance = distance(bidimensional_pos, potential_min_pos);
-                        min_pos = potential_min_pos;
-
-                    }
-
-                }
-
-                return min_pos;
+                return node_position;
 
             }
 

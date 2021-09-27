@@ -112,36 +112,34 @@ struct simulated_map {
             template <typename S, typename T>
             net(common::tagged_tuple<S,T> const& t) : P::net(t) {
 
-                static_assert(std::is_same<decltype(common::get_or<tags::area_max>(t, details::numseq_to_vec_map<area>::max)), const vec<0>>::value, "no option area defined and no area_min and area_max defined either");
+                static_assert(area::size == 5 or S::template intersect<tags::area_min,tags::area_max>::size == 2, "no option area defined and no area_min and area_max defined either");
 
                 m_viewport_max = common::get_or<tags::area_max>(t, details::numseq_to_vec_map<area>::max);
                 m_viewport_min = common::get_or<tags::area_min>(t, details::numseq_to_vec_map<area>::min);
-
-
+                
             }
 
             //! @brief Returns the position of the closest empty space starting from node_position
-            position_type closest_space(position_type node_position) {
+            position_type closest_space(position_type position) {
 
-                if(!is_obstacle(node_position)) return node_position;
+                if(!is_obstacle(position)) return position;
 
-                index_type index = position_to_index(node_position);
+                index_type index = position_to_index(position);
 
-                return index_to_position(m_closest[index[0]][index[1]],node_position);
+                return index_to_position(m_closest[index[0]][index[1]],position);
 
             }
 
             //! @brief Returns the position of the closest obstacle starting from node_position
-            position_type closest_obstacle(position_type node_position) {
+            position_type closest_obstacle(position_type position) {
 
-                if(is_obstacle(node_position)) return node_position;
+                if(is_obstacle(position)) return position;
 
-                if(!is_in_area(node_position)) return closest_obstacle(get_nearest_edge_position(node_position));
+                if(!is_in_area(position)) return closest_obstacle(get_nearest_edge_position(position));
 
+                index_type index = position_to_index(position);
 
-                index_type index = position_to_index(node_position);
-
-                return index_to_position(m_closest[index[0]][index[1]],node_position);
+                return index_to_position(m_closest[index[0]][index[1]],position);
 
             }
 
@@ -163,43 +161,41 @@ struct simulated_map {
 
             /**
             * @brief Bitmap representation
+            *
             * a true value means there is an obstacle otherwise false
             */
             std::vector<std::vector<bool>> m_bitmap;
 
             /**
             * @brief Matrix containing data to implements closest_space() and closest_obstacle()
+            *
             * if a indexed position is empty it contains the nearest obstacle otherwise the nearest empty space position
             */
             std::vector<std::vector<index_type>> m_closest;
 
-            //! @brief Vector of minimum coordinate of the grid area.
+            //! @brief Vector of maximum coordinate of the grid area.
             position_type m_viewport_max;
 
-            //! @brief Vector of maximum coordinate of the grid area.
+            //! @brief Vector of minimum coordinate of the grid area.
             position_type m_viewport_min;
 
 
             //! @brief Converts a node position to an equivalent bitmap index
             inline index_type position_to_index(position_type const& position) {
 
-                //linear scaling
-                auto new_x = (m_viewport_max[0] - m_viewport_min[0]) * ((position[0] - m_viewport_min[0]) / m_viewport_max[0] - m_viewport_min[0]);
-                auto new_y = (m_viewport_max[1] - m_viewport_min[1]) * ((position[1] - m_viewport_min[1]) / m_viewport_max[1] - m_viewport_min[1]);
+                //linear scaling, constexpr to avoid narrowing type conversion error
+                constexpr float new_x = ((-m_bitmap[0].size())/(m_viewport_min[0] - m_viewport_max[0])) * position[0] + (-m_viewport_min[0] * (-m_bitmap[0].size()/(m_viewport_min[0] - m_viewport_max[0])));
+                constexpr float new_y = ((-m_bitmap.size())/(m_viewport_min[1] - m_viewport_max[1])) * position[1] + (-m_viewport_min[1] * (-m_bitmap.size()/(m_viewport_min[1] - m_viewport_max[1])));
 
-                return {std::round(new_x), std::round(new_y)};
+                return {std::lround(new_x), std::lround(new_y)};
 
             }
 
             //! @brief Converts a bitmap index to an equivalent node position
-            position_type index_to_position(index_type const& index , position_type const& position) {
+            position_type& index_to_position(index_type const& index, position_type& position) {
 
-                //linear scaling
-                auto x = (m_viewport_max[0] - m_viewport_min[0]) * (position[0] / ((m_viewport_max[0] - m_viewport_min[0]))) + m_viewport_min[0];
-                auto y = (m_viewport_max[1] - m_viewport_min[1]) * (position[1] / ((m_viewport_max[1] - m_viewport_min[1]))) + m_viewport_min[1];
-
-                position[0] = x;
-                position[1] = y;
+                position[0] = (index[0] + (-m_viewport_min[0] * (-m_bitmap[0].size()/(m_viewport_min[0] - m_viewport_max[0])))) / ((-m_bitmap[0].size())/(m_viewport_min[0] - m_viewport_max[0]));
+                position[1] = (index[1] + (-m_bitmap.size()/(m_viewport_min[1] - m_viewport_max[1]))) / ((-m_bitmap.size())/(m_viewport_min[1] - m_viewport_max[1]));
 
                 return position;
 
@@ -208,7 +204,7 @@ struct simulated_map {
             //! @brief Checks if a position is contained in the predefined area
             bool is_in_area(position_type position){
 
-                for(int i = 0; i < 2;)
+                for(int i = 0; i < 2; i++)
                     if(position[i] < m_viewport_min[i] || position[i] > m_viewport_max[i])
                         return false;
 
@@ -217,12 +213,12 @@ struct simulated_map {
             }
 
             //! @brief Calculates the nearest in area position (edge position) starting from a generic node position
-            position_type& get_nearest_edge_position(position_type node_position){
+            position_type& get_nearest_edge_position(position_type position){
 
-                for(int i = 0; i < 2;)
-                    node_position[i] = std::min(std::max(node_position[i], m_viewport_min[i]), m_viewport_max[i]);
+                for(int i = 0; i < 2; i++)
+                    position[i] = std::min(std::max(position[i], m_viewport_min[i]), m_viewport_max[i]);
 
-                return node_position;
+                return position;
 
             }
 

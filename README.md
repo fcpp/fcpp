@@ -159,6 +159,6 @@ If you write and launch your own graphical simulation, a window will open displa
 
 #### Contributors
 
+- [Gianmarco Rampulla](https://github.com/denoide1)
 - [Luigi Rapetta](https://github.com/rapfamily4)
 - [Gianluca Torta](http://www.di.unito.it/~torta)
-- [Gianmarco Rampulla](https://github.com/denoide1)

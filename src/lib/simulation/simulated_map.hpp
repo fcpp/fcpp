@@ -116,7 +116,7 @@ struct simulated_map {
 
                 m_viewport_max = common::get_or<tags::area_max>(t, details::numseq_to_vec_map<area>::max);
                 m_viewport_min = common::get_or<tags::area_min>(t, details::numseq_to_vec_map<area>::min);
-                
+
             }
 
             //! @brief Returns the position of the closest empty space starting from node_position
@@ -183,19 +183,20 @@ struct simulated_map {
             //! @brief Converts a node position to an equivalent bitmap index
             inline index_type position_to_index(position_type const& position) {
 
-                //linear scaling, constexpr to avoid narrowing type conversion error
-                constexpr float new_x = ((-m_bitmap[0].size())/(m_viewport_min[0] - m_viewport_max[0])) * position[0] + (-m_viewport_min[0] * (-m_bitmap[0].size()/(m_viewport_min[0] - m_viewport_max[0])));
-                constexpr float new_y = ((-m_bitmap.size())/(m_viewport_min[1] - m_viewport_max[1])) * position[1] + (-m_viewport_min[1] * (-m_bitmap.size()/(m_viewport_min[1] - m_viewport_max[1])));
+                //linear scaling
+                real_t new_x = ((-m_bitmap[0].size())/(m_viewport_min[0] - m_viewport_max[0])) * (position[0] - m_viewport_min[0]);
+                real_t new_y = ((-m_bitmap.size())/(m_viewport_min[1] - m_viewport_max[1])) * (position[1] - m_viewport_min[1]);
 
-                return {std::lround(new_x), std::lround(new_y)};
+                return {static_cast<size_t>(std::lround(new_x)), static_cast<size_t>(std::lround(new_y))};
 
             }
 
             //! @brief Converts a bitmap index to an equivalent node position
-            position_type& index_to_position(index_type const& index, position_type& position) {
+            position_type index_to_position(index_type const& index, position_type position) {
 
-                position[0] = (index[0] + (-m_viewport_min[0] * (-m_bitmap[0].size()/(m_viewport_min[0] - m_viewport_max[0])))) / ((-m_bitmap[0].size())/(m_viewport_min[0] - m_viewport_max[0]));
-                position[1] = (index[1] + (-m_bitmap.size()/(m_viewport_min[1] - m_viewport_max[1]))) / ((-m_bitmap.size())/(m_viewport_min[1] - m_viewport_max[1]));
+                //linear scaling inverse formula
+                position[0] = ((index[0] / (-m_bitmap[0].size()/(m_viewport_min[0] - m_viewport_max[0])))) + m_viewport_min[0];
+                position[1] = ((index[1] / (-m_bitmap.size()/(m_viewport_min[1] - m_viewport_max[1])))) + m_viewport_min[1];
 
                 return position;
 
@@ -213,7 +214,7 @@ struct simulated_map {
             }
 
             //! @brief Calculates the nearest in area position (edge position) starting from a generic node position
-            position_type& get_nearest_edge_position(position_type position){
+            position_type get_nearest_edge_position(position_type position){
 
                 for(int i = 0; i < 2; i++)
                     position[i] = std::min(std::max(position[i], m_viewport_min[i]), m_viewport_max[i]);

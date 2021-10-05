@@ -376,8 +376,8 @@ namespace details {
     //! @brief Converts a number sequence to a vec (active form).
     template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
     struct numseq_to_vec<common::number_sequence<xmin,ymin,xmax,ymax,den>> {
-        constexpr static auto min = make_vec(xmin/den,ymin/den);
-        constexpr static auto max = make_vec(xmax/den,ymax/den);
+        constexpr static auto min = make_vec(xmin*1.0/den,ymin*1.0/den);
+        constexpr static auto max = make_vec(xmax*1.0/den,ymax*1.0/den);
     };
     //! @brief Converts a vec to a glm 3D vector, filling missing coordinates with x.
     template <size_t n>
@@ -664,11 +664,20 @@ struct displayer {
                     if (not m_legenda) {
                         PROFILE_COUNT("displayer/nodes");
                         if (rt == 0) {
-                            if (m_viewport_min[0] > m_viewport_max[0])
+                            if (m_viewport_min.x > m_viewport_max.x) {
                                 common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                                     viewport_update(n_beg[i].second.cache_position(t));
                                 });
-                            else m_viewport_min[2] = m_viewport_max[2] = 0;
+                                double approx = 1;
+                                while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) > 2000 * approx * approx)
+                                    approx *= 10;
+                                while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) <= 20 * approx * approx)
+                                    approx /= 10;
+                                m_viewport_min.x = std::floor(m_viewport_min.x / approx) * approx;
+                                m_viewport_max.x = std::ceil(m_viewport_max.x / approx) * approx;
+                                m_viewport_min.y = std::floor(m_viewport_min.y / approx) * approx;
+                                m_viewport_max.y = std::ceil(m_viewport_max.y / approx) * approx;
+                            } else m_viewport_min[2] = m_viewport_max[2] = 0;
                         } else {
                             if (m_pointer) highlightHoveredNode();
                             common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {

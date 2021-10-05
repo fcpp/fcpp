@@ -411,10 +411,10 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
 
         // Calculate data for mesh generation
         int approx{ (gridMax.x - gridMin.x) * (gridMax.y - gridMin.y) > 2000 * gridScale * gridScale ? 10 : 1 };
-        int grid_min_x = std::floor(gridMin.x / gridScale / approx) * approx;
-        int grid_max_x = std::ceil(gridMax.x / gridScale / approx) * approx;
-        int grid_min_y = std::floor(gridMin.y / gridScale / approx) * approx;
-        int grid_max_y = std::ceil(gridMax.y / gridScale / approx) * approx;
+        int grid_min_x = std::ceil(gridMin.x / gridScale / approx) * approx;
+        int grid_max_x = std::floor(gridMax.x / gridScale / approx) * approx;
+        int grid_min_y = std::ceil(gridMin.y / gridScale / approx) * approx;
+        int grid_max_y = std::floor(gridMax.y / gridScale / approx) * approx;
         int numX{ grid_max_x - grid_min_x + 1 };
         int numY{ grid_max_y - grid_min_y + 1 };
 
@@ -431,11 +431,11 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         int gridNormIndex[(numX - numHighX) * 2 + (numY - numHighY) * 2]; // will contain the index data of the normal lines of the grid
         int gridHighIndex[numHighX * 2 + numHighY * 2]; // will contain the index data of the highlighted lines of the grid
         for (int x = grid_min_x; x <= grid_max_x; ++x) {
-            gridMesh[i * 6] = (float)(x * gridScale);
-            gridMesh[1 + i * 6] = (float)(grid_min_y * gridScale);
+            gridMesh[0 + i * 6] = (float)(x * gridScale);
+            gridMesh[1 + i * 6] = gridMin.y;
             gridMesh[2 + i * 6] = 0.0f;
             gridMesh[3 + i * 6] = (float)(x * gridScale);
-            gridMesh[4 + i * 6] = (float)(grid_max_y * gridScale);
+            gridMesh[4 + i * 6] = gridMax.y;
             gridMesh[5 + i * 6] = 0.0f;
             if (x % highlighter == 0) {
                 gridHighIndex[j * 2] = i * 2;
@@ -450,10 +450,10 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
             ++i;
         }
         for (int y = grid_min_y; y <= grid_max_y; ++y) {
-            gridMesh[i * 6] = (float)(grid_min_x * gridScale);
+            gridMesh[0 + i * 6] = gridMin.x;
             gridMesh[1 + i * 6] = (float)(y * gridScale);
             gridMesh[2 + i * 6] = 0.0f;
-            gridMesh[3 + i * 6] = (float)(grid_max_x * gridScale);
+            gridMesh[3 + i * 6] = gridMax.x;
             gridMesh[4 + i * 6] = (float)(y * gridScale);
             gridMesh[5 + i * 6] = 0.0f;
             if (y % highlighter == 0) {
@@ -488,10 +488,10 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         // Generating plane mesh
         float planeMesh[20]{
             // vertex coords                                                        // texture coords
-            (float)(grid_min_x * gridScale), (float)(grid_min_y * gridScale), 0.0f, 0.0f, 0.0f,
-            (float)(grid_min_x * gridScale), (float)(grid_max_y * gridScale), 0.0f, 0.0f, 1.0f,
-            (float)(grid_max_x * gridScale), (float)(grid_max_y * gridScale), 0.0f, 1.0f, 1.0f,
-            (float)(grid_max_x * gridScale), (float)(grid_min_y * gridScale), 0.0f, 1.0f, 0.0f
+            gridMin.x, gridMin.y, 0.0f, 0.0f, 0.0f,
+            gridMin.x, gridMax.y, 0.0f, 0.0f, 1.0f,
+            gridMax.x, gridMax.y, 0.0f, 1.0f, 1.0f,
+            gridMax.x, gridMin.y, 0.0f, 1.0f, 0.0f
         };
         int planeIndex[6]{
             0, 1, 2,

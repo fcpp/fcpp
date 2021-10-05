@@ -92,7 +92,7 @@ T mp_collection(node_t& node, trace_t call_point, P const& distance, T const& va
         field<P> nbrdist = nbr(node, 1, distance);
         T v = fold_hood(node, 0, accumulate, mux(nbrdist > distance, x, (T)null), value);
         int n = sum_hood(node, 0, mux(nbrdist < distance, 1, 0), 0);
-        return make_tuple(divide(v, max(n, 1)), v);
+        return fcpp::make_tuple(divide(v, max(n, 1)), v);
     });
 }
 

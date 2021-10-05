@@ -7,12 +7,15 @@
 
 #include "test/helper.hpp"
 
+
 using namespace fcpp;
 using namespace component::tags;
+
 
 struct tag {};
 struct gat {};
 struct oth {};
+
 
 // Component exposing the storage interface.
 struct exposer {
@@ -24,15 +27,16 @@ struct exposer {
 };
 
 
+
 using combo1 = component::combine_spec<
     exposer,
-    component::simulated_map<dimension<2>>,
+    component::simulated_map<dimension<2>, area<0,0,800,800,1>>,
     component::base<>
 >;
 
 
 TEST(SimulatedMapTest, CollisionTest) {
 
-    combo1::net network{common::make_tagged_tuple<oth>("foo")};
+    combo1::net network{common::make_tagged_tuple<obstacles>("image_url")};
 
 }

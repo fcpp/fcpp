@@ -5,8 +5,7 @@
 #include "lib/component/base.hpp"
 #include "lib/simulation/simulated_map.hpp"
 
-#include "test/helper.hpp"
-
+#include "lib/data/vec.hpp"
 
 using namespace fcpp;
 using namespace component::tags;

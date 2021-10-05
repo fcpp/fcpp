@@ -14,7 +14,6 @@
 
 
 #include <cstring>
-#include <sstream>
 #include "./external/stb_image/stb_image.h"
 
 
@@ -59,11 +58,11 @@ namespace tags {
 namespace details {
 
     //! @brief Converts a number sequence to a vec (general form).
-    template<typename T>
+    template <typename T>
     struct numseq_to_vec_map;
 
     //! @brief Converts a number sequence to a vec (empty form).
-    template<>
+    template <>
     struct numseq_to_vec_map<common::number_sequence<>> {
         //inline static variable are C++17 standard, this is a temporary fix for constexpr static variables linking error on test file
         constexpr inline static auto min = make_vec();
@@ -71,11 +70,11 @@ namespace details {
     };
 
     //! @brief Converts a number sequence to a vec (active form).
-    template<intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
-    struct numseq_to_vec_map<common::number_sequence<xmin, ymin, xmax, ymax, den>> {
+    template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
+    struct numseq_to_vec_map<common::number_sequence<xmin,ymin,xmax,ymax,den>> {
         //inline static variable are C++17 standard, this is a temporary fix for constexpr static variables linking error on test file
-        constexpr inline static auto min = make_vec(xmin / den, ymin / den);
-        constexpr inline static auto max = make_vec(xmax / den, ymax / den);
+        constexpr inline static auto min = make_vec(xmin*1.0/den, ymin*1.0/den);
+        constexpr inline static auto max = make_vec(xmax*1.0/den, ymax*1.0/den);
     };
 }
 //! @endcond
@@ -142,7 +141,6 @@ struct simulated_map {
                 static_assert(area::size == 5 or S::template intersect<tags::area_min, tags::area_max>::size == 2,
                               "no option area defined and no area_min and area_max defined either");
 
-
                 m_viewport_max = common::get_or<tags::area_max>(t, details::numseq_to_vec_map<area>::max);
                 m_viewport_min = common::get_or<tags::area_min>(t, details::numseq_to_vec_map<area>::min);
 
@@ -151,6 +149,10 @@ struct simulated_map {
                 m_threshold = common::get_or<tags::obstacles_color_threshold>(t, 0.5);
 
                 load_bitmap(m_obstacles);
+
+                m_index_sizes = {m_bitmap[0].size(), m_bitmap.size()};
+
+                m_viewport_size = m_viewport_max - m_viewport_min;
 
             }
 
@@ -194,43 +196,16 @@ struct simulated_map {
             //! @brief Type for representing a bitmap index.
             using index_type = std::array<size_t, 2>;
 
-            /**
-            * @brief Bitmap representation
-            *
-            * a true value means there is an obstacle otherwise false
-            */
-            std::vector <std::vector<bool>> m_bitmap;
-
-            /**
-            * @brief Matrix containing data to implements closest_space() and closest_obstacle()
-            *
-            * if a indexed position is empty it contains the nearest obstacle otherwise the nearest empty space position
-            */
-            std::vector <std::vector<index_type>> m_closest;
-
-            //! @brief Vector of maximum coordinate of the grid area.
-            position_type m_viewport_max;
-
-            //! @brief Vector of minimum coordinate of the grid area.
-            position_type m_viewport_min;
-
-            //! @brief Path of obstacles image coordinate of the grid area.
-            std::string m_obstacles;
-
-            //! @brief Color of the obstacles
-            color m_color;
-
-            //! @brief Color threshold
-            real_t m_threshold;
-
             //! @brief Converts a node position to an equivalent bitmap index
             inline index_type position_to_index(position_type const &position) {
 
-                //linear scaling
-                real_t new_x = ((-m_bitmap[0].size()) / (m_viewport_min[0] - m_viewport_max[0])) * (position[0] - m_viewport_min[0]);
-                real_t new_y = ((-m_bitmap.size()) / (m_viewport_min[1] - m_viewport_max[1])) * (position[1] - m_viewport_min[1]);
+                index_type index_to_return;
 
-                return {static_cast<size_t>(std::lround(new_x)), static_cast<size_t>(std::lround(new_y))};
+                //linear scaling
+                for(int i = 0; i < 2; i++)
+                    index_to_return[i] = static_cast<size_t>(std::round(((m_index_sizes[i] / m_viewport_size[i])) * (position[i] - m_viewport_min[i])));
+
+                return index_to_return;
 
             }
 
@@ -238,8 +213,8 @@ struct simulated_map {
             position_type index_to_position(index_type const &index, position_type position) {
 
                 //linear scaling inverse formula
-                position[0] = ((index[0] / (-m_bitmap[0].size() / (m_viewport_min[0] - m_viewport_max[0])))) + m_viewport_min[0];
-                position[1] = ((index[1] / (-m_bitmap.size() / (m_viewport_min[1] - m_viewport_max[1])))) + m_viewport_min[1];
+                for(int i = 0; i < 2; i++)
+                    position[i] = (((index[i] / m_index_sizes[0])) * (m_viewport_size[i])) + m_viewport_min[i];
 
                 return position;
 
@@ -310,6 +285,42 @@ struct simulated_map {
                          std::abs(m_color.blue() - blue) > m_threshold);
 
             }
+
+
+            /**
+             * @brief Bitmap representation
+             *
+             * a true value means there is an obstacle otherwise false
+            */
+            std::vector <std::vector<bool>> m_bitmap;
+
+            /**
+            * @brief Matrix containing data to implements closest_space() and closest_obstacle()
+            *
+            * if a indexed position is empty it contains the nearest obstacle otherwise the nearest empty space position
+            */
+            std::vector <std::vector<index_type>> m_closest;
+
+            //! @brief Vector of maximum coordinate of the grid area.
+            position_type m_viewport_max;
+
+            //! @brief Vector of minimum coordinate of the grid area.
+            position_type m_viewport_min;
+
+            //! @brief Viewport size
+            position_type m_viewport_size;
+
+            //! @brief Bitmap sizes;
+            index_type m_index_sizes;
+
+            //! @brief Path of obstacles image coordinate of the grid area.
+            std::string m_obstacles;
+
+            //! @brief Color of the obstacles
+            color m_color;
+
+            //! @brief Color threshold
+            real_t m_threshold;
 
         };
     };

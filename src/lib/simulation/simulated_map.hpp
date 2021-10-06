@@ -11,6 +11,7 @@
 #include "lib/component/base.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/data/color.hpp"
+#include "lib/common/traits.hpp"
 
 
 #include <cstring>
@@ -21,7 +22,6 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
-
 
 //! @brief Namespace for all FCPP components.
 namespace component {
@@ -60,24 +60,26 @@ namespace details {
     //! @brief Converts a number sequence to a vec (general form).
     template <typename T>
     struct numseq_to_vec_map;
-
     //! @brief Converts a number sequence to a vec (empty form).
     template <>
     struct numseq_to_vec_map<common::number_sequence<>> {
-        //inline static variable are C++17 standard, this is a temporary fix for constexpr static variables linking error on test file
-        constexpr inline static auto min = make_vec();
-        constexpr inline static auto max = make_vec();
+        constexpr static auto min = make_vec();
+        constexpr static auto max = make_vec();
     };
-
     //! @brief Converts a number sequence to a vec (active form).
     template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
     struct numseq_to_vec_map<common::number_sequence<xmin,ymin,xmax,ymax,den>> {
-        //inline static variable are C++17 standard, this is a temporary fix for constexpr static variables linking error on test file
-        constexpr inline static auto min = make_vec(xmin*1.0/den, ymin*1.0/den);
-        constexpr inline static auto max = make_vec(xmax*1.0/den, ymax*1.0/den);
+        constexpr static auto min = make_vec(xmin*1.0/den,ymin*1.0/den);
+        constexpr static auto max = make_vec(xmax*1.0/den,ymax*1.0/den);
     };
+
+
+
 }
+
 //! @endcond
+
+
 
 
 /**
@@ -99,8 +101,7 @@ template<class... Ts>
 struct simulated_map {
 
     //! @brief The dimensionality of the space.
-    constexpr static intmax_t
-    dimension = common::option_num<tags::dimension, 2, Ts...>;
+    constexpr static intmax_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
     //! @brief Bounding coordinates of the grid area.
     using area = common::option_nums<tags::area, Ts...>;
@@ -136,13 +137,17 @@ struct simulated_map {
 
             //! @brief Constructor from a tagged tuple.
             template<typename S, typename T>
-            net(common::tagged_tuple <S, T> const &t) : P::net(t) {
+            net(common::tagged_tuple <S, T> const &t) : P::net(t)  {
 
                 static_assert(area::size == 5 or S::template intersect<tags::area_min, tags::area_max>::size == 2,
                               "no option area defined and no area_min and area_max defined either");
 
-                m_viewport_max = common::get_or<tags::area_max>(t, details::numseq_to_vec_map<area>::max);
-                m_viewport_min = common::get_or<tags::area_min>(t, details::numseq_to_vec_map<area>::min);
+                //variables to avoid linking issues
+                auto max = details::numseq_to_vec_map<area>::max;
+                auto min = (details::numseq_to_vec_map<area>::min);
+
+                m_viewport_min = common::get_or<tags::area_min>(t, min);
+                m_viewport_max = common::get_or<tags::area_max>(t, max);
 
                 m_obstacles = common::get_or<tags::obstacles>(t, "");
                 m_color = common::get_or<tags::obstacles_color>(t, color(fcpp::BLACK));

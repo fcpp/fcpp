@@ -29,13 +29,16 @@ struct exposer {
 
 using combo1 = component::combine_spec<
     exposer,
-    component::simulated_map<dimension<2>, area<0,0,800,800,1>>,
+    component::simulated_map<dimension<2>>,
     component::base<>
 >;
 
 
 TEST(SimulatedMapTest, CollisionTest) {
 
-    combo1::net network{common::make_tagged_tuple<obstacles>("image_url")};
+   vec<2> area_m = make_vec(1000,1000);
+   vec<2> area_mi = make_vec(100,100);
+   combo1::net network{common::make_tagged_tuple<obstacles, area_min, area_max>("image_url", area_mi, area_m)};
 
 }
+

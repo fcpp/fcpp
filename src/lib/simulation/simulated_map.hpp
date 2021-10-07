@@ -63,14 +63,14 @@ namespace details {
     //! @brief Converts a number sequence to a vec (empty form).
     template <>
     struct numseq_to_vec_map<common::number_sequence<>> {
-        constexpr static auto min = make_vec();
-        constexpr static auto max = make_vec();
+        constexpr static vec<0> min{};
+        constexpr static vec<0> max{};
     };
     //! @brief Converts a number sequence to a vec (active form).
     template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
     struct numseq_to_vec_map<common::number_sequence<xmin,ymin,xmax,ymax,den>> {
-        constexpr static auto min = make_vec(xmin*1.0/den,ymin*1.0/den);
-        constexpr static auto max = make_vec(xmax*1.0/den,ymax*1.0/den);
+        constexpr static vec<2> min{xmin*1.0/den,ymin*1.0/den};
+        constexpr static vec<2> max{xmax*1.0/den,ymax*1.0/den};
     };
 
 
@@ -143,8 +143,8 @@ struct simulated_map {
                               "no option area defined and no area_min and area_max defined either");
 
                 //variables to avoid linking issues
-                auto max = details::numseq_to_vec_map<area>::max;
-                auto min = (details::numseq_to_vec_map<area>::min);
+                constexpr auto max = details::numseq_to_vec_map<area>::max;
+                constexpr auto min = details::numseq_to_vec_map<area>::min;
 
                 m_viewport_min = common::get_or<tags::area_min>(t, min);
                 m_viewport_max = common::get_or<tags::area_max>(t, max);

@@ -638,8 +638,10 @@ struct displayer {
                 m_lastFraction{ 0.0f },
                 m_FPS{ 0 } {
                     m_frameCounts.push_back(0);
-                    m_viewport_max = details::vec_to_glm(common::get_or<tags::area_max>(t, details::numseq_to_vec<area>::max), -INF);
-                    m_viewport_min = details::vec_to_glm(common::get_or<tags::area_min>(t, details::numseq_to_vec<area>::min), +INF);
+                    constexpr auto max = details::numseq_to_vec<area>::max;
+                    constexpr auto min = details::numseq_to_vec<area>::min;
+                    m_viewport_max = details::vec_to_glm(common::get_or<tags::area_max>(t, max), -INF);
+                    m_viewport_min = details::vec_to_glm(common::get_or<tags::area_min>(t, min), +INF);
                 }
 
             /**

@@ -72,9 +72,7 @@ namespace details {
         constexpr static vec<2> min{xmin*1.0/den,ymin*1.0/den};
         constexpr static vec<2> max{xmax*1.0/den,ymax*1.0/den};
     };
-
-
-
+    
 }
 
 //! @endcond

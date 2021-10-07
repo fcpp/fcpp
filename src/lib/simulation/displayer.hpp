@@ -370,14 +370,14 @@ namespace details {
     //! @brief Converts a number sequence to a vec (empty form).
     template <>
     struct numseq_to_vec<common::number_sequence<>> {
-        constexpr static auto min = make_vec();
-        constexpr static auto max = make_vec();
+        constexpr static vec<0> min{};
+        constexpr static vec<0> max{};
     };
     //! @brief Converts a number sequence to a vec (active form).
     template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
     struct numseq_to_vec<common::number_sequence<xmin,ymin,xmax,ymax,den>> {
-        constexpr static auto min = make_vec(xmin*1.0/den,ymin*1.0/den);
-        constexpr static auto max = make_vec(xmax*1.0/den,ymax*1.0/den);
+        constexpr static vec<2> min{xmin*1.0/den,ymin*1.0/den};
+        constexpr static vec<2> max{xmax*1.0/den,ymax*1.0/den};
     };
     //! @brief Converts a vec to a glm 3D vector, filling missing coordinates with x.
     template <size_t n>

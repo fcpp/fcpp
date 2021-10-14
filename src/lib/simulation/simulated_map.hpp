@@ -141,8 +141,10 @@ struct simulated_map {
 
                 load_bitmap(m_obstacles);
 
-                m_index_sizes = {m_bitmap[0].size(), m_bitmap.size()};
-                m_viewport_size = m_viewport_max - m_viewport_min;
+                position_type viewport_size = m_viewport_max - m_viewport_min;
+
+                m_index_scales = {m_bitmap[0].size() / viewport_size[0], m_bitmap.size() / viewport_size[1]};
+                m_index_factors = {m_bitmap[0].size() * viewport_size[0], m_bitmap.size() * viewport_size[1]};
 
             }
 
@@ -178,7 +180,7 @@ struct simulated_map {
                 index_type index_to_return;
                 //linear scaling
                 for(int i = 0; i < 2; i++)
-                    index_to_return[i] = static_cast<size_t>(std::round(m_index_sizes[i] / m_viewport_size[i] * (position[i] - m_viewport_min[i])));
+                    index_to_return[i] = static_cast<size_t>(std::round(m_index_scales[i] * (position[i] - m_viewport_min[i])));
                 return index_to_return;
             }
 
@@ -186,7 +188,7 @@ struct simulated_map {
             position_type index_to_position(index_type const& index, position_type position) {
                 //linear scaling inverse formula
                 for(int i = 0; i < 2; i++)
-                    position[i] = index[i] / m_index_sizes[i] * m_viewport_size[i] + m_viewport_min[i];
+                    position[i] = index[i] / m_index_factors[i] + m_viewport_min[i];
                 return position;
             }
 
@@ -234,12 +236,13 @@ struct simulated_map {
                             m_bitmap.emplace_back();
                         }
                         for(j = 0, temp_var = true; j < channels_per_pixel; j++)
-                            temp_var = temp_var && std::abs(m_color.rgba[j] - pixelOffset[j]) < m_threshold;
+                            temp_var = temp_var && std::abs(m_color.rgba[j] * 255 - pixelOffset[j]) < m_threshold;
                         m_bitmap[line_index].push_back(temp_var);
                     }
                     delete bitmap_data;
 
-                } else throw std::runtime_error("Error in image loading");
+                }
+                else throw std::runtime_error("Error in image loading");
 
             }
 
@@ -263,11 +266,11 @@ struct simulated_map {
             //! @brief Vector of minimum coordinate of the grid area.
             position_type m_viewport_min;
 
-            //! @brief Viewport size
-            position_type m_viewport_size;
+            //! @brief Array containing cached values of m_index_size / m_viewport_size
+            std::array<real_t,2> m_index_scales;
 
-            //! @brief Bitmap sizes;
-            index_type m_index_sizes;
+            //! @brief Array containing cached values of m_index_size * m_viewport_size
+            std::array<real_t,2> m_index_factors;
 
             //! @brief Path of obstacles image coordinate of the grid area.
             std::string m_obstacles;

@@ -14,6 +14,7 @@
 #include "lib/common/traits.hpp"
 
 #include <cstring>
+#include <queue>
 #include "./external/stb_image/stb_image.h"
 
 /**
@@ -125,7 +126,7 @@ struct simulated_map {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple <S, T>& t) : P::net(t) {
+            net(common::tagged_tuple <S, T> const& t) : P::net(t) {
 
                 static_assert(area::size == 5 or S::template intersect<tags::area_min, tags::area_max>::size == 2,
                               "no option area defined and no area_min and area_max defined either");
@@ -140,6 +141,7 @@ struct simulated_map {
                 m_threshold = common::get_or<tags::obstacles_color_threshold>(t, 0.5);
 
                 load_bitmap(m_obstacles);
+                fill_m_closest();
 
                 position_type viewport_size = m_viewport_max - m_viewport_min;
 
@@ -175,11 +177,14 @@ struct simulated_map {
             //! @brief Type for representing a bitmap index.
             using index_type = std::array<size_t, 2>;
 
+            //! @brief Type for representing a bfs queue pair of point and its source point from which was generated.
+            using matrix_pair_type = std::pair<index_type,index_type>;
+
             //! @brief Converts a node position to an equivalent bitmap index
             inline index_type position_to_index(position_type const& position) {
                 index_type index_to_return;
                 //linear scaling
-                for(int i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++)
                     index_to_return[i] = static_cast<size_t>(std::round(m_index_scales[i] * (position[i] - m_viewport_min[i])));
                 return index_to_return;
             }
@@ -187,7 +192,7 @@ struct simulated_map {
             //! @brief Converts a bitmap index to an equivalent node position
             position_type index_to_position(index_type const& index, position_type position) {
                 //linear scaling inverse formula
-                for(int i = 0; i < 2; i++)
+                for (int i = 0; i < 2; i++)
                     position[i] = index[i] / m_index_factors[i] + m_viewport_min[i];
                 return position;
             }
@@ -213,7 +218,7 @@ struct simulated_map {
                 std::string real_path;
                 bool temp_var;
 
-                if(path.empty()) {
+                if (path.empty()) {
                     m_bitmap = {{false}};
                     return;
                 }
@@ -229,15 +234,29 @@ struct simulated_map {
                 if (bitmap_data != nullptr) {
 
                     m_bitmap.emplace_back();
+                    m_queues.emplace_back();
+                    m_closest.emplace_back();
+                    m_visited.emplace_back();
                     for (int i = 0; i * channels_per_pixel < bitmap_height * bitmap_width * channels_per_pixel; i++) {
                         unsigned char *pixelOffset = bitmap_data + i * channels_per_pixel;
                         if (i != 0 && i % bitmap_width == 0) {
                             line_index++;
                             m_bitmap.emplace_back();
+                            //3 queues are generated for each row in order to express i+2 and i+3 distances without indexing error
+                            m_queues.emplace_back();
+                            m_queues.emplace_back();
+                            m_queues.emplace_back();
+                            m_closest.emplace_back();
+                            m_visited.emplace_back();
                         }
-                        for(j = 0, temp_var = true; j < channels_per_pixel; j++)
+                        for (j = 0, temp_var = true; j < channels_per_pixel; j++)
                             temp_var = temp_var && std::abs(m_color.rgba[j] * 255 - pixelOffset[j]) < m_threshold;
                         m_bitmap[line_index].push_back(temp_var);
+                        //m_closest[line_index].push_back({static_cast<size_t>(bitmap_height+1),static_cast<size_t>(bitmap_width+1)});
+                        m_closest[line_index].emplace_back();
+                        m_visited[line_index].push_back(false);
+                        if (temp_var)
+                            m_queues[0].push({{static_cast<size_t>(i%bitmap_width),static_cast<size_t>(line_index)},{static_cast<size_t>(i%bitmap_width),static_cast<size_t>(line_index)}});
                     }
                     delete bitmap_data;
 
@@ -246,19 +265,117 @@ struct simulated_map {
 
             }
 
+            //! @brief Fills m_closest by parsing the bitmap with two sequential bfs
+            void fill_m_closest() {
+                fill_spaces();
+                //prepare m_visited for sequential from spaces to obstacle bfs exploration
+                for (auto & matrix_elem : m_visited)
+                    for (int j = 0; j < m_visited[0].size(); j++)
+                        matrix_elem[j] = false;
+                fill_obstacles();
+            }
+
+            //! @brief Parse the bitmap starting from obstacles to spaces in order to calculate the nearest obstacle for each space
+            void fill_spaces() {
+                constexpr static std::array<std::array<int, 3>, 8> deltas = delta;
+                for (int i = 0; i < m_queues.size(); i++) {
+                    std::queue<matrix_pair_type>& current_queue = m_queues[i];
+
+                    while (!current_queue.empty()) {
+                        matrix_pair_type elem = current_queue.front();
+                        index_type point = elem.first;
+                        if (!is_visited(point[0], point[1])) {
+                            m_closest[point[1]][point[0]] = elem.second;
+                            m_visited[point[1]][point[0]] = true;
+
+                            //for each space, load that space into source queue to prepare for second further bfs
+                            if (i > 0 && !m_bitmap[point[1]][point[0]]) m_queues[0].push({point,point});
+                            for (int j = 0; j < 4; j++) {
+                                if (is_in_bound(point[0] + deltas[j][0], point[1] + deltas[j][1]))
+                                    m_queues[i+2].push({{point[0] + deltas[j][0], point[1] + deltas[j][1]}, elem.second});
+                                if (is_in_bound(point[0] + deltas[j+4][0], point[1] + deltas[j+4][1]))
+                                    m_queues[i+3].push({{point[0] + deltas[j+4][0], point[1] + deltas[j+4][1]}, elem.second});
+                            }
+                        }
+                        current_queue.pop();
+                    }
+                    //clear queue
+                    current_queue = std::queue<matrix_pair_type>();
+                }
+            }
+
+            //! @brief Parse the bitmap starting from spaces to obstacles in order to calculate the nearest space for each obstacle
+            void fill_obstacles(){
+                constexpr static std::array<std::array<int, 3>, 8> deltas = delta;
+                for (int i = 0; i < m_queues.size(); i++) {
+                    std::queue<matrix_pair_type>& current_queue = m_queues[i];
+
+                    while (!current_queue.empty()) {
+                        matrix_pair_type elem = current_queue.front();
+                        index_type point = elem.first;
+                        if (!is_visited(point[0], point[1])) {
+                            if (m_bitmap[point[1]][point[0]])
+                                m_closest[point[1]][point[0]] = elem.second;
+
+                            m_visited[point[1]][point[0]] = true;
+                            for (int j = 0; j < 4; j++) {
+                                if (is_in_bound(point[0] + deltas[j][0], point[1] + deltas[j][1]))
+                                    m_queues[i+2].push({{point[0] + deltas[j][0], point[1] + deltas[j][1]}, elem.second});
+                                if (is_in_bound(point[0] + deltas[j+4][0], point[1] + deltas[j+4][1]))
+                                    m_queues[i+3].push({{point[0] + deltas[j+4][0], point[1] + deltas[j+4][1]}, elem.second});
+                            }
+                        }
+                        current_queue.pop();
+                    }
+                    //clear queue
+                    current_queue = std::queue<matrix_pair_type>();
+                }
+
+            }
+
+            //! @brief Checks if an index is in the bitmap size limits
+            inline bool is_in_bound(int x, int y) {
+                return x >= 0 && x < m_bitmap[0].size() && y >= 0 && y < m_bitmap.size();
+            }
+
+            /*
+            inline bool is_visited(int x, int y) {
+                return m_closest[y][x][0] != m_bitmap.size()+1 && m_closest[y][x][1] != m_bitmap[0].size()+1;
+            }
+             */
+
+            //! @brief Returns if a node has been already visited by the bfs exploration
+            inline bool is_visited(int x, int y) {
+                return m_visited[y][x];
+            }
+
+            //! @brief Array containing deltas and their cost used to generate all the adjacent pixels from a source pixel
+            constexpr static std::array<std::array<int, 3>, 8> delta = {{{-1, 0, 2}, {1, 0, 2}, {0, 1, 2}, {0, -1, 2}, {1, 1, 3}, {-1, 1, 3}, {1, -1, 3}, {-1, -1, 3}}};
+
+
+            //! @brief Matrix containing queues used to explore the bitmap and fill m_closest
+            std::vector<std::queue<matrix_pair_type>> m_queues;
+
             /**
-             * @brief Bitmap representation
+             * @brief Matrix containing data to implements closest_space() and closest_obstacle()
              *
-             * a true value means there is an obstacle otherwise false
+             * if a indexed position is empty it contains the nearest obstacle otherwise the nearest empty space position
+             */
+            std::vector<std::vector<bool>> m_visited;
+
+            /**
+            * @brief Bitmap representation
+            *
+            * a true value means there is an obstacle otherwise false
             */
-            std::vector <std::vector<bool>> m_bitmap;
+            std::vector<std::vector<bool>> m_bitmap;
 
             /**
             * @brief Matrix containing data to implements closest_space() and closest_obstacle()
             *
             * if a indexed position is empty it contains the nearest obstacle otherwise the nearest empty space position
             */
-            std::vector <std::vector<index_type>> m_closest;
+            std::vector<std::vector<index_type>> m_closest;
 
             //! @brief Vector of maximum coordinate of the grid area.
             position_type m_viewport_max;
@@ -289,5 +406,4 @@ struct simulated_map {
 }
 
 }
-
 #endif // FCPP_SIMULATED_MAP_H_

@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "lib/common/algorithm.hpp"
+#include "lib/common/option.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
 
@@ -105,36 +106,6 @@ auto geometric(T min, T max, T step) {
     });
 }
 
-//! @brief Class representing an optional value of type `T`.
-template <typename T>
-class option {
-  public:
-    //! @brief The underlying type.
-    using type = T;
-
-    //! @brief Constructor with no value.
-    option() : m_val(), m_none(true) {}
-
-    //! @brief Constructor with a value.
-    option(T v) : m_val(v), m_none(false) {}
-
-    //! @brief Value extraction (returns `T{}` if no value is contained)
-    operator T() const {
-        return m_val;
-    }
-
-    //! @brief Returns whether a value is present.
-    bool none() const {
-        return m_none;
-    }
-
-  private:
-    //! @brief The stored value.
-    T m_val;
-    //! @brief Whether there is a value.
-    bool m_none;
-};
-
 /**
  * @brief Functor generating a recursively defined list.
  *
@@ -142,11 +113,11 @@ class option {
  * - the list index `i` to be generated;
  * - the value previously generated `prev`;
  * - a \ref common::tagged_tuple "tagged_tuple" `tup` of parameters.
- * The recursive definition returns an `option<T>`, so that
+ * The recursive definition returns a `common::option<T>`, so that
  * `return {}` stops the recursion while `return v` provides a new item on the list.
  *
  * @param init A initialising value, to be fed to `f` for generating the first element.
- * @param f A function with signature `option<T>(size_t i, T prev, auto const& tup)`.
+ * @param f A function with signature `common::option<T>(size_t i, T prev, auto const& tup)`.
  */
 template <typename S, typename T, typename F>
 auto recursive(T init, F&& f) {
@@ -154,8 +125,8 @@ auto recursive(T init, F&& f) {
         std::vector<T> v;
         T prev = init;
         for (size_t i = 0; ; ++i) {
-            option<T> r = f(i, prev, x);
-            if (r.none()) break;
+            common::option<T> r = f(i, prev, x);
+            if (r.empty()) break;
             prev = r;
             v.push_back(r);
         }

@@ -67,7 +67,7 @@ TEST(BatchTest, Lists) {
     EXPECT_SAME(decltype(x4), std::vector<int>);
     std::vector<int> v4{1, 2, 4, 8, 16, 32, 64};
     EXPECT_EQ(x4, v4);
-    auto x5 = batch::recursive<void>(0, [](size_t i, int prev, auto const& tup) -> batch::option<int> {
+    auto x5 = batch::recursive<void>(0, [](size_t i, int prev, auto const& tup) -> common::option<int> {
         if (i == 0) return tup;
         if (prev == 1) return {};
         return prev%2 ? 3*prev+1 : prev/2;

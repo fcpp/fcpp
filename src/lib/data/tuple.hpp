@@ -191,6 +191,26 @@ auto tuple_cat(Ts&&... ts) {
 
 
 /**
+ * @name tuple element type
+ *
+ * Access the type of the n-th element of a tuple.
+ */
+//! @{
+//! @brief general form
+template <size_t n, typename T>
+struct tuple_element;
+
+//! @brief active form
+template <size_t n, typename... Ts>
+struct tuple_element<n, tuple<Ts...>> : public std::tuple_element<n, std::tuple<Ts...>> {};
+
+//! @brief type definition
+template <size_t n, typename T>
+using tuple_element_t = typename tuple_element<n, T>::type;
+//! @}
+
+
+/**
  * @name get element
  *
  * Accesses an element of a tuple, as `std::get`.
@@ -198,18 +218,18 @@ auto tuple_cat(Ts&&... ts) {
 //! @{
 //! @brief lvalue overload
 template <size_t n, typename... Ts>
-typename std::tuple_element<n, std::tuple<Ts...>>::type& get(tuple<Ts...>& t) noexcept {
+auto& get(tuple<Ts...>& t) noexcept {
     return std::get<n>((std::tuple<Ts...>&)t);
 }
 //! @brief rvalue overload
 template <size_t n, typename... Ts>
-typename std::tuple_element<n, std::tuple<Ts...>>::type&& get(tuple<Ts...>&& t) noexcept {
+auto&& get(tuple<Ts...>&& t) noexcept {
     return std::get<n>((std::tuple<Ts...>&&)t);
 }
 //! @brief const lvalue overload
 template <size_t n, typename... Ts>
-typename std::tuple_element<n, std::tuple<Ts...>>::type const& get(tuple<Ts...> const& t) noexcept {
-    return std::get<n>((const std::tuple<Ts...>&)t);
+auto const& get(tuple<Ts...> const& t) noexcept {
+    return std::get<n>((std::tuple<Ts...> const&)t);
 }
 //! @}
 

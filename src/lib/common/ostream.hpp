@@ -117,7 +117,7 @@ template <size_t n>
 struct vec;
 
 template <size_t n, typename... Ts>
-typename std::tuple_element<n, std::tuple<Ts...>>::type const& get(const tuple<Ts...>&) noexcept;
+auto const& get(tuple<Ts...> const&) noexcept;
 
 namespace details {
     template <typename T>

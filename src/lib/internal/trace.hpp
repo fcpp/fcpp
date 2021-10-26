@@ -15,6 +15,7 @@
 #include <cstdint>
 
 #include <vector>
+#include <functional>
 
 #include "lib/settings.hpp"
 
@@ -77,7 +78,27 @@ namespace internal {
 //! @brief Forward declarations for friendship.
 struct trace_reset;
 struct trace_call;
+struct trace_key;
 struct trace_cycle;
+
+//! @brief Reduce a size_t hash to k_hash_len bits.
+namespace details {
+#if SIZE_MAX <= 4294967295 && FCPP_TRACE <= 32
+    inline trace_t hash_reducer(uint32_t x) {
+        x = ((x >> 16) ^ x) * 0x45d9f3b;
+        x = ((x >> 16) ^ x) * 0x45d9f3b;
+        x = (x >> 16) ^ x;
+        return x & k_hash_mod;
+    }
+#else
+inline trace_t hash_reducer(uint64_t x) {
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9L;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111ebL;
+        x = x ^ (x >> 31);
+        return x & k_hash_mod;
+    }
+#endif
+}
 //! @endcond
 
 
@@ -98,6 +119,7 @@ class trace {
     //! @{
     friend struct trace_reset;
     friend struct trace_call;
+    friend struct trace_key;
     friend struct trace_cycle;
     //! @}
     //! @endcond
@@ -130,6 +152,13 @@ class trace {
         assert((x < k_hash_factor or !FCPP_WARNING_TRACE) and "warning: code points may induce colliding hashes (ignore with #define FCPP_WARNING_TRACE false)");
         m_stack_hash = (m_stack_hash * k_hash_factor + x) & k_hash_mod;
         m_stack.push_back(x);
+    }
+
+    //! @brief Adds a custom key to the stack trace updating the hash.
+    template <typename T>
+    inline void push_key(T const& x) {
+        std::hash<T> hasher;
+        push(details::hash_reducer(hasher(x)));
     }
 
     //! @brief Remove the last function call from the stack trace updating the hash.
@@ -184,6 +213,30 @@ struct trace_call {
     }
     //! @brief Destructor (removes element from trace).
     ~trace_call() {
+        m_trace.pop();
+    }
+
+  private:
+    //! @brief Reference trace object.
+    trace& m_trace;
+};
+
+/**
+ * @brief Stateless class for handling trace update on process keys.
+ *
+ * The intended usage is:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * internal::trace_key trace_process(node.stack_trace, key);
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+struct trace_key {
+    //! @brief Constructor (adds element to trace).
+    template <typename T>
+    trace_key(trace& t, T const& x) : m_trace{t} {
+        m_trace.push_key(x);
+    }
+    //! @brief Destructor (removes element from trace).
+    ~trace_key() {
         m_trace.pop();
     }
 

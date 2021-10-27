@@ -29,10 +29,10 @@
 namespace fcpp {
     namespace internal {
         //! @brief Supported pointers to vertex buffers.
-        enum class vertex { singleLine, star, plane, grid, SIZE };
+        enum class vertex : char { singleLine, star, plane, grid, SIZE };
 
         //! @brief Supported pointers to index buffers.
-        enum class index { plane, gridNorm, gridHigh, SIZE };
+        enum class index : char { plane, gridNorm, gridHigh, SIZE };
 
         //! @brief Glyph struct.
         struct glyph {

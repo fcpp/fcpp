@@ -105,6 +105,12 @@ class multitype_map {
         m_keys.insert(key);
     }
 
+    //! @brief Inserts the contents of another multitype_map.
+    void insert(multitype_map const& m) {
+        m_keys.insert(m.m_keys.begin(), m.m_keys.end());
+        multi_insert(m, value_types{});
+    }
+
     //! @brief Deletes value at corresponding key.
     template<typename A>
     void erase(T key) {
@@ -192,6 +198,16 @@ class multitype_map {
     bool maps_compare(U const& x, U const& y, type_sequence<S, Ss...>) const {
         if (not map_compare(get<S>(x), get<S>(y))) return false;
         return maps_compare(x, y, type_sequence<Ss...>{});
+    }
+
+    //! @brief Inserts the data from another multitype map (empty form).
+    inline void multi_insert(multitype_map const&, common::type_sequence<>) {}
+
+    //! @brief Inserts the data from another multitype map (active form).
+    template <typename S, typename... Ss>
+    inline void multi_insert(multitype_map const& m, common::type_sequence<S, Ss...>) {
+        get<S>(m_data).insert(get<S>(m.m_data).begin(), get<S>(m.m_data).end());
+        multi_insert(m, common::type_sequence<Ss...>{});
     }
 
     //! @brief Map associating keys to data.

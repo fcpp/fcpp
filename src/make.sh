@@ -197,34 +197,6 @@ function finder() {
     fi
 }
 
-function cmake_finder() {
-    search_folder="$1"
-    search_sources="$2"
-    search_suffix="$3"
-    shift 3
-    alltargets=""
-    for find in "$@"; do
-        targets=""
-        if [ "$find" == "all" ]; then
-            targets=$(echo $search_folder/*)
-        fi
-        for pattern in "$find" "$find*" "*$find" "*$find*"; do
-            if [ "$targets" == "" ]; then
-                targets=$(echo $search_folder*/$pattern$search_suffix | tr ' ' '\n' | grep -v "*")
-            fi
-            if [ "$targets" == "" ]; then
-                targets=$(echo $search_sources/$pattern/*.cpp | tr ' ' '\n' | grep -v "*" | sed "s|.cpp$|$search_suffix|;s|^$search_sources/[^/]*/|$search_folder/|")
-            fi
-        done
-        if [ "$targets" == "" ]; then
-            echo -e "\033[1mtarget \"$find\" not found\033[0m" >&2
-        else
-            alltargets="$alltargets $targets"
-        fi
-    done
-    echo $alltargets | tr -s ' ' '\n' | grep . | sort | uniq
-}
-
 function builder() {
     cmd=$1
     shift 1
@@ -245,32 +217,26 @@ function cmake_file_list() {
     cat CMakeLists.txt | grep "fcpp_$1.*cpp" | grep "$2" | sed "s|.*fcpp_$1.*/||;s|\.cpp.*||" | grep "$3"
 }
 
-function cmake_file_add() {
-    if [ "$1" == "test" ]; then
-        sfx="_test"
-    else
-        sfx=""
-    fi
-    for t in `cmake_file_list "$@"`; do
-        targets="$targets $t$sfx"
-    done
-}
-
 function cmake_finderx() {
     targets=""
     find="$1"
     shift 1
     rule="$@"
-    for pattern in "^$find$" "^$find" "$find$" "$find"; do
-        if [ "$targets" == "" ]; then
-            for kind in $rule; do
-                for f in `cmake_folder_list $kind | grep "$pattern"`; do
-                    cmake_file_add $kind "[^A-Za-z_0-9]$f/"
-                done
-                cmake_file_add $kind . "$pattern"
-            done
+    targets=$(for kind in $rule; do
+        if [ "$kind" == "test" ]; then
+            sfx="_test"
+        else
+            sfx=""
         fi
-    done
+        for pattern in "^$find$" "^$find" "$find$" "$find"; do
+            if [ "$targets" == "" ]; then
+                for f in `cmake_folder_list $kind | grep "$pattern"`; do
+                    cmake_file_list $kind "[^A-Za-z_0-9]$f/"
+                done
+                cmake_file_list $kind . "$pattern"
+            fi
+        done | sort | uniq | sed "s|$|$sfx|"
+    done)
 }
 
 function cmake_builderx() {
@@ -282,17 +248,6 @@ function cmake_builderx() {
         opt="$opt --target"
     fi
     reporter cmake --build ./bin/ $opt "$@"
-}
-
-function cmake_builder() {
-    parseopt "$@"
-    nshift=$?
-    if [ "$platform" == Unix ]; then
-        opt="-j `nproc`"
-    fi
-    reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
-    reporter cmake --build ./bin/ $opt
-    return $nshift
 }
 
 function powerset() {
@@ -627,18 +582,18 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "all" ]; then
         shift 1
         mkdoc
-        if [ $builder == cmake ]; then
-            opts="$opts -DFCPP_BUILD_TESTS=ON"
-            cmake_builder "$@"
-        else
-            parseopt "$@"
-        fi
+        parseopt "$@"
         shift $?
         if [ "$1" != "" ]; then
             usage
         fi
         if [ $builder == cmake ]; then
-            for target in $(cmake_finder bin/test test _test all); do
+            opts="$opts -DFCPP_BUILD_TESTS=ON"
+            cmake_builderx
+            cmake_finderx "" test
+            alltargets="$targets"
+            for t in $alltargets; do
+                target=bin/test/$t
                 reporter $target
             done
         else

@@ -14,30 +14,30 @@ using namespace fcpp::internal;
 
 /* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
-    const std::string renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
-    const std::string renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
-    const std::string renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
-    const std::string renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
-    const std::string renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
-    const std::string renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
-    const std::string renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
-    const std::string renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
-    const std::string renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
-    const std::string renderer::TEXTURE_PATH{ ".\\textures\\" };
+    std::string const renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
+    std::string const renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
+    std::string const renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
+    std::string const renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
+    std::string const renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
+    std::string const renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
+    std::string const renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
+    std::string const renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
+    std::string const renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
+    std::string const renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
-    const std::string renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
-    const std::string renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
-    const std::string renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
-    const std::string renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
-    const std::string renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
-    const std::string renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
-    const std::string renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
-    const std::string renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
-    const std::string renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
-    const std::string renderer::TEXTURE_PATH{ "./textures/" };
+    std::string const renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
+    std::string const renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
+    std::string const renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
+    std::string const renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
+    std::string const renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
+    std::string const renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
+    std::string const renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
+    std::string const renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
+    std::string const renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
+    std::string const renderer::TEXTURE_PATH{ "./textures/" };
 #endif
-    const glm::vec3 renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
-    const glm::vec3 renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
+    glm::vec3 const renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
+    glm::vec3 const renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
 
 
 /* --- PRIVATE STATIC VARIABLES --- */

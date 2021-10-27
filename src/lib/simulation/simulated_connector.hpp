@@ -75,9 +75,9 @@ namespace details {
       public:
         //! @brief Default constructors.
         cell() = default;
-        cell(const cell&) = delete;
+        cell(cell const&) = delete;
         cell(cell&&) = delete;
-        cell& operator=(const cell&) = delete;
+        cell& operator=(cell const&) = delete;
         cell& operator=(cell&&) = delete;
 
         //! @brief Inserts a node in the cell.
@@ -99,7 +99,7 @@ namespace details {
         }
 
         //! @brief Gives const access to linked cells.
-        std::conditional_t<parallel, std::vector<const cell*>, std::vector<const cell*> const&>
+        std::conditional_t<parallel, std::vector<cell const*>, std::vector<cell const*> const&>
         linked() const {
             common::shared_guard<parallel> l(m_mutex);
             return m_linked;
@@ -116,7 +116,7 @@ namespace details {
         std::unordered_set<N*> m_contents;
 
         //! @brief The linked cells.
-        std::vector<const cell*> m_linked;
+        std::vector<cell const*> m_linked;
 
         //! @brief A mutex regulating access to this cell.
         mutable common::shared_mutex<parallel> m_mutex;
@@ -325,7 +325,7 @@ struct simulated_connector {
           private: // implementation details
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
-            void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
+            void receive_size(common::bool_pack<false>, device_t, common::tagged_tuple<S,T> const&) {}
             //! @brief Stores size of received message.
             template <typename S, typename T>
             void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
@@ -413,7 +413,7 @@ struct simulated_connector {
             }
 
             //! @brief Returns the cells in proximity of node `n`.
-            cell_type const& cell_of(const typename F::node& n) const {
+            cell_type const& cell_of(typename F::node const& n) const {
                 common::shared_guard<parallel> l(m_node_mutex);
                 return m_nodes.at(n.uid)->second;
             }

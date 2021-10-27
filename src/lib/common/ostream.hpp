@@ -147,7 +147,7 @@ namespace internal {
 namespace details {
     //! @brief Converts to string an iterable container.
     template <typename T>
-    inline std::string iterable_stringify(const char* delim, T const& c, const char* sep = ", ") {
+    inline std::string iterable_stringify(char const* delim, T const& c, char const* sep = ", ") {
         std::string s;
         s.push_back(delim[0]);
         bool first = true;
@@ -165,7 +165,7 @@ namespace details {
 
     //! @brief Prints an iterable container.
     template <typename O, typename T>
-    O& iterable_print(O& o, const char* delim, T const& c) {
+    O& iterable_print(O& o, char const* delim, T const& c) {
         o << delim[0];
         bool first = true;
         for (auto const& x : c) {
@@ -178,7 +178,7 @@ namespace details {
     }
     //! @brief Converts to string an iterable container.
     template <typename T>
-    inline std::string pair_iterable_stringify(const char* delim, T const& c) {
+    inline std::string pair_iterable_stringify(char const* delim, T const& c) {
         std::string s;
         s.push_back(delim[0]);
         bool first = true;
@@ -199,7 +199,7 @@ namespace details {
 
     //! @brief Prints an iterable container.
     template <typename O, typename T>
-    O& pair_iterable_print(O& o, const char* delim, T const& c) {
+    O& pair_iterable_print(O& o, char const* delim, T const& c) {
         o << delim[0];
         bool first = true;
         for (auto const& x : c) {
@@ -238,11 +238,11 @@ namespace details {
         return to_string(x) + "; " + indexed_stringify(fcpp_tag{}, xs...);
     }
     template <typename T, size_t... is, typename tag>
-    inline std::string indexed_stringify(const char* delim, T const& x, std::index_sequence<is...>, tag t) {
+    inline std::string indexed_stringify(char const* delim, T const& x, std::index_sequence<is...>, tag t) {
         return delim[0] + indexed_stringify(fcpp_tag{}, common::escape(get<is>(x, t))...) + delim[1];
     }
     template <typename... Ts>
-    inline std::string multi_stringify(const char* delim, Ts const&... xs) {
+    inline std::string multi_stringify(char const* delim, Ts const&... xs) {
         return delim[0] + indexed_stringify(fcpp_tag{}, xs...) + delim[1];
     }
 
@@ -255,12 +255,12 @@ namespace details {
         o << x;
     }
     template <typename O, typename T, typename... Ts>
-    inline void indexed_print(O& o, T const& x, const Ts&... xs) {
+    inline void indexed_print(O& o, T const& x, Ts const&... xs) {
         o << x << "; ";
         indexed_print(o, xs...);
     }
     template <typename O, typename T, size_t... is, typename tag>
-    O& indexed_print(O& o, const char* delim, T const& x, std::index_sequence<is...>, tag) {
+    O& indexed_print(O& o, char const* delim, T const& x, std::index_sequence<is...>, tag) {
         o << delim[0];
         indexed_print(o, common::escape(get<is>(x, tag{}))...);
         o << delim[1];
@@ -270,7 +270,7 @@ namespace details {
 
     //! @brief Prints a self-printable structure.
     template <typename T, typename... tags>
-    std::string printable_stringify(const char* delim, T const& c, tags...) {
+    std::string printable_stringify(char const* delim, T const& c, tags...) {
         std::stringstream ss;
         ss << delim[0];
         c.print(ss, tags{}...);
@@ -280,7 +280,7 @@ namespace details {
 
     //! @brief Prints a self-printable structure.
     template <typename O, typename T, typename... tags>
-    O& printable_print(O& o, const char* delim, T const& c, tags...) {
+    O& printable_print(O& o, char const* delim, T const& c, tags...) {
         o << delim[0];
         c.print(o, tags{}...);
         o << delim[1];
@@ -302,7 +302,7 @@ namespace std {
 
     //! @brief Printing arrays.
     template <typename O, typename T, size_t n, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::array<T, n>& v) {
+    O& operator<<(O& o, std::array<T, n> const& v) {
         return fcpp::details::iterable_print(o, "[]", v);
     }
 
@@ -314,7 +314,7 @@ namespace std {
 
     //! @brief Printing pairs.
     template <typename O, typename T, typename U, typename = fcpp::common::if_ostream<O>>
-    O& operator<<(O& o, const std::pair<T, U>& p) {
+    O& operator<<(O& o, std::pair<T, U> const& p) {
         return fcpp::details::indexed_print(o, "()", p, std::make_index_sequence<2>{}, fcpp::details::std_tag{});
     }
 
@@ -460,7 +460,7 @@ namespace fcpp {
     namespace common {
         //! @brief Printing multitype maps in arrowhead format.
         template <typename O, typename T, typename... Ts, typename = if_ostream<O>>
-        O& operator<<(O& o, const multitype_map<T, Ts...>& m) {
+        O& operator<<(O& o, multitype_map<T, Ts...> const& m) {
             return fcpp::details::printable_print(o, "()", m);
         }
 
@@ -499,7 +499,7 @@ namespace fcpp {
     namespace internal {
         //! @brief Printing calculus contexts.
         template <typename O, bool b, bool d, typename... Ts, typename = common::if_ostream<O>>
-        O& operator<<(O& o, const context<b, d, Ts...>& c) {
+        O& operator<<(O& o, context<b, d, Ts...> const& c) {
             return fcpp::details::printable_print(o, "()", c);
         }
 
@@ -511,7 +511,7 @@ namespace fcpp {
 
         //! @brief Printing content of flat pointers.
         template <typename O, typename T, bool is_flat, typename = common::if_ostream<O>>
-        O& operator<<(O& o, const flat_ptr<T, is_flat>& p) {
+        O& operator<<(O& o, flat_ptr<T, is_flat> const& p) {
             o << common::escape(*p);
             return o;
         }

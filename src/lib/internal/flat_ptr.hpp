@@ -34,11 +34,6 @@ class flat_ptr<T, false> {
     //! @brief The type of the content.
     typedef T value_type;
 
-  private:
-    //! @brief The content of the class.
-    std::shared_ptr<T> m_data;
-
-  public:
     //! @name constructors
     //! @{
     //! @brief Default constructor.
@@ -49,43 +44,48 @@ class flat_ptr<T, false> {
     //! @brief Default copying constructor.
     flat_ptr(T const& d) {
         m_data.reset(new T(d));
-    };
+    }
 
     //! @brief Default moving constructor.
     flat_ptr(T&& d) {
         m_data.reset(new T(d));
-    };
+    }
 
     //! @brief Copy constructor.
-    flat_ptr(const flat_ptr<T, false>&) = default;
+    flat_ptr(flat_ptr const&) = default;
 
     //! @brief Move constructor.
-    flat_ptr(flat_ptr<T, false>&&) = default;
+    flat_ptr(flat_ptr&&) = default;
     //! @}
 
     //! @name assignment operators
     //! @{
     //! @brief Default copying assignment.
-    flat_ptr<T, false>& operator=(T const& d) {
+    flat_ptr& operator=(T const& d) {
         m_data.reset(new T(d));
         return *this;
-    };
+    }
 
     //! @brief Default moving assignment.
-    flat_ptr<T, false>& operator=(T&& d) {
+    flat_ptr& operator=(T&& d) {
         m_data.reset(new T(d));
         return *this;
-    };
+    }
 
     //! @brief Copy assignment.
-    flat_ptr<T, false>& operator=(const flat_ptr<T, false>&) = default;
+    flat_ptr& operator=(flat_ptr const&) = default;
 
     //! @brief Move assignment.
-    flat_ptr<T, false>& operator=(flat_ptr<T, false>&&) = default;
+    flat_ptr& operator=(flat_ptr&&) = default;
     //! @}
 
+    //! @brief Exchanges contents of flat pointers.
+    void swap(flat_ptr& m) {
+        m_data.swap(m.m_data);
+    }
+
     //! @brief Equality operator.
-    bool operator==(const flat_ptr<T, false>& o) const {
+    bool operator==(flat_ptr const& o) const {
         return *m_data == *(o.m_data);
     }
 
@@ -105,7 +105,7 @@ class flat_ptr<T, false> {
     }
 
     //! @brief Const arrow access to the content.
-    const T* operator->() const {
+    T const* operator->() const {
         return m_data.get();
     }
 
@@ -114,6 +114,10 @@ class flat_ptr<T, false> {
     S& serialize(S& s) {
         return s & *m_data.get();
     }
+
+  private:
+    //! @brief The content of the class.
+    std::shared_ptr<T> m_data;
 };
 
 
@@ -124,52 +128,53 @@ class flat_ptr<T, true> {
     //! @brief The type of the content.
     typedef T value_type;
 
-  private:
-    //! @brief The content of the class.
-    T m_data;
-
-  public:
     //! @name constructors
     //! @{
     //! @brief Default constructor.
-    flat_ptr() = default;
+    flat_ptr() : m_data() {}
 
     //! @brief Default copying constructor.
-    flat_ptr(T const& d) : m_data(d) {};
+    flat_ptr(T const& d) : m_data(d) {}
 
     //! @brief Default moving constructor.
-    flat_ptr(T&& d) : m_data(d) {};
+    flat_ptr(T&& d) : m_data(d) {}
 
     //! @brief Copy constructor.
-    flat_ptr(const flat_ptr<T, true>&) = default;
+    flat_ptr(flat_ptr const&) = default;
 
     //! @brief Move constructor.
-    flat_ptr(flat_ptr<T, true>&&) = default;
+    flat_ptr(flat_ptr&&) = default;
     //! @}
 
     //! @name assignment operators
     //! @{
     //! @brief Default copying assignment.
-    flat_ptr<T, true>& operator=(T const& d) {
+    flat_ptr& operator=(T const& d) {
         m_data = d;
         return *this;
-    };
+    }
 
     //! @brief Default moving assignment.
-    flat_ptr<T, true>& operator=(T&& d) {
+    flat_ptr& operator=(T&& d) {
         m_data = d;
         return *this;
-    };
+    }
 
     //! @brief Copy assignment.
-    flat_ptr<T, true>& operator=(const flat_ptr<T, true>&) = default;
+    flat_ptr& operator=(flat_ptr const&) = default;
 
     //! @brief Move assignment.
-    flat_ptr<T, true>& operator=(flat_ptr<T, true>&&) = default;
+    flat_ptr& operator=(flat_ptr&&) = default;
     //! @}
 
+    //! @brief Exchanges contents of flat pointers.
+    void swap(flat_ptr& m) {
+        using std::swap;
+        swap(m_data, m.m_data);
+    }
+
     //! @brief Equality operator.
-    bool operator==(const flat_ptr<T, true>& o) const {
+    bool operator==(flat_ptr const& o) const {
         return m_data == o.m_data;
     }
 
@@ -189,7 +194,7 @@ class flat_ptr<T, true> {
     }
 
     //! @brief Const arrow access to the content.
-    const T* operator->() const {
+    T const* operator->() const {
         return &m_data;
     }
 
@@ -198,7 +203,18 @@ class flat_ptr<T, true> {
     S& serialize(S& s) {
         return s & m_data;
     }
+
+  private:
+    //! @brief The content of the class.
+    T m_data;
 };
+
+
+//! @brief Exchanges contents of flat pointers.
+template <typename T, bool is_flat>
+void swap(flat_ptr<T, is_flat>& x, flat_ptr<T, is_flat>& y) {
+    x.swap(y);
+}
 
 
 }

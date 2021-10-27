@@ -208,61 +208,61 @@ TEST(TraitsTest, HasTemplate) {
     bool b;
     b = common::has_template<proxy, proxy<double>>;
     EXPECT_TRUE(b);
-    b = common::has_template<proxy, const proxy<double>>;
+    b = common::has_template<proxy, proxy<double> const>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, proxy<double>&>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, proxy<double>&&>;
     EXPECT_TRUE(b);
-    b = common::has_template<proxy, const proxy<double>&>;
+    b = common::has_template<proxy, proxy<double> const&>;
     EXPECT_TRUE(b);
-    b = common::has_template<proxy, const proxy<double>&&>;
+    b = common::has_template<proxy, proxy<double> const&&>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, int>;
     EXPECT_FALSE(b);
-    b = common::has_template<proxy, const int>;
+    b = common::has_template<proxy, int const>;
     EXPECT_FALSE(b);
     b = common::has_template<proxy, int&>;
     EXPECT_FALSE(b);
-    b = common::has_template<proxy, const int&>;
+    b = common::has_template<proxy, int const&>;
     EXPECT_FALSE(b);
     b = common::has_template<proxy, int&&>;
     EXPECT_FALSE(b);
-    b = common::has_template<proxy, const int&&>;
+    b = common::has_template<proxy, int const&&>;
     EXPECT_FALSE(b);
     b = common::has_template<proxy, std::array<proxy<double>,4>>;
     EXPECT_TRUE(b);
-    b = common::has_template<proxy, const std::array<proxy<double>,4>>;
+    b = common::has_template<proxy, std::array<proxy<double>,4> const>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, std::array<int,4>>;
     EXPECT_FALSE(b);
-    b = common::has_template<proxy, const std::array<int,4>>;
+    b = common::has_template<proxy, std::array<int,4> const>;
     EXPECT_FALSE(b);
     b = common::has_template<proxy, std::pair<proxy<double>,int>>;
     EXPECT_TRUE(b);
-    b = common::has_template<proxy, const std::pair<proxy<double>,int>>;
+    b = common::has_template<proxy, std::pair<proxy<double>,int> const>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, std::pair<int,double>>;
     EXPECT_FALSE(b);
-    b = common::has_template<proxy, const std::pair<int,double>>;
+    b = common::has_template<proxy, std::pair<int,double> const>;
     EXPECT_FALSE(b);
     b = common::has_template<proxy, std::tuple<proxy<double>,char>>;
     EXPECT_TRUE(b);
-    b = common::has_template<proxy, const std::tuple<proxy<double>,char>>;
+    b = common::has_template<proxy, std::tuple<proxy<double>,char> const>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, std::tuple<int,char>>;
     EXPECT_FALSE(b);
-    b = common::has_template<proxy, const std::tuple<int,char>>;
+    b = common::has_template<proxy, std::tuple<int,char> const>;
     EXPECT_FALSE(b);
     b = common::has_template<proxy, std::array<std::tuple<std::array<proxy<double>,3>,char>,4>>;
     EXPECT_TRUE(b);
-    b = common::has_template<proxy, const std::array<std::tuple<std::array<proxy<double>,3>,char>,4>&>;
+    b = common::has_template<proxy, std::array<std::tuple<std::array<proxy<double>,3>,char>,4> const&>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, std::array<std::tuple<std::array<proxy<double>,3>,char>,4>&&>;
     EXPECT_TRUE(b);
     b = common::has_template<proxy, std::array<std::tuple<std::array<double,3>,char>,4>>;
     EXPECT_FALSE(b);
-    b = common::has_template<proxy, const std::array<std::tuple<std::array<double,3>,char>,4>&>;
+    b = common::has_template<proxy, std::array<std::tuple<std::array<double,3>,char>,4> const&>;
     EXPECT_FALSE(b);
 }
 
@@ -274,22 +274,22 @@ TEST(TraitsTest, ExtractTemplate) {
     EXPECT_SAME(char const&,    common::partial_decay<char const&>);
     EXPECT_SAME(char,           common::partial_decay<char const&&>);
     EXPECT_SAME(double,         common::extract_template<proxy, double>);
-    EXPECT_SAME(double,         common::extract_template<proxy, const double>);
-    EXPECT_SAME(const double&,  common::extract_template<proxy, double&>);
+    EXPECT_SAME(double,         common::extract_template<proxy, double const>);
+    EXPECT_SAME(double const&,  common::extract_template<proxy, double&>);
     EXPECT_SAME(double,         common::extract_template<proxy, double&&>);
     EXPECT_SAME(double,         common::extract_template<proxy, proxy<double>>);
-    EXPECT_SAME(double,         common::extract_template<proxy, proxy<const double>>);
+    EXPECT_SAME(double,         common::extract_template<proxy, proxy<double const>>);
     EXPECT_SAME(double&,        common::extract_template<proxy, proxy<double&>>);
     EXPECT_SAME(double&,        common::extract_template<proxy, proxy<double&>&>);
-    EXPECT_SAME(double&,        common::extract_template<proxy, const proxy<double&>>);
-    EXPECT_SAME(const double&,  common::extract_template<proxy, proxy<const double>&>);
+    EXPECT_SAME(double&,        common::extract_template<proxy, proxy<double&> const>);
+    EXPECT_SAME(double const&,  common::extract_template<proxy, proxy<double const>&>);
     EXPECT_SAME(double,         common::extract_template<proxy, proxy<double>&&>);
     EXPECT_SAME(double,         common::extract_template<proxy, proxy<double&&>>);
     EXPECT_SAME(std::pair<double,int>,
-                common::extract_template<proxy, std::pair<proxy<const double>,int>&&>);
+                common::extract_template<proxy, std::pair<proxy<double const>,int>&&>);
     EXPECT_SAME(std::pair<double,int>&,
-                common::extract_template<proxy, const proxy<std::pair<double,int>&>&>);
-    EXPECT_SAME(const std::pair<double,int>&,
+                common::extract_template<proxy, proxy<std::pair<double,int>&> const&>);
+    EXPECT_SAME(std::pair<double,int> const&,
                 common::extract_template<proxy, std::pair<double,int>&>);
     EXPECT_SAME(array<double,4>,
                 common::extract_template<proxy, array<proxy<double>,4>>);
@@ -302,22 +302,22 @@ TEST(TraitsTest, ExtractTemplate) {
     EXPECT_SAME(array<double&,4>,
                 common::extract_template<proxy, array<proxy<double>,4>&>);
     EXPECT_SAME(array<double,4>,
-                common::extract_template<proxy, const array<proxy<double>,4>&&>);
+                common::extract_template<proxy, array<proxy<double>,4> const&&>);
     EXPECT_SAME(std::tuple<double,int>,
                 common::extract_template<proxy, std::tuple<double,int>>);
     EXPECT_SAME(std::tuple<double,char>,
                 common::extract_template<proxy, std::tuple<proxy<double>,char>>);
-    EXPECT_SAME(std::tuple<double&,const char&>,
+    EXPECT_SAME(std::tuple<double&,char const&>,
                 common::extract_template<proxy, std::tuple<proxy<double>,char>&>);
-    EXPECT_SAME(std::tuple<const double&,const char&>,
+    EXPECT_SAME(std::tuple<double const&,char const&>,
                 common::extract_template<proxy, std::tuple<proxy<double>,char> const&>);
     EXPECT_SAME(std::tuple<double,char>,
                 common::extract_template<proxy, proxy<std::tuple<double,char>>&&>);
-    EXPECT_SAME(const array<std::tuple<array<double,3>,char>,4>&,
+    EXPECT_SAME(array<std::tuple<array<double,3>,char>,4> const&,
                 common::extract_template<proxy, array<std::tuple<array<double,3>,char>,4>&>);
-    EXPECT_SAME(array<std::tuple<array<const double&,3>,const char&>,4>,
-                common::extract_template<proxy, const array<std::tuple<array<proxy<double>,3>,char>,4>&>);
-    EXPECT_SAME(array<std::tuple<array<double&,3>,const char&>,4>,
+    EXPECT_SAME(array<std::tuple<array<double const&,3>,char const&>,4>,
+                common::extract_template<proxy, array<std::tuple<array<proxy<double>,3>,char>,4> const&>);
+    EXPECT_SAME(array<std::tuple<array<double&,3>,char const&>,4>,
                 common::extract_template<proxy, array<std::tuple<array<proxy<double>,3>,char>,4>&>);
     EXPECT_SAME(array<std::tuple<array<double,3>,char>,4>,
                 common::extract_template<proxy, array<std::tuple<proxy<array<double,3>>,char>,4>&&>);
@@ -332,14 +332,14 @@ TEST(TraitsTest, TemplateArgs) {
                 common::template_args<std::tuple<int, proxy<double>, char>>);
     EXPECT_SAME(common::type_sequence<int&&, proxy<double>&&, char&&>,
                 common::template_args<std::tuple<int, proxy<double>, char>&&>);
-    EXPECT_SAME(common::type_sequence<const int&, const proxy<double>&, const char&>,
-                common::template_args<const std::tuple<int, proxy<double>, char>&>);
+    EXPECT_SAME(common::type_sequence<int const&, proxy<double> const&, char const&>,
+                common::template_args<std::tuple<int, proxy<double>, char> const&>);
     EXPECT_SAME(common::type_sequence<proxy<double>>,
                 common::template_args<array<proxy<double>, 4>>);
     EXPECT_SAME(common::type_sequence<proxy<double>&&>,
                 common::template_args<array<proxy<double>, 4>&&>);
-    EXPECT_SAME(common::type_sequence<const proxy<double>&>,
-                common::template_args<const array<proxy<double>, 4>&>);
+    EXPECT_SAME(common::type_sequence<proxy<double> const&>,
+                common::template_args<array<proxy<double>, 4> const&>);
 }
 
 int adder(int x, int y) {

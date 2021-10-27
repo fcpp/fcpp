@@ -97,14 +97,14 @@ namespace details {
             return std::shared_ptr<std::ostream>(new std::ofstream(ss.str()));
         } else return std::shared_ptr<std::ostream>(new std::ofstream(s));
     }
-    //! @brief Makes a stream reference from a `const char*` path.
+    //! @brief Makes a stream reference from a `char const*` path.
     template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(const char* s, common::tagged_tuple<S,T> const& t) {
+    std::shared_ptr<std::ostream> make_stream(char const* s, common::tagged_tuple<S,T> const& t) {
         return make_stream(std::string(s), t);
     }
     //! @brief Makes a stream reference from a stream pointer.
     template <typename O, typename S, typename T>
-    std::shared_ptr<O> make_stream(O* o, const common::tagged_tuple<S,T>&) {
+    std::shared_ptr<O> make_stream(O* o, common::tagged_tuple<S,T> const&) {
         return std::shared_ptr<O>(o, [] (void*) {});
     }
     //! @brief Makes a reference to a plotter.
@@ -159,7 +159,7 @@ namespace details {
  *
  * Admissible values for \ref tags::output are:
  * - a pointer to a stream (as `std::ostream*`);
- * - a file name (as `std::string` or `const char*`);
+ * - a file name (as `std::string` or `char const*`);
  * - a directory name ending in `/` or `\`, to which a generated file name will be appended (starting with \ref tags::name followed by a representation of the whole initialisation parameters of the net instance).
  */
 template <class... Ts>
@@ -428,7 +428,7 @@ struct logger {
             common::mutex<value_push and parallel> m_aggregators_mutex;
 
             //! @brief The number of threads to be used.
-            const size_t m_threads;
+            size_t const m_threads;
         };
     };
 };

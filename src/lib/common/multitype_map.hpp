@@ -77,6 +77,12 @@ class multitype_map {
     multitype_map& operator=(multitype_map&&) = default;
     //! @}
 
+    //! @brief Exchanges contents of multitype maps.
+    void swap(multitype_map& m) {
+        m_keys.swap(m.m_keys);
+        m_data.swap(m.m_data);
+    }
+
     //! @brief Equality operator.
     bool operator==(multitype_map const& o) const {
         return m_keys == o.m_keys and maps_compare(m_data, o.m_data, value_types{});
@@ -215,6 +221,13 @@ class multitype_map {
     //! @brief Set of keys (for void data).
     std::unordered_set<T> m_keys;
 };
+
+
+//! @brief Exchanges contents of multitype maps.
+template <typename T, typename... Ts>
+void swap(multitype_map<T, Ts...>& x, multitype_map<T, Ts...>& y) {
+    x.swap(y);
+}
 
 
 }

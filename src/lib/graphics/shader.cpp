@@ -8,7 +8,7 @@
 
 shader::shader() : m_ID{ 0 } { }
 
-shader::shader(const char* vertexPath, const char* fragmentPath)
+shader::shader(char const* vertexPath, char const* fragmentPath)
 {
     /* RETRIEVE SOURCE CODE */
     std::string vertexCode;
@@ -42,8 +42,8 @@ shader::shader(const char* vertexPath, const char* fragmentPath)
     }
 
     // Getting code from strings
-    const char* vShaderCode{ vertexCode.c_str() };
-    const char* fShaderCode{ fragmentCode.c_str() };
+    char const* vShaderCode{ vertexCode.c_str() };
+    char const* fShaderCode{ fragmentCode.c_str() };
 
     /* COMPILE SHADERS */
     unsigned int vertex, fragment;

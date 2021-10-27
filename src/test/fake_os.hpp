@@ -75,7 +75,8 @@ struct transceiver {
     std::vector<char> fake_send() {
         common::lock_guard<true> l(m_mutex);
         std::vector<char> v;
-        std::swap(v, m_out);
+        using std::swap;
+        swap(v, m_out);
         return v;
     }
 

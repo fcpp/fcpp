@@ -25,7 +25,7 @@ public:
     shader();
 
     //! @brief Constructor building and reading the shader.
-    shader(const char* vertexPath, const char* fragmentPath);
+    shader(char const* vertexPath, char const* fragmentPath);
 
     //! @brief Copy constructor.
     shader(shader const&) = delete;
@@ -47,13 +47,13 @@ public:
 
     //! @brief Uniform functions.
     //! @{
-    void setBool(const std::string &name, bool value) const;
-    void setInt(const std::string &name, int value) const;
-    void setFloat(const std::string &name, float value) const;
-    void setVec3(const std::string &name, const glm::vec3 &value) const;
-    void setVec4(const std::string &name, const glm::vec4 &value) const;
-    void setMat3(const std::string &name, const glm::mat3 &mat) const;
-    void setMat4(const std::string &name, const glm::mat4 &mat) const;
+    void setBool(std::string const& name, bool value) const;
+    void setInt(std::string const& name, int value) const;
+    void setFloat(std::string const& name, float value) const;
+    void setVec3(std::string const& name, glm::vec3 const& value) const;
+    void setVec4(std::string const& name, glm::vec4 const& value) const;
+    void setMat3(std::string const& name, glm::mat3 const& mat) const;
+    void setMat4(std::string const& name, glm::mat4 const& mat) const;
     //! @}
 };
 

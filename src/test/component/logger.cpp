@@ -107,7 +107,7 @@ using combo3 = component::combine_spec<
 
 
 TEST(LoggerTest, MakeStream) {
-    common::tagged_tuple_t<name,const char*,uid,int,oth,char,gat,bool> t{"bar",7,'b',false};
+    common::tagged_tuple_t<name,char const*,uid,int,oth,char,gat,bool> t{"bar",7,'b',false};
     std::shared_ptr<std::ostream> p;
     p = component::details::make_stream("foo", t);
     p = component::details::make_stream(std::string("foo"), t);

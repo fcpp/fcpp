@@ -18,19 +18,27 @@ class TwinTest : public ::testing::Test {
 
 
 TEST_F(TwinTest, TrueOperators) {
-    internal::twin<int, true> x(mirrored), y{}, z;
+    internal::twin<int, true> x(mirrored), y{}, z, a{}, b{};
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(mirrored, z);
+    EXPECT_EQ(a, b);
+    swap(z, a);
+    EXPECT_EQ(mirrored, a);
+    EXPECT_EQ(z, b);
 }
 
 TEST_F(TwinTest, FalseOperators) {
-    internal::twin<int, false> x(separate), y{}, z;
+    internal::twin<int, false> x(separate), y{}, z, a{}, b{};
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(separate, z);
+    EXPECT_EQ(a, b);
+    swap(z, a);
+    EXPECT_EQ(separate, a);
+    EXPECT_EQ(z, b);
 }
 
 TEST_F(TwinTest, Mirrored) {

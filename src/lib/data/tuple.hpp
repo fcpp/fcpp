@@ -37,7 +37,7 @@ class tuple {
     //! @brief Default constructor.
     constexpr tuple() = default;
     //! @brief Copy constructor.
-    tuple(const tuple&) = default;
+    tuple(tuple const&) = default;
     //! @brief Move constructor.
     tuple(tuple&&) = default;
     //! @brief Implicit conversion copy constructor.
@@ -47,7 +47,7 @@ class tuple {
     template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(tuple<Us...>&& t) : m_tuple(std::move(t.m_tuple)) {}
     //! @brief Initialization copy constructor.
-    tuple(const Ts&... xs) : m_tuple(xs...) {}
+    tuple(Ts const&... xs) : m_tuple(xs...) {}
     //! @brief Initialization convert constructor.
     template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(Us&&... xs) : m_tuple(std::forward<Us>(xs)...) {}
@@ -101,7 +101,7 @@ class tuple<> {
     //! @brief Default constructor.
     constexpr tuple() = default;
     //! @brief Copy constructor.
-    tuple(const tuple&) = default;
+    tuple(tuple const&) = default;
     //! @brief Move constructor.
     tuple(tuple&&) = default;
     //! @}
@@ -145,7 +145,7 @@ namespace details {
     //! @brief Converts an `std::tuple` into a `tuple` (lvalue).
     template <typename... Ts>
     tuple<Ts...> const& tuple_promote(std::tuple<Ts...> const& t) {
-        return (const tuple<Ts...>&)t;
+        return (tuple<Ts...> const&)t;
     }
 
     //! @brief Converts a `tuple` into an `std::tuple` (rvalue).
@@ -156,7 +156,7 @@ namespace details {
     //! @brief Converts a `tuple` into an `std::tuple` (lvalue).
     template <typename... Ts>
     std::tuple<Ts...> const& tuple_demote(tuple<Ts...> const& t) {
-        return (const std::tuple<Ts...>&)t;
+        return (std::tuple<Ts...> const&)t;
     }
 }
 //! @endcond
@@ -291,7 +291,7 @@ namespace details {
     }
     //! @brief const lvalue overload
     template <typename... Ts>
-    inline tuple_wrapper<const tuple<Ts...>&, std::make_index_sequence<sizeof...(Ts)>> tuple_wrap(tuple<Ts...> const& x) {
+    inline tuple_wrapper<tuple<Ts...> const&, std::make_index_sequence<sizeof...(Ts)>> tuple_wrap(tuple<Ts...> const& x) {
         return {x};
     }
     //! @}
@@ -324,22 +324,22 @@ namespace details {
     }
 
     template <typename T, typename U, typename I>
-    inline auto tw_lt(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
+    inline auto tw_lt(tuple_wrapper<T, I> const&, tuple_wrapper<U, I> const&, std::index_sequence<>) {
         return false;
     }
 
     template <typename T, typename U, typename I, size_t i>
-    inline auto tw_lt(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i>) {
+    inline auto tw_lt(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y, std::index_sequence<i>) {
         return get<i>(x.tuple()) < get<i>(y.tuple());
     }
 
     template <typename T, typename U, typename I, size_t i1, size_t i2, size_t... is>
-    inline auto tw_lt(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i1, i2, is...>) {
+    inline auto tw_lt(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y, std::index_sequence<i1, i2, is...>) {
         return ( get<i1>(x.tuple()) < get<i1>(y.tuple()) ) or (( get<i1>(x.tuple()) == get<i1>(y.tuple()) ) and tw_lt(x, y, std::index_sequence<i2, is...>{}));
     }
 
     template <typename T, typename U, typename I>
-    auto operator <(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y) {
+    auto operator <(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y) {
         return tw_lt(x, y, I{});
     }
 
@@ -349,17 +349,17 @@ namespace details {
     }
 
     template <typename T, typename U, typename I>
-    inline auto tw_le(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
+    inline auto tw_le(tuple_wrapper<T, I> const&, tuple_wrapper<U, I> const&, std::index_sequence<>) {
         return true;
     }
 
     template <typename T, typename U, typename I, size_t i>
-    inline auto tw_le(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i>) {
+    inline auto tw_le(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y, std::index_sequence<i>) {
         return get<i>(x.tuple()) <= get<i>(y.tuple());
     }
 
     template <typename T, typename U, typename I, size_t i1, size_t i2, size_t... is>
-    inline auto tw_le(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i1, i2, is...>) {
+    inline auto tw_le(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y, std::index_sequence<i1, i2, is...>) {
         return ( get<i1>(x.tuple()) < get<i1>(y.tuple()) ) or (( get<i1>(x.tuple()) == get<i1>(y.tuple()) ) and tw_le(x, y, std::index_sequence<i2, is...>{}));
     }
 
@@ -374,27 +374,27 @@ namespace details {
     }
 
     template <typename T, typename U, typename I>
-    inline auto tw_eq(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
+    inline auto tw_eq(tuple_wrapper<T, I> const&, tuple_wrapper<U, I> const&, std::index_sequence<>) {
         return true;
     }
 
     template <typename T, typename U, typename I, size_t i, size_t... is>
-    inline auto tw_eq(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
+    inline auto tw_eq(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y, std::index_sequence<i, is...>) {
         return ( get<i>(x.tuple()) == get<i>(y.tuple()) ) and tw_eq(x, y, std::index_sequence<is...>{});
     }
 
     template <typename T, typename U, typename I>
-    auto operator ==(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y) {
+    auto operator ==(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y) {
         return tw_eq(x, y, I{});
     }
 
     template <typename T, typename U, typename I>
-    inline auto tw_ne(const tuple_wrapper<T, I>&, const tuple_wrapper<U, I>&, std::index_sequence<>) {
+    inline auto tw_ne(tuple_wrapper<T, I> const&, tuple_wrapper<U, I> const&, std::index_sequence<>) {
         return false;
     }
 
     template <typename T, typename U, typename I, size_t i, size_t... is>
-    inline auto tw_ne(const tuple_wrapper<T, I>& x, const tuple_wrapper<U, I>& y, std::index_sequence<i, is...>) {
+    inline auto tw_ne(tuple_wrapper<T, I> const& x, tuple_wrapper<U, I> const& y, std::index_sequence<i, is...>) {
         return ( get<i>(x.tuple()) != get<i>(y.tuple()) ) or tw_ne(x, y, std::index_sequence<is...>{});
     }
 

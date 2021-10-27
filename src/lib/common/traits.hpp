@@ -429,7 +429,7 @@ constexpr bool is_sized_template = false;
 
 //! @brief Ignore constness.
 template <template<class,size_t> class T, class A>
-constexpr bool is_sized_template<T, const A> = is_sized_template<T, A>;
+constexpr bool is_sized_template<T, A const> = is_sized_template<T, A>;
 
 //! @brief Ignore lvalue references.
 template <template<class,size_t> class T, class A>
@@ -465,7 +465,7 @@ constexpr bool is_class_template = false;
 
 //! @brief Ignore constness.
 template <template<class...> class T, class A>
-constexpr bool is_class_template<T, const A> = is_class_template<T, A>;
+constexpr bool is_class_template<T, A const> = is_class_template<T, A>;
 
 //! @brief Ignore lvalue references.
 template <template<class...> class T, class A>
@@ -502,7 +502,7 @@ constexpr bool has_template = false;
 
 //! @brief Ignore constness.
 template <template<class...> class T, class A>
-constexpr bool has_template<T, const A> = has_template<T, A>;
+constexpr bool has_template<T, A const> = has_template<T, A>;
 
 //! @brief Ignore lvalue references.
 template <template<class...> class T, class A>
@@ -653,8 +653,8 @@ namespace details {
 
     //! @brief const tuple-like case.
     template <template<class...> class T, class... A>
-    struct template_args<const T<A...>> {
-        using type = type_sequence<const A...>;
+    struct template_args<T<A...> const> {
+        using type = type_sequence<A const...>;
     };
 
     //! @brief & tuple-like case.
@@ -665,8 +665,8 @@ namespace details {
 
     //! @brief const& tuple-like case.
     template <template<class...> class T, class... A>
-    struct template_args<const T<A...>&> {
-        using type = type_sequence<const A&...>;
+    struct template_args<T<A...> const&> {
+        using type = type_sequence<A const&...>;
     };
 
     //! @brief && tuple-like case.
@@ -677,8 +677,8 @@ namespace details {
 
     //! @brief const&& tuple-like case.
     template <template<class...> class T, class... A>
-    struct template_args<const T<A...>&&> {
-        using type = type_sequence<const A&&...>;
+    struct template_args<T<A...> const&&> {
+        using type = type_sequence<A const&&...>;
     };
 
     //! @brief array-like case.
@@ -689,8 +689,8 @@ namespace details {
 
     //! @brief const array-like case.
     template <template<class,size_t> class T, class A, size_t N>
-    struct template_args<const T<A, N>> {
-        using type = type_sequence<const A>;
+    struct template_args<T<A, N> const> {
+        using type = type_sequence<A const>;
     };
 
     //! @brief & array-like case.
@@ -701,8 +701,8 @@ namespace details {
 
     //! @brief const& array-like case.
     template <template<class,size_t> class T, class A, size_t N>
-    struct template_args<const T<A, N>&> {
-        using type = type_sequence<const A&>;
+    struct template_args<T<A, N> const&> {
+        using type = type_sequence<A const&>;
     };
 
     //! @brief && array-like case.
@@ -713,8 +713,8 @@ namespace details {
 
     //! @brief const&& array-like case.
     template <template<class,size_t> class T, class A, size_t N>
-    struct template_args<const T<A, N>&&> {
-        using type = type_sequence<const A&&>;
+    struct template_args<T<A, N> const&&> {
+        using type = type_sequence<A const&&>;
     };
 }
 //! @endcond
@@ -1189,7 +1189,7 @@ namespace details {
     };
     //! @brief const case.
     template <typename T>
-    struct reference_string<const T> {
+    struct reference_string<T const> {
         inline static std::string mangled() {
             return "K";
         }
@@ -1232,7 +1232,7 @@ std::string type_name() {
 template <typename T>
 std::string type_name() {
     int status = 42;
-    const char* name = typeid(T).name();
+    char const* name = typeid(T).name();
     std::unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
     return (status==0) ? res.get() + details::reference_string<T>::demangled() : details::reference_string<T>::mangled() + name;
 }
@@ -1274,14 +1274,14 @@ inline std::string escape(std::string x) {
     r.push_back('"');
     return r;
 }
-inline std::string escape(const char* x) {
+inline std::string escape(char const* x) {
     return escape(std::string(x));
 }
 template <typename T, typename = std::enable_if_t<std::is_empty<T>::value>>
 inline std::string escape(T) {
     return type_name<T>();
 }
-template <typename T, typename = std::enable_if_t<type_count<T, bool, char, int8_t, uint8_t, std::string, const char*> == 0 and not std::is_empty<T>::value>>
+template <typename T, typename = std::enable_if_t<type_count<T, bool, char, int8_t, uint8_t, std::string, char const*> == 0 and not std::is_empty<T>::value>>
 inline T const& escape(T const& x) {
     return x;
 }

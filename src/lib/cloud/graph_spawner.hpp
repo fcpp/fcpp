@@ -49,8 +49,8 @@ namespace details {
     //! @brief Makes an istream reference from a `std::string` path.
     std::shared_ptr<std::istream> make_istream(std::string const& s);
 
-    //! @brief Makes an istream reference from a `const char*` path.
-    std::shared_ptr<std::istream> make_istream(const char* s);
+    //! @brief Makes an istream reference from a `char const*` path.
+    std::shared_ptr<std::istream> make_istream(char const* s);
 
     //! @brief Makes an istream reference from a stream pointer.
     std::shared_ptr<std::istream> make_istream(std::istream* i);
@@ -101,7 +101,7 @@ struct graph_spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) :
+            net(common::tagged_tuple<S,T> const& t) :
                 P::net(t),
                 m_start(common::get_or<tags::start>(t, 0)),
                 m_nodesstream(details::make_istream(common::get_or<tags::nodesinput>(t, "index"))),
@@ -114,7 +114,7 @@ struct graph_spawner {
           private: // implementation details
             //! @brief Adds a `start` time to a node file tuple (if not present in the file).
             template <typename S, typename T>
-            auto push_time(const common::tagged_tuple<S,T>& tup, common::type_sequence<>) {
+            auto push_time(common::tagged_tuple<S,T> const& tup, common::type_sequence<>) {
                 using tt_type = typename common::tagged_tuple<S,T>::template push_back<tags::start, times_t>;
                 tt_type tt(tup);
                 common::get<tags::start>(tt) = this->m_start;

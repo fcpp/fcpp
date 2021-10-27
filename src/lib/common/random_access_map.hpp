@@ -48,7 +48,7 @@ namespace details {
         iterator() = default;
 
         //! @brief Copy constructor.
-        iterator(const iterator&) = default;
+        iterator(iterator const&) = default;
 
         //! @brief Move constructor.
         iterator(iterator&&) = default;
@@ -63,14 +63,15 @@ namespace details {
         //! @name assignment operators
         //! @{
         //! @brief Copy assignment.
-        iterator& operator=(const iterator&) = default;
+        iterator& operator=(iterator const&) = default;
 
         //! @brief Move assignment.
         iterator& operator=(iterator&&) = default;
 
         //! @brief Swap function.
         friend void swap(iterator& i, iterator& j) {
-            std::swap(i.m_it, j.m_it);
+            using std::swap;
+            swap(i.m_it, j.m_it);
         }
         //! @}
 
@@ -171,7 +172,7 @@ namespace details {
  * @param P Equality predicate type.
  * @param A Allocator type.
  */
-template <typename K, typename T, typename H = std::hash<K>, typename P = std::equal_to<K>, typename A = std::allocator<std::pair<const K,T>>>
+template <typename K, typename T, typename H = std::hash<K>, typename P = std::equal_to<K>, typename A = std::allocator<std::pair<K const,T>>>
 class random_access_map {
   private:
     //! @brief The internal unordered map type.
@@ -187,7 +188,7 @@ class random_access_map {
     //! @brief The mapped type.
     using mapped_type = T;
     //! @brief The value type.
-    using value_type = std::pair<const key_type, mapped_type>;
+    using value_type = std::pair<key_type const, mapped_type>;
     //! @brief The hasher type.
     using hasher = H;
     //! @brief The comparison predicate type.
@@ -197,7 +198,7 @@ class random_access_map {
     //! @brief Reference type.
     using reference = value_type&;
     //! @brief Const reference type.
-    using const_reference = const value_type&;
+    using const_reference = value_type const&;
     //! @brief Pointer type.
     using pointer = typename std::allocator_traits<A>::pointer;
     //! @brief Const pointer type.
@@ -218,7 +219,7 @@ class random_access_map {
     random_access_map() = default;
 
     //! @brief Copy constructor.
-    random_access_map(const random_access_map&) = default;
+    random_access_map(random_access_map const&) = default;
 
     //! @brief Move constructor.
     random_access_map(random_access_map&&) = default;
@@ -238,7 +239,7 @@ class random_access_map {
     //! @name assignment operators
     //! @{
     //! @brief Copy assignment.
-    random_access_map& operator=(const random_access_map&) = default;
+    random_access_map& operator=(random_access_map const&) = default;
 
     //! @brief Move assignment.
     random_access_map& operator=(random_access_map&&) = default;
@@ -393,9 +394,10 @@ class random_access_map {
 
     //! @brief Swaps content with another map.
     void swap(random_access_map& o) {
-        std::swap(m_map,  o.m_map);
-        std::swap(m_idx,  o.m_idx);
-        std::swap(m_iter, o.m_iter);
+        using std::swap;
+        swap(m_map,  o.m_map);
+        swap(m_idx,  o.m_idx);
+        swap(m_iter, o.m_iter);
     }
 
     //! @brief Equality operator.

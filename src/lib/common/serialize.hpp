@@ -40,7 +40,7 @@ class format_error : public std::runtime_error {
 //! @cond INTERNAL
 namespace details {
     //! @brief Proxy function copying memory without unwanted warnings.
-    inline void copy(const void* x, const void* y, size_t l) {
+    inline void copy(void const* x, void const* y, size_t l) {
         memcpy((void*)x, y, l);
     }
 }

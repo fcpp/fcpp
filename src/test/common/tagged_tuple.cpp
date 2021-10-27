@@ -48,7 +48,7 @@ TEST_F(TaggedTupleTest, Operators) {
     common::tagged_tuple_t<> e(y);
     common::tagged_tuple_t<> f = common::make_tagged_tuple<>();
     EXPECT_EQ(e, f);
-    common::tagged_tuple_t<tag, const int, gat, const bool> u{t};
+    common::tagged_tuple_t<tag, int const, gat, bool const> u{t};
     EXPECT_EQ(u, t);
 }
 
@@ -145,7 +145,7 @@ TEST_F(TaggedTupleTest, Print) {
     s.str("");
     t1.print(s, common::assignment_tuple);
     EXPECT_EQ("oth = false, stuffer = 'z', void = 4.5", s.str());
-    common::tagged_tuple_t<tags::main,std::string,tags::stuffer,const char*> t2{"tester","foo"};
+    common::tagged_tuple_t<tags::main,std::string,tags::stuffer,char const*> t2{"tester","foo"};
     s.str("");
     t2.print(s, common::assignment_tuple);
     EXPECT_EQ("main = \"tester\", stuffer = \"foo\"", s.str());

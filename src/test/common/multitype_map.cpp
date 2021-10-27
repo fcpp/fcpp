@@ -27,11 +27,15 @@ class MultitypeMapTest : public ::testing::Test {
 
 
 TEST_F(MultitypeMapTest, Operators) {
-    common::multitype_map<short, int, double, char> x(data), y, z;
+    common::multitype_map<short, int, double, char> x(data), y, z, a, b;
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(data, z);
+    EXPECT_EQ(a, b);
+    swap(z, a);
+    EXPECT_EQ(data, a);
+    EXPECT_EQ(z, b);
 }
 
 TEST_F(MultitypeMapTest, Points) {

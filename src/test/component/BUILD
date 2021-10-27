@@ -15,6 +15,7 @@ cc_test(
     srcs = ["calculus.cpp"],
     deps = [
         "@gtest//:main",
+        "//lib/common:option",
         "//lib/component:base",
         "//lib/component:calculus",
         "//test:helper",

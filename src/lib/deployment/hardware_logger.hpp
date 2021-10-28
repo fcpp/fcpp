@@ -64,7 +64,7 @@ namespace tags {
  *
  * Admissible values for \ref tags::output are:
  * - a pointer to a stream (as `std::ostream*`);
- * - a file name (as `std::string` or `const char*`);
+ * - a file name (as `std::string` or `char const*`);
  * - a directory name ending in `/` or `\`, to which a generated file name will be appended (starting with \ref tags::name followed by a representation of the whole initialisation parameters of the net instance).
  */
 template <class... Ts>

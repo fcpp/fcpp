@@ -140,10 +140,10 @@ struct base {
             #undef MISSING_TAG_MESSAGE
 
             //! @brief Deleted copy constructor.
-            node(const node&) = delete;
+            node(node const&) = delete;
 
             //! @brief Deleted copy assignment.
-            node& operator=(const node&) = delete;
+            node& operator=(node const&) = delete;
             //! @}
 
             /**
@@ -169,7 +169,7 @@ struct base {
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            void receive(times_t, device_t, const common::tagged_tuple<S,T>&) {}
+            void receive(times_t, device_t, common::tagged_tuple<S,T> const&) {}
 
             //! @brief Produces the message to send, both storing it in its argument and returning it.
             template <typename S, typename T>
@@ -178,7 +178,7 @@ struct base {
             }
 
             //! @brief The unique identifier of the device.
-            const device_t uid;
+            device_t const uid;
 
             //! @brief A mutex for regulating access to the node.
             mutex_type mutex;
@@ -193,8 +193,8 @@ struct base {
             }
 
             //! @brief Gives const access to the node as instance of `F::node`. Should NEVER be overridden.
-            const typename F::node& as_final() const {
-                return *static_cast<const typename F::node*>(this);
+            typename F::node const& as_final() const {
+                return *static_cast<typename F::node const*>(this);
             }
 
             //! @brief Performs a computation round with current time `t`. Should NEVER be overridden.
@@ -223,7 +223,7 @@ struct base {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>&) {
+            net(common::tagged_tuple<S,T> const&) {
                 m_realtime_start = clock_t::now();
                 m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den;
                 m_last_update = m_next_update = 0;
@@ -231,10 +231,10 @@ struct base {
             }
 
             //! @brief Deleted copy constructor.
-            net(const net&) = delete;
+            net(net const&) = delete;
 
             //! @brief Deleted copy assignment.
-            net& operator=(const net&) = delete;
+            net& operator=(net const&) = delete;
 
             //! @}
 
@@ -280,8 +280,8 @@ struct base {
             }
 
             //! @brief Gives const access to the net as instance of `F::net`. Should NEVER be overridden.
-            const typename F::net& as_final() const {
-                return *static_cast<const typename F::net*>(this);
+            typename F::net const& as_final() const {
+                return *static_cast<typename F::net const*>(this);
             }
 
           private: // implementation details

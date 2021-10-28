@@ -29,10 +29,10 @@
 namespace fcpp {
     namespace internal {
         //! @brief Supported pointers to vertex buffers.
-        enum class vertex { singleLine, star, plane, grid, SIZE };
+        enum class vertex : char { singleLine, star, plane, grid, SIZE };
 
         //! @brief Supported pointers to index buffers.
-        enum class index { plane, gridNorm, gridHigh, SIZE };
+        enum class index : char { plane, gridNorm, gridHigh, SIZE };
 
         //! @brief Glyph struct.
         struct glyph {
@@ -125,34 +125,34 @@ namespace fcpp {
 
         private:
             //! @brief Default path to vertex_phong shader.
-            static const std::string VERTEX_PHONG_PATH;
+            static std::string const VERTEX_PHONG_PATH;
 
             //! @brief Default path to fragment_phong shader.
-            static const std::string FRAGMENT_PHONG_PATH;
+            static std::string const FRAGMENT_PHONG_PATH;
 
             //! @brief Default path to vertex_col shader.
-            static const std::string VERTEX_COLOR_PATH;
+            static std::string const VERTEX_COLOR_PATH;
 
             //! @brief Default path to fragment_col shader.
-            static const std::string FRAGMENT_COLOR_PATH;
+            static std::string const FRAGMENT_COLOR_PATH;
 
             //! @brief Default path to vertex_texture shader.
-            static const std::string VERTEX_TEXTURE_PATH;
+            static std::string const VERTEX_TEXTURE_PATH;
 
             //! @brief Default path to fragment_texture shader.
-            static const std::string FRAGMENT_TEXTURE_PATH;
+            static std::string const FRAGMENT_TEXTURE_PATH;
 
             //! @brief Default path to vertex_font shader.
-            static const std::string VERTEX_FONT_PATH;
+            static std::string const VERTEX_FONT_PATH;
 
             //! @brief Default path to fragment_font shader.
-            static const std::string FRAGMENT_FONT_PATH;
+            static std::string const FRAGMENT_FONT_PATH;
 
             //! @brief Default path to font.
-            static const std::string FONT_PATH;
+            static std::string const FONT_PATH;
 
             //! @brief Default path to textures.
-            static const std::string TEXTURE_PATH;
+            static std::string const TEXTURE_PATH;
 
             //! @brief Default font size.
             static constexpr unsigned int FONT_DEFAULT_SIZE{ 48 };
@@ -164,10 +164,10 @@ namespace fcpp {
             static constexpr unsigned int SCR_DEFAULT_HEIGHT{ 600 };
 
             //! @brief Default light position.
-            static const glm::vec3 LIGHT_DEFAULT_POS;
+            static glm::vec3 const LIGHT_DEFAULT_POS;
 
             //! @brief Default light color.
-            static const glm::vec3 LIGHT_COLOR;
+            static glm::vec3 const LIGHT_COLOR;
 
             //! @brief It contains all the vertex information of the standard shapes.
             static shapes s_shapes;

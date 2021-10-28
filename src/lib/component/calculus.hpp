@@ -12,6 +12,7 @@
 
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "lib/internal/context.hpp"
 #include "lib/internal/trace.hpp"
@@ -115,7 +116,7 @@ namespace tags {
  * - be able to update by comparing a `result_type` with node data:
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  *   template <typename N>
- *   result_type update(const result_type&, N const& node);
+ *   result_type update(result_type const&, N const& node);
  *   ~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * Round classes should be default-constructible and be callable with the following signature:
@@ -279,7 +280,7 @@ struct calculus {
 
 //! @brief Computes the restriction of a local to the current domain.
 template <typename node_t, typename A, typename = if_local<A>>
-inline A align(const node_t&, trace_t, A&& x) {
+inline A align(node_t const&, trace_t, A&& x) {
     return x;
 }
 
@@ -301,7 +302,7 @@ A align(node_t& node, trace_t call_point, A&& x) {
 
 //! @brief Computes in-place the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_local<A>>
-void align_inplace(const node_t&, trace_t, A&) {}
+void align_inplace(node_t const&, trace_t, A&) {}
 
 //! @brief Computes in-place the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
@@ -325,13 +326,13 @@ to_local<A&&> self(node_t const& node, trace_t, A&& x) {
 
 //! @brief Accesses a given value of a field.
 template <typename node_t, typename A>
-to_local<A const&> self(const node_t&, trace_t, A const& x, device_t uid) {
+to_local<A const&> self(node_t const&, trace_t, A const& x, device_t uid) {
     return details::self(x, uid);
 }
 
 //! @brief Accesses a given value of a field (moving).
 template <typename node_t, typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
-to_local<A&&> self(const node_t&, trace_t, A&& x, device_t uid) {
+to_local<A&&> self(node_t const&, trace_t, A&& x, device_t uid) {
     return details::self(std::move(x), uid);
 }
 
@@ -349,13 +350,13 @@ to_field<std::decay_t<A>> mod_self(node_t const& node, trace_t, A&& x, B&& y) {
 
 //! @brief Accesses the default value of a field.
 template <typename node_t, typename A>
-to_local<A const&> other(const node_t&, trace_t, A const& x) {
+to_local<A const&> other(node_t const&, trace_t, A const& x) {
     return details::other(x);
 }
 
 //! @brief Accesses the default value of a field (moving).
 template <typename node_t, typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
-to_local<A&&> other(const node_t&, trace_t, A&& x) {
+to_local<A&&> other(node_t const&, trace_t, A&& x) {
     return details::other(std::move(x));
 }
 
@@ -555,6 +556,131 @@ A oldnbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
     details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
     return details::maybe_first(common::type_sequence<A>{}, f);
 }
+//! @}
+
+
+//! @name aggregate processes operators
+//! @{
+/**
+ * @brief The status of an aggregate process in a node.
+ *
+ * The values mean:
+ * - Termination is propagated to neighbour nodes in order to ensure the process ends.
+ * - An external node is not part of the aggregate process, and its exports cannot be seen by neighbours.
+ * - A border node is part of the process, but does not cause the process to expand to neighbours.
+ * - An internal node is part of the process and propagates it to neighbours.
+ * - Every status may request to return the output or not to the `spawn` caller.
+ *
+ * Note that `status::output` is provided as a synonym of `status::internal_output`, and
+ * `status::x and status::output` equals `status::x_output`.
+ */
+enum class status : char { terminated, external, border, internal, terminated_output, external_output, border_output, internal_output, output };
+
+//! @brief Merges the output status with another status (undefined for other combinations of statuses).
+inline constexpr status operator&&(status x, status y) {
+    if (y == status::output) {
+        assert(x != status::output);
+        return static_cast<status>(static_cast<char>(x) | char(4));
+    }
+    if (x == status::output) {
+        assert(y != status::output);
+        return static_cast<status>(static_cast<char>(y) | char(4));
+    }
+    assert(false);
+    return status::output;
+}
+
+//! @brief Removes the output status from another status (undefined for other combinations of statuses).
+inline constexpr status operator^(status x, status y) {
+    if (y == status::output) {
+        assert(x != status::output);
+        return static_cast<status>(static_cast<char>(x) & char(3));
+    }
+    if (x == status::output) {
+        assert(y != status::output);
+        return static_cast<status>(static_cast<char>(y) & char(3));
+    }
+    assert(false);
+    return status::output;
+}
+
+//! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with boolean status corresponding to `status::internal_output` and `status::border_output`).
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+std::enable_if_t<std::is_same<B,bool>::value, std::unordered_map<K, R>>
+spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
+    using keyset_t = std::unordered_set<K>;
+    using resmap_t = std::unordered_map<K, R>;
+    trace_t t = node.stack_trace.hash(call_point);
+    assert(details::get_export(node).second()->template count<keyset_t>(t) == 0);
+    field<keyset_t> fk = details::get_context(node).second().nbr(t, keyset_t{}, node.uid);
+    // keys to be propagated and terminated
+    keyset_t ky(key_set.begin(), key_set.end()), km;
+    for (size_t i = 1; i < details::get_vals(fk).size(); ++i)
+        ky.insert(details::get_vals(fk)[i].begin(), details::get_vals(fk)[i].end());
+    resmap_t rm;
+    // run process for every gathered key
+    for (K const& k : ky) {
+        internal::trace_key trace_process(node.stack_trace, k);
+        bool b;
+        tie(rm[k], b) = process(k, xs...);
+        // if true status, propagate key to neighbours
+        if (b) km.insert(k);
+    }
+    details::get_export(node).second()->insert(t, km);
+    return rm;
+}
+
+//! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with full status).
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R>>
+spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
+    using keymap_t = std::unordered_map<K, B>;
+    using resmap_t = std::unordered_map<K, R>;
+    trace_t t = node.stack_trace.hash(call_point);
+    assert(details::get_export(node).second()->template count<keymap_t>(t) == 0);
+    field<keymap_t> fk = details::get_context(node).second().nbr(t, keymap_t{}, node.uid);
+    // keys to be propagated and terminated
+    std::unordered_set<K> ky(key_set.begin(), key_set.end()), kn;
+    for (size_t i = 1; i < details::get_vals(fk).size(); ++i)
+        for (auto const& k : details::get_vals(fk)[i]) {
+            if (k.second == status::terminated)
+                kn.insert(k.first);
+            else
+                ky.insert(k.first);
+        }
+    keymap_t km;
+    resmap_t rm;
+    // run process for every gathered key
+    for (K const& k : ky)
+        if (kn.count(k) == 0) {
+            internal::trace_key trace_process(node.stack_trace, k);
+            std::decay_t<decltype(details::get_export(node))> ne;
+            swap(details::get_export(node), ne);
+            R r;
+            status s;
+            tie(r, s) = process(k, xs...);
+            swap(details::get_export(node), ne);
+            // if output status, add result to returned map
+            if ((char)s >= 4) {
+                rm.emplace(k, std::move(r));
+                s = s == status::output ? status::internal : static_cast<status>((char)s & char(3));
+            }
+            // if node in process, merge exports
+            if ((char)s >= 2) {
+                details::get_export(node).first()->insert(*ne.first());
+                details::get_export(node).second()->insert(*ne.second());
+            }
+            // if internal or terminated, propagate key status to neighbours
+            if (s == status::terminated or s == status::internal)
+                km.emplace(k, s);
+        } else km.emplace(k, status::terminated);
+    details::get_export(node).second()->insert(t, km);
+    return rm;
+}
+
+//! @brief The exports type used by the spawn construct with key type `K` and status type `B`.
+template <typename K, typename B>
+using spawn_t = common::export_list<std::conditional_t<std::is_same<B, bool>::value, std::unordered_set<K>, std::unordered_map<K, B>>>;
 //! @}
 
 

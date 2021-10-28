@@ -61,12 +61,12 @@ struct crand {
     inline void discard(unsigned long long) {}
 
     //! @brief Equality operator.
-    inline bool operator==(const crand&) {
+    inline bool operator==(crand const&) {
         return true;
     }
 
     //! @brief Inequality operator.
-    inline bool operator!=(const crand&) {
+    inline bool operator!=(crand const&) {
         return false;
     }
 };

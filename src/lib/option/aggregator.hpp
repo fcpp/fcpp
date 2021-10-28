@@ -847,7 +847,7 @@ class quantile<T, only_finite, false, qs...> {
     }
 
   private:
-    const std::array<char, sizeof...(qs)> m_quantiles = {qs...};
+    std::array<char, sizeof...(qs)> const m_quantiles = {qs...};
     std::unordered_multiset<T> m_values;
 };
 
@@ -908,7 +908,7 @@ class quantile<T, only_finite, true, qs...> {
     }
 
   private:
-    const std::array<char, sizeof...(qs)> m_quantiles = {qs...};
+    std::array<char, sizeof...(qs)> const m_quantiles = {qs...};
     std::vector<T> m_values;
 };
 

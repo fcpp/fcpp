@@ -116,7 +116,8 @@ class network {
         assert(not push);
         std::vector<message_type> m;
         common::lock_guard<true> l(m_receive_mutex);
-        std::swap(m, m_receive);
+        using std::swap;
+        swap(m, m_receive);
         return m;
     }
 

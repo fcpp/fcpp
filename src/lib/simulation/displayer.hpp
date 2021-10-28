@@ -616,7 +616,7 @@ struct displayer {
         public: // visible by node objects and the main program
           //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S, T>& t) :
+            net(common::tagged_tuple<S, T> const& t) :
                 P::net{ t },
                 m_threads( common::get_or<tags::threads>(t, FCPP_THREADS) ),
                 m_refresh{ 0 },
@@ -762,7 +762,8 @@ struct displayer {
                         // Destroy closed info windows
                         for (size_t i=0; i<m_info.size(); ) {
                             if (m_info[i]->closing()) {
-                                std::swap(m_info[i], m_info.back());
+                                using std::swap;
+                                swap(m_info[i], m_info.back());
                                 m_info.pop_back();
                             } else ++i;
                         }
@@ -1078,7 +1079,7 @@ struct displayer {
             }
 
             //! @brief The number of threads to be used.
-            const size_t m_threads;
+            size_t const m_threads;
 
             //! @brief The next refresh time.
             times_t m_refresh;

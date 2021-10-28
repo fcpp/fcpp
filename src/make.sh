@@ -184,7 +184,7 @@ function finder() {
     fi
     find="$1"
     rule="$2"
-    for pattern in "$find" "$find*" "*$find*"; do
+    for pattern in "$find" "$find*" "*$find" "*$find*"; do
         if [ "$targets" == "" ]; then
             targets=$(for base in ${folders[@]}; do
                 echo $base*/$pattern/ $base*/$pattern.cpp $base/*/$pattern.cpp | tr ' ' '\n' | grep -v "*" | filter "$rule"
@@ -195,34 +195,6 @@ function finder() {
     if [ "$targets" != "" ]; then
         targets=`echo $targets | tr ' ' '\n' | rev | sed 's|^ppc.||;s|/|:|;s|^:|.../|' | rev | sort | uniq`
     fi
-}
-
-function cmake_finder() {
-    search_folder="$1"
-    search_sources="$2"
-    search_suffix="$3"
-    shift 3
-    alltargets=""
-    for find in "$@"; do
-        targets=""
-        if [ "$find" == "all" ]; then
-            targets=$(echo $search_folder/*)
-        fi
-        for pattern in "$find" "$find*" "*$find*"; do
-            if [ "$targets" == "" ]; then
-                targets=$(echo $search_folder*/$pattern$search_suffix | tr ' ' '\n' | grep -v "*")
-            fi
-            if [ "$targets" == "" ]; then
-                targets=$(echo $search_sources/$pattern/*.cpp | tr ' ' '\n' | grep -v "*" | sed "s|.cpp$|$search_suffix|;s|^$search_sources/[^/]*/|$search_folder/|")
-            fi
-        done
-        if [ "$targets" == "" ]; then
-            echo -e "\033[1mtarget \"$find\" not found\033[0m" >&2
-        else
-            alltargets="$alltargets $targets"
-        fi
-    done
-    echo $alltargets | tr -s ' ' '\n' | grep . | sort | uniq
 }
 
 function builder() {
@@ -237,15 +209,45 @@ function builder() {
     reporter bazel $cmd $copts $asan $t
 }
 
-function cmake_builder() {
-    parseopt "$@"
-    nshift=$?
+function cmake_folder_list() {
+    cat CMakeLists.txt | grep "fcpp_$1.*cpp" | sed 's|/[^/]*$||;s|.*/||' | sort | uniq
+}
+
+function cmake_file_list() {
+    cat CMakeLists.txt | grep "fcpp_$1.*cpp" | grep "$2" | sed "s|.*fcpp_$1.*/||;s|\.cpp.*||" | grep "$3"
+}
+
+function cmake_finderx() {
+    targets=""
+    find="$1"
+    shift 1
+    rule="$@"
+    targets=$(for kind in $rule; do
+        if [ "$kind" == "test" ]; then
+            sfx="_test"
+        else
+            sfx=""
+        fi
+        for pattern in "^$find$" "^$find" "$find$" "$find"; do
+            if [ "$targets" == "" ]; then
+                for f in `cmake_folder_list $kind | grep "$pattern"`; do
+                    cmake_file_list $kind "[^A-Za-z_0-9]$f/"
+                done
+                cmake_file_list $kind . "$pattern"
+            fi
+        done | sort | uniq | sed "s|$|$sfx|"
+    done)
+}
+
+function cmake_builderx() {
+    reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
     if [ "$platform" == Unix ]; then
         opt="-j `nproc`"
     fi
-    reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
-    reporter cmake --build ./bin/ $opt
-    return $nshift
+    if [ "$1" != "" ]; then
+        opt="$opt --target"
+    fi
+    reporter cmake --build ./bin/ $opt "$@"
 }
 
 function powerset() {
@@ -343,19 +345,43 @@ while [ "$1" != "" ]; do
         quitter
     elif [ "$1" == "build" ]; then
         shift 1
+        parseopt "$@"
+        shift $?
+        alltargets=""
         if [ $builder == cmake ]; then
-            cmake_builder "$@"
-            shift $?
+            if [ "$*" ==  "all" ]; then
+                if [ `cmake_file_list test | wc -l` -gt 0 ]; then
+                    opts="$opts -DFCPP_BUILD_TESTS=ON"
+                fi
+                cmake_builderx
+            else
+                while [ "$1" != "" ]; do
+                    if [ "$1" == "fcpp" ]; then
+                        alltargets="$alltargets fcpp"
+                    else
+                        cmake_finderx "$1" target test
+                        if [ "$targets" == "" ]; then
+                            echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                        else
+                            alltargets="$alltargets$targets"
+                        fi
+                    fi
+                    shift 1
+                done
+                if [[ "$alltargets" =~ .*_test.* ]]; then
+                    opts="$opts -DFCPP_BUILD_TESTS=ON"
+                fi
+                if [ "$alltargets" != "" ]; then
+                    cmake_builderx $alltargets
+                fi
+            fi
         else
-            parseopt "$@"
-            shift $?
-            alltargets=""
-            while [ "$1" != "" ]; do
-                if [ "$1" == "all" ]; then
-                    for folder in ${folders[@]}; do
-                        alltargets="$alltargets $folder/..."
-                    done
-               else
+            if [ "$*" == "all" ]; then
+                for folder in ${folders[@]}; do
+                    alltargets="$alltargets $folder/..."
+                done
+            else
+                while [ "$1" != "" ]; do
                     finder "$1" "\(cc_library\|cc_binary\)"
                     finder "$1" "cc_test"
                     if [ "$targets" == "" ]; then
@@ -364,9 +390,9 @@ while [ "$1" != "" ]; do
                         alltargets="$alltargets $targets"
                         targets=""
                     fi
-                fi
-                shift 1
-            done
+                    shift 1
+                done
+            fi
             if [ "$alltargets" != "" ]; then
                 builder build $alltargets
             fi
@@ -442,10 +468,30 @@ while [ "$1" != "" ]; do
                 mv $raw/${name}_*.txt output/raw/
             fi
         }
+        parseopt "$@"
+        shift $?
         if [ $builder == cmake ]; then
-            cmake_builder "$@"
-            shift $?
-            for target in $(cmake_finder bin/run run "" "$@"); do
+            alltargets=""
+            if [ "$*" ==  "all" ]; then
+                cmake_finderx "" target
+                alltargets="$targets"
+                cmake_builderx
+            else
+                while [ "$1" != "" ]; do
+                    cmake_finderx "$1" target
+                    if [ "$targets" == "" ]; then
+                        echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                    else
+                        alltargets="$alltargets$targets"
+                    fi
+                    shift 1
+                done
+                if [ "$alltargets" != "" ]; then
+                    cmake_builderx $alltargets
+                fi
+            fi
+            for t in $alltargets; do
+                target=bin/run/$t
                 if [ ${#exitcodes[@]} -gt 0 ]; then
                     quitter
                 fi
@@ -460,8 +506,6 @@ while [ "$1" != "" ]; do
                 monitor $pid $name $file $raw
             done
         else
-            parseopt "$@"
-            shift $?
             finder "$1" "cc_binary"
             if [ "$targets" == "" ]; then
                 echo -e "\033[1mtarget \"$1\" not found\033[0m"
@@ -485,16 +529,34 @@ while [ "$1" != "" ]; do
         quitter
     elif [ "$1" == "test" ]; then
         shift 1
+        parseopt "$@"
+        shift $?
         if [ $builder == cmake ]; then
+            alltargets=""
             opts="$opts -DFCPP_BUILD_TESTS=ON"
-            cmake_builder "$@"
-            shift $?
-            for target in $(cmake_finder bin/test test _test "$@"); do
+            if [ "$*" ==  "all" ]; then
+                cmake_finderx "" test
+                alltargets="$targets"
+                cmake_builderx
+            else
+                while [ "$1" != "" ]; do
+                    cmake_finderx "$1" test
+                    if [ "$targets" == "" ]; then
+                        echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                    else
+                        alltargets="$alltargets$targets"
+                    fi
+                    shift 1
+                done
+                if [ "$alltargets" != "" ]; then
+                    cmake_builderx $alltargets
+                fi
+            fi
+            for t in $alltargets; do
+                target=bin/test/$t
                 reporter $target
             done
         else
-            parseopt "$@"
-            shift $?
             alltargets=""
             while [ "$1" != "" ]; do
                 if [ "$1" == "all" ]; then
@@ -520,18 +582,18 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "all" ]; then
         shift 1
         mkdoc
-        if [ $builder == cmake ]; then
-            opts="$opts -DFCPP_BUILD_TESTS=ON"
-            cmake_builder "$@"
-        else
-            parseopt "$@"
-        fi
+        parseopt "$@"
         shift $?
         if [ "$1" != "" ]; then
             usage
         fi
         if [ $builder == cmake ]; then
-            for target in $(cmake_finder bin/test test _test all); do
+            opts="$opts -DFCPP_BUILD_TESTS=ON"
+            cmake_builderx
+            cmake_finderx "" test
+            alltargets="$targets"
+            for t in $alltargets; do
+                target=bin/test/$t
                 reporter $target
             done
         else

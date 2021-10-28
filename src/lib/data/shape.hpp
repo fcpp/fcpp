@@ -18,7 +18,7 @@ namespace fcpp {
 
 
 //! @brief Supported shapes for representing nodes.
-enum class shape { tetrahedron, cube, octahedron, icosahedron, sphere, star, SIZE };
+enum class shape : char { tetrahedron, cube, octahedron, icosahedron, sphere, star, SIZE };
 
 //! @brief String representation of a shape.
 std::string to_string(shape);

@@ -77,6 +77,12 @@ class multitype_map {
     multitype_map& operator=(multitype_map&&) = default;
     //! @}
 
+    //! @brief Exchanges contents of multitype maps.
+    void swap(multitype_map& m) {
+        m_keys.swap(m.m_keys);
+        m_data.swap(m.m_data);
+    }
+
     //! @brief Equality operator.
     bool operator==(multitype_map const& o) const {
         return m_keys == o.m_keys and maps_compare(m_data, o.m_data, value_types{});
@@ -103,6 +109,12 @@ class multitype_map {
     //! @brief Inserts void value at corresponding key.
     void insert(T key) {
         m_keys.insert(key);
+    }
+
+    //! @brief Inserts the contents of another multitype_map.
+    void insert(multitype_map const& m) {
+        m_keys.insert(m.m_keys.begin(), m.m_keys.end());
+        multi_insert(m, value_types{});
     }
 
     //! @brief Deletes value at corresponding key.
@@ -194,11 +206,28 @@ class multitype_map {
         return maps_compare(x, y, type_sequence<Ss...>{});
     }
 
+    //! @brief Inserts the data from another multitype map (empty form).
+    inline void multi_insert(multitype_map const&, common::type_sequence<>) {}
+
+    //! @brief Inserts the data from another multitype map (active form).
+    template <typename S, typename... Ss>
+    inline void multi_insert(multitype_map const& m, common::type_sequence<S, Ss...>) {
+        get<S>(m_data).insert(get<S>(m.m_data).begin(), get<S>(m.m_data).end());
+        multi_insert(m, common::type_sequence<Ss...>{});
+    }
+
     //! @brief Map associating keys to data.
     tagged_tuple<value_types, map_types> m_data;
     //! @brief Set of keys (for void data).
     std::unordered_set<T> m_keys;
 };
+
+
+//! @brief Exchanges contents of multitype maps.
+template <typename T, typename... Ts>
+void swap(multitype_map<T, Ts...>& x, multitype_map<T, Ts...>& y) {
+    x.swap(y);
+}
 
 
 }

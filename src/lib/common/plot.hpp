@@ -413,8 +413,9 @@ class rows {
     //! @brief Prints the object's contents.
     template <typename O>
     void print(O& o) {
+        using std::swap;
         common::isstream rows({});
-        std::swap(rows.data(), m_rows.data());
+        swap(rows.data(), m_rows.data());
         std::string tstr = std::string(ctime(&m_start));
         tstr.pop_back();
         o << "########################################################\n";
@@ -442,7 +443,7 @@ class rows {
         o << "########################################################\n";
         o << "# FCPP execution finished at: " << tstr << " #\n";
         o << "########################################################" << std::endl;
-        std::swap(rows.data(), m_rows.data());
+        swap(rows.data(), m_rows.data());
     }
 
   private:

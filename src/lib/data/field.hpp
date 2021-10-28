@@ -49,7 +49,7 @@ template <typename A>
 using to_field = field<common::extract_template<field, A>>;
 //! @brief Computes the result type of applying F pointwise to local versions of A.
 template <typename F, typename... A>
-using local_result = std::result_of_t<F(to_local<const A&>...)>;
+using local_result = std::result_of_t<F(to_local<A const&>...)>;
 //! @brief Computes the result type of applying F pointwise to local versions of A.
 template <typename F, typename... A>
 using field_result = field<local_result<F, A...>>;
@@ -171,7 +171,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     }
 
     //! @brief Copy constructor.
-    field(const field&) = default;
+    field(field const&) = default;
 
     //! @brief Move constructor.
     field(field&&) = default;
@@ -198,7 +198,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     //! @name assignment operators
     //! @{
     //! @brief Copy assignment.
-    field& operator=(const field&) = default;
+    field& operator=(field const&) = default;
 
     //! @brief Move assignment.
     field& operator=(field&&) = default;
@@ -297,7 +297,7 @@ namespace details {
     template <>
     struct field_base<true> {
         explicit operator bool() const {
-            field<bool> const& f = *((const field<bool>*)this);
+            field<bool> const& f = *((field<bool> const*)this);
             for (bool x : f.m_vals) if (not x) return false;
             return true;
         }

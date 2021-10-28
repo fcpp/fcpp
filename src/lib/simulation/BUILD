@@ -4,6 +4,7 @@ cc_library(
     srcs = ['batch.cpp'],
     deps = [
         "//lib/common:algorithm",
+        "//lib/common:option",
         "//lib/common:tagged_tuple",
     ],
     visibility = [

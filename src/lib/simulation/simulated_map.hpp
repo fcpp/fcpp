@@ -136,14 +136,14 @@ struct simulated_map {
                 constexpr auto min = details::numseq_to_vec_map<area>::min;
                 m_viewport_min = common::get_or<tags::area_min>(t, min);
                 m_viewport_max = common::get_or<tags::area_max>(t, max);
+                position_type viewport_size = m_viewport_max - m_viewport_min;
                 load_bitmap(common::get_or<tags::obstacles>(t, ""),
                                  common::get_or<tags::obstacles_color>(t, color(BLACK)),
                                  common::get_or<tags::obstacles_color_threshold>(t, 0.5));
-                fill_closest();
-                position_type viewport_size = m_viewport_max - m_viewport_min;
-
                 m_index_scales = {m_bitmap[0].size() / viewport_size[0], m_bitmap.size() / viewport_size[1]};
                 m_index_factors = {viewport_size[0] / m_bitmap[0].size(), viewport_size[1] / m_bitmap.size()};
+
+                fill_closest();
             }
 
             //! @brief Returns the position of the closest empty space starting from node_position
@@ -189,7 +189,7 @@ struct simulated_map {
             position_type index_to_position(index_type const& index, position_type position) {
                 //linear scaling inverse formula
                 for (int i = 0; i < 2; i++)
-                    position[i] = std::round(index[i] * m_index_factors[i] + m_viewport_min[i]);
+                    position[i] = index[i] * m_index_factors[i] + m_viewport_min[i];
                 return position;
             }
 
@@ -209,86 +209,79 @@ struct simulated_map {
             }
 
             //! @brief Fills m_bitmap by reading and parsing a stored bitmap given the bitmap file path
-            void load_bitmap(std::string const& path, color const& color, real_t const& threshold) {
-                int bitmap_width, bitmap_height, channels_per_pixel, line_index = 0;
-                std::string real_path;
-
+            void load_bitmap(std::string const& path, color const& color, real_t threshold) {
                 if (path.empty()) {
                     m_bitmap = {{false}};
                     return;
                 }
+                int bitmap_width, bitmap_height, channels_per_pixel, row_index = 0, col_index = 0;
+                std::string real_path;
+                threshold *= 255;
+#if _WIN32
+                real_path = std::string(".\\textures\\").append(path);
+#else
+                real_path = std::string("./textures/").append(path);
 
-                #if _WIN32
-                   real_path = std::string(".\\textures\\").append(path);
-                #else
-                   real_path = std::string("./textures/").append(path);
-                #endif
-
+#endif
                 unsigned char *bitmap_data = stbi_load(real_path.c_str(), &bitmap_width, &bitmap_height, &channels_per_pixel, 0);
-                if (bitmap_data != nullptr) {
-                    m_bitmap.resize(bitmap_height);
-                    m_bitmap[0].resize(bitmap_width, true);
+                if (bitmap_data == nullptr) throw std::runtime_error("Error in image loading");
 
-                    for (int i = 0; i < bitmap_height * bitmap_width; i++) {
-                        unsigned char *pixelOffset = bitmap_data + i * channels_per_pixel;
-                        if (i != 0 && i % bitmap_width == 0) {
-                            line_index++;
-                            m_bitmap[line_index].resize(bitmap_width, true);
-                        }
-                        for (int j = 0; j < channels_per_pixel; j++)
-                            m_bitmap[line_index][i%bitmap_width] = m_bitmap[line_index][i%bitmap_width] && std::abs(color.rgba[j] * 255 - pixelOffset[j]) < threshold;
+                m_bitmap = std::vector<std::vector<bool>>(bitmap_height,std::vector<bool>(bitmap_width,true));
+                unsigned char *pixelOffset = bitmap_data;
+                while (row_index < bitmap_height){
+                    for (int j = 0; j < channels_per_pixel && m_bitmap[row_index][col_index]; j++)
+                        m_bitmap[row_index][col_index] = m_bitmap[row_index][col_index] && std::abs(color.rgba[j] * 255 - pixelOffset[j]) < threshold;
+                    col_index++;
+                    pixelOffset += channels_per_pixel;
+                    if (col_index == bitmap_width) {
+                        row_index++;
+                        col_index = 0;
                     }
-                    stbi_image_free(bitmap_data);
                 }
-                else throw std::runtime_error("Error in image loading");
-
+                stbi_image_free(bitmap_data);
             }
 
             //! @brief Fills m_closest by parsing the bitmap with two sequential bfs
             void fill_closest() {
                 constexpr static std::array<std::array<int, 3>, 8> deltas = {{{-1, 0, 2}, {1, 0, 2}, {0, 1, 2}, {0, -1, 2}, {1, 1, 3}, {-1, 1, 3}, {1, -1, 3}, {-1, -1, 3}}};
-
                 m_closest = std::vector<std::vector<index_type>>(m_bitmap.size(),std::vector<index_type>(m_bitmap[0].size()));
-                //triple queues are generated compared to normal width in order to express i+2 and i+3 distances without indexing error
-                std::vector<std::queue<matrix_pair_type>> queues(m_bitmap.size()*3);
+
                 for (int obstacle = 1; obstacle >= 0; obstacle--) {
+                    //dynamic queues vector with source queue
+                    std::vector<std::vector<matrix_pair_type>> queues(1, std::vector<matrix_pair_type>(0));
                     //new visited matrix
                     std::vector<std::vector<bool>> visited(m_bitmap.size(), std::vector<bool>(m_bitmap[0].size()));
                     //load source points
-                    for (int r = 0; r < m_bitmap.size(); r++)
-                        for (int c = 0; c < m_bitmap[0].size(); c++)
-                            if (m_bitmap[r][c] == obstacle) queues[0].push({{static_cast<size_t>(c), static_cast<size_t>(r)},{static_cast<size_t>(c), static_cast<size_t>(r)}});
+                    for (size_t r = 0; r < m_bitmap.size(); r++) {
+                        for (size_t c = 0; c < m_bitmap[0].size(); c++) {
+                            if (m_bitmap[r][c] == obstacle) {
+                                if (obstacle == 1) m_closest[r][c] = {c, r};
+                                queues[0].emplace_back(std::pair<index_type, index_type>({c, r}, {c, r}));
+                            }
+                        }
+                    }
                     //start bfs
                     for (int i = 0; i < queues.size(); i++) {
-                        std::queue<matrix_pair_type>& current_queue = queues[i];
-
-                        while (!current_queue.empty()) {
-                            matrix_pair_type elem = current_queue.front();
-                            index_type point = elem.first;
+                        for (matrix_pair_type const& elem : queues[i]) {
+                            index_type const& point = elem.first;
                             if (!visited[point[1]][point[0]]) {
-
-                                if ((obstacle == 0 && m_bitmap[point[1]][point[0]]) || obstacle == 1)
-                                    m_closest[point[1]][point[0]] = elem.second;
+                                if (i > 0) m_closest[point[1]][point[0]] = elem.second;
                                 visited[point[1]][point[0]] = true;
-
-                                for (int j = 0; j < 4; j++) {
-                                    if (is_in_bound(point[0] + deltas[j][0], point[1] + deltas[j][1]))
-                                        queues[i+2].push({{point[0] + deltas[j][0], point[1] + deltas[j][1]}, elem.second});
-                                    if (is_in_bound(point[0] + deltas[j+4][0], point[1] + deltas[j+4][1]))
-                                        queues[i+3].push({{point[0] + deltas[j+4][0], point[1] + deltas[j+4][1]}, elem.second});
+                                //add 3 queues to add nodes at distance i+2 and i+3
+                                for (int a = 0; a < 3; a++)
+                                    queues.emplace_back();
+                                for (std::array<int,3> const& d : deltas) {
+                                    size_t n_x = point[0] + d[0];
+                                    size_t n_y = point[1] + d[1];
+                                    if (n_x >= 0 && n_x < m_bitmap[0].size() && n_y >= 0 && n_y < m_bitmap.size())
+                                        queues[i+d[2]].push_back({{n_x, n_y}, elem.second});
                                 }
                             }
-                            current_queue.pop();
+                            queues[i].clear();
                         }
-                        //clear queue
-                        current_queue = std::queue<matrix_pair_type>();
                     }
+                    //end bfs
                 }
-            }
-
-            //! @brief Checks if an index is in the bitmap size limits
-            inline bool is_in_bound(int x, int y) {
-                return x >= 0 && x < m_bitmap[0].size() && y >= 0 && y < m_bitmap.size();
             }
 
             /**

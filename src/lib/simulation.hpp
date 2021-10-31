@@ -37,7 +37,7 @@ namespace component {
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(batch_simulator, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
+DECLARE_COMBINE(batch_simulator, calculus, simulated_connector, simulated_positioner, simulated_map, timer, scheduler, logger, storage, spawner, identifier, randomizer);
 
 /**
  * @brief Combination of components for interactive simulations.
@@ -49,7 +49,7 @@ DECLARE_COMBINE(batch_simulator, calculus, simulated_connector, simulated_positi
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(interactive_simulator, displayer, calculus, simulated_connector, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer);
+DECLARE_COMBINE(interactive_simulator, displayer, calculus, simulated_connector, simulated_positioner, simulated_map, timer, scheduler, logger, storage, spawner, identifier, randomizer);
 
 }
 

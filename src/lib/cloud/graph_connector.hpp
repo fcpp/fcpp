@@ -123,6 +123,8 @@ struct graph_connector {
 
             //! @brief Destructor
             ~node() {
+                //***TODO*** also loop on m_neighbours.second()
+
                 while (!m_neighbours.first().empty()) {
                     auto p = m_neighbours.first().begin();
                     disconnect(p->first);
@@ -135,6 +137,9 @@ struct graph_connector {
             }
 
             void disconnect(device_t i) {
+                //***TODO*** remove
+                //                internal::twin<neighbour_list, symmetric> ineigh = (m_neighbours.first()[i])->m_neighbours;
+
                 (m_neighbours.first()[i])->m_neighbours.second().erase(P::node::uid);
                 m_neighbours.first().erase(i);
             }

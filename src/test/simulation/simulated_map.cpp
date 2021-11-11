@@ -42,12 +42,12 @@ TEST(SimulatedMapTest, CollisionTest) {
    test_bitmap.close();
    //start analysis
    combo1::net net{common::make_tagged_tuple<obstacles, area_min, area_max>("bitmap_test.png", make_vec(0,0), make_vec(40,40))};
-   EXPECT_TRUE(net.is_obstacle(make_vec(0,0)));
-   EXPECT_FALSE(net.is_obstacle(make_vec(0,15)));
-   EXPECT_EQ(net.closest_obstacle(make_vec(0,11)), make_vec(0,0));
-   EXPECT_EQ(net.closest_obstacle(make_vec(20,0)), make_vec(0,0));
-   EXPECT_EQ(net.closest_space(make_vec(0,0)), make_vec(10,0));
-   EXPECT_EQ(net.closest_space(make_vec(20,20)), make_vec(20,10));
+   EXPECT_TRUE(net.is_obstacle(make_vec(0.82,32.36)));
+   EXPECT_FALSE(net.is_obstacle(make_vec(11.45,33.58)));
+   EXPECT_EQ(net.closest_obstacle(make_vec(1.78,23.78)), make_vec(1.78,30));
+   EXPECT_EQ(net.closest_obstacle(make_vec(14.3,36.7)), make_vec(9,36.7));
+   EXPECT_EQ(net.closest_space(make_vec(0.82,32.36)), make_vec(0.82,29));
+   EXPECT_EQ(net.closest_space(make_vec(23.45,13.64)), make_vec(30,13.64));
    //remove test bitmap
    std::remove("bitmap_test.png");
 }

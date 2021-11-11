@@ -14,7 +14,6 @@
 #include "lib/common/traits.hpp"
 
 #include <cstring>
-#include <queue>
 #include "./external/stb_image/stb_image.h"
 
 /**
@@ -181,15 +180,17 @@ struct simulated_map {
                 index_type index_to_return;
                 //linear scaling
                 for (int i = 0; i < 2; i++)
-                    index_to_return[i] = static_cast<size_t>(std::round(m_index_scales[i] * (position[i] - m_viewport_min[i])));
+                    index_to_return[i] = static_cast<size_t>(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])));
                 return index_to_return;
             }
 
             //! @brief Converts a bitmap index to an equivalent node position
             position_type index_to_position(index_type const& index, position_type position) {
                 //linear scaling inverse formula
-                for (int i = 0; i < 2; i++)
-                    position[i] = index[i] * m_index_factors[i] + m_viewport_min[i];
+                for (int i = 0; i < 2; i++) {
+                    real_t x = index[i] * m_index_factors[i] + m_viewport_min[i];
+                    position[i] = std::min(std::max(position[i], x), x + m_index_factors[i]-1);
+                }
                 return position;
             }
 
@@ -214,27 +215,27 @@ struct simulated_map {
                     m_bitmap = {{false}};
                     return;
                 }
-                int bitmap_width, bitmap_height, channels_per_pixel, row_index = 0, col_index = 0;
+                int bitmap_width, bitmap_height, channels_per_pixel, row_index, col_index = 0;
                 std::string real_path;
                 threshold *= 255;
 #if _WIN32
                 real_path = std::string(".\\textures\\").append(path);
 #else
                 real_path = std::string("./textures/").append(path);
-
 #endif
                 unsigned char *bitmap_data = stbi_load(real_path.c_str(), &bitmap_width, &bitmap_height, &channels_per_pixel, 0);
                 if (bitmap_data == nullptr) throw std::runtime_error("Error in image loading");
 
+                row_index = bitmap_height - 1;
                 m_bitmap = std::vector<std::vector<bool>>(bitmap_height,std::vector<bool>(bitmap_width,true));
                 unsigned char *pixelOffset = bitmap_data;
-                while (row_index < bitmap_height){
+                while (row_index >= 0) {
                     for (int j = 0; j < channels_per_pixel && m_bitmap[row_index][col_index]; j++)
                         m_bitmap[row_index][col_index] = m_bitmap[row_index][col_index] && std::abs(color.rgba[j] * 255 - pixelOffset[j]) < threshold;
                     col_index++;
                     pixelOffset += channels_per_pixel;
                     if (col_index == bitmap_width) {
-                        row_index++;
+                        row_index--;
                         col_index = 0;
                     }
                 }
@@ -248,16 +249,14 @@ struct simulated_map {
 
                 for (int obstacle = 1; obstacle >= 0; obstacle--) {
                     //dynamic queues vector with source queue
-                    std::vector<std::vector<matrix_pair_type>> queues(1, std::vector<matrix_pair_type>(0));
+                    std::vector<std::vector<matrix_pair_type>> queues(1);
                     //new visited matrix
                     std::vector<std::vector<bool>> visited(m_bitmap.size(), std::vector<bool>(m_bitmap[0].size()));
                     //load source points
                     for (size_t r = 0; r < m_bitmap.size(); r++) {
                         for (size_t c = 0; c < m_bitmap[0].size(); c++) {
-                            if (m_bitmap[r][c] == obstacle) {
-                                if (obstacle == 1) m_closest[r][c] = {c, r};
+                            if (m_bitmap[r][c] == obstacle)
                                 queues[0].emplace_back(std::pair<index_type, index_type>({c, r}, {c, r}));
-                            }
                         }
                     }
                     //start bfs
@@ -267,10 +266,9 @@ struct simulated_map {
                             if (!visited[point[1]][point[0]]) {
                                 if (i > 0) m_closest[point[1]][point[0]] = elem.second;
                                 visited[point[1]][point[0]] = true;
-                                //add 3 queues to add nodes at distance i+2 and i+3
-                                for (int a = 0; a < 3; a++)
-                                    queues.emplace_back();
                                 for (std::array<int,3> const& d : deltas) {
+                                    //add queues to add nodes at distance i+2 and i+3
+                                    while (i+d[2] >= queues.size()) queues.emplace_back();
                                     size_t n_x = point[0] + d[0];
                                     size_t n_y = point[1] + d[1];
                                     if (n_x >= 0 && n_x < m_bitmap[0].size() && n_y >= 0 && n_y < m_bitmap.size())

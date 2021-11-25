@@ -180,7 +180,7 @@ struct simulated_map {
                 index_type index_to_return;
                 //linear scaling
                 for (int i = 0; i < 2; i++)
-                    index_to_return[i] = static_cast<size_t>(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])));
+                    index_to_return[i] = static_cast<size_t>(std::min(std::max(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])), 0.0),m_viewport_max[i]-1));
                 return index_to_return;
             }
 
@@ -189,7 +189,7 @@ struct simulated_map {
                 //linear scaling inverse formula
                 for (int i = 0; i < 2; i++) {
                     real_t x = index[i] * m_index_factors[i] + m_viewport_min[i];
-                    position[i] = std::min(std::max(position[i], x), x + m_index_factors[i]-1);
+                    position[i] = std::min(std::max(position[i], x), x + m_index_factors[i]);
                 }
                 return position;
             }

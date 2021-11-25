@@ -301,3 +301,20 @@ TEST(CalculusTest, Spawn) {
     d = spawning(d2, 0, true);
     EXPECT_EQ(19+19, d);
 }
+
+TEST(CalculusText, NbrUid) {
+    constexpr size_t O = 0;
+    typename combo<O>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    EXPECT_EQ(0, details::get_ids(d0.nbr_uid()).size());
+    d0.round_start(0);
+    d0.round_end(0);
+    EXPECT_EQ(1, details::get_ids(d0.nbr_uid()).size());
+    sendto(d1, d0);
+    EXPECT_EQ(1, details::get_ids(d0.nbr_uid()).size());
+    d0.round_start(0);
+    d0.round_end(0);
+    EXPECT_EQ(1, details::self(d0.nbr_uid(), 1));
+    EXPECT_EQ(2, details::get_ids(d0.nbr_uid()).size());
+}

@@ -32,7 +32,7 @@ namespace component {
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          */
-DECLARE_COMBINE(batch_graph_simulator, calculus, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
+DECLARE_COMBINE(batch_graph_simulator, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer, calculus);
 
 /**
  * @brief Combination of components for batch graph simulations with a graphical interface.
@@ -44,7 +44,7 @@ DECLARE_COMBINE(batch_graph_simulator, calculus, graph_connector, timer, schedul
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(interactive_graph_simulator, displayer, calculus, simulated_positioner, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer);
+DECLARE_COMBINE(interactive_graph_simulator, displayer, simulated_positioner, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer, calculus);
 
 }
 

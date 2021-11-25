@@ -97,6 +97,7 @@ struct hardware_connector {
         //! @cond INTERNAL
         DECLARE_COMPONENT(connector);
         CHECK_COMPONENT(randomizer);
+        CHECK_COMPONENT(calculus);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -175,6 +176,8 @@ struct hardware_connector {
                     for (message_type& m : mv) receive(m);
                 }
                 P::node::round_start(t);
+                maybe_align_inplace(m_nbr_dist, has_calculus<P>{});
+                maybe_align_inplace(m_nbr_msg_size, has_calculus<P>{});
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
@@ -225,6 +228,18 @@ struct hardware_connector {
             template <typename N>
             inline crand get_generator(std::false_type, N&) {
                 return {};
+            }
+
+            //! @brief Changes the domain of a field-like structure to match the domain of the neightbours ids.
+            template <typename A>
+            field<A>& maybe_align_inplace(field<A>& x, std::true_type) {
+                return align_inplace(x, std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
+            }
+
+            //! @brief Does not perform any alignment
+            template <typename A>
+            field<A>& maybe_align_inplace(field<A>& x, std::false_type) {
+                return x;
             }
 
             //! @brief A generator for delays in sending messages.

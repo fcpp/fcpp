@@ -35,7 +35,7 @@ namespace component {
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(deployment, calculus, hardware_logger, storage, hardware_connector, timer, scheduler, hardware_identifier, randomizer);
+DECLARE_COMBINE(deployment, hardware_logger, storage, hardware_connector, timer, scheduler, hardware_identifier, randomizer, calculus);
 
 }
 

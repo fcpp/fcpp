@@ -368,8 +368,7 @@ struct simulated_connector {
             }
 
             //! @brief Does not perform any alignment
-            void maybe_align_inplace_m_nbr_msg_size(std::false_type) {
-            }
+            void maybe_align_inplace_m_nbr_msg_size(std::false_type) {}
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;

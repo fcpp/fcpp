@@ -180,15 +180,13 @@ struct timer {
           private: // implementation details
             //! @brief Changes the domain of a field-like structure to match the domain of the neightbours ids.
             template <typename A>
-            field<A>& maybe_align_inplace(field<A>& x, std::true_type) {
-                return align_inplace(x, std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
+            void maybe_align_inplace(field<A>& x, std::true_type) {
+                align_inplace(x, std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
             }
 
             //! @brief Does not perform any alignment
             template <typename A>
-            field<A>& maybe_align_inplace(field<A>& x, std::false_type) {
-                return x;
-            }
+            void maybe_align_inplace(field<A>& x, std::false_type) {}
 
             //! @brief Times of previous, current and next planned rounds.
             times_t m_prev, m_cur, m_next;

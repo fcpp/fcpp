@@ -198,6 +198,7 @@ struct simulated_connector {
         CHECK_COMPONENT(identifier);
         CHECK_COMPONENT(randomizer);
         CHECK_COMPONENT(scheduler);
+        CHECK_COMPONENT(calculus);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -305,6 +306,7 @@ struct simulated_connector {
             void round_start(times_t t) {
                 m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 P::node::round_start(t);
+                maybe_align_inplace_m_nbr_msg_size(std::integral_constant<bool, has_calculus<P>::value and message_size>{});
             }
 
             //! @brief Performs computations at round end with current time `t`.
@@ -359,6 +361,14 @@ struct simulated_connector {
             inline crand get_generator(std::false_type, N&) {
                 return {};
             }
+
+            //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids.
+            void maybe_align_inplace_m_nbr_msg_size(std::true_type) {
+                align_inplace(m_nbr_msg_size.front(), std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
+            }
+
+            //! @brief Does not perform any alignment
+            void maybe_align_inplace_m_nbr_msg_size(std::false_type) {}
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;

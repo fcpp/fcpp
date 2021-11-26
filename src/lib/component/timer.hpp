@@ -70,6 +70,7 @@ struct timer {
         //! @cond INTERNAL
         DECLARE_COMPONENT(timer);
         AVOID_COMPONENT(timer,connector);
+        CHECK_COMPONENT(calculus);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -111,6 +112,12 @@ struct timer {
                     // next round was scheduled
                     P::node::update();
                 }
+            }
+
+            //! @brief Performs computations at round start with current time `t`.
+            void round_start(times_t t) {
+                P::node::round_start(t);
+                maybe_align_inplace(m_neigh, has_calculus<P>{});
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
@@ -171,6 +178,16 @@ struct timer {
             }
 
           private: // implementation details
+            //! @brief Changes the domain of a field-like structure to match the domain of the neightbours ids.
+            template <typename A>
+            void maybe_align_inplace(field<A>& x, std::true_type) {
+                align_inplace(x, std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
+            }
+
+            //! @brief Does not perform any alignment
+            template <typename A>
+            void maybe_align_inplace(field<A>& x, std::false_type) {}
+
             //! @brief Times of previous, current and next planned rounds.
             times_t m_prev, m_cur, m_next;
 

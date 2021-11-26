@@ -211,6 +211,11 @@ struct calculus {
                 assert(stack_trace.empty());
                 m_context.second().freeze(m_hoodsize, P::node::uid);
                 m_export = {};
+                std::vector<device_t> nbr_ids = m_context.second().align(P::node::uid);
+                std::vector<device_t> nbr_vals;
+                nbr_vals.emplace_back();
+                nbr_vals.insert(nbr_vals.end(), nbr_ids.begin(), nbr_ids.end());
+                m_nbr_uid = fcpp::details::make_field(std::move(nbr_ids), std::move(nbr_vals));
             }
 
             //! @brief Performs computations at round middle with current time `t`.
@@ -243,6 +248,11 @@ struct calculus {
                 return m;
             }
 
+            //! @brief Identifiers of the neighbours.
+            field<device_t> const& nbr_uid() const {
+                return m_nbr_uid;
+            }
+
             //! @brief Stack trace maintained during aggregate function execution.
             internal::trace stack_trace;
 
@@ -264,6 +274,9 @@ struct calculus {
 
             //! @brief Maximum export metric value allowed.
             metric_type m_threshold;
+
+            //! @brief Identifiers of the neighbours.
+            field<device_t> m_nbr_uid;
         };
 
         //! @brief The global part of the component.

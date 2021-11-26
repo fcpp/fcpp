@@ -186,7 +186,7 @@ struct timer {
 
             //! @brief Does not perform any alignment
             template <typename A>
-            void maybe_align_inplace(field<A>& x, std::false_type) {}
+            void maybe_align_inplace(field<A>&, std::false_type) {}
 
             //! @brief Times of previous, current and next planned rounds.
             times_t m_prev, m_cur, m_next;

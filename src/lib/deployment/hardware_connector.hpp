@@ -238,7 +238,7 @@ struct hardware_connector {
 
             //! @brief Does not perform any alignment
             template <typename A>
-            void maybe_align_inplace(field<A>& x, std::false_type) {}
+            void maybe_align_inplace(field<A>&, std::false_type) {}
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;

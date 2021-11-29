@@ -69,6 +69,7 @@ namespace details {
         constexpr static vec<2> min{xmin*1.0/den,ymin*1.0/den};
         constexpr static vec<2> max{xmax*1.0/den,ymax*1.0/den};
     };
+
 }
 //! @endcond
 
@@ -127,14 +128,20 @@ struct simulated_map {
             template <typename S, typename T>
             net(common::tagged_tuple <S, T> const& t) : P::net(t) {
 
-                static_assert(area::size == 5 or S::template intersect<tags::area_min, tags::area_max>::size == 2,
-                              "no option area defined and no area_min and area_max defined either");
+                static_assert((S::template intersect<tags::obstacles>::size == 1) <= (area::size == 5 or S::template intersect<tags::area_min, tags::area_max>::size == 2), "no option area defined and no area_min and area_max defined either");
 
-                //variables to avoid linking issues
-                constexpr auto max = details::numseq_to_vec_map<area>::max;
-                constexpr auto min = details::numseq_to_vec_map<area>::min;
-                m_viewport_min = common::get_or<tags::area_min>(t, min);
-                m_viewport_max = common::get_or<tags::area_max>(t, max);
+                if (S::template intersect<tags::obstacles>::size == 0) {
+                    m_viewport_min = to_pos_type(make_vec(0, 0));
+                    m_viewport_max = to_pos_type(make_vec(1, 1));
+                }
+                else {
+                    //variables to avoid linking issues
+                    constexpr auto max = details::numseq_to_vec_map<area>::max;
+                    constexpr auto min = details::numseq_to_vec_map<area>::min;
+                    m_viewport_min = to_pos_type(common::get_or<tags::area_min>(t, min));
+                    m_viewport_max = to_pos_type(common::get_or<tags::area_max>(t, max));
+                }
+
                 position_type viewport_size = m_viewport_max - m_viewport_min;
                 load_bitmap(common::get_or<tags::obstacles>(t, ""),
                                  common::get_or<tags::obstacles_color>(t, color(BLACK)),
@@ -280,6 +287,15 @@ struct simulated_map {
                     }
                     //end bfs
                 }
+            }
+
+            //! @brief Convert a generic vector to a compatible position on the map
+            template<size_t n>
+            position_type to_pos_type(vec<n> const& vec) {
+                position_type t;
+                for (int i = 0; i < vec.dimension; i++)
+                    t[i] = vec[i];
+                return t;
             }
 
             /**

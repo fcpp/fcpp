@@ -30,6 +30,20 @@ cc_test(
 )
 
 cc_test(
+    name = "simulated_map",
+    srcs = ["simulated_map.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/component:base",
+        "//lib/simulation:simulated_map",
+        "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "simulated_positioner",
     srcs = ["simulated_positioner.cpp"],
     deps = [

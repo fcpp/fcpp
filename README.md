@@ -175,5 +175,6 @@ Hovering on a node will also display its UID in the top-left corner.
 
 #### Contributors
 
+- [Gianmarco Rampulla](https://github.com/denoide1)
 - [Luigi Rapetta](https://github.com/rapfamily4)
 - [Gianluca Torta](http://www.di.unito.it/~torta)

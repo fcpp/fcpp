@@ -40,6 +40,20 @@ cc_library(
 )
 
 cc_library(
+    name = 'simulated_map',
+    hdrs = ['simulated_map.hpp'],
+    srcs = ['simulated_map.cpp'],
+    deps = [
+        "//lib/component:base",
+        "//lib/data:vec",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+
+cc_library(
     name = 'simulated_positioner',
     hdrs = ['simulated_positioner.hpp'],
     srcs = ['simulated_positioner.cpp'],

@@ -136,6 +136,7 @@ set(
     lib/simulation.cpp
     lib/simulation/batch.cpp
     lib/simulation/simulated_connector.cpp
+    lib/simulation/simulated_map.cpp
     lib/simulation/simulated_positioner.cpp
     lib/simulation/spawner.cpp
 )
@@ -163,7 +164,19 @@ endif(FCPP_BUILD_GL)
 ######################
 # EXTERNAL LIBRARIES #
 ######################
-
+add_library(
+        stb_image
+        ./external/stb_image/stb_image.h
+        ./external/stb_image/stb_image.cpp
+)
+target_include_directories(stb_image PUBLIC ./external/stb_image)
+target_link_libraries(
+        fcpp PUBLIC
+        stb_image
+)
+if(UNIX)
+    target_compile_options(stb_image PUBLIC -fPIC)
+endif(UNIX)
 if(FCPP_BUILD_GL)
     option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
     option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
@@ -174,16 +187,10 @@ if(FCPP_BUILD_GL)
         ./external/glad-core-3.3/include/glad/glad.h
         ./external/glad-core-3.3/src/glad.c
     )
-    add_library(
-        stb_image
-        ./external/stb_image/stb_image.h
-        ./external/stb_image/stb_image.cpp
-    )
     add_subdirectory(./external/glm-0.9.9.8/glm)
     add_subdirectory(./external/glfw-3.3.4)
     add_subdirectory(./external/freetype-2.11.0)
     target_include_directories(glad PUBLIC ./external/glad-core-3.3/include)
-    target_include_directories(stb_image PUBLIC ./external/stb_image)
     target_include_directories(
         fcpp PUBLIC
         ./external
@@ -197,11 +204,9 @@ if(FCPP_BUILD_GL)
         glad
         glm
         glfw
-        stb_image
         freetype
     )
     if(UNIX)
-        target_compile_options(stb_image PUBLIC -fPIC)
         target_compile_options(glad PUBLIC -fPIC)
         target_compile_options(freetype PUBLIC -fPIC)
     endif(UNIX)
@@ -284,6 +289,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/simulation/batch.cpp)
         fcpp_test(test/simulation/simulated_connector.cpp)
         fcpp_test(test/simulation/simulated_positioner.cpp)
+        fcpp_test(test/simulation/simulated_map.cpp)
         fcpp_test(test/simulation/spawner.cpp)
     endif(FCPP_INTERNAL_TESTS)
 endif(FCPP_BUILD_TESTS)

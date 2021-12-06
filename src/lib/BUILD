@@ -184,6 +184,7 @@ cc_library(
         "//lib/simulation:displayer",
         "//lib/simulation:simulated_connector",
         "//lib/simulation:simulated_positioner",
+        "//lib/simulation:simulated_map",
         "//lib/simulation:spawner",
     ],
     visibility = [

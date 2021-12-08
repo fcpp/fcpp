@@ -397,7 +397,7 @@ auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a) {
     return details::fold_hood(op, a, details::get_context(node).second().align(t, node.uid));
 }
 
-//! @brief Reduces a field to a single value by a binary operation with a default value for self.
+//! @brief Reduces a field to a single value by a binary operation with a given value for self.
 template <typename node_t, typename O, typename A, typename B>
 auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a, B const& b) {
     trace_t t = node.stack_trace.hash(call_point);

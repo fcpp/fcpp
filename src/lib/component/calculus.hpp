@@ -502,6 +502,10 @@ template <typename node_t, typename A>
 inline A old(node_t& node, trace_t call_point, A const& f) {
     return old(node, call_point, f, f);
 }
+
+//! @brief The exports type used by the old construct with message type `T`.
+template <typename T>
+using old_t = common::export_list<T>;
 //! @}
 
 
@@ -549,6 +553,10 @@ template <typename node_t, typename A>
 inline to_field<A> nbr(node_t& node, trace_t call_point, A const& f) {
     return nbr(node, call_point, f, f);
 }
+
+//! @brief The exports type used by the nbr construct with message type `T`.
+template <typename T>
+using nbr_t = common::export_list<T>;
 //! @}
 
 
@@ -569,6 +577,10 @@ A oldnbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
     details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
     return details::maybe_first(common::type_sequence<A>{}, f);
 }
+
+//! @brief The exports type used by the oldnbr construct with message type `T`.
+template <typename T>
+using oldnbr_t = common::export_list<T>;
 //! @}
 
 

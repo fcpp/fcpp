@@ -241,7 +241,7 @@ function cmake_finderx() {
 
 function cmake_builderx() {
     reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
-    if [ "$platform" == Unix ]; then
+    if [ hash nproc 2>/dev/null ]; then
         opt="-j `nproc`"
     fi
     if [ "$1" != "" ]; then

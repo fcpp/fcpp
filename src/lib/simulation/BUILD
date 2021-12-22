@@ -45,7 +45,9 @@ cc_library(
     srcs = ['simulated_map.cpp'],
     deps = [
         "//lib/component:base",
+        "//lib/data:color",
         "//lib/data:vec",
+        "@stb_image//:main",
     ],
     visibility = [
         '//visibility:public',

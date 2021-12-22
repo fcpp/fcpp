@@ -5,6 +5,7 @@ cc_test(
         "@gtest//:main",
         "//lib/component:base",
         "//lib/component:calculus",
+        "//lib/component:timer",
         "//lib/coordination:collection",
         "//test:test_net",
     ],

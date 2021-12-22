@@ -215,13 +215,13 @@ class list {
     //! @brief The results of aggregation (assumes lists have similar lengths).
     template <typename U>
     result_type<U> result() const {
-        for (int t = 1; t < m_items.size(); ++t)
+        for (size_t t = 1; t < m_items.size(); ++t)
             assert(m_items[t-1].size() >= m_items[t].size() and m_items[t].size() >= m_items[0].size() - 1);
         std::vector<T> v;
-        for (int i = 0; i < m_items.back().size(); ++i)
-            for (int t = 0; t < m_items.size(); ++t)
+        for (size_t i = 0; i < m_items.back().size(); ++i)
+            for (size_t t = 0; t < m_items.size(); ++t)
                 v.push_back(m_items[t][i]);
-        for (int t = 0; m_items.back().size() < m_items[t].size(); ++t)
+        for (size_t t = 0; m_items.back().size() < m_items[t].size(); ++t)
             v.push_back(m_items[t].back());
         return {std::move(v)};
     }

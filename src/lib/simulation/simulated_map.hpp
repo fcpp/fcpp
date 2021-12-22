@@ -8,13 +8,14 @@
 #ifndef FCPP_SIMULATED_MAP_H_
 #define FCPP_SIMULATED_MAP_H_
 
-#include "lib/component/base.hpp"
-#include "lib/data/vec.hpp"
-#include "lib/data/color.hpp"
-#include "lib/common/traits.hpp"
-
 #include <cstring>
-#include "./external/stb_image/stb_image.h"
+
+#include "lib/common/traits.hpp"
+#include "lib/component/base.hpp"
+#include "lib/data/color.hpp"
+#include "lib/data/vec.hpp"
+#include "external/stb_image/stb_image.h"
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -267,7 +268,7 @@ struct simulated_map {
                         }
                     }
                     //start bfs
-                    for (int i = 0; i < queues.size(); i++) {
+                    for (size_t i = 0; i < queues.size(); ++i) {
                         for (matrix_pair_type const& elem : queues[i]) {
                             index_type const& point = elem.first;
                             if (!visited[point[1]][point[0]]) {
@@ -293,7 +294,7 @@ struct simulated_map {
             template<size_t n>
             position_type to_pos_type(vec<n> const& vec) {
                 position_type t;
-                for (int i = 0; i < vec.dimension; i++)
+                for (size_t i = 0; i < vec.dimension; ++i)
                     t[i] = vec[i];
                 return t;
             }

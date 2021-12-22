@@ -115,6 +115,12 @@ class flat_ptr<T, false> {
         return s & *m_data.get();
     }
 
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << *m_data.get();
+    }
+
   private:
     //! @brief The content of the class.
     std::shared_ptr<T> m_data;
@@ -202,6 +208,12 @@ class flat_ptr<T, true> {
     template <typename S>
     S& serialize(S& s) {
         return s & m_data;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_data;
     }
 
   private:

@@ -302,9 +302,15 @@ namespace details {
             return *this;
         }
 
-        //! @brief Serialises the content from/to a given input/output stream.
-        template <typename S>
-        S& serialize(S& s) {
+        //! @brief Serialises the content from a given input stream.
+        common::isstream& serialize(common::isstream& s) {
+            delta_type d = serialize_delta(s);
+            serialize_impl(s, d, typename T::tags{});
+            return s;
+        }
+
+        //! @brief Serialises the content to a given output stream.
+        common::osstream& serialize(common::osstream& s) const {
             delta_type d = serialize_delta(s);
             serialize_impl(s, d, typename T::tags{});
             return s;
@@ -317,14 +323,14 @@ namespace details {
             s.read(d);
             return d;
         }
-        delta_type serialize_delta(common::type_sequence<>) {
+        delta_type serialize_delta(common::type_sequence<>) const {
             return 0;
         }
         template <typename S, typename... Ss>
-        delta_type serialize_delta(common::type_sequence<S, Ss...>) {
+        delta_type serialize_delta(common::type_sequence<S, Ss...>) const {
             return (serialize_delta(common::type_sequence<Ss...>{}) << 1) + (common::get<S>(*this) == common::get<S>(m_ref));
         }
-        delta_type serialize_delta(common::osstream& s) {
+        delta_type serialize_delta(common::osstream& s) const {
             delta_type d = serialize_delta(typename T::tags{});
             s.write(d);
             return d;
@@ -332,19 +338,25 @@ namespace details {
 
         //! @brief Serialises a skipped field.
         template <typename S>
-        void serialize_skip(common::isstream const&, common::type_sequence<S>) {
+        inline void serialize_skip(common::isstream const&, common::type_sequence<S>) {
             common::get<S>(*this) = common::get<S>(m_ref);
         }
         template <typename S>
-        void serialize_skip(common::osstream const&, common::type_sequence<S>) {}
+        inline void serialize_skip(common::osstream const&, common::type_sequence<S>) const {}
 
         //! @brief Serialises given delta and tags.
         template <typename S>
-        void serialize_impl(S&, delta_type, common::type_sequence<>) {}
+        void serialize_impl(S&, delta_type, common::type_sequence<>) const {}
         template <typename S, typename S1, typename... Ss>
         void serialize_impl(S& s, delta_type d, common::type_sequence<S1, Ss...>) {
             if (d & 1) serialize_skip(s, common::type_sequence<S1>{});
             else s & common::get<S1>(*this);
+            serialize_impl(s, d >> 1, common::type_sequence<Ss...>{});
+        }
+        template <typename S1, typename... Ss>
+        void serialize_impl(common::osstream& s, delta_type d, common::type_sequence<S1, Ss...>) const {
+            if (d & 1) serialize_skip(s, common::type_sequence<S1>{});
+            else s << common::get<S1>(*this);
             serialize_impl(s, d >> 1, common::type_sequence<Ss...>{});
         }
 

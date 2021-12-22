@@ -15,8 +15,11 @@ using namespace fcpp;
 
 template <typename T>
 std::pair<T,T> rebuild(T y, T z) {
-    common::osstream os;
+    T const& x{y};
+    common::osstream os, osx;
     os << y;
+    osx << x;
+    EXPECT_EQ((std::vector<char>)os, (std::vector<char>)osx);
     common::isstream is(os);
     is >> z;
     return {y, z};

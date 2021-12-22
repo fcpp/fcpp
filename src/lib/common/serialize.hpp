@@ -266,12 +266,10 @@ namespace details {
     template<typename C>
     struct has_serialize_method {
       private:
-        struct tag;
-
         template <typename T>
         static constexpr auto check(T*) -> typename std::is_same<
-            decltype(std::declval<T>().serialize(std::declval<tag&>())),
-            tag&
+            decltype(std::declval<T>().serialize(std::declval<osstream&>())),
+            osstream&
         >::type;
 
         template <typename>
@@ -287,12 +285,10 @@ namespace details {
     template<typename C>
     struct has_serialize_function {
       private:
-        struct tag;
-
         template <typename T>
         static constexpr auto check(T*) -> typename std::is_same<
-            decltype(fcpp::common::details::serialize(std::declval<tag&>(), std::declval<T&>())),
-            tag&
+            decltype(fcpp::common::details::serialize(std::declval<osstream&>(), std::declval<T&>())),
+            osstream&
         >::type;
 
         template <typename>

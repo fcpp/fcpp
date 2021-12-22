@@ -237,7 +237,7 @@ function builder() {
 function cmake_builder() {
     parseopt "$@"
     nshift=$?
-    if [ "$platform" == Unix ]; then
+    if hash nproc 2>/dev/null; then
         opt="-j `nproc`"
     fi
     reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"

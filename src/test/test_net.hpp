@@ -148,18 +148,10 @@ struct test_net {
             m_network(common::make_tagged_tuple<component::tags::output>(&m_stream)) {
         for (int i = 0; i < N; ++i)
             m_network.node_emplace(common::make_tagged_tuple<component::tags::x,component::tags::start>(make_vec(i * (1.25f - 0.25f*i),0), 0));
-        for (int i = 0; i < N; ++i) {
-            m_topology.emplace_back();
-            if (i > 0)
-                m_topology.back().push_back(i-1);
-            m_topology.back().push_back(i);
-            if (i < N - 1)
-                m_topology.back().push_back(i+1);
-        }
         round_start();
     }
 
-    //! @brief Performs a full round of executions given inputs and expected outputs, and returning inputs with actual  outputs.
+    //! @brief Performs a full round of executions given inputs and expected outputs, and returning inputs with actual outputs.
     round_type full_round_expect(round_type r) {
         caller<in_size>(r, std::make_index_sequence<in_size>{}, r, std::make_index_sequence<out_size>{});
         round();

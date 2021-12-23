@@ -268,18 +268,19 @@ struct simulated_map {
                     }
                     //start bfs
                     for (int i = 0; i < queues.size(); i++) {
-                        for (matrix_pair_type const& elem : queues[i]) {
+                        for (int j = 0; j < queues[i].size(); j++) {
+                            matrix_pair_type const& elem = queues[i][j];
                             index_type const& point = elem.first;
                             if (!visited[point[1]][point[0]]) {
                                 if (i > 0) m_closest[point[1]][point[0]] = elem.second;
                                 visited[point[1]][point[0]] = true;
-                                for (std::array<int,3> const& d : deltas) {
+                                for (std::array<int, 3> const &d: deltas) {
                                     //add queues to add nodes at distance i+2 and i+3
-                                    while (i+d[2] >= queues.size()) queues.emplace_back();
+                                    while (i + d[2] >= queues.size()) queues.emplace_back();
                                     size_t n_x = point[0] + d[0];
                                     size_t n_y = point[1] + d[1];
                                     if (n_x >= 0 && n_x < m_bitmap[0].size() && n_y >= 0 && n_y < m_bitmap.size())
-                                        queues[i+d[2]].push_back({{n_x, n_y}, elem.second});
+                                        queues[i + d[2]].push_back({{n_x, n_y}, elem.second});
                                 }
                             }
                             queues[i].clear();

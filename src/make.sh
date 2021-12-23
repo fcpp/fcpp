@@ -368,7 +368,7 @@ while [ "$1" != "" ]; do
                         if [ "$targets" == "" ]; then
                             echo -e "\033[1mtarget \"$1\" not found\033[0m"
                         else
-                            alltargets="$alltargets$targets"
+                            alltargets="$alltargets $targets"
                         fi
                     fi
                     shift 1
@@ -487,7 +487,7 @@ while [ "$1" != "" ]; do
                     if [ "$targets" == "" ]; then
                         echo -e "\033[1mtarget \"$1\" not found\033[0m"
                     else
-                        alltargets="$alltargets$targets"
+                        alltargets="$alltargets $targets"
                     fi
                     shift 1
                 done
@@ -549,7 +549,7 @@ while [ "$1" != "" ]; do
                     if [ "$targets" == "" ]; then
                         echo -e "\033[1mtarget \"$1\" not found\033[0m"
                     else
-                        alltargets="$alltargets$targets"
+                        alltargets="$alltargets $targets"
                     fi
                     shift 1
                 done

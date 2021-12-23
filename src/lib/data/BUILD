@@ -25,6 +25,9 @@ cc_library(
     name = "hyperloglog",
     hdrs = ["hyperloglog.hpp"],
     srcs = ["hyperloglog.cpp"],
+    deps = [
+        "//lib:settings",
+    ],
     visibility = [
         '//visibility:public',
     ],

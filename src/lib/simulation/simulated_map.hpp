@@ -188,7 +188,7 @@ struct simulated_map {
                 index_type index_to_return;
                 //linear scaling
                 for (int i = 0; i < 2; i++)
-                    index_to_return[i] = static_cast<size_t>(std::min(std::max(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])), 0.0),m_viewport_max[i]-1));
+                    index_to_return[i] = static_cast<size_t>(std::min(std::max(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])), real_t(0)),m_viewport_max[i]-1));
                 return index_to_return;
             }
 

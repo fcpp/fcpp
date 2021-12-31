@@ -781,7 +781,7 @@ class value {
 
     //! @brief Tag name (if aggregator present).
     std::string tag_name(common::bool_pack<true>) const {
-        return common::type_name<typename S::type>();
+        return common::type_name<typename S::tag>();
     }
     //! @brief Tag name (if aggregator absent).
     std::string tag_name(common::bool_pack<false>) const {
@@ -895,6 +895,7 @@ template <typename S, typename A, typename... Ts>
 using values = typename details::values<S, A, Ts...>::type;
 
 
+//! @cond INTERNAL
 namespace details {
     //! @brief The type to be used for a single key.
     template <typename S>
@@ -950,6 +951,7 @@ namespace details {
     template <typename P>
     using promote = typename promote_impl<typename inspector<P>::type, inspector<P>::single>::type;
 }
+//! @endcond
 
 /**
  * Split rows depending on

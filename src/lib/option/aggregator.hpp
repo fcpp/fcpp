@@ -64,6 +64,9 @@ namespace details {
 template <typename T>
 class count {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -123,6 +126,9 @@ class count {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class distinct {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -183,6 +189,9 @@ class distinct {
 template <typename T>
 class list {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -253,6 +262,9 @@ class list {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class sum {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -314,6 +326,9 @@ class sum {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class mean {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -380,6 +395,9 @@ class mean {
 template <typename T, char n, bool only_finite = std::numeric_limits<T>::has_infinity>
 class moment {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -446,6 +464,9 @@ class moment {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class deviation {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -602,6 +623,9 @@ class stats {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class min {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -662,6 +686,9 @@ class min {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class max {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -792,6 +819,9 @@ namespace details {
 template <typename T, bool only_finite, char... qs>
 class quantile<T, only_finite, false, qs...> {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -855,6 +885,9 @@ class quantile<T, only_finite, false, qs...> {
 template <typename T, bool only_finite, char... qs>
 class quantile<T, only_finite, true, qs...> {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 

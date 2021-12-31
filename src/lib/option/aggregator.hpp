@@ -1017,6 +1017,30 @@ class combine : public Ts... {
 };
 
 
+/**
+ * @brief Aggregates containers of values through a value aggregator.
+ *
+ * @param T The container type.
+ * @param A The value aggregator type.
+ */
+template <typename T, typename A>
+class container : public A {
+  public:
+    //! @brief The type of values aggregated.
+    using type = T;
+
+    //! @brief Erases a value from the aggregation set.
+    void erase(T const& values) {
+        for (auto const& value: values) A::erase(value);
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    void insert(T const& values) {
+        for (auto const& value: values) A::insert(value);
+    }
+};
+
+
 }
 
 

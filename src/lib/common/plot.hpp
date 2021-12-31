@@ -756,8 +756,8 @@ class value {
                 p.source = common::details::strip_namespaces(t.substr(0, pos));
                 p.unit = t.substr(pos+2);
             } else {
-                p.unit = "";
                 p.source = common::details::strip_namespaces(t);
+                p.unit = p.source;
             }
         }
         details::format_type(p.unit);
@@ -1025,10 +1025,32 @@ class split {
             if (q.unit.size()) units.insert(q.unit);
             res[0].yvals.emplace_back(q.source, std::vector<double>{});
         }
-        for (std::string const& s : units) {
-            res[0].yname += (res[0].yname.size() ? "/" : "") + s;
-        }
         if (units.empty()) res[0].yname = "y";
+        else if (units.size() == 1) res[0].yname = *units.begin();
+        else {
+            std::vector<std::string> w1;
+            std::vector<std::set<std::string>> words;
+            auto filler = [](auto&& inserter, std::string const& s){
+                size_t pos = 0;
+                for (size_t p = s.find(" ", pos); p != std::string::npos; p = s.find(" ", pos)) {
+                    inserter(s.substr(pos, p-pos));
+                    pos = p+1;
+                }
+                inserter(s.substr(pos));
+            };
+            filler([&](std::string s){ w1.push_back(s); }, *units.begin());
+            for (auto it = ++units.begin(); it != units.end(); ++it) {
+                words.emplace_back();
+                filler([&](std::string s){ words.back().insert(s); }, *it);
+            }
+            for (std::string const& s : w1) {
+                bool ok = true;
+                for (size_t i=0; ok and i<words.size(); ++i) if (words[i].count(s) == 0) ok = false;
+                if (ok) res[0].yname += (res[0].yname.size() ? " " : "") + s;
+            }
+            if (res[0].yname.empty()) res[0].yname = "y";
+        }
+        if (res[0].yname.size() > 6) res[0].yname = details::shorten(res[0].yname);
         for (auto const& p : m) {
             res[0].xvals.push_back(std::get<0>(p.first));
             for (size_t i = 0; i < p.second.size(); ++i)

@@ -5,8 +5,8 @@
  * @brief Implementation of the `hyperloglog_counter` class template for statistical size estimates.
  */
 
-#ifndef FCPP_DATA_HYPERLOGLOG_COUNTER_H_
-#define FCPP_DATA_HYPERLOGLOG_COUNTER_H_
+#ifndef FCPP_DATA_HYPERLOGLOG_H_
+#define FCPP_DATA_HYPERLOGLOG_H_
 
 #include <climits>
 #include <cmath>
@@ -15,7 +15,7 @@
 #include <initializer_list>
 #include <utility>
 
-using real_t = double; // this is defined in FCPP
+#include "lib/settings.hpp"
 
 
 /**
@@ -341,4 +341,4 @@ constexpr size_t register_error(real_t error) {
 
 }
 
-#endif // FCPP_DATA_HYPERLOGLOG_COUNTER_H_
+#endif // FCPP_DATA_HYPERLOGLOG_H_

@@ -62,9 +62,13 @@ real approx(real a, real b, real d) {
     return approx(0.6*(b - a)/d);
 }
 
+bool isfinite(real x) {
+    return !(isnan(x) || x == inf || x == -inf);
+}
+
 // convert point coordinates into screen coordinates
 real fit(real x, real a = 0, real b = 1, real l = 1, bool logmode = false) {
-    return l*((logmode ? log10(max(x,realMin)) : x)-a)/(b-a);
+    return l*((logmode ? log10(x) : x)-a)/(b-a);
 }
 
 // produces a single plot
@@ -78,7 +82,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
     bool logmode = false;
     for (int i=0; i<values.length; ++i) {
         real tmp = -inf;
-        for (int j=0; j<values[i].length; ++j) {
+        for (int j=0; j<values[i].length; ++j) if (isfinite(values[i][j].y)) {
             bminx = min(bminx, values[i][j].x);
             bmaxx = max(bmaxx, values[i][j].x);
             valy.push(values[i][j].y);
@@ -93,8 +97,8 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         bmaxx = bmaxx + 0.5;
     }
 
-    // scan y values for best area covered using linear plot
     if (valy.length > 0) {
+        // scan y values for best area covered using linear plot
         int iminy = 0, imaxy = valy.length-1;
         valy = sort(valy);
         for (int i=iminy; i<=imaxy; ++i) {
@@ -121,7 +125,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
                     l = 0;
                 }
         real besta = area(iminy, imaxy);
-    // scan y values for best area covered using logarithmic plot
+        // scan y values for best area covered using logarithmic plot
         int lminy = 0, lmaxy = valy.length-1;
         real[] lvaly = copy(valy);
         for (int i=0; i<=lmaxy; ++i)
@@ -174,28 +178,39 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
     real yscale = approx(bminy, bmaxy, DIM.y);
 
     for (int l=0; l<values.length; ++l) {
+        pen pn = styles[l%styles.length]+colors[l%colors.length];
         if (values[l].length == 0) continue;
         path p;
         bool drawing = false;
-        pair lp = (0,0);
+        pair lp = (0,nan);
         for (int i=0; i<values[l].length; ++i) {
             real x = fit(values[l][i].x, bminx, bmaxx, DIM.x);
             real y = fit(values[l][i].y, bminy, bmaxy, DIM.y, logmode);
-            if (y != lp.y) {
-                if (y < 0     || lp.y < 0    ) lp = (lp.x + (x-lp.x)*(0    -lp.y)/(y-lp.y), 0);
-                if (y > DIM.y || lp.y > DIM.y) lp = (lp.x + (x-lp.x)*(DIM.y-lp.y)/(y-lp.y), DIM.y);
+            if (isnan(lp.y)) lp = (x,y);
+            else if (lp.y == -inf) lp = (x,0);
+            else if (lp.y == inf) lp = (x,DIM.y);
+            else if (isnan(y)) lp = lp;
+            else if (y == -inf) lp = (lp.x,0);
+            else if (y == inf) lp = (lp.x,DIM.y);
+            else if (y != lp.y) {
+                pair p0 = (lp.x + (x-lp.x)*(0    -lp.y)/(y-lp.y), 0);
+                pair p1 = (lp.x + (x-lp.x)*(DIM.y-lp.y)/(y-lp.y), DIM.y);
+                if      (lp.y < 0     && y > DIM.y) draw(pic, p0 -- p1, pn);
+                else if (lp.y > DIM.y && y < 0    ) draw(pic, p1 -- p0, pn);
+                else if ((y < 0)     ^ (lp.y < 0    )) lp = p0;
+                else if ((y > DIM.y) ^ (lp.y > DIM.y)) lp = p1;
             }
             if (0 <= y && y <= DIM.y) {
-                if (!drawing && i>0) { p = lp; if (lp.y < 0) write(string(x)+";"+string(y)+"|"+string(lp.x)+";"+string(lp.y)); }
+                if (!drawing) p = lp;
                 p = p -- (x,y);
                 drawing = true;
             } else {
-                if (drawing) draw(pic, p -- lp, styles[l%styles.length]+colors[l%colors.length]);
+                if (drawing) draw(pic, p -- lp, pn);
                 drawing = false;
             };
             lp = (x,y);
         }
-        if (drawing) draw(pic, p, styles[l%styles.length]+colors[l%colors.length]);
+        if (drawing) draw(pic, p, pn);
     }
     draw(pic, (0,0) -- (0,DIM.y+0.8), black, EndArrow(4));
     draw(pic, (0,0) -- (DIM.x+1.0,0), black, EndArrow(4));

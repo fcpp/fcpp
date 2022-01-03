@@ -120,6 +120,28 @@ T wmp_collection(node_t& node, trace_t call_point, real_t distance, real_t radiu
 template <typename T> using wmp_collection_t = common::export_list<T,field<real_t>,real_t>;
 
 
+//! @brief Collects distributed data with a bounded-loss information-speed-threshold strategy and a idempotent accumulate function.
+template <typename node_t, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
+T blist_idem_collection(node_t& node, trace_t call_point, real_t const& distance, T const& value, real_t radius, real_t speed, T const& null, G&& accumulate) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+
+    field<real_t> nbrdist = nbr(node, 0, distance);
+    real_t t = node.current_time();
+    field<real_t> Tu = nbr(node, 1, node.next_time());
+    field<real_t> Pu = nbr(node, 2, distance + speed * (node.next_time() - t));
+    field<real_t> maxDistNow = node.nbr_dist() + speed * node.nbr_lag();
+    field<real_t> Vwst = mux(isfinite(distance) and maxDistNow < radius, (distance - Pu) / (Tu - t), (real_t)(-INF));
+    field<real_t> nbrThreshold = nbr(node, 4, max_hood(node, 0, Vwst, -INF));
+    return nbr(node, 3, value, [&](field<T> old){
+        field<T> nv = mux(isfinite(distance) and nbrdist >= distance + node.nbr_lag() * nbrThreshold, old, null);
+        return fold_hood(node, 0, accumulate, nv, value);
+    });
+}
+
+//! @brief Export list for blist_idem_collection.
+template <typename T> using blist_idem_collection_t = common::export_list<T,real_t>;
+
+
 }
 
 

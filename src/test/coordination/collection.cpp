@@ -19,7 +19,8 @@ DECLARE_OPTIONS(options,
         coordination::gossip_mean_t<real_t>,
         coordination::sp_collection_t<int,real_t>,
         coordination::mp_collection_t<int,real_t>,
-        coordination::wmp_collection_t<real_t>
+        coordination::wmp_collection_t<real_t>,
+        coordination::blist_idem_collection_t<int>        
     >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
@@ -33,13 +34,29 @@ struct lagdist {
         struct node : public P::node {
             using P::node::node;
 
-            field<real_t> nbr_dist() {
+            field<real_t> nbr_dist() const {
                 return {1};
             }
 
-            field<real_t> nbr_lag() {
+            field<real_t> nbr_lag() const {
                 return {1};
             }
+
+            times_t current_time() const {
+                return m_t;
+            }
+
+            times_t next_time() const {
+                return m_t+1;
+            }
+
+            void round_start(times_t t) {
+                P::node::round_start(t);
+                m_t = t;
+            }
+
+          private:
+            times_t m_t;
         };
         using net = typename P::net;
     };
@@ -170,4 +187,32 @@ MULTI_TEST(CollectionTest, WMP, O, 3) {
     EXPECT_ROUND(n, {0, 1, 2},
                     {1, 2, 4},
                     {7, 6, 4});
+}
+
+MULTI_TEST(CollectionTest, BLISTidem, O, 3) {
+    test_net<combo<O>, std::tuple<real_t>(int, int)> n{
+        [&](auto& node, int id, int val){
+            return std::make_tuple(
+                coordination::blist_idem_collection(node, 0, id, val, 2, 0, 0, [&](int x, int y){return std::max(x,y);})
+            );
+        }
+    };
+//    EXPECT_ROUND(n, {0, 1, 2},
+//                    {1, 2, 4},
+//                    {1, 2, 4});
+//    EXPECT_ROUND(n, {0, 1, 2},
+//                    {1, 2, 4},
+//                    {2, 4, 4});
+//    EXPECT_ROUND(n, {0, 1, 2},
+//                    {1, 2, 4},
+//                    {4, 4, 4});
+//    EXPECT_ROUND(n, {0, 1, 2},
+//                    {1, 2, 5},
+//                    {4, 4, 5});
+//    EXPECT_ROUND(n, {0, 1, 2},
+//                    {1, 2, 5},
+//                    {4, 5, 5});
+//    EXPECT_ROUND(n, {0, 1, 2},
+//                    {1, 2, 5},
+//                    {5, 5, 5});
 }

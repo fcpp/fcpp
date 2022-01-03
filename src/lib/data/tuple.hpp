@@ -84,6 +84,12 @@ class tuple {
         return s & m_tuple;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_tuple;
+    }
+
   private:
     std::tuple<Ts...> m_tuple;
 };
@@ -116,6 +122,10 @@ class tuple<> {
 
     //! @brief Exchanges the content of the `tuple` objects.
     void swap(tuple&) {}
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S&) const {}
 };
 //! @}
 

@@ -1298,9 +1298,10 @@ struct is_ostream : public std::is_base_of<std::ostream, T> {};
 template <typename A, typename T = void>
 using if_ostream = std::enable_if_t<fcpp::common::is_ostream<A>::value, T>;
 
-}
+} // namespace common
 
+using common::export_list;
 
-}
+} // namespace fcpp
 
 #endif  // FCPP_COMMON_TRAITS_H_

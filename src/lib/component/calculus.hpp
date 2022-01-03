@@ -397,7 +397,7 @@ auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a) {
     return details::fold_hood(op, a, details::get_context(node).second().align(t, node.uid));
 }
 
-//! @brief Reduces a field to a single value by a binary operation with a default value for self.
+//! @brief Reduces a field to a single value by a binary operation with a given value for self.
 template <typename node_t, typename O, typename A, typename B>
 auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a, B const& b) {
     trace_t t = node.stack_trace.hash(call_point);
@@ -502,6 +502,10 @@ template <typename node_t, typename A>
 inline A old(node_t& node, trace_t call_point, A const& f) {
     return old(node, call_point, f, f);
 }
+
+//! @brief The exports type used by the old construct with message type `T`.
+template <typename T>
+using old_t = common::export_list<T>;
 //! @}
 
 
@@ -549,6 +553,10 @@ template <typename node_t, typename A>
 inline to_field<A> nbr(node_t& node, trace_t call_point, A const& f) {
     return nbr(node, call_point, f, f);
 }
+
+//! @brief The exports type used by the nbr construct with message type `T`.
+template <typename T>
+using nbr_t = common::export_list<T>;
 //! @}
 
 
@@ -569,6 +577,10 @@ A oldnbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
     details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
     return details::maybe_first(common::type_sequence<A>{}, f);
 }
+
+//! @brief The exports type used by the oldnbr construct with message type `T`.
+template <typename T>
+using oldnbr_t = common::export_list<T>;
 //! @}
 
 

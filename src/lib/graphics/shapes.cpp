@@ -315,7 +315,7 @@ void shapes::star(VertexData& v) {
         vec<3> q{0, 0, z*sq05};
         for (auto& p : vx) v.push_point(p);
         for (int x=-1; x<=1; x+=2) {
-            vec<3> p{x*0.5, 0.5, 0};
+            vec<3> p{x*real_t(0.5), real_t(0.5), 0};
             push_face(v, {
                 0.75*q + 0.25*make_vec(x, 0, z*sq05),
                 0.5*q + 0.5*p,

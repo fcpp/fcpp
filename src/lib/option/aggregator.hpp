@@ -64,6 +64,9 @@ namespace details {
 template <typename T>
 class count {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -123,6 +126,9 @@ class count {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class distinct {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -183,6 +189,9 @@ class distinct {
 template <typename T>
 class list {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -215,13 +224,13 @@ class list {
     //! @brief The results of aggregation (assumes lists have similar lengths).
     template <typename U>
     result_type<U> result() const {
-        for (int t = 1; t < m_items.size(); ++t)
+        for (size_t t = 1; t < m_items.size(); ++t)
             assert(m_items[t-1].size() >= m_items[t].size() and m_items[t].size() >= m_items[0].size() - 1);
         std::vector<T> v;
-        for (int i = 0; i < m_items.back().size(); ++i)
-            for (int t = 0; t < m_items.size(); ++t)
+        for (size_t i = 0; i < m_items.back().size(); ++i)
+            for (size_t t = 0; t < m_items.size(); ++t)
                 v.push_back(m_items[t][i]);
-        for (int t = 0; m_items.back().size() < m_items[t].size(); ++t)
+        for (size_t t = 0; m_items.back().size() < m_items[t].size(); ++t)
             v.push_back(m_items[t].back());
         return {std::move(v)};
     }
@@ -253,6 +262,9 @@ class list {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class sum {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -314,6 +326,9 @@ class sum {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class mean {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -380,6 +395,9 @@ class mean {
 template <typename T, char n, bool only_finite = std::numeric_limits<T>::has_infinity>
 class moment {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -446,6 +464,9 @@ class moment {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class deviation {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -602,6 +623,9 @@ class stats {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class min {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -662,6 +686,9 @@ class min {
 template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
 class max {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -792,6 +819,9 @@ namespace details {
 template <typename T, bool only_finite, char... qs>
 class quantile<T, only_finite, false, qs...> {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -855,6 +885,9 @@ class quantile<T, only_finite, false, qs...> {
 template <typename T, bool only_finite, char... qs>
 class quantile<T, only_finite, true, qs...> {
   public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
     //! @brief The type of values aggregated.
     using type = T;
 
@@ -1014,6 +1047,30 @@ class combine : public Ts... {
     }
     template <typename O>
     void output_impl(O&, common::type_sequence<>) const {}
+};
+
+
+/**
+ * @brief Aggregates containers of values through a value aggregator.
+ *
+ * @param T The container type.
+ * @param A The value aggregator type.
+ */
+template <typename T, typename A>
+class container : public A {
+  public:
+    //! @brief The type of values aggregated.
+    using type = T;
+
+    //! @brief Erases a value from the aggregation set.
+    void erase(T const& values) {
+        for (auto const& value: values) A::erase(value);
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    void insert(T const& values) {
+        for (auto const& value: values) A::insert(value);
+    }
 };
 
 

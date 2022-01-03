@@ -16,6 +16,7 @@
 #include "lib/data/vec.hpp"
 #include "external/stb_image/stb_image.h"
 
+
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */

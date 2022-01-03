@@ -67,6 +67,12 @@ struct vec {
         return s & data;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << data;
+    }
+
     //! @brief The internal data as C array.
     real_t data[n];
 };

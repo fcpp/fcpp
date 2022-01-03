@@ -163,6 +163,12 @@ class multitype_map {
         return s & m_data & m_keys;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_data << m_keys;
+    }
+
   private:
     //! @brief Access to the map corresponding to a type.
     template <typename A>

@@ -228,12 +228,17 @@ function cmake_finderx() {
         else
             sfx=""
         fi
+        found=""
         for pattern in "^$find$" "^$find" "$find$" "$find"; do
-            if [ "$targets" == "" ]; then
+            if [ "$found" == "" ]; then
                 for f in `cmake_folder_list $kind | grep "$pattern"`; do
-                    cmake_file_list $kind "[^A-Za-z_0-9]$f/"
+                    found="$found `cmake_file_list $kind "[^A-Za-z_0-9]$f/"`"
                 done
-                cmake_file_list $kind . "$pattern"
+                found="$found `cmake_file_list $kind . "$pattern"`"
+                found=`echo "$found" | sed 's|^ *||;s| *$||' | tr -s ' ' '\n'`
+                if [ "$found" != "" ]; then
+                    echo "$found"
+                fi
             fi
         done | sort | uniq | sed "s|$|$sfx|"
     done)
@@ -363,7 +368,7 @@ while [ "$1" != "" ]; do
                         if [ "$targets" == "" ]; then
                             echo -e "\033[1mtarget \"$1\" not found\033[0m"
                         else
-                            alltargets="$alltargets$targets"
+                            alltargets="$alltargets $targets"
                         fi
                     fi
                     shift 1
@@ -482,7 +487,7 @@ while [ "$1" != "" ]; do
                     if [ "$targets" == "" ]; then
                         echo -e "\033[1mtarget \"$1\" not found\033[0m"
                     else
-                        alltargets="$alltargets$targets"
+                        alltargets="$alltargets $targets"
                     fi
                     shift 1
                 done
@@ -544,7 +549,7 @@ while [ "$1" != "" ]; do
                     if [ "$targets" == "" ]; then
                         echo -e "\033[1mtarget \"$1\" not found\033[0m"
                     else
-                        alltargets="$alltargets$targets"
+                        alltargets="$alltargets $targets"
                     fi
                     shift 1
                 done

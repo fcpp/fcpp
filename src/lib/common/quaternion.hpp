@@ -99,6 +99,12 @@ class quaternion {
         return s & m_data;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    inline S& serialize(S& s) const {
+        return s << m_data;
+    }
+
   private:
     //! @brief The component data as C array.
     real_t m_data[4];

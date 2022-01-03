@@ -8,13 +8,13 @@
 #ifndef FCPP_SIMULATED_MAP_H_
 #define FCPP_SIMULATED_MAP_H_
 
-#include "lib/component/base.hpp"
-#include "lib/data/vec.hpp"
-#include "lib/data/color.hpp"
-#include "lib/common/traits.hpp"
-
 #include <cstring>
-#include "./external/stb_image/stb_image.h"
+
+#include "lib/common/traits.hpp"
+#include "lib/component/base.hpp"
+#include "lib/data/color.hpp"
+#include "lib/data/vec.hpp"
+#include "external/stb_image/stb_image.h"
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -187,7 +187,7 @@ struct simulated_map {
                 index_type index_to_return;
                 //linear scaling
                 for (int i = 0; i < 2; i++)
-                    index_to_return[i] = static_cast<size_t>(std::min(std::max(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])), 0.0),m_viewport_max[i]-1));
+                    index_to_return[i] = static_cast<size_t>(std::min(std::max(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])), real_t(0)),m_viewport_max[i]-1));
                 return index_to_return;
             }
 
@@ -267,20 +267,19 @@ struct simulated_map {
                         }
                     }
                     //start bfs
-                    for (int i = 0; i < queues.size(); i++) {
-                        for (int j = 0; j < queues[i].size(); j++) {
-                            matrix_pair_type const& elem = queues[i][j];
+                    for (size_t i = 0; i < queues.size(); ++i) {
+                        for (matrix_pair_type const& elem : queues[i]) {
                             index_type const& point = elem.first;
                             if (!visited[point[1]][point[0]]) {
                                 if (i > 0) m_closest[point[1]][point[0]] = elem.second;
                                 visited[point[1]][point[0]] = true;
-                                for (std::array<int, 3> const &d: deltas) {
+                                for (std::array<int,3> const& d : deltas) {
                                     //add queues to add nodes at distance i+2 and i+3
-                                    while (i + d[2] >= queues.size()) queues.emplace_back();
+                                    while (i+d[2] >= queues.size()) queues.emplace_back();
                                     size_t n_x = point[0] + d[0];
                                     size_t n_y = point[1] + d[1];
                                     if (n_x >= 0 && n_x < m_bitmap[0].size() && n_y >= 0 && n_y < m_bitmap.size())
-                                        queues[i + d[2]].push_back({{n_x, n_y}, elem.second});
+                                        queues[i+d[2]].push_back({{n_x, n_y}, elem.second});
                                 }
                             }
                             queues[i].clear();
@@ -294,7 +293,7 @@ struct simulated_map {
             template<size_t n>
             position_type to_pos_type(vec<n> const& vec) {
                 position_type t;
-                for (int i = 0; i < vec.dimension; i++)
+                for (size_t i = 0; i < vec.dimension; ++i)
                     t[i] = vec[i];
                 return t;
             }

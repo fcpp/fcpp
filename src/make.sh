@@ -610,6 +610,20 @@ while [ "$1" != "" ]; do
             builder test $alltargets
         fi
         quitter
+    elif [ "$1" == "multiall" ]; then
+        shift 1
+        $0 clean
+        reporter $0 doc
+        reporter $0 test all
+        $0 clean
+        reporter $0 gcc test all
+        $0 bazel clean
+        $0 bazel test all
+        reporter $0 bazel test all
+        $0 bazel clean
+        $0 bazel gcc test all
+        reporter $0 bazel gcc test all
+        quitter
     else
         usage
     fi

@@ -281,6 +281,7 @@ while [ "$1" != "" ]; do
         shift 1
         gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
         gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
+        opts="$opts -DCMAKE_C_COMPILER=$gcc -DCMAKE_CXX_COMPILER=$gpp"
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
         export CC="$gpp"
         export CXX="$gpp"

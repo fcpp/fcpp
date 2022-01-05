@@ -546,6 +546,7 @@ namespace details {
     };
     //! @}
 }
+//! @endcond
 
 //! @brief The type that should be returned by a function forwarding an argument of type T.
 template <typename T>

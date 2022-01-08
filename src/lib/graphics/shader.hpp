@@ -47,12 +47,26 @@ public:
 
     //! @brief Uniform functions.
     //! @{
+
+    //! @brief Sets a boolean property.
     void setBool(std::string const& name, bool value) const;
+
+    //! @brief Sets an integral property.
     void setInt(std::string const& name, int value) const;
+
+    //! @brief Sets a floating point property.
     void setFloat(std::string const& name, float value) const;
+
+    //! @brief Sets a vector property.
     void setVec3(std::string const& name, glm::vec3 const& value) const;
+
+    //! @brief Sets a homogeneous vector property.
     void setVec4(std::string const& name, glm::vec4 const& value) const;
+
+    //! @brief Sets a matrix property.
     void setMat3(std::string const& name, glm::mat3 const& mat) const;
+
+    //! @brief Sets an homogeneous matrix property.
     void setMat4(std::string const& name, glm::mat4 const& mat) const;
     //! @}
 };

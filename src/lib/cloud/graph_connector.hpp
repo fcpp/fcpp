@@ -123,16 +123,19 @@ struct graph_connector {
             ~node() {
             }
 
+            //! @brief Adds given node to neighbours.
             void connect(typename F::node *n) {
                 m_neighbours.first().emplace(n->uid,n);
                 n->m_neighbours.second().emplace(P::node::uid,&P::node::as_final());
             }
 
+            //! @brief Removes node with given device identifier from neighbours.
             void disconnect(device_t i) {
                 (m_neighbours.first()[i])->m_neighbours.second().erase(P::node::uid);
                 m_neighbours.first().erase(i);
             }
 
+            //! @brief Checks whether a given device identifier is within neighbours.
             bool connected(device_t i) const {
                 return m_neighbours.first().count(i);
             }

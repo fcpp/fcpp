@@ -131,14 +131,20 @@ function mkdoc() {
         mkdir doc
     fi
     echo -e "\033[4mdoxygen Doxyfile\033[0m" >&2
-    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$"
+    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|'
     ndoc=`cat tmpdoc.err | grep "is not documented.$" | wc -l | tr -cd '0-9'`
+    nerr=`cat tmpdoc.err | grep '/fcpp/src/lib/' | wc -l | tr -cd '0-9'`
     if [ $ndoc -gt 0 ]; then
         cat tmpdoc.err | grep "is not documented" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |;s| is not documented.||' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|' | sort | uniq > tmpdoc2.err
         mv tmpdoc2.err tmpdoc.err
         ndoc=`cat tmpdoc.err | wc -l | tr -cd '0-9'`
         echo -e "\033[1m$ndoc items are not documented:\033[0m" >&2
         cat tmpdoc.err
+    fi
+    if [ $nerr -gt 0 ]; then
+        exitcodes=( ${exitcodes[@]} $nerr )
+        failcmd="\033[4mdoxygen Doxyfile\033[0m"
+        errored=( "${errored[@]}" "$failcmd" )
     fi
     rm tmpdoc.err
 }
@@ -613,7 +619,6 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "multiall" ]; then
         shift 1
         $0 clean
-        reporter $0 doc
         reporter $0 test all
         $0 clean
         reporter $0 gcc test all
@@ -623,6 +628,7 @@ while [ "$1" != "" ]; do
         $0 bazel clean
         $0 bazel gcc test all
         reporter $0 bazel gcc test all
+        reporter $0 doc
         quitter
     else
         usage

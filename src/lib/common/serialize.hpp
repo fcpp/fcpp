@@ -93,6 +93,7 @@ class sstream<false> {
     //! @brief The read index.
     size_t m_idx;
 };
+//! @brief Stream-like object for input serialization (alias).
 using isstream = sstream<false>;
 //! @}
 
@@ -137,6 +138,7 @@ class sstream<true> {
     //! @brief The raw data.
     std::vector<char> m_data;
 };
+//! @brief Stream-like object for output serialization (alias).
 using osstream = sstream<true>;
 //! @}
 

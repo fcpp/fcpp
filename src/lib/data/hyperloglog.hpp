@@ -276,7 +276,7 @@ class hyperloglog_counter {
     //! @brief Type for jenkins hash.
     using jenkins_type = uint64_t;
 
-    //! @brief The Jenkins hash
+    //! @brief The Jenkins hash.
     static jenkins_type jenkins(size_t x) {
         // arbitrary starting value
         constexpr jenkins_type golden_ratio = 0x9e3779b97f4a7c13ULL;
@@ -300,7 +300,7 @@ class hyperloglog_counter {
         return c;
     }
 
-    //! @brief Performs a multiple precision subtraction, leaving the result in the first operand
+    //! @brief Performs a multiple precision subtraction, leaving the result in the first operand.
     static void subtract(size_t x[], size_t const y[], size_t l) {
         bool borrow = false;
         for (size_t i=0; i<l; i++) {
@@ -309,6 +309,7 @@ class hyperloglog_counter {
         }
     }
 
+    //! @brief Performs a multiple precision subtraction with a repeating word, leaving the result in the first operand.
     static void subtract(size_t x[], size_t y, size_t l) {
         bool borrow = false;
         for (size_t i=0; i<l; i++) {

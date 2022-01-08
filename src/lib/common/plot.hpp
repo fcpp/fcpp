@@ -34,6 +34,7 @@ namespace filter {
     //! @brief Filters values within `L/den` and `U/den` (included).
     template <intmax_t L, intmax_t U, intmax_t den = 1>
     struct within {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             v *= den;
@@ -58,6 +59,7 @@ namespace filter {
     //! @brief Negate a filter.
     template <typename F>
     struct neg : F {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             return not F::operator()(v);
@@ -67,6 +69,7 @@ namespace filter {
     //! @brief Joins filters (or).
     template <typename F, typename G>
     struct vee : F, G {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             return F::operator()(v) or G::operator()(v);
@@ -76,6 +79,7 @@ namespace filter {
     //! @brief Disjoins filters (and).
     template <typename F, typename G>
     struct wedge : F, G {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             return F::operator()(v) and G::operator()(v);

@@ -157,6 +157,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor (dangerous: creates a field in an invalid state).
     field() = default;
 
@@ -197,6 +198,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
     field& operator=(field const&) = default;
 

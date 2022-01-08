@@ -36,6 +36,7 @@ class flat_ptr<T, false> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     flat_ptr() {
         m_data.reset(new T());
@@ -60,6 +61,7 @@ class flat_ptr<T, false> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Default copying assignment.
     flat_ptr& operator=(T const& d) {
         m_data.reset(new T(d));
@@ -136,6 +138,7 @@ class flat_ptr<T, true> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     flat_ptr() : m_data() {}
 
@@ -154,6 +157,7 @@ class flat_ptr<T, true> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Default copying assignment.
     flat_ptr& operator=(T const& d) {
         m_data = d;

@@ -47,7 +47,7 @@ namespace tags {
     //! @brief Net initialisation tag associating to the color of the obstacles.
     struct obstacles_color {};
 
-    //! @brief Net initialisation tag associating to the threshold in which consider the specified obstacles_color.
+    //! @brief Net initialisation tag associating to the threshold in which consider the specified obstacles color.
     struct obstacles_color_threshold {};
 
 }
@@ -86,7 +86,7 @@ namespace details {
  * - \ref tags::area_min associates to a vector representing minimum area coordinate.
  * - \ref tags::area_max associates o a vector representing maximum area coordinate.
  * - \ref tags::obstacles associates to a path of the image representing obstacles.
- * - \ref tags::obstacles_colors associates to a color used to identify which pixel on the bitmaps are obstacles.
+ * - \ref tags::obstacles_color associates to a color used to identify which pixel on the bitmaps are obstacles.
  * - \ref tags::obstacles_color_threshold associates to a real number used to have a margin error for colors in different image format.
  *
  */

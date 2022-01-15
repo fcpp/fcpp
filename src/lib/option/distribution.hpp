@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <random>
 #include <type_traits>
 #include <utility>
@@ -146,6 +147,11 @@ namespace details {
     template <typename T>
     constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<1>) {
         return (T)num;
+    }
+
+    template <typename T>
+    constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<0>) {
+        return (T)(num * std::numeric_limits<long double>::infinity());
     }
 
     template <typename T, intmax_t den, typename = std::enable_if_t<(den > 1)>>

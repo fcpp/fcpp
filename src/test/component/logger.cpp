@@ -63,7 +63,8 @@ using combo1 = component::combine_spec<
         parallel<(O & 1) == 1>,
         value_push<true>,
         log_schedule<seq_per>,
-        aggregators<gat,aggregator::mean<double>>
+        aggregators<gat,aggregator::mean<double>>,
+        log_functors<tag, functor::add<aggregator::mean<gat,true>, plot::time>>
     >,
     component::storage<tuple_store<tag,bool,gat,int>>,
     component::base<parallel<(O & 1) == 1>>
@@ -162,13 +163,13 @@ MULTI_TEST(LoggerTest, Push, O, 1) {
     getline(s, line);
     EXPECT_EQ("# The columns have the following meaning:", line);
     getline(s, line);
-    EXPECT_EQ("# time mean(gat) ", line);
+    EXPECT_EQ("# time mean(gat) tag ", line);
     getline(s, line);
-    EXPECT_EQ("1.5 2 ", line);
+    EXPECT_EQ("1.5 2 3.5 ", line);
     getline(s, line);
-    EXPECT_EQ("3.5 3 ", line);
+    EXPECT_EQ("3.5 3 6.5 ", line);
     getline(s, line);
-    EXPECT_EQ("5.5 nan ", line);
+    EXPECT_EQ("5.5 nan nan ", line);
     getline(s, line);
     EXPECT_EQ("##########################################################", line);
     getline(s, line);

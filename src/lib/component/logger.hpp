@@ -24,6 +24,7 @@
 #include "lib/common/plot.hpp"
 #include "lib/component/base.hpp"
 #include "lib/option/aggregator.hpp"
+#include "lib/option/functor.hpp"
 #include "lib/option/sequence.hpp"
 
 
@@ -42,6 +43,10 @@ namespace tags {
     //! @brief Declaration tag associating to a sequence of storage tags and corresponding aggregator types.
     template <typename... Ts>
     struct aggregators {};
+
+    //! @brief Declaration tag associating to a sequence of storage tags and corresponding functor types.
+    template <typename... Ts>
+    struct log_functors {};
 
     //! @brief Declaration tag associating to a sequence of initialisation tags to be fed to plotters.
     template <typename... Ts>
@@ -117,14 +122,19 @@ namespace details {
     std::shared_ptr<T> make_plotter(std::nullptr_t) {
         return std::shared_ptr<T>(new T());
     }
-    //! @brief Computes the row type given a the aggregator tuple (general case).
-    template <typename T>
+    //! @brief Computes the row type given a the aggregator and functor tuples (general case).
+    template <typename A, typename F>
     struct row_type;
-//! @brief Computes the row type given a the aggregator tuple.
-    template <typename... Ts, typename... Ss>
-    struct row_type<common::tagged_tuple<common::type_sequence<Ts...>, common::type_sequence<Ss...>>> {
-        using type = common::tagged_tuple_cat<typename Ss::template result_type<Ts>...>;
+    //! @brief Computes the row type given a the aggregator and functor tuples.
+    template <typename... SAs, typename... TAs, typename SF, typename... TFs>
+    struct row_type<common::tagged_tuple<common::type_sequence<SAs...>, common::type_sequence<TAs...>>,
+                    common::tagged_tuple<SF, common::type_sequence<TFs...>>> {
+        using type = common::tagged_tuple_cat<typename TAs::template result_type<SAs>..., common::tagged_tuple<SF, common::type_sequence<typename TFs::type...>>>;
     };
+    template <typename T, typename U>
+    inline U&& wrap(U&& x) {
+        return std::forward<U>(x);
+    }
 }
 //! @endcond
 
@@ -165,7 +175,10 @@ namespace details {
 template <class... Ts>
 struct logger {
     //! @brief Sequence of storage tags and corresponding aggregator types.
-    using aggregators_type = common::option_types<tags::aggregators, Ts...>;
+    using aggregators_type = common::tagged_tuple_t<common::option_types<tags::aggregators, Ts...>>;
+
+    //! @brief Sequence of storage tags and corresponding functor types.
+    using functors_type = common::tagged_tuple_t<common::option_types<tags::log_functors, Ts...>>;
 
     //! @brief Tagged tuple type for storing extra info.
     using extra_info_type = common::tagged_tuple_t<common::option_types<tags::extra_info, Ts...>>;
@@ -242,15 +255,15 @@ struct logger {
         //! @brief The global part of the component.
         class net : public P::net {
           public: // visible by node objects and the main program
-            //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<aggregators_type>;
+            //! @brief Type for the result of an aggregation (printed on the console).
+            using log_type = common::tagged_tuple_cat<common::tagged_tuple_t<plot::time, times_t>, typename details::row_type<aggregators_type, functors_type>::type>;
 
-            //! @brief Type for the result of an aggregation.
-            using row_type = common::tagged_tuple_cat<common::tagged_tuple_t<plot::time, times_t>, typename details::row_type<tuple_type>::type, extra_info_type>;
+            //! @brief Type for the aggregation rows (fed to plotters).
+            using row_type = common::tagged_tuple_cat<log_type, extra_info_type>;
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
                 std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
@@ -260,7 +273,8 @@ struct logger {
                 t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
                 *m_stream << "\n#\n";
                 *m_stream << "# The columns have the following meaning:\n# time ";
-                print_headers(t_tags());
+                print_headers(a_tags());
+                print_tags(f_tags());
                 *m_stream << std::endl;
             }
 
@@ -289,12 +303,12 @@ struct logger {
                 if (m_schedule.next() < P::net::next()) {
                     PROFILE_COUNT("logger");
                     data_puller(common::bool_pack<not value_push>(), *this);
-                    *m_stream << m_schedule.next() << " ";
-                    print_output(t_tags());
+                    row_update(a_tags{}, f_tags{});
+                    print_output(l_tags{});
                     *m_stream << std::endl;
-                    data_plotter(std::is_same<plot_type, plot::none>{}, t_tags{});
+                    data_plotter(std::is_same<plot_type, plot::none>{});
                     m_schedule.step(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
-                    if (not value_push) m_aggregators = tuple_type{};
+                    if (not value_push) m_aggregators = aggregators_type{};
                 } else P::net::update();
             }
 
@@ -303,7 +317,7 @@ struct logger {
             void aggregator_erase(common::tagged_tuple<S,T> const& t) {
                 assert(value_push); // disabled for pull-based loggers
                 common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
-                aggregator_erase_impl(m_aggregators, t, t_tags());
+                aggregator_erase_impl(m_aggregators, t, a_tags());
             }
 
             //! @brief Inserts data into the aggregators.
@@ -311,12 +325,24 @@ struct logger {
             void aggregator_insert(common::tagged_tuple<S,T> const& t) {
                 assert(value_push); // disabled for pull-based loggers
                 common::lock_guard<value_push and parallel> lock(m_aggregators_mutex);
-                aggregator_insert_impl(m_aggregators, t, t_tags());
+                aggregator_insert_impl(m_aggregators, t, a_tags());
             }
 
           private: // implementation details
-            //! @brief The tagged tuple tags.
-            using t_tags = typename tuple_type::tags;
+            //! @brief The aggregator tuple tags.
+            using a_tags = typename aggregators_type::tags;
+
+            //! @brief The functor tuple tags.
+            using f_tags = typename functors_type::tags;
+
+            //! @brief The log tuple tags.
+            using l_tags = typename log_type::tags;
+
+            //! @brief
+            template <typename T,typename... Ss>
+            functors_type functor_init(T const& t, common::type_sequence<Ss...>) {
+                return {{get_generator(has_randomizer<P>{}, *this), details::wrap<Ss>(t)}...};
+            }
 
             //! @brief Prints the aggregator headers.
             void print_headers(common::type_sequence<>) const {}
@@ -325,13 +351,20 @@ struct logger {
                 common::get<U>(m_aggregators).header(*m_stream, common::details::strip_namespaces(common::type_name<U>()));
                 print_headers(common::type_sequence<Us...>());
             }
+            //! @brief Prints the functor headers.
+            void print_tags(common::type_sequence<>) const {}
+            template <typename U, typename... Us>
+            void print_tags(common::type_sequence<U,Us...>) const {
+                *m_stream << common::details::strip_namespaces(common::type_name<U>()) << " ";
+                print_tags(common::type_sequence<Us...>{});
+            }
 
-            //! @brief Prints the aggregator headers.
+            //! @brief Prints the aggregator output.
             void print_output(common::type_sequence<>) const {}
             template <typename U, typename... Us>
             void print_output(common::type_sequence<U,Us...>) const {
-                common::get<U>(m_aggregators).output(*m_stream);
-                print_output(common::type_sequence<Us...>());
+                *m_stream << common::get<U>(m_row) << " ";
+                print_output(common::type_sequence<Us...>{});
             }
 
             //! @brief Erases data from the aggregators.
@@ -379,35 +412,37 @@ struct logger {
             inline void data_puller(common::bool_pack<true>, N& n) {
                 if (parallel == false or m_threads == 1) {
                     for (auto it = n.node_begin(); it != n.node_end(); ++it)
-                        aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), t_tags());
+                        aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), a_tags());
                     return;
                 }
-                std::vector<tuple_type> thread_aggregators(m_threads);
+                std::vector<aggregators_type> thread_aggregators(m_threads);
                 auto a = n.node_begin();
                 auto b = n.node_end();
                 common::parallel_for(common::tags::parallel_execution(m_threads), b-a, [&thread_aggregators,&a,this] (size_t i, size_t t) {
-                    aggregator_insert_impl(thread_aggregators[t], a[i].second.storage_tuple(), t_tags());
+                    aggregator_insert_impl(thread_aggregators[t], a[i].second.storage_tuple(), a_tags());
                 });
                 for (size_t i=0; i<m_threads; ++i)
-                    aggregator_add_impl(m_aggregators, thread_aggregators[i], t_tags());
+                    aggregator_add_impl(m_aggregators, thread_aggregators[i], a_tags());
             }
 
             //! @brief Does nothing otherwise.
             template <typename N>
             inline void data_puller(common::bool_pack<false>, N&) {}
 
-            //! @brief Plots data if a plotter is given.
-            template <typename... Us>
-            inline void data_plotter(std::false_type, common::type_sequence<Us...>) const {
-                row_type r = m_extra_info;
-                common::get<plot::time>(r) = m_schedule.next();
-                common::details::ignore((r = common::get<Us>(m_aggregators).template result<Us>())...);
-                *m_plotter << r;
+            //! @brief Updates row data.
+            template <typename... Us, typename... Ss>
+            inline void row_update(common::type_sequence<Us...>, common::type_sequence<Ss...>) {
+                common::get<plot::time>(m_row) = m_schedule.next();
+                common::details::ignore((m_row = common::get<Us>(m_aggregators).template result<Us>())...);
+                common::details::ignore((common::get<Ss>(m_row) = common::get<Ss>(m_functors)(get_generator(has_randomizer<P>{}, *this), m_row))...);
             }
 
+            //! @brief Plots data if a plotter is given.
+            inline void data_plotter(std::false_type) {
+                *m_plotter << m_row;
+            }
             //! @brief Does nothing otherwise.
-            template <typename U>
-            inline void data_plotter(std::true_type, U) const {}
+            inline void data_plotter(std::true_type) const {}
 
             //! @brief The stream where data is exported.
             std::shared_ptr<ostream_type> m_stream;
@@ -416,13 +451,16 @@ struct logger {
             std::shared_ptr<plot_type> m_plotter;
 
             //! @brief Tuple storing extra information.
-            extra_info_type m_extra_info;
+            row_type m_row;
 
             //! @brief The scheduling of exporting events.
             schedule_type m_schedule;
 
             //! @brief The aggregator tuple.
-            tuple_type m_aggregators;
+            aggregators_type m_aggregators;
+
+            //! @brief The functors tuple.
+            functors_type m_functors;
 
             //! @brief A mutex for accessing aggregation.
             common::mutex<value_push and parallel> m_aggregators_mutex;

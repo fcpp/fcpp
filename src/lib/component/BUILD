@@ -51,6 +51,7 @@ cc_library(
         "//lib/common:plot",
         "//lib/component:base",
         "//lib/option:aggregator",
+        "//lib/option:functor",
         "//lib/option:sequence",
     ],
     visibility = [

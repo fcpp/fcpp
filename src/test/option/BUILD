@@ -36,6 +36,19 @@ cc_test(
 )
 
 cc_test(
+    name = "functor",
+    srcs = ["functor.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/option:distribution",
+        "//lib/option:functor",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "metric",
     srcs = ["metric.cpp"],
     deps = [

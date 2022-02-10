@@ -236,7 +236,7 @@ inline to_local<A> all_hood(node_t& node, trace_t call_point, A const& a) {
     }, a);
 }
 
-//! @brief Reduces a field to a single value by logical and, with a default value for self.
+//! @brief Reduces a field to a single value by logical and, with a given value for self.
 template <typename node_t, typename A, typename B>
 inline to_local<A> all_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
     return fold_hood(node, call_point, [] (to_local<A> const& x, to_local<A> const& y) -> to_local<A> {
@@ -253,7 +253,7 @@ inline to_local<A> any_hood(node_t& node, trace_t call_point, A const& a) {
     }, a);
 }
 
-//! @brief Reduces a field to a single value by logical or, with a default value for self.
+//! @brief Reduces a field to a single value by logical or, with a given value for self.
 template <typename node_t, typename A, typename B>
 inline to_local<A> any_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
     return fold_hood(node, call_point, [] (to_local<A> const& x, to_local<A> const& y) -> to_local<A> {
@@ -270,7 +270,7 @@ inline to_local<A> min_hood(node_t& node, trace_t call_point, A const& a) {
     }, a);
 }
 
-//! @brief Reduces a field to a single value by minimum with a default value for self.
+//! @brief Reduces a field to a single value by minimum with a given value for self.
 template <typename node_t, typename A, typename B>
 inline to_local<A> min_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
     return fold_hood(node, call_point, [] (to_local<A> const& x, to_local<A> const& y) -> to_local<A> {
@@ -304,7 +304,7 @@ inline to_local<A> sum_hood(node_t& node, trace_t call_point, A const& a) {
     }, a);
 }
 
-//! @brief Reduces a field to a single value by addition with a default value for self.
+//! @brief Reduces a field to a single value by addition with a given value for self.
 template <typename node_t, typename A, typename B>
 inline to_local<A> sum_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
     return fold_hood(node, call_point, [] (to_local<A> const& x, to_local<A> const& y) -> to_local<A> {
@@ -321,7 +321,7 @@ inline to_local<A> mean_hood(node_t& node, trace_t call_point, A const& a) {
     }, a) / count_hood(node, call_point);
 }
 
-//! @brief Reduces a field to a single value by averaging with a default value for self.
+//! @brief Reduces a field to a single value by averaging with a given value for self.
 template <typename node_t, typename A, typename B>
 inline to_local<A> mean_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
     return fold_hood(node, call_point, [] (to_local<A> const& x, to_local<A> const& y) -> to_local<A> {
@@ -354,7 +354,7 @@ inline C list_hood(node_t& node, trace_t call_point, C&& c, A const& a, tags::no
     return std::move(c);
 }
 
-//! @brief Reduces a field to a container of its constituent values with a default value for self in device order (void version).
+//! @brief Reduces a field to a container of its constituent values with a given value for self in device order (void version).
 template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
 void list_hood(node_t& node, trace_t call_point, C& c, A const& a, B const& b) {
     bool done = false;
@@ -368,7 +368,7 @@ void list_hood(node_t& node, trace_t call_point, C& c, A const& a, B const& b) {
     }, a, char{});
     if (not done) common::uniform_insert(c, self(node, call_point, b));
 }
-//! @brief Reduces a field to a container of its constituent values with a default value for self in device order (returning version).
+//! @brief Reduces a field to a container of its constituent values with a given value for self in device order (returning version).
 template <typename node_t, typename C, typename A, typename B, typename = std::enable_if_t<not std::is_same<B, tags::nothing>::value>>
 inline C list_hood(node_t& node, trace_t call_point, C&& c, A const& a, B const& b) {
     list_hood(node, call_point, c, a, b);

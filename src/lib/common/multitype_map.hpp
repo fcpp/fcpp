@@ -70,6 +70,7 @@ class multitype_map {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
     multitype_map& operator=(multitype_map const&) = default;
 
@@ -88,7 +89,9 @@ class multitype_map {
         return m_keys == o.m_keys and maps_compare(m_data, o.m_data, value_types{});
     }
 
+    //! @cond INTERNAL
     #define MISSING_TYPE_MESSAGE "\033[1m\033[4munsupported type access (add type A to exports type list)\033[0m"
+    //! @endcond
 
     //! @brief Inserts value at corresponding key.
     template<typename A>
@@ -161,6 +164,12 @@ class multitype_map {
     template <typename S>
     S& serialize(S& s) {
         return s & m_data & m_keys;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_data << m_keys;
     }
 
   private:

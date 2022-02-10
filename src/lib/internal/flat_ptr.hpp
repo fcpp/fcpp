@@ -36,6 +36,7 @@ class flat_ptr<T, false> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     flat_ptr() {
         m_data.reset(new T());
@@ -60,6 +61,7 @@ class flat_ptr<T, false> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Default copying assignment.
     flat_ptr& operator=(T const& d) {
         m_data.reset(new T(d));
@@ -115,6 +117,12 @@ class flat_ptr<T, false> {
         return s & *m_data.get();
     }
 
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << *m_data.get();
+    }
+
   private:
     //! @brief The content of the class.
     std::shared_ptr<T> m_data;
@@ -130,6 +138,7 @@ class flat_ptr<T, true> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     flat_ptr() : m_data() {}
 
@@ -148,6 +157,7 @@ class flat_ptr<T, true> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Default copying assignment.
     flat_ptr& operator=(T const& d) {
         m_data = d;
@@ -202,6 +212,12 @@ class flat_ptr<T, true> {
     template <typename S>
     S& serialize(S& s) {
         return s & m_data;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_data;
     }
 
   private:

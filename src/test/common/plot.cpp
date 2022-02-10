@@ -57,7 +57,7 @@ TEST(PlotTest, Value) {
         p << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 4.0, 3.0);
         std::array<plot::point, 1> pb = p.build();
         plot::point& q = pb[0];
-        EXPECT_POINT(q, "", "tag (mean)", 3.0);
+        EXPECT_POINT(q, "tag", "tag (mean)", 3.0);
     }
     {
         plot::value<temp<tag>, aggregator::distinct<int>> p;
@@ -86,7 +86,7 @@ TEST(PlotTest, FilterValue) {
     p << common::make_tagged_tuple<plot::time,tag>(20.0, 6.0);
     std::array<plot::point, 1> pb = p.build();
     plot::point& q = pb[0];
-    EXPECT_POINT(q, "", "tag (mean)", 5.0);
+    EXPECT_POINT(q, "tag", "tag (mean)", 5.0);
 }
 
 TEST(PlotTest, JoinValue) {
@@ -94,8 +94,8 @@ TEST(PlotTest, JoinValue) {
     p << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 4.0, 3.0);
     p << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 6.0, 1.0);
     std::array<plot::point, 2> pb = p.build();
-    EXPECT_POINT(pb[0], "", "tag (mean)", 5.0);
-    EXPECT_POINT(pb[1], "", "gat (mean)", 2.0);
+    EXPECT_POINT(pb[0], "tag", "tag (mean)", 5.0);
+    EXPECT_POINT(pb[1], "gat", "gat (mean)", 2.0);
 }
 
 TEST(PlotTest, Values) {
@@ -111,12 +111,12 @@ TEST(PlotTest, Values) {
     plot::values<aggr_t, common::type_sequence<>, gat, plot::unit<temp>, aggregator::count<int>> p;
     p << common::make_tagged_tuple<plot::time,aggregator::distinct<gat, true>, aggregator::mean<gat, true>, aggregator::deviation<gat, true>, aggregator::mean<temp<tag>, true>, aggregator::count<temp<gat>>, aggregator::count<tag>, gat>(0,1,2,3,4,5,6,7);
     std::array<plot::point, 7> pb = p.build();
-    EXPECT_POINT(pb[0], "",     "gat (distinct-mean)", 1.0);
-    EXPECT_POINT(pb[1], "",     "gat (mean-mean)",     2.0);
-    EXPECT_POINT(pb[2], "",     "gat (dev-mean)",      3.0);
+    EXPECT_POINT(pb[0], "gat",  "gat (distinct-mean)", 1.0);
+    EXPECT_POINT(pb[1], "gat",  "gat (mean-mean)",     2.0);
+    EXPECT_POINT(pb[2], "gat",  "gat (dev-mean)",      3.0);
     EXPECT_POINT(pb[3], "temp", "tag (mean-mean)",     4.0);
     EXPECT_POINT(pb[4], "temp", "gat (count-mean)",    5.0);
-    EXPECT_POINT(pb[5], "",     "tag (count-mean)",    6.0);
+    EXPECT_POINT(pb[5], "tag",  "tag (count-mean)",    6.0);
     EXPECT_POINT(pb[6], "temp", "gat (count-mean)",    5.0);
 }
 

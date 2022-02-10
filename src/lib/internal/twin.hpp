@@ -37,6 +37,7 @@ class twin<T, true> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     twin() = default;
 
@@ -53,6 +54,7 @@ class twin<T, true> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
     twin& operator=(twin const&) = default;
 
@@ -106,6 +108,7 @@ class twin<T, false> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     twin() = default;
 
@@ -122,6 +125,7 @@ class twin<T, false> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
     twin& operator=(twin const&) = default;
 

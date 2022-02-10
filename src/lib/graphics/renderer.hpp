@@ -36,10 +36,14 @@ namespace fcpp {
 
         //! @brief Glyph struct.
         struct glyph {
-            unsigned int textureID;  // ID handle of the glyph texture
-            glm::ivec2   size;       // size of glyph
-            glm::ivec2   bearing;    // offset from baseline to left/top of glyph
-            unsigned int advance;    // offset to advance to next glyph
+            //! @brief ID handle of the glyph texture.
+            unsigned int textureID;
+            //! @brief Size of glyph.
+            glm::ivec2   size;
+            //! @brief Offset from baseline to left/top of glyph.
+            glm::ivec2   bearing;
+            //! @brief Offset to advance to next glyph.
+            unsigned int advance;
         };
 
         //! @brief Renderer class; it has the responsability of calling OpenGL directives.

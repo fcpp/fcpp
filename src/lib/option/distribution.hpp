@@ -10,6 +10,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <random>
 #include <type_traits>
 #include <utility>
@@ -142,6 +143,21 @@ namespace details {
         R dist{g, t};
         return dist(g, t);
     }
+
+    template <typename T>
+    constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<1>) {
+        return (T)num;
+    }
+
+    template <typename T>
+    constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<0>) {
+        return (T)(num * std::numeric_limits<long double>::infinity());
+    }
+
+    template <typename T, intmax_t den, typename = std::enable_if_t<(den > 1)>>
+    constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<den>) {
+        return (T)(num / (long double)den);
+    }
 }
 //! @endcond
 
@@ -205,7 +221,7 @@ struct constant_n {
 
     //! @brief Constructor.
     template <typename G, typename S, typename T>
-    constant_n(G&&, common::tagged_tuple<S,T> const& t) : val(common::get_or<val_tag>(t, (type)num / (type)den)) {}
+    constant_n(G&&, common::tagged_tuple<S,T> const& t) : val(common::get_or<val_tag>(t, def)) {}
 
     //! @brief Generator function.
     template <typename G, typename T>
@@ -214,6 +230,9 @@ struct constant_n {
     }
 
   private:
+    //! @brief The default result.
+    static constexpr type def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
+
     //! @brief The constant value.
     type val;
 };
@@ -231,8 +250,12 @@ struct constant_n<R, num, den, void> {
     //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&&, T&&) {
-        return (type)num / (type)den;
+        return def;
     }
+
+  private:
+    //! @brief The default result.
+    static constexpr type def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
 };
 //! @endcond
 /**

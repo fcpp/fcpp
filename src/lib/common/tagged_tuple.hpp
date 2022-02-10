@@ -121,10 +121,13 @@ namespace details {
  * @param def A default value if tag is missing.
  */
 //! @{
+
+//! @brief Const tuple overload.
 template <typename S, typename Ss, typename Ts, typename T>
 auto&& get_or(tagged_tuple<Ss, Ts> const& t, T&& def) {
     return details::get_or(t, std::forward<T>(def), typename Ss::template intersect<S>());
 }
+//! @brief Value tuple overload.
 template <typename S, typename Ss, typename Ts, typename T>
 auto&& get_or(tagged_tuple<Ss, Ts>&& t, T&& def) {
     return details::get_or(std::move(t), std::forward<T>(def), typename Ss::template intersect<S>());

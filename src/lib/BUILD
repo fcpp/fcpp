@@ -157,6 +157,7 @@ cc_library(
         "//lib/option:aggregator",
         "//lib/option:connect",
         "//lib/option:distribution",
+        "//lib/option:functor",
         "//lib/option:metric",
         "//lib/option:sequence",
     ],

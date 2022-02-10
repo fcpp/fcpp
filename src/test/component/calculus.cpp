@@ -69,12 +69,12 @@ int spawning(node_t& node, trace_t call_point, bool b) {
     common::option<int> k;
     if (b) k.emplace(node.uid);
     auto m = spawn(node, 0, [&](int i){
-        return make_tuple(i, node.uid >= i);
+        return make_tuple(i, (int)node.uid >= i);
     }, k);
     int c = 0;
     for (auto const& x  : m) c += 1 << (x.first * x.second);
     m = spawn(node, 1, [&](int i, bool, char){
-        return make_tuple(i, node.uid >= i ? status::output : status::external);
+        return make_tuple(i, (int)node.uid >= i ? status::output : status::external);
     }, k, false, 'a');
     if (b) assert(m.size() > 0);
     for (auto const& x  : m) c += 1 << (x.first * x.second);
@@ -307,14 +307,14 @@ TEST(CalculusText, NbrUid) {
     typename combo<O>::net  network{common::make_tagged_tuple<>()};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
     typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
-    EXPECT_EQ(0, details::get_ids(d0.nbr_uid()).size());
+    EXPECT_EQ(0, (int)details::get_ids(d0.nbr_uid()).size());
     d0.round_start(0);
     d0.round_end(0);
-    EXPECT_EQ(1, details::get_ids(d0.nbr_uid()).size());
+    EXPECT_EQ(1, (int)details::get_ids(d0.nbr_uid()).size());
     sendto(d1, d0);
-    EXPECT_EQ(1, details::get_ids(d0.nbr_uid()).size());
+    EXPECT_EQ(1, (int)details::get_ids(d0.nbr_uid()).size());
     d0.round_start(0);
     d0.round_end(0);
-    EXPECT_EQ(1, details::self(d0.nbr_uid(), 1));
-    EXPECT_EQ(2, details::get_ids(d0.nbr_uid()).size());
+    EXPECT_EQ(1, (int)details::self(d0.nbr_uid(), 1));
+    EXPECT_EQ(2, (int)details::get_ids(d0.nbr_uid()).size());
 }

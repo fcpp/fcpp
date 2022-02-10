@@ -70,12 +70,15 @@ namespace common {
 namespace tags {
     //! @brief Tag for sequential execution policy.
     struct sequential_execution {
+        //! @brief Constructor.
         sequential_execution(size_t = 1) {}
     };
 
     //! @brief Tag for parallel execution policy (with a given number of threads).
     struct parallel_execution {
+        //! @brief Constructor.
         parallel_execution(size_t n = std::thread::hardware_concurrency()) : num(n) {}
+        //! @brief Parallel threads number.
         size_t num;
     };
 
@@ -85,8 +88,12 @@ namespace tags {
 
     //! @brief Tag for parallel execution policy, assigning tasks dynamically (with a given number of threads and chunk size).
     struct dynamic_execution {
+        //! @brief Constructor.
         dynamic_execution(size_t n = std::thread::hardware_concurrency(), size_t s = 1) : num(n), size(s) {}
-        size_t num, size;
+        //! @brief Parallel threads number.
+        size_t num;
+        //! @brief Chunk size.
+        size_t size;
     };
 }
 

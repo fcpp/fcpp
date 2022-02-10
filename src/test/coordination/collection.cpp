@@ -7,7 +7,6 @@
 #include "lib/coordination/collection.hpp"
 
 #include "test/test_net.hpp"
-#include "lib/component/timer.hpp"
 
 using namespace fcpp;
 using namespace component::tags;
@@ -35,18 +34,34 @@ struct lagdist {
         struct node : public P::node {
             using P::node::node;
 
-            field<real_t> nbr_dist() {
+            field<real_t> nbr_dist() const {
                 return {1};
             }
 
-            field<real_t> nbr_lag() {
+            field<real_t> nbr_lag() const {
                 return {1};
             }
+
+            times_t current_time() const {
+                return m_t;
+            }
+
+            times_t next_time() const {
+                return m_t+1;
+            }
+
+            void round_start(times_t t) {
+                P::node::round_start(t);
+                m_t = t;
+            }
+
+          private:
+            times_t m_t;
         };
         using net = typename P::net;
     };
 };
-DECLARE_COMBINE(calc_dist, lagdist, component::calculus, component::timer);
+DECLARE_COMBINE(calc_dist, lagdist, component::calculus);
 
 template <int O>
 using combo = calc_dist<options<O>>;

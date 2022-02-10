@@ -215,6 +215,7 @@ class random_access_map {
   public:
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     random_access_map() = default;
 
@@ -238,6 +239,7 @@ class random_access_map {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
     random_access_map& operator=(random_access_map const&) = default;
 
@@ -274,10 +276,12 @@ class random_access_map {
         return m_iter.begin();
     }
 
-    //! @brief Returns a const iterator pointing to the first element in the container.
+    //! @brief Returns an iterator pointing to the first element in the container (const overload).
     const_iterator begin() const noexcept {
         return m_iter.begin();
     }
+
+    //! @brief Returns a const iterator pointing to the first element in the container.
     const_iterator cbegin() const noexcept {
         return m_iter.begin();
     }
@@ -287,15 +291,17 @@ class random_access_map {
         return m_iter.end();
     }
 
-    //! @brief Returns a const iterator pointing to the past-the-end element in the container.
+    //! @brief Returns an iterator pointing to the past-the-end element in the container (const overload).
     const_iterator end() const noexcept {
         return m_iter.end();
     }
+
+    //! @brief Returns a const iterator pointing to the past-the-end element in the container.
     const_iterator cend() const noexcept {
         return m_iter.end();
     }
 
-    //! @brief Accesses an element of the container (creating one if not found).
+    //! @brief Accesses an element of the container creating one if not found (const key overload).
     mapped_type& operator[](key_type const& k) {
         if (m_map.count(k) == 0) {
             m_map[k] = mapped_type();
@@ -303,6 +309,8 @@ class random_access_map {
         }
         return m_map[k];
     }
+
+    //! @brief Accesses an element of the container creating one if not found (value key overload).
     mapped_type& operator[](key_type&& k) {
         if (m_map.count(k) == 0) {
             m_map[k] = mapped_type();
@@ -311,18 +319,22 @@ class random_access_map {
         return m_map[std::move(k)];
     }
 
-    //! @brief Accesses an element of the container (throwing if not found).
+    //! @brief Accesses an element of the container throwing if not found.
     mapped_type& at(key_type const& k) {
         return m_map.at(k);
     }
+
+    //! @brief Accesses an element of the container throwing if not found (const overload).
     mapped_type const& at(key_type const& k) const {
         return m_map.at(k);
     }
 
-    //! @brief Searches the container for an element with a given key (end if not found).
+    //! @brief Searches the container for an element with a given key, returning end if not found.
     iterator find(key_type const& k) {
         return convert(m_map.find(k));
     }
+
+    //! @brief Searches the container for an element with a given key, returning end if not found (const overload).
     const_iterator find(key_type const& k) const {
         return convert(m_map.find(k));
     }
@@ -340,44 +352,56 @@ class random_access_map {
         return {convert(itb.first), itb.second};
     }
 
-    //! @brief Inserts new elements in the map.
+    //! @brief Inserts new elements in the map (const value overload).
     std::pair<iterator,bool> insert(value_type const& val) {
         auto itb = m_map.insert(val);
         if (itb.second) insert_impl(itb.first);
         return {convert(itb.first), itb.second};
     }
+
+    //! @brief Inserts new elements in the map (rvalue overload).
     std::pair<iterator,bool> insert(value_type&& val) {
         auto itb = m_map.insert(std::move(val));
         if (itb.second) insert_impl(itb.first);
         return {convert(itb.first), itb.second};
     }
+
+    //! @brief Inserts new elements in the map (range overload).
     template <class I>
     void insert(I first, I last) {
         for (I it = first; it != last; ++it) insert(*it);
     }
 
-    //! @brief Erases elements from the map.
+    //! @brief Erases elements from the map (iterator overload).
     iterator erase(iterator position) {
         auto it = convert(position);
         if (it != m_map.end()) erase_impl(it);
         return convert(m_map.erase(it));
     }
+
+    //! @brief Erases elements from the map (const iterator overload).
     iterator erase(const_iterator position) {
         auto it = convert(position);
         if (it != m_map.end()) erase_impl(it);
         return convert(m_map.erase(it));
     }
+
+    //! @brief Erases elements from the map (key overload).
     size_type erase(key_type const& k) {
         auto it = m_map.find(k);
         if (it != m_map.end()) erase_impl(it);
         return m_map.erase(k);
     }
+
+    //! @brief Erases elements from the map (range overload).
     iterator erase(iterator first, iterator last) {
         typename map_t::iterator f = convert(first);
         typename map_t::iterator l = convert(last);
         for (auto it = f; it != l; ++it) erase_impl(it);
         return convert(m_map.erase(first, last));
     }
+
+    //! @brief Erases elements from the map (const range overload).
     iterator erase(const_iterator first, const_iterator last) {
         typename map_t::const_iterator f = convert(first);
         typename map_t::const_iterator l = convert(last);

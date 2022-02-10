@@ -93,6 +93,7 @@ class sstream<false> {
     //! @brief The read index.
     size_t m_idx;
 };
+//! @brief Stream-like object for input serialization (alias).
 using isstream = sstream<false>;
 //! @}
 
@@ -137,6 +138,7 @@ class sstream<true> {
     //! @brief The raw data.
     std::vector<char> m_data;
 };
+//! @brief Stream-like object for output serialization (alias).
 using osstream = sstream<true>;
 //! @}
 
@@ -168,7 +170,7 @@ namespace details {
     //! @brief Serialization of indexed classes.
     //! @{
     template <typename S, typename T>
-    S& indexed_serialize(S& s, T&, std::index_sequence<>) {
+    S& indexed_serialize(S& s, T const&, std::index_sequence<>) {
         return s;
     }
 
@@ -178,8 +180,19 @@ namespace details {
         return indexed_serialize(s, x, std::index_sequence<is...>{});
     }
 
+    template <typename T, size_t i, size_t... is>
+    osstream& indexed_serialize(osstream& s, T const& x, std::index_sequence<i, is...>) {
+        s << std::get<i>(x);
+        return indexed_serialize(s, x, std::index_sequence<is...>{});
+    }
+
     template <typename S, typename... Ts>
     S& serialize(S& s, std::tuple<Ts...>& x) {
+        return indexed_serialize(s, x, std::make_index_sequence<sizeof...(Ts)>{});
+    }
+
+    template <typename... Ts>
+    osstream& serialize(osstream& s, std::tuple<Ts...> const& x) {
         return indexed_serialize(s, x, std::make_index_sequence<sizeof...(Ts)>{});
     }
 
@@ -188,8 +201,18 @@ namespace details {
         return indexed_serialize(s, x, std::make_index_sequence<n>{});
     }
 
+    template <typename T, size_t n>
+    osstream& serialize(osstream& s, std::array<T, n> const& x) {
+        return indexed_serialize(s, x, std::make_index_sequence<n>{});
+    }
+
     template <typename S, typename T, typename U>
     S& serialize(S& s, std::pair<T, U>& x) {
+        return indexed_serialize(s, x, std::make_index_sequence<2>{});
+    }
+
+    template <typename T, typename U>
+    osstream& serialize(osstream& s, std::pair<T, U> const& x) {
         return indexed_serialize(s, x, std::make_index_sequence<2>{});
     }
     //! @}
@@ -214,23 +237,27 @@ namespace details {
     }
     //! @}
 
+    //! @brief Inert wrapper of a type.
+    template <typename S>
+    struct wrapper {};
+
     //! @brief Serialization of iterable classes.
     //! @{
-    template <typename T>
-    isstream& iterable_serialize(isstream& s, T& x) {
+    template <typename T, typename S>
+    isstream& iterable_serialize(isstream& s, T& x, wrapper<S>) {
         size_t size = 0;
         size_variable_read(s, size);
         x.clear();
         for (size_t i = 0; i < size; ++i) {
-            typename T::value_type v;
+            S v;
             s & v;
             x.insert(x.end(), std::move(v));
         }
         return s;
     }
 
-    template <typename T>
-    osstream& iterable_serialize(osstream& s, T& x) {
+    template <typename T, typename S>
+    osstream& iterable_serialize(osstream& s, T& x, S) {
         size_variable_write(s, x.size());
         for (auto& i : x) s & i;
         return s;
@@ -238,27 +265,52 @@ namespace details {
 
     template <typename S, typename K>
     S& serialize(S& s, std::set<K>& x) {
-        return iterable_serialize(s, x);
+        return iterable_serialize(s, x, wrapper<K>{});
+    }
+
+    template <typename K>
+    osstream& serialize(osstream& s, std::set<K> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
     }
 
     template <typename S, typename K, typename V>
     S& serialize(S& s, std::map<K, V>& x) {
-        return iterable_serialize(s, x);
+        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
+    }
+
+    template <typename K, typename V>
+    osstream& serialize(osstream& s, std::map<K, V> const& x) {
+        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
     }
 
     template <typename S, typename K>
     S& serialize(S& s, std::unordered_set<K>& x) {
-        return iterable_serialize(s, x);
+        return iterable_serialize(s, x, wrapper<K>{});
+    }
+
+    template <typename K>
+    osstream& serialize(osstream& s, std::unordered_set<K> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
     }
 
     template <typename S, typename K, typename V>
     S& serialize(S& s, std::unordered_map<K, V>& x) {
-        return iterable_serialize(s, x);
+        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
+    }
+
+    template <typename K, typename V>
+    osstream& serialize(osstream& s, std::unordered_map<K, V> const& x) {
+        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
     }
 
     template <typename S, typename T>
     S& serialize(S& s, std::vector<T>& x) {
-        return iterable_serialize(s, x);
+        return iterable_serialize(s, x, wrapper<T>{});
+    }
+
+    template <typename T>
+    osstream& serialize(osstream& s, std::vector<T> const& x) {
+        return iterable_serialize(s, x, wrapper<T>{});
     }
     //! @}
 
@@ -266,12 +318,10 @@ namespace details {
     template<typename C>
     struct has_serialize_method {
       private:
-        struct tag;
-
         template <typename T>
         static constexpr auto check(T*) -> typename std::is_same<
-            decltype(std::declval<T>().serialize(std::declval<tag&>())),
-            tag&
+            decltype(std::declval<T>().serialize(std::declval<osstream&>())),
+            osstream&
         >::type;
 
         template <typename>
@@ -287,12 +337,10 @@ namespace details {
     template<typename C>
     struct has_serialize_function {
       private:
-        struct tag;
-
         template <typename T>
         static constexpr auto check(T*) -> typename std::is_same<
-            decltype(fcpp::common::details::serialize(std::declval<tag&>(), std::declval<T&>())),
-            tag&
+            decltype(fcpp::common::details::serialize(std::declval<osstream&>(), std::declval<T&>())),
+            osstream&
         >::type;
 
         template <typename>

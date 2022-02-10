@@ -8,13 +8,14 @@
 #ifndef FCPP_SIMULATED_MAP_H_
 #define FCPP_SIMULATED_MAP_H_
 
-#include "lib/component/base.hpp"
-#include "lib/data/vec.hpp"
-#include "lib/data/color.hpp"
-#include "lib/common/traits.hpp"
-
 #include <cstring>
-#include "./external/stb_image/stb_image.h"
+
+#include "lib/common/traits.hpp"
+#include "lib/component/base.hpp"
+#include "lib/data/color.hpp"
+#include "lib/data/vec.hpp"
+#include "external/stb_image/stb_image.h"
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -46,7 +47,7 @@ namespace tags {
     //! @brief Net initialisation tag associating to the color of the obstacles.
     struct obstacles_color {};
 
-    //! @brief Net initialisation tag associating to the threshold in which consider the specified obstacles_color.
+    //! @brief Net initialisation tag associating to the threshold in which consider the specified obstacles color.
     struct obstacles_color_threshold {};
 
 }
@@ -85,7 +86,7 @@ namespace details {
  * - \ref tags::area_min associates to a vector representing minimum area coordinate.
  * - \ref tags::area_max associates o a vector representing maximum area coordinate.
  * - \ref tags::obstacles associates to a path of the image representing obstacles.
- * - \ref tags::obstacles_colors associates to a color used to identify which pixel on the bitmaps are obstacles.
+ * - \ref tags::obstacles_color associates to a color used to identify which pixel on the bitmaps are obstacles.
  * - \ref tags::obstacles_color_threshold associates to a real number used to have a margin error for colors in different image format.
  *
  */
@@ -187,7 +188,7 @@ struct simulated_map {
                 index_type index_to_return;
                 //linear scaling
                 for (int i = 0; i < 2; i++)
-                    index_to_return[i] = static_cast<size_t>(std::min(std::max(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])), 0.0),m_viewport_max[i]-1));
+                    index_to_return[i] = static_cast<size_t>(std::min(std::max(std::floor(m_index_scales[i] * (position[i] - m_viewport_min[i])), real_t(0)),m_viewport_max[i]-1));
                 return index_to_return;
             }
 
@@ -267,7 +268,7 @@ struct simulated_map {
                         }
                     }
                     //start bfs
-                    for (int i = 0; i < queues.size(); i++) {
+                    for (size_t i = 0; i < queues.size(); ++i) {
                         for (matrix_pair_type const& elem : queues[i]) {
                             index_type const& point = elem.first;
                             if (!visited[point[1]][point[0]]) {
@@ -282,8 +283,8 @@ struct simulated_map {
                                         queues[i+d[2]].push_back({{n_x, n_y}, elem.second});
                                 }
                             }
-                            queues[i].clear();
                         }
+                        queues[i].clear();
                     }
                     //end bfs
                 }
@@ -293,7 +294,7 @@ struct simulated_map {
             template<size_t n>
             position_type to_pos_type(vec<n> const& vec) {
                 position_type t;
-                for (int i = 0; i < vec.dimension; i++)
+                for (size_t i = 0; i < vec.dimension; ++i)
                     t[i] = vec[i];
                 return t;
             }

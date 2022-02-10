@@ -251,14 +251,19 @@ struct simulated_connector {
                 m_send = TIME_MAX;
             }
 
-            //! @brief Size of last message sent.
+            //! @brief Size of last message sent (zero if `message_size` is false).
             size_t msg_size() const {
-                return fcpp::details::self(m_nbr_msg_size.front(), P::node::uid);
+                if (message_size) return fcpp::details::self(m_nbr_msg_size.front(), P::node::uid);
+                else return 0;
             }
 
-            //! @brief Sizes of messages received from neighbours.
-            field<size_t> const& nbr_msg_size() const {
-                return m_nbr_msg_size.front();
+            /**
+             * @brief Sizes of messages received from neighbours.
+             *
+             * Returns a `field<size_t> const&` if `message_size` is true, otherwise it returns a `size_t` equal to zero.
+             */
+            auto nbr_msg_size() const {
+                return get_nbr_msg_size(common::bool_pack<message_size>{});
             }
 
             /**
@@ -306,7 +311,7 @@ struct simulated_connector {
             void round_start(times_t t) {
                 m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 P::node::round_start(t);
-                maybe_align_inplace_m_nbr_msg_size(std::integral_constant<bool, has_calculus<P>::value and message_size>{});
+                maybe_align_inplace_m_nbr_msg_size(common::bool_pack<has_calculus<P>::value and message_size>{});
             }
 
             //! @brief Performs computations at round end with current time `t`.
@@ -325,10 +330,26 @@ struct simulated_connector {
             }
 
           private: // implementation details
+            //! @brief Sizes of messages received from neighbours (disabled).
+            constexpr static size_t get_nbr_msg_size(common::bool_pack<false>) {
+                return 0;
+            }
+            //! @brief Sizes of messages received from neighbours (enabled).
+            field<size_t> const& get_nbr_msg_size(common::bool_pack<true>) const {
+                return m_nbr_msg_size.front();
+            }
+
+            //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids (disabled).
+            void maybe_align_inplace_m_nbr_msg_size(common::bool_pack<false>) {}
+            //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids (enabled).
+            void maybe_align_inplace_m_nbr_msg_size(common::bool_pack<true>) {
+                align_inplace(m_nbr_msg_size.front(), std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
+            }
+
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
             void receive_size(common::bool_pack<false>, device_t, common::tagged_tuple<S,T> const&) {}
-            //! @brief Stores size of received message.
+            //! @brief Stores size of received message (enabled).
             template <typename S, typename T>
             void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
                 common::osstream os;
@@ -361,14 +382,6 @@ struct simulated_connector {
             inline crand get_generator(std::false_type, N&) {
                 return {};
             }
-
-            //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids.
-            void maybe_align_inplace_m_nbr_msg_size(std::true_type) {
-                align_inplace(m_nbr_msg_size.front(), std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
-            }
-
-            //! @brief Does not perform any alignment
-            void maybe_align_inplace_m_nbr_msg_size(std::false_type) {}
 
             //! @brief A generator for delays in sending messages.
             delay_type m_delay;

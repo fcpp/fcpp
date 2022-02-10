@@ -9,6 +9,7 @@
 #define FCPP_COMMON_OPTION_H_
 
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 
@@ -44,7 +45,7 @@ class option<T, false> {
     using value_type = T;
 
     //! @brief Forwarding constructor.
-    template <typename... Ts>
+    template <typename... Ts, typename = std::enable_if_t<std::is_constructible<T, Ts&&...>::value>>
     option(Ts&&...) {}
 
     //! @brief Copy constructor.
@@ -119,7 +120,7 @@ class option<T, true> {
     using value_type = T;
 
     //! @brief Forwarding constructor.
-    template <typename... Ts>
+    template <typename... Ts, typename = std::enable_if_t<std::is_constructible<T, Ts&&...>::value>>
     option(Ts&&... xs) : m_data(std::forward<Ts>(xs)...) {}
 
     //! @brief Copy constructor.
@@ -211,7 +212,7 @@ class option<T, 2> {
     option() : m_data(), m_some(false) {}
 
     //! @brief Forwarding constructor.
-    template <typename... Ts>
+    template <typename... Ts, typename = std::enable_if_t<std::is_constructible<T, Ts&&...>::value>>
     option(Ts&&... xs) : m_data(std::forward<Ts>(xs)...), m_some(true) {}
 
     //! @brief Copy constructor.

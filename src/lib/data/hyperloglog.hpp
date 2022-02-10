@@ -5,8 +5,8 @@
  * @brief Implementation of the `hyperloglog_counter` class template for statistical size estimates.
  */
 
-#ifndef FCPP_DATA_HYPERLOGLOG_COUNTER_H_
-#define FCPP_DATA_HYPERLOGLOG_COUNTER_H_
+#ifndef FCPP_DATA_HYPERLOGLOG_H_
+#define FCPP_DATA_HYPERLOGLOG_H_
 
 #include <climits>
 #include <cmath>
@@ -15,7 +15,7 @@
 #include <initializer_list>
 #include <utility>
 
-using real_t = double; // this is defined in FCPP
+#include "lib/settings.hpp"
 
 
 /**
@@ -276,7 +276,7 @@ class hyperloglog_counter {
     //! @brief Type for jenkins hash.
     using jenkins_type = uint64_t;
 
-    //! @brief The Jenkins hash
+    //! @brief The Jenkins hash.
     static jenkins_type jenkins(size_t x) {
         // arbitrary starting value
         constexpr jenkins_type golden_ratio = 0x9e3779b97f4a7c13ULL;
@@ -300,7 +300,7 @@ class hyperloglog_counter {
         return c;
     }
 
-    //! @brief Performs a multiple precision subtraction, leaving the result in the first operand
+    //! @brief Performs a multiple precision subtraction, leaving the result in the first operand.
     static void subtract(size_t x[], size_t const y[], size_t l) {
         bool borrow = false;
         for (size_t i=0; i<l; i++) {
@@ -309,6 +309,7 @@ class hyperloglog_counter {
         }
     }
 
+    //! @brief Performs a multiple precision subtraction with a repeating word, leaving the result in the first operand.
     static void subtract(size_t x[], size_t y, size_t l) {
         bool borrow = false;
         for (size_t i=0; i<l; i++) {
@@ -341,4 +342,4 @@ constexpr size_t register_error(real_t error) {
 
 }
 
-#endif // FCPP_DATA_HYPERLOGLOG_COUNTER_H_
+#endif // FCPP_DATA_HYPERLOGLOG_H_

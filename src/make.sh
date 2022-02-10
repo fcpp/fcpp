@@ -131,14 +131,20 @@ function mkdoc() {
         mkdir doc
     fi
     echo -e "\033[4mdoxygen Doxyfile\033[0m" >&2
-    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$"
+    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|'
     ndoc=`cat tmpdoc.err | grep "is not documented.$" | wc -l | tr -cd '0-9'`
+    nerr=`cat tmpdoc.err | grep '/fcpp/src/lib/' | wc -l | tr -cd '0-9'`
     if [ $ndoc -gt 0 ]; then
         cat tmpdoc.err | grep "is not documented" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |;s| is not documented.||' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|' | sort | uniq > tmpdoc2.err
         mv tmpdoc2.err tmpdoc.err
         ndoc=`cat tmpdoc.err | wc -l | tr -cd '0-9'`
         echo -e "\033[1m$ndoc items are not documented:\033[0m" >&2
         cat tmpdoc.err
+    fi
+    if [ $nerr -gt 0 ]; then
+        exitcodes=( ${exitcodes[@]} $nerr )
+        failcmd="\033[4mdoxygen Doxyfile\033[0m"
+        errored=( "${errored[@]}" "$failcmd" )
     fi
     rm tmpdoc.err
 }
@@ -228,12 +234,17 @@ function cmake_finderx() {
         else
             sfx=""
         fi
+        found=""
         for pattern in "^$find$" "^$find" "$find$" "$find"; do
-            if [ "$targets" == "" ]; then
+            if [ "$found" == "" ]; then
                 for f in `cmake_folder_list $kind | grep "$pattern"`; do
-                    cmake_file_list $kind "[^A-Za-z_0-9]$f/"
+                    found="$found `cmake_file_list $kind "[^A-Za-z_0-9]$f/"`"
                 done
-                cmake_file_list $kind . "$pattern"
+                found="$found `cmake_file_list $kind . "$pattern"`"
+                found=`echo "$found" | sed 's|^ *||;s| *$||' | tr -s ' ' '\n'`
+                if [ "$found" != "" ]; then
+                    echo "$found"
+                fi
             fi
         done | sort | uniq | sed "s|$|$sfx|"
     done)
@@ -276,6 +287,7 @@ while [ "$1" != "" ]; do
         shift 1
         gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
         gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
+        opts="$opts -DCMAKE_C_COMPILER=$gcc -DCMAKE_CXX_COMPILER=$gpp"
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
         export CC="$gpp"
         export CXX="$gpp"
@@ -363,7 +375,7 @@ while [ "$1" != "" ]; do
                         if [ "$targets" == "" ]; then
                             echo -e "\033[1mtarget \"$1\" not found\033[0m"
                         else
-                            alltargets="$alltargets$targets"
+                            alltargets="$alltargets $targets"
                         fi
                     fi
                     shift 1
@@ -482,7 +494,7 @@ while [ "$1" != "" ]; do
                     if [ "$targets" == "" ]; then
                         echo -e "\033[1mtarget \"$1\" not found\033[0m"
                     else
-                        alltargets="$alltargets$targets"
+                        alltargets="$alltargets $targets"
                     fi
                     shift 1
                 done
@@ -544,7 +556,7 @@ while [ "$1" != "" ]; do
                     if [ "$targets" == "" ]; then
                         echo -e "\033[1mtarget \"$1\" not found\033[0m"
                     else
-                        alltargets="$alltargets$targets"
+                        alltargets="$alltargets $targets"
                     fi
                     shift 1
                 done
@@ -603,6 +615,20 @@ while [ "$1" != "" ]; do
             builder build $alltargets
             builder test $alltargets
         fi
+        quitter
+    elif [ "$1" == "multiall" ]; then
+        shift 1
+        $0 clean
+        reporter $0 test all
+        $0 clean
+        reporter $0 gcc test all
+        $0 bazel clean
+        $0 bazel test all
+        reporter $0 bazel test all
+        $0 bazel clean
+        $0 bazel gcc test all
+        reporter $0 bazel gcc test all
+        reporter $0 doc
         quitter
     else
         usage

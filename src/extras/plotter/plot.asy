@@ -272,6 +272,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         }
         for (int j=0; j<10; ++j)
             names[i] = replace(names[i], "<"+string(j)+">", " "+string(j));
+        names[i] = replace(replace(names[i], "<", " ("), ">", ")");
     }
     Label adapt_label(string text, real maxscale, real maxlength) {
         picture pp;

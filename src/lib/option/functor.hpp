@@ -28,6 +28,29 @@ namespace fcpp {
 namespace functor {
 
 
+//! @brief Functor casting a value.
+template <typename A, typename R = real_t>
+struct cast {
+    //! @brief Result type.
+    using type = R;
+
+    //! @brief Constructor.
+    template <typename G, typename T>
+    cast(G&& g, T const& t) : m_a(g, t) {}
+
+    //! @brief Functor computation.
+    template <typename G, typename T>
+    type operator()(G&& g, T const& t) {
+        return (type)m_a(g, t);
+    }
+
+  private:
+    //! @brief The value.
+    A m_a;
+};
+//! @}
+
+
 //! @brief General tuple accessor.
 template <typename A, typename R = real_t>
 struct get {

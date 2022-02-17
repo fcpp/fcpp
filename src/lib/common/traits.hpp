@@ -382,27 +382,6 @@ struct type_sequence<> {
 //! @}
 
 
-//! @cond INTERNAL
-namespace details {
-    // General form.
-    template <typename... Ts>
-    struct export_list {
-        using type = type_sequence<>;
-    };
-    // Type argument.
-    template <typename T, typename... Ts>
-    struct export_list<T,Ts...> : public type_unite<type_sequence<T>, typename export_list<Ts...>::type> {};
-    // Type sequence argument.
-    template <typename... Ts, typename... Ss>
-    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
-}
-//! @endcond
-
-//! @brief Merges export lists and types into a single type sequence.
-template <typename... Ts>
-using export_list = typename details::export_list<Ts...>::type;
-
-
 /**
  * @name boolean operators
  *
@@ -1192,6 +1171,27 @@ using option_multitypes = typename details::option_multitypes<T, Ss...>::type;
  */
 template <typename S, template<class...> class... Ts>
 using apply_templates = typename details::apply_templates<S,Ts...>::type;
+
+
+//! @cond INTERNAL
+namespace details {
+    // General form.
+    template <typename... Ts>
+    struct export_list {
+        using type = type_sequence<>;
+    };
+    // Type argument.
+    template <typename T, typename... Ts>
+    struct export_list<T,Ts...> : public type_unite<std::conditional_t<std::is_empty<T>::value, typename export_list<type_sequence_decay<T>>::type, common::type_sequence<T>>, typename export_list<Ts...>::type> {};
+    // Type sequence argument.
+    template <typename... Ts, typename... Ss>
+    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
+}
+//! @endcond
+
+//! @brief Merges export lists and types into a single type sequence.
+template <typename... Ts>
+using export_list = typename details::export_list<Ts...>::type;
 
 
 //! @cond INTERNAL

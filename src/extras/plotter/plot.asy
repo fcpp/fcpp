@@ -8,6 +8,7 @@ int  COLS = 3;       // columns of plots per page
 real MAX_CROP = 1.1; // maximum cropping allowed (usually 1.3)
 real LOG_LIN = 2;    // factor of comparison between linear and logarithmic plots
 bool LEGENDA = true; // whether to draw the legenda or not
+bool SUBPLOT = false;// whether to compile subplots
 
 // line styles and colors
 pen[] styles = {solid+1, linetype(new real[] {10,5})+1, linetype(new real[] {6,3,0.5,3})+1, linetype(new real[] {1,2.5})+1};
@@ -305,7 +306,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         }
         shipout(ppath+"-legenda", pp);
     }
-    if (length(ppath) > 0) shipout(ppath, pic);
+    if (SUBPLOT && length(ppath) > 0) shipout(ppath, pic);
     return pic;
 }
 

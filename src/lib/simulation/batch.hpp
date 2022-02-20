@@ -337,7 +337,7 @@ template <typename T, typename exec_t, typename... S, typename... U>
 common::ifn_class_template<std::vector, exec_t>
 run(T, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     auto v = details::join_vectors(vs...);
-    std::cerr << common::strip_namespaces common::type_name<T>() << ": running " << v.size() << " simulations..." << std::endl;
+    std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::endl;
     common::parallel_for(e, v.size(), [&](size_t i, size_t){
         typename T::net network{v[i]};
         network.run();

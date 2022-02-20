@@ -318,7 +318,14 @@ namespace details {
     inline std::vector<T> join_vectors(std::vector<T> v, std::vector<Ts>... vs) {
         auto w = join_vectors(vs...);
         static_assert(same_tuple<decltype(w[0]),T>, "tagged tuple sequences of different types in the same batch run");
-        v.insert(v.end(), w.begin(), w.end());
+        for (T x : w) {
+            bool found = false;
+            for (T const& y : v) if (x == y) {
+                found = true;
+                break;
+            }
+            if (not found) v.push_back(x);
+        }
         return v;
     }
 }

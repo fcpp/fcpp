@@ -202,24 +202,28 @@ O& operator<<(O& o, page const& p) {
 
 //! @brief Structure representing a whole file of plots.
 struct file {
+    //! @brief The type for options.
+    using option_type = std::vector<std::pair<std::string, std::string>>;
     //! @brief Constructor with a vector of pages.
-    file(std::string title, std::vector<page> p) : title(title), pages(p) {}
+    file(std::string title, std::vector<page> p, option_type opt = {}) : title(title), pages(p), options(opt) {}
     //! @brief Constructor with an array of pages.
     template <size_t N>
-    file(std::string title, std::array<page, N> p) : title(title), pages(p.begin(), p.end()) {}
+    file(std::string title, std::array<page, N> p, option_type opt = {}) : title(title), pages(p.begin(), p.end()), options(opt) {}
     //! @brief Constructor with a vector of plots.
-    file(std::string title, std::vector<plot> p) : title(title) {
+    file(std::string title, std::vector<plot> p, option_type opt = {}) : title(title), options(opt) {
         pages.emplace_back(p);
     }
     //! @brief Constructor with an array of plots.
     template <size_t N>
-    file(std::string title, std::array<plot, N> p) : title(title) {
+    file(std::string title, std::array<plot, N> p, option_type opt = {}) : title(title), options(opt) {
         pages.emplace_back(p);
     }
     //! @brief Title of the file.
     std::string title;
     //! @brief Page list.
     std::vector<page> pages;
+    //! @brief Custom plot options.
+    option_type options;
 };
 
 //! @brief Printing a file.
@@ -229,6 +233,10 @@ O& operator<<(O& o, file const& f) {
     o << "string name = \"" << f.title << "\";\n\n";
     o << "import \"plot.asy\" as plot;\n";
     o << "unitsize(1cm);\n\n";
+    if (not f.options.empty()) {
+        for (auto const& k : f.options) o << "plot." << k.first << " = " << k.second << ";\n";
+        o << "\n";
+    }
     for (page const& p : f.pages) o << p << "\n";
     o << "shipout(\"" << f.title << "\");\n";
     return o;

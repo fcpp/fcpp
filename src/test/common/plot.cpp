@@ -148,6 +148,10 @@ TEST(PlotTest, FilterSplitValue) {
     plot::file f("experiment", pb);
     ss << f;
     EXPECT_EQ(ss.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\n\nshipout(\"experiment\");\n");
+    ss.str("");
+    f = plot::file("experiment", pb, {{"SUBPLOT", "true"}, {"LOG_LIN", "1"}});
+    ss << f;
+    EXPECT_EQ(ss.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.SUBPLOT = true;\nplot.LOG_LIN = 1;\n\nplot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\n\nshipout(\"experiment\");\n");
 }
 
 using joinfiltersplitjoinvalue = plot::join<splitjoinvalue, filtersplitvalue>;

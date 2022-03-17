@@ -49,6 +49,14 @@ void legenda(pair p, string[] names) {
     draw(p+(-step,-step) -- p + (-step,names.length*step) -- p + (5*step + 2.3,names.length*step) -- p+(5*step + 2.3,-step) -- cycle, black);
 }
 
+string format_number(real x, real s) {
+    if (x == 0) return "$0$";
+    if (0.01 <= s && s < 10000) return "$" + string(x) + "$";
+    real e = floor(log10(max(s,realMin)));
+    real l = pow10(e);
+    return "$" + string(x / pow10(e)) + "\!\cdot\!10^{" + string(e) + "}$";
+}
+
 // approximates a real to the closest number equal to 1, 2 or 5 times a power of 10
 real approx(real a) {
     real l = pow10(floor(log10(max(a,realMin))));
@@ -219,12 +227,27 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         endx = fit(endx, bminx, bmaxx, DIM.x);
         draw(pic, (endx,0) -- (endx,DIM.y), black+0.5);
     }
-    if (length(xlabel) > 0)
-        label(pic, scale(0.5)*("\textit{"+xlabel+"}"), (DIM.x+0.6,-0.15));
-    if (length(ylabel) > 0)
-        label(pic, rotate(90)*scale(0.5)*("\textit{"+ylabel+"}"), (-0.15,DIM.y+0.4));
+    if (length(xlabel) > 0) {
+        real offs = length(xlabel) < 3 ? 0.1 : length(xlabel) < 6 ? 0 : -0.1;
+        label(pic, scale(0.5)*("\textit{"+xlabel+"}"), (DIM.x*(0.5*xscale/(bmaxx-bminx) + 1) + offs,-0.15), align=E);
+    }
+    if (length(ylabel) > 0) {
+        real offs = length(ylabel) < 3 ? 0.1 : length(ylabel) < 6 ? 0 : -0.1;
+        label(pic, rotate(90)*scale(0.5)*("\textit{"+ylabel+"}"), (-0.15,DIM.y+offs), align=N);
+    }
     if (length(title) > 0)
-        label(pic, scale(0.6)*title, (DIM.x/2+0.55,DIM.y+0.7));
+        label(pic, scale(0.6)*replace(title, "%", "\%"), (DIM.x/2+0.55,DIM.y+0.7));
+
+    Label adapt_label(string text, real maxscale, real maxlength, pair align = (0,0)) {
+        picture pp;
+        unitsize(pp, 1cm);
+        label(pp, scale(maxscale)*text, (0,0));
+        real len = size(pp, true).x;
+        if (len > maxlength) maxscale *= maxlength / len;
+        if (align != E) text = "\phantom{pd}" + text;
+        if (align != W) text = text + "\phantom{pd}";
+        return scale(maxscale) * text;
+    }
 
     int xta = ceil( bminx/xscale);
     int xtb = floor(bmaxx/xscale);
@@ -232,7 +255,9 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         real rxs = x*xscale;
         real rx = DIM.x*(rxs-bminx)/(bmaxx-bminx);
         draw(pic, (rx,0) -- (rx,-.1));
-        label(pic, scale(0.5)*string(rxs), (rx,-.2));
+        string s = format_number(rxs, max(xtb, -xta)*xscale);
+        real ml = DIM.x*xscale/(bmaxx-bminx);
+        label(pic, adapt_label(s, 0.4,  ml), (rx,-.2));
     }
     int yta = ceil( bminy/yscale);
     int ytb = floor(bmaxy/yscale);
@@ -240,8 +265,8 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         real rys = y*yscale;
         real ry = fit(rys, bminy, bmaxy, DIM.y);
         draw(pic, (0,ry) -- (-.1,ry));
-        string s = string(rys);
-        label(pic, scale(0.5)*(logmode ? "$10^{"+s+"}$" : s), (0,ry), align=W);
+        string s = logmode ? ("$10^{"+string(rys)+"}$") : format_number(rys, max(ytb, -yta)*yscale);
+        label(pic, scale(0.4)*s, (0,ry), align=W);
     }
     int common_suffix = rfind(names[0], " ");
     string append_suffix = "";
@@ -274,35 +299,30 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         for (int j=0; j<10; ++j)
             names[i] = replace(names[i], "<"+string(j)+">", " "+string(j));
         names[i] = replace(replace(names[i], "<", " ("), ">", ")");
-    }
-    Label adapt_label(string text, real maxscale, real maxlength) {
-        picture pp;
-        unitsize(pp, 1cm);
-        label(pp, scale(maxscale)*text, (0,0));
-        real len = size(pp, true).x;
-        if (len > maxlength) maxscale *= maxlength / len;
-        return scale(maxscale) * (text + "\phantom{pd}");
+        if (find(names[i], "  ") >= 0)
+            names[i] = replace(names[i], "  ", " (") + ")";
     }
     if (LEGENDA) {
         for (int i=0; i<names.length; i+=2) {
             draw(pic, (0,-0.5-i/8) -- (0.8,-0.5-i/8), styles[i%styles.length]+colors[i%colors.length]);
-            label(pic, adapt_label(names[i], 0.5, DIM.x/2 - 0.5), (0.9,-0.5-i/8), align=E);
+            label(pic, adapt_label(names[i], 0.5, DIM.x/2 - 0.5, E), (0.9,-0.5-i/8), align=E);
             if (i+1 < names.length) {
                 draw(pic, (DIM.x/2+0.5,-0.5-i/8) -- (DIM.x/2+1.3,-0.5-i/8), styles[(i+1)%styles.length]+colors[(i+1)%colors.length]);
-                label(pic, adapt_label(names[i+1], 0.5, DIM.x/2 - 0.5), (DIM.x/2+1.4,-0.5-i/8), align=E);
+                label(pic, adapt_label(names[i+1], 0.5, DIM.x/2 - 0.5, E), (DIM.x/2+1.4,-0.5-i/8), align=E);
             }
         }
     } else {
         picture pp;
         unitsize(pp, 1cm);
         int k=0;
+        real step = DIM.x/2+0.5;
         for (int i=0; i<names.length; ++i) {
             if (names[i] == "") {
                 ++k;
                 continue;
             }
-            draw(pp, (2.4*(i-k),-0.5) -- (2.4*(i-k)+0.8,-0.5), styles[i%styles.length]+colors[i%colors.length]);
-            label(pp, adapt_label(names[i], 0.5, DIM.x/2 - 0.5), (2.4*(i-k)+0.9,-0.5), align=E);
+            draw(pp, (step*(i-k),-0.5) -- (step*(i-k)+0.8,-0.5), styles[i%styles.length]+colors[i%colors.length]);
+            label(pp, adapt_label(names[i], 0.5, DIM.x/2 - 0.5, E), (step*(i-k)+0.9,-0.5), align=E);
         }
         shipout(ppath+"-legenda", pp);
     }

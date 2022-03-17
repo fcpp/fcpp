@@ -48,7 +48,6 @@ struct cast {
     //! @brief The value.
     A m_a;
 };
-//! @}
 
 
 //! @brief General tuple accessor.

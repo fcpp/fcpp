@@ -746,7 +746,16 @@ struct displayer {
                         } else {
                             // Draw hovered node, simulation time (t) and FPS
                             if (m_hoveredNode != device_t(-1)) m_renderer.drawText("Node " + std::to_string(m_hoveredNode), 16.0f, m_renderer.getWindowHeight() - 16.0f, 0.25f);
-                            m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
+                            std::string tt = "Simulation time: " + std::to_string(t);
+                            if (P::net::frequency() != 1 and P::net::frequency() != 0) {
+                                tt += " (";
+                                int f = P::net::frequency();
+                                tt += std::to_string(f);
+                                if (P::net::frequency() < 1) tt += "." + std::to_string(int((P::net::frequency() - f)*100));
+                                else if (P::net::frequency() < 10) tt += "." + std::to_string(int((P::net::frequency() - f)*10));
+                                tt += "x)";
+                            }
+                            m_renderer.drawText(tt, 16.0f, 16.0f, 0.25f);
                             m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 0.25f);
                         }
                     }

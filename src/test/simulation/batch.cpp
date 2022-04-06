@@ -182,6 +182,20 @@ TEST(BatchTest, Run) {
     std::sort(v.begin(), v.end());
     std::sort(w.begin(), w.end());
     EXPECT_EQ(v, w);
+    v = {};
+    w = {};
+    batch::run(combomock{}, common::tags::sequential_execution{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,3), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(1,2,3), batch::list<char>(2)));
+    w.push_back("(char => 1; double => 2)");
+    w.push_back("(char => 2; double => 2)");
+    w.push_back("(char => 3; double => 2)");
+    w.push_back("(char => 2; double => 1)");
+    w.push_back("(char => 2; double => 3)");
+    EXPECT_EQ(v, w);
+    v = {};
+    batch::run(combomock{}, common::tags::parallel_execution{17}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,3), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(1,2,3), batch::list<char>(2)));
+    std::sort(v.begin(), v.end());
+    std::sort(w.begin(), w.end());
+    EXPECT_EQ(v, w);
 }
 
 TEST(BatchTest, Options) {

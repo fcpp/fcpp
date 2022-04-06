@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -317,7 +318,14 @@ namespace details {
     inline std::vector<T> join_vectors(std::vector<T> v, std::vector<Ts>... vs) {
         auto w = join_vectors(vs...);
         static_assert(same_tuple<decltype(w[0]),T>, "tagged tuple sequences of different types in the same batch run");
-        v.insert(v.end(), w.begin(), w.end());
+        for (T x : w) {
+            bool found = false;
+            for (T const& y : v) if (x == y) {
+                found = true;
+                break;
+            }
+            if (not found) v.push_back(x);
+        }
         return v;
     }
 }
@@ -336,6 +344,7 @@ template <typename T, typename exec_t, typename... S, typename... U>
 common::ifn_class_template<std::vector, exec_t>
 run(T, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     auto v = details::join_vectors(vs...);
+    std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::endl;
     common::parallel_for(e, v.size(), [&](size_t i, size_t){
         typename T::net network{v[i]};
         network.run();

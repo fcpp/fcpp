@@ -160,6 +160,16 @@ class option<T, true> {
         return &m_data + 1;
     }
 
+    //! @brief Container beginning (const).
+    T const* begin() const {
+        return &m_data;
+    }
+
+    //! @brief Container end (const).
+    T const* end() const {
+        return &m_data + 1;
+    }
+
     //! @brief Container beginning.
     T const* cbegin() const {
         return &m_data;
@@ -262,6 +272,16 @@ class option<T, 2> {
 
     //! @brief Container end.
     T* end() {
+        return &m_data + m_some;
+    }
+
+    //! @brief Container beginning (const).
+    T const* begin() const {
+        return &m_data;
+    }
+
+    //! @brief Container end (const).
+    T const* end() const {
         return &m_data + m_some;
     }
 

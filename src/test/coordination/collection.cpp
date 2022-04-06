@@ -20,7 +20,7 @@ DECLARE_OPTIONS(options,
         coordination::sp_collection_t<int,real_t>,
         coordination::mp_collection_t<int,real_t>,
         coordination::wmp_collection_t<real_t>,
-        coordination::blist_idem_collection_t<int>        
+        coordination::list_idem_collection_t<int>        
     >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
@@ -65,6 +65,53 @@ DECLARE_COMBINE(calc_dist, lagdist, component::calculus);
 
 template <int O>
 using combo = calc_dist<options<O>>;
+
+template <class...>
+struct lagdist1 {
+    template <typename F, typename P>
+    struct component : public P {
+        struct node : public P::node {
+            using P::node::node;
+
+            field<real_t> nbr_dist() const {
+                using node = typename P::node::node;
+                if(node::uid == 0)
+                    return fcpp::details::make_field<real_t>({0,1,2}, {INF,0,1,5});
+                else if(node::uid == 1)
+                    return fcpp::details::make_field<real_t>({0,1,3}, {INF,1,0,6});
+                else if(node::uid == 2)
+                    return fcpp::details::make_field<real_t>({0,2,3}, {INF,5,0,10});             
+                else
+                    return fcpp::details::make_field<real_t>({1,2,3}, {INF,6,10,0});
+            }
+
+            field<real_t> nbr_lag() const {
+                return {1};
+            }
+
+            times_t current_time() const {
+                return m_t;
+            }
+
+            times_t next_time() const {
+                return m_t+1;
+            }
+
+            void round_start(times_t t) {
+                P::node::round_start(t);
+                m_t = t;
+            }
+
+          private:
+            times_t m_t;
+        };
+        using net = typename P::net;
+    };
+};
+DECLARE_COMBINE(calc_dist1, lagdist1, component::calculus);
+
+template <int O>
+using combo1 = calc_dist1<options<O>>;
 
 
 real_t adder(real_t x, real_t y) {
@@ -190,11 +237,11 @@ MULTI_TEST(CollectionTest, WMP, O, 3) {
 }
 
 
-MULTI_TEST(CollectionTest, BLISTidem, O, 3) {
+MULTI_TEST(CollectionTest, LISTidem, O, 3) {
     test_net<combo<O>, std::tuple<real_t>(int, int)> n{
         [&](auto& node, int id, int val){
             return std::make_tuple(
-                coordination::blist_idem_collection(node, 0, id, val, 2, 0, 0, 1,[&](int x, int y){return std::max(x,y);})
+                coordination::list_idem_collection(node, 0, id, val, 2, 0, 0, 1,[&](int x, int y){return std::max(x,y);})
             );
         }
     };
@@ -210,7 +257,6 @@ MULTI_TEST(CollectionTest, BLISTidem, O, 3) {
     EXPECT_ROUND(n, {0, 1, 2},
                     {1, 2, 4},
                     {4, 4, 4});
-
     EXPECT_ROUND(n, {0, 1, 2},
                     {1, 2, 2},
                     {4, 4, 2});
@@ -220,4 +266,36 @@ MULTI_TEST(CollectionTest, BLISTidem, O, 3) {
     EXPECT_ROUND(n, {0, 1, 2},
                     {1, 2, 2},
                     {2, 2, 2}); 
+}
+
+MULTI_TEST(CollectionTest, LISTidemGraph, O, 3) {
+    using topo_type = std::vector<std::vector<int>>;
+    std::vector<real_t> distance {0,1,5,7}; 
+
+    test_net<combo1<0>, std::tuple<real_t>(int, int), 4> n{
+        {{0,1,2},{0,1,3},{0,2,3},{1,2,3}}, 
+        [&](auto& node, int id, int val){
+            return std::make_tuple(
+                coordination::list_idem_collection(node, 0, distance[id], val, 10, 0, 0, 1,[&](int x, int y){return std::max(x,y);})
+            );
+        }
+    };
+    EXPECT_ROUND(n, {0, 1, 2, 3},
+                    {0, 1, 2, 3},
+                    {0, 1, 2, 3});
+    EXPECT_ROUND(n, {0, 1, 2, 3},
+                    {0, 1, 2, 3},
+                    {2, 3, 3, 3});  
+    EXPECT_ROUND(n, {0, 1, 2, 3},
+                    {0, 1, 2, 3},
+                    {3, 3, 2, 3});   
+    EXPECT_ROUND(n, {0, 1, 2, 3},
+                    {0, 1, 2, 10},
+                    {3, 3, 2, 10});                                                             
+    EXPECT_ROUND(n, {0, 1, 2, 3},
+                    {0, 1, 2, 10},
+                    {3, 10, 2, 10});
+    EXPECT_ROUND(n, {0, 1, 2, 3},
+                    {0, 1, 2, 10},
+                    {10, 10, 2, 10});                            
 }

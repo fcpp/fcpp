@@ -118,7 +118,7 @@ struct test_net {
     //! @brief The type of output results for rounds.
     using out_type = typename details::round_type<node_type, F>::out_type;
     //! @brief The type of parameters for rounds.
-    using round_type = typename details::round_type<node_type, F>::full_type;
+    using round_type = typename details::round_type<node_type, F, N>::full_type;
     //! @brief The type of functions to be executed in each round.
     using fun_type = typename details::round_type<node_type, F>::fun_type;
     //! @brief The type of the network topology description.

@@ -120,9 +120,9 @@ T wmp_collection(node_t& node, trace_t call_point, real_t distance, real_t radiu
 template <typename T> using wmp_collection_t = common::export_list<T,field<real_t>,real_t>;
 
 
-//! @brief Collects distributed data with a bounded-loss information-speed-threshold strategy and a idempotent accumulate function.
+//! @brief Collects distributed data with a lossless information-speed-threshold strategy and a idempotent accumulate function.
 template <typename node_t, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
-T blist_idem_collection(node_t& node, trace_t call_point, real_t const& distance, T const& value, real_t radius, real_t speed, T const& null, real_t epsilon, G&& accumulate) {
+T list_idem_collection(node_t& node, trace_t call_point, real_t const& distance, T const& value, real_t radius, real_t speed, T const& null, real_t epsilon, G&& accumulate) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
     field<real_t> nbrdist = nbr(node, 0, distance);
@@ -139,8 +139,8 @@ T blist_idem_collection(node_t& node, trace_t call_point, real_t const& distance
     });
 }
 
-//! @brief Export list for blist_idem_collection.
-template <typename T> using blist_idem_collection_t = common::export_list<T,real_t>;
+//! @brief Export list for list_idem_collection.
+template <typename T> using list_idem_collection_t = common::export_list<T,real_t>;
 
 }
 

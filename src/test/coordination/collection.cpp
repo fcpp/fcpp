@@ -74,12 +74,12 @@ struct lagdist1 {
             using P::node::node;
 
             field<real_t> nbr_dist() const {
-                using node = typename P::node::node;
-                if(node::uid == 0)
+                device_t uid = P::node::uid;
+                if (uid == 0)
                     return fcpp::details::make_field<real_t>({0,1,2}, {INF,0,1,5});
-                else if(node::uid == 1)
+                else if (uid == 1)
                     return fcpp::details::make_field<real_t>({0,1,3}, {INF,1,0,6});
-                else if(node::uid == 2)
+                else if (uid == 2)
                     return fcpp::details::make_field<real_t>({0,2,3}, {INF,5,0,10});             
                 else
                     return fcpp::details::make_field<real_t>({1,2,3}, {INF,6,10,0});

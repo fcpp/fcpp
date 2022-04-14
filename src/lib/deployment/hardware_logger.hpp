@@ -54,6 +54,7 @@ namespace tags {
  * <b>Declaration tags:</b>
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
+ * - \ref tags::ostream_type defines the output stream type to be used (defaults to `std::ostream`).
  * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
  * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
  *

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.19.2 FATAL_ERROR)
 
 ####################
 # HELPER FUNCTIONS #
@@ -18,7 +18,11 @@ macro(fcpp_setup)
     set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -march=native")
+    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+    else()
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -march=native")
+    endif()
     if(WIN32)
         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
         set(BUILD_SHARED_LIBS OFF)

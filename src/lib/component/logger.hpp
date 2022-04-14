@@ -60,7 +60,7 @@ namespace tags {
     template <typename T>
     struct plot_type {};
 
-    //! @brief Declaration tag associating to an output stream type
+    //! @brief Declaration tag associating to the output stream type to be used.
     template <typename T>
     struct ostream_type {};
 
@@ -151,6 +151,7 @@ namespace details {
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
+ * - \ref tags::ostream_type defines the output stream type to be used (defaults to `std::ostream`).
  * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
  *
  * <b>Declaration flags:</b>

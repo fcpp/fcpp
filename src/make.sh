@@ -152,7 +152,7 @@ function mkdoc() {
 function parseopt() {
     i=0
     while [ "${1:0:1}" == "-" ]; do
-        if [ "${1:0:2}" == "-O" ]; then
+        if [ "$1" == "-O" ]; then
             btype="Release"
         else
             copts="$copts --copt=$1"

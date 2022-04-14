@@ -47,37 +47,38 @@ namespace common {
  * Mimics operations in standard stl containers.
  */
 //! @{
+
 //! @brief General form.
 template <typename... Ts>
 struct type_sequence;
 
 
-// Base case (0 if not found).
+//! @brief Count operation base case (0 if not found).
 template <typename A, typename... Ts>
 constexpr size_t type_count = 0;
 
-// General recursive pattern.
+//! @brief Count operation general recursive pattern.
 template <typename A, typename B, typename... Ts>
 constexpr size_t type_count<A, B, Ts...> = type_count<A, Ts...> + (std::is_same<A,B>::value ? 1 : 0);
 
-// General recursive pattern.
+//! @brief Find operation general recursive pattern.
 template <typename A, typename B, typename... Ts>
 constexpr size_t type_find = type_find<A, Ts...> + 1;
 
-// Base case (the searched type is first).
+//! @brief Find operation base case (the searched type is first).
 template <typename A, typename... Ts>
 constexpr size_t type_find<A, A, Ts...> = 0;
 
 
 //! @cond INTERNAL
 namespace details {
-    // General form.
+    //! @brief General form.
     template<int start, int end, int stride, typename... Ts>
     struct type_slice {
         using type = type_sequence<>;
     };
 
-    // Recursive form.
+    //! @brief Recursive form.
     template<int start, int end, int stride, typename T, typename... Ts>
     struct type_slice<start, end, stride, T, Ts...> {
         using type = std::conditional_t<end == 0, type_sequence<>, std::conditional_t<
@@ -87,13 +88,13 @@ namespace details {
         >>;
     };
 
-    // Base case.
+    //! @brief Base case.
     template <typename, typename>
     struct type_intersect {
         using type = type_sequence<>;
     };
 
-    // Recursive form.
+    //! @brief Recursive form.
     template <typename T, typename... Ts, typename... Ss>
     struct type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>> {
         using type = std::conditional_t<
@@ -103,11 +104,11 @@ namespace details {
         >;
     };
 
-    // General form.
+    //! @brief General form.
     template <typename, typename>
     struct type_unite;
 
-    // Recursive form.
+    //! @brief Recursive form.
     template <typename... Ts, typename S, typename... Ss>
     struct type_unite<type_sequence<Ts...>, type_sequence<S, Ss...>> {
         using type = std::conditional_t<
@@ -117,17 +118,17 @@ namespace details {
         >;
     };
 
-    // Base case.
+    //! @brief Base case.
     template <typename... Ts>
     struct type_unite<type_sequence<Ts...>, type_sequence<>> {
         using type = type_sequence<Ts...>;
     };
 
-    // General form.
+    //! @brief General form.
     template <typename, typename>
     struct type_subtract;
 
-    // Recursive form.
+    //! @brief Recursive form.
     template <typename T, typename... Ts, typename... Ss>
     struct type_subtract<type_sequence<T, Ts...>, type_sequence<Ss...>> {
         using type = std::conditional_t<
@@ -137,19 +138,19 @@ namespace details {
         >;
     };
 
-    // Base case.
+    //! @brief Base case.
     template <typename... Ss>
     struct type_subtract<type_sequence<>, type_sequence<Ss...>> {
         using type = type_sequence<>;
     };
 
-    // General form.
+    //! @brief General form.
     template <typename...>
     struct type_repeated {
         using type = type_sequence<>;
     };
 
-    // Recursive form.
+    //! @brief Recursive form.
     template <typename T, typename... Ts>
     struct type_repeated<T, Ts...> {
         using type = std::conditional_t<
@@ -159,13 +160,13 @@ namespace details {
         >;
     };
 
-    // General form.
+    //! @brief General form.
     template <typename...>
     struct type_uniq {
         using type = type_sequence<>;
     };
 
-    // Recursive form.
+    //! @brief Recursive form.
     template <typename T, typename... Ts>
     struct type_uniq<T, Ts...> {
         using type = std::conditional_t<
@@ -175,51 +176,51 @@ namespace details {
         >;
     };
 
-    // General form.
+    //! @brief General form.
     template <typename... Ts>
     struct type_cat;
 
-    // Empty base case.
+    //! @brief Empty base case.
     template <>
     struct type_cat<> {
         using type = type_sequence<>;
     };
 
-    // Base case.
+    //! @brief Base case.
     template <typename... Ts, typename... Ss>
     struct type_cat<type_sequence<Ts...>, type_sequence<Ss...>> {
         using type = type_sequence<Ts..., Ss...>;
     };
 
-    // Recursive form.
+    //! @brief Recursive form.
     template <typename T, typename... Ss>
     struct type_cat<T, Ss...> {
         using type = typename type_cat<T, typename type_cat<Ss...>::type>::type;
     };
 
-    // General form.
+    //! @brief General form.
     template <typename... Ts>
     struct type_product;
 
-    // Empty base case.
+    //! @brief Empty base case.
     template <>
     struct type_product<> {
         using type = type_sequence<type_sequence<>>;
     };
 
-    // Base case with single option.
+    //! @brief Base case with single option.
     template <typename... Ts, typename S>
     struct type_product<type_sequence<Ts...>, type_sequence<S>> {
         using type = type_sequence<typename type_cat<Ts,S>::type...>;
     };
 
-    // Base case.
+    //! @brief Base case.
     template <typename T, typename... Ss>
     struct type_product<T, type_sequence<Ss...>> {
         using type = typename type_cat<typename type_product<T,type_sequence<Ss>>::type...>::type;
     };
 
-    // Recursive form.
+    //! @brief Recursive form.
     template <typename T, typename... Ss>
     struct type_product<T, Ss...> {
         using type = typename type_product<T, typename type_product<Ss...>::type>::type;
@@ -230,6 +231,7 @@ namespace details {
 
 /**
  * @brief Extracts a subsequence from the type sequence.
+ *
  * @param start  first element extracted
  * @param end    no element extracted after end (defaults to -1 = end of the sequence)
  * @param stride interval between element extracted (defaults to 1)
@@ -270,7 +272,7 @@ template <typename... Ts>
 using type_product = typename details::type_product<Ts...>::type;
 
 
-//! @brief Non-empty form, allows for extracting elements and subsequences.
+//! @brief Non-empty type sequence, allows for extracting elements and subsequences.
 template <typename T, typename... Ts>
 struct type_sequence<T, Ts...> {
     //! @brief Extracts the n-th type from the sequence.
@@ -279,6 +281,7 @@ struct type_sequence<T, Ts...> {
 
     /**
      * @brief Extracts a subsequence from the type sequence.
+     *
      * @param start  first element extracted
      * @param end    no element extracted after end (defaults to -1 = end of the sequence)
      * @param stride interval between element extracted (defaults to 1)
@@ -336,58 +339,47 @@ struct type_sequence<T, Ts...> {
     static constexpr size_t size = 1 + sizeof...(Ts);
 };
 
-//! @brief Empty form, cannot extract elements and subsequences.
+//! @brief Empty type sequence, cannot extract elements and subsequences.
 template <>
 struct type_sequence<> {
-    template <int start, int end, int stride = 1>
+    //! @brief Extracts a subsequence from the type sequence.
+    template <int start, int end = -1, int stride = 1>
     using slice = type_sequence<>;
 
+    //! @brief Adds types at the front of the sequence.
     template <typename... Ss>
     using push_front = type_sequence<Ss...>;
 
+    //! @brief Adds types at the back of the sequence.
     template <typename... Ss>
     using push_back = type_sequence<Ss...>;
 
+    //! @brief Set intersection with other sequence.
     template<typename... Ss>
     using intersect = type_sequence<>;
 
+    //! @brief Set union with other sequence.
     template<typename... Ss>
     using unite = type_sequence<Ss...>;
 
+    //! @brief Set difference with other sequence.
     template<typename... Ss>
     using subtract = type_sequence<>;
 
+    //! @brief Extract the types that are repeated more than once.
     using repeated = type_sequence<>;
 
+    //! @brief Extract the subsequence in which each type appears once (opposite of repeated).
     using uniq = type_sequence<>;
 
+    //! @brief Constant which is true if and only if the type parameter is in the sequence.
     template <typename S>
     static constexpr size_t count = 0;
 
+    //! @brief The length of the sequence.
     static constexpr size_t size = 0;
 };
 //! @}
-
-
-//! @cond INTERNAL
-namespace details {
-    // General form.
-    template <typename... Ts>
-    struct export_list {
-        using type = type_sequence<>;
-    };
-    // Type argument.
-    template <typename T, typename... Ts>
-    struct export_list<T,Ts...> : public type_unite<type_sequence<T>, typename export_list<Ts...>::type> {};
-    // Type sequence argument.
-    template <typename... Ts, typename... Ss>
-    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
-}
-//! @endcond
-
-//! @brief Merges export lists and types into a single type sequence.
-template <typename... Ts>
-using export_list = typename details::export_list<Ts...>::type;
 
 
 /**
@@ -429,7 +421,7 @@ constexpr bool is_sized_template = false;
 
 //! @brief Ignore constness.
 template <template<class,size_t> class T, class A>
-constexpr bool is_sized_template<T, const A> = is_sized_template<T, A>;
+constexpr bool is_sized_template<T, A const> = is_sized_template<T, A>;
 
 //! @brief Ignore lvalue references.
 template <template<class,size_t> class T, class A>
@@ -465,7 +457,7 @@ constexpr bool is_class_template = false;
 
 //! @brief Ignore constness.
 template <template<class...> class T, class A>
-constexpr bool is_class_template<T, const A> = is_class_template<T, A>;
+constexpr bool is_class_template<T, A const> = is_class_template<T, A>;
 
 //! @brief Ignore lvalue references.
 template <template<class...> class T, class A>
@@ -502,7 +494,7 @@ constexpr bool has_template = false;
 
 //! @brief Ignore constness.
 template <template<class...> class T, class A>
-constexpr bool has_template<T, const A> = has_template<T, A>;
+constexpr bool has_template<T, A const> = has_template<T, A>;
 
 //! @brief Ignore lvalue references.
 template <template<class...> class T, class A>
@@ -546,6 +538,7 @@ namespace details {
     };
     //! @}
 }
+//! @endcond
 
 //! @brief The type that should be returned by a function forwarding an argument of type T.
 template <typename T>
@@ -653,8 +646,8 @@ namespace details {
 
     //! @brief const tuple-like case.
     template <template<class...> class T, class... A>
-    struct template_args<const T<A...>> {
-        using type = type_sequence<const A...>;
+    struct template_args<T<A...> const> {
+        using type = type_sequence<A const...>;
     };
 
     //! @brief & tuple-like case.
@@ -665,8 +658,8 @@ namespace details {
 
     //! @brief const& tuple-like case.
     template <template<class...> class T, class... A>
-    struct template_args<const T<A...>&> {
-        using type = type_sequence<const A&...>;
+    struct template_args<T<A...> const&> {
+        using type = type_sequence<A const&...>;
     };
 
     //! @brief && tuple-like case.
@@ -677,8 +670,8 @@ namespace details {
 
     //! @brief const&& tuple-like case.
     template <template<class...> class T, class... A>
-    struct template_args<const T<A...>&&> {
-        using type = type_sequence<const A&&...>;
+    struct template_args<T<A...> const&&> {
+        using type = type_sequence<A const&&...>;
     };
 
     //! @brief array-like case.
@@ -689,8 +682,8 @@ namespace details {
 
     //! @brief const array-like case.
     template <template<class,size_t> class T, class A, size_t N>
-    struct template_args<const T<A, N>> {
-        using type = type_sequence<const A>;
+    struct template_args<T<A, N> const> {
+        using type = type_sequence<A const>;
     };
 
     //! @brief & array-like case.
@@ -701,8 +694,8 @@ namespace details {
 
     //! @brief const& array-like case.
     template <template<class,size_t> class T, class A, size_t N>
-    struct template_args<const T<A, N>&> {
-        using type = type_sequence<const A&>;
+    struct template_args<T<A, N> const&> {
+        using type = type_sequence<A const&>;
     };
 
     //! @brief && array-like case.
@@ -713,24 +706,18 @@ namespace details {
 
     //! @brief const&& array-like case.
     template <template<class,size_t> class T, class A, size_t N>
-    struct template_args<const T<A, N>&&> {
-        using type = type_sequence<const A&&>;
+    struct template_args<T<A, N> const&&> {
+        using type = type_sequence<A const&&>;
     };
 }
 //! @endcond
 
-/**
- * @brief Returns the class arguments of a template types as a type sequence, propagating value type.
- */
+//! @brief Returns the class arguments of a template types as a type sequence, propagating value type.
 template <class A>
 using template_args = typename details::template_args<A>::type;
 
 
-/**
- * @name if_signature
- *
- * Enables template resolution if a callable class @param G complies to a given signature @param F.
- */
+//! @brief Enables template resolution if a callable class @param G complies to a given signature @param F.
 template <typename G, typename F, typename T = void>
 using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value, T>;
 
@@ -754,180 +741,352 @@ template <typename T>
 using type_unwrap = typename details::type_unwrap<T>::type;
 
 
-//! @brief Wraps a sequence of `size_t` values.
-using std::index_sequence;
+/**
+ * @name number_sequence
+ *
+ * Helper empty class encapsulating a sequence of numbers.
+ * Mimics operations in standard stl containers.
+ */
+//! @{
+
+//! @brief General form.
+template <intmax_t... xs>
+struct number_sequence;
+
+
+//! @brief Count operation base case (0 if not found).
+template <intmax_t a, intmax_t... xs>
+constexpr size_t number_count = 0;
+
+//! @brief Count operation general recursive pattern.
+template <intmax_t a, intmax_t b, intmax_t... xs>
+constexpr size_t number_count<a, b, xs...> = number_count<a, xs...> + (a == b ? 1 : 0);
+
+//! @brief Find operation general recursive pattern.
+template <intmax_t a, intmax_t b, intmax_t... xs>
+constexpr size_t number_find = number_find<a, xs...> + 1;
+
+//! @brief Find operation base case (the searched type is first).
+template <intmax_t a, intmax_t... xs>
+constexpr size_t number_find<a, a, xs...> = 0;
+
 
 //! @cond INTERNAL
 namespace details {
-    // Identity function on type sequences.
+    //! @brief General form.
+    template<int start, int end, int stride, intmax_t... xs>
+    struct number_slice {
+        using type = number_sequence<>;
+    };
+
+    //! @brief Recursive form.
+    template<int start, int end, int stride, intmax_t x, intmax_t... xs>
+    struct number_slice<start, end, stride, x, xs...> {
+        using type = std::conditional_t<end == 0, number_sequence<>, std::conditional_t<
+            start == 0,
+            typename number_slice<stride - 1, end - 1, stride, xs...>::type::template push_front<x>,
+            typename number_slice<start  - 1, end - 1, stride, xs...>::type
+        >>;
+    };
+}
+//! @endcond
+
+/**
+ * @brief Extracts a subsequence from the number sequence.
+ *
+ * @param start  first element extracted
+ * @param end    no element extracted after end (defaults to -1 = end of the sequence)
+ * @param stride interval between element extracted (defaults to 1)
+ */
+template <int start, int end, int stride, intmax_t... xs>
+using number_slice = typename details::number_slice<start, end, stride, xs...>::type;
+
+//! @brief Extracts the n-th type from the sequence.
+template <int n, intmax_t... xs>
+constexpr intmax_t number_get = number_slice<n, n+1, 1, xs...>::front;
+
+
+//! @brief Non-empty form, allows for extracting elements and subsequences.
+template <intmax_t x, intmax_t... xs>
+struct number_sequence<x, xs...> {
+    //! @brief Extracts the n-th number from the sequence.
+    template <int n>
+    static constexpr intmax_t get = number_get<n, x, xs...>;
+
+    /**
+     * @brief Extracts a subsequence from the number sequence.
+     *
+     * @param start  first element extracted
+     * @param end    no element extracted after end (defaults to -1 = end of the sequence)
+     * @param stride interval between element extracted (defaults to 1)
+     */
+    template <int start, int end = -1, int stride = 1>
+    using slice = number_slice<start, end, stride, x, xs...>;
+
+    //! @brief The first number of the sequence.
+    static constexpr intmax_t front = x;
+
+    //! @brief The last number of the sequence.
+    static constexpr intmax_t back = get<sizeof...(xs)>;
+
+    //! @brief Removes the first number of the sequence.
+    using pop_front = number_sequence<xs...>;
+
+    //! @brief Removes the last number of the sequence.
+    using pop_back = slice<0, sizeof...(xs)>;
+
+    //! @brief Adds types at the front of the sequence.
+    template <intmax_t... ys>
+    using push_front = number_sequence<ys..., x, xs...>;
+
+    //! @brief Adds types at the back of the sequence.
+    template <intmax_t... ys>
+    using push_back = number_sequence<x, xs..., ys...>;
+
+//    //! @brief Set intersection with other sequence.
+//    template<intmax_t... ys>
+//    using intersect = number_intersect<number_sequence<x, xs...>, number_sequence<ys...>>;
+//
+//    //! @brief Set union with other sequence.
+//    template<intmax_t... ys>
+//    using unite = number_unite<number_sequence<x, xs...>, number_sequence<ys...>>;
+//
+//    //! @brief Set difference with other sequence.
+//    template<intmax_t... ys>
+//    using subtract = number_subtract<number_sequence<x, xs...>, number_sequence<ys...>>;
+//
+//    //! @brief Extract the types that are repeated more than once.
+//    using repeated = number_repeated<x, xs...>;
+//
+//    //! @brief Extract the subsequence in which each type appears once (opposite of repeated).
+//    using uniq = number_uniq<x, xs...>;
+
+    //! @brief Constant equal to the index of `y` among the sequence. Fails to compile if not present, indices start from 0.
+    template <intmax_t y>
+    static constexpr size_t find = number_find<y, x, xs...>;
+
+    //! @brief Constant which is true if and only if the type parameter is in the sequence.
+    template <intmax_t y>
+    static constexpr size_t count = number_count<y, x, xs...>;
+
+    //! @brief The length of the sequence.
+    static constexpr size_t size = 1 + sizeof...(xs);
+};
+
+//! @brief Empty form, cannot extract elements and subsequences.
+template <>
+struct number_sequence<> {
+    //! @brief Extracts a subsequence from the number sequence.
+    template <int start, int end = -1, int stride = 1>
+    using slice = number_sequence<>;
+
+    //! @brief Adds types at the front of the sequence.
+    template <intmax_t... ys>
+    using push_front = number_sequence<ys...>;
+
+    //! @brief Adds types at the back of the sequence.
+    template <intmax_t... ys>
+    using push_back = number_sequence<ys...>;
+
+    //! @brief Set intersection with other sequence.
+    template<intmax_t... ys>
+    using intersect = number_sequence<>;
+
+    //! @brief Set union with other sequence.
+    template<intmax_t... ys>
+    using unite = number_sequence<ys...>;
+
+    //! @brief Set difference with other sequence.
+    template<intmax_t... ys>
+    using subtract = number_sequence<>;
+
+    //! @brief Extract the types that are repeated more than once.
+    using repeated = number_sequence<>;
+
+    //! @brief Extract the subsequence in which each type appears once (opposite of repeated).
+    using uniq = number_sequence<>;
+
+    //! @brief Constant which is true if and only if the type parameter is in the sequence.
+    template <intmax_t y>
+    static constexpr size_t count = 0;
+
+    //! @brief The length of the sequence.
+    static constexpr size_t size = 0;
+};
+//! @}
+
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief Identity function on type sequences.
     template <typename... Ts>
     type_sequence<Ts...> type_sequence_identity(type_sequence<Ts...>) {
         return {};
     }
 
-    // Decays a type into a type sequence (type not convertible to type sequence).
+    //! @brief Decays a type into a type sequence (type not convertible to type sequence).
     template <typename T, typename = void>
     struct type_sequence_decay_impl {
         using type = type_sequence<>;
     };
 
-    // Decays a type into a type sequence (type is convertible to type sequence).
+    //! @brief Decays a type into a type sequence (type is convertible to type sequence).
     template <typename T>
     struct type_sequence_decay_impl<T(), decltype(void(type_sequence_identity(std::declval<T>())))> {
         using type = decltype(type_sequence_identity(std::declval<T>()));
     };
 
-    // Decays a type into a type sequence.
+    //! @brief Decays a type into a type sequence.
     template <typename T>
     using type_sequence_decay = typename type_sequence_decay_impl<T()>::type;
 
-    // Extracts a boolean option (no arguments).
+    //! @brief Extracts a boolean option (no arguments).
     template <template<bool> class T, bool d, typename... Ss>
     struct option_flag : public std::integral_constant<bool, d> {};
 
-    // Extracts a boolean option (option in first place).
+    //! @brief Extracts a boolean option (option in first place).
     template <template<bool> class T, bool d, bool b, typename... Ss>
     struct option_flag<T,d,T<b>,Ss...> : public std::integral_constant<bool, b> {};
 
-    // Extracts a boolean option (type sequence in first place).
+    //! @brief Extracts a boolean option (type sequence in first place).
     template <template<bool> class T, bool d, typename... Ts, typename... Ss>
     struct option_flag<T,d,type_sequence<Ts...>,Ss...> : public option_flag<T,d,Ts...,Ss...> {};
 
-    // Extracts a boolean option (something else in first place).
+    //! @brief Extracts a boolean option (something else in first place).
     template <template<bool> class T, bool d, typename S, typename... Ss>
     struct option_flag<T,d,S,Ss...> : public option_flag<T,d,type_sequence_decay<S>,Ss...> {};
 
-    // Extracts a numeric option (no arguments).
-    template <template<size_t> class T, size_t d, typename... Ss>
-    struct option_num : public std::integral_constant<size_t, d> {};
+    //! @brief Extracts a numeric option (no arguments).
+    template <template<intmax_t> class T, intmax_t d, typename... Ss>
+    struct option_num : public std::integral_constant<intmax_t, d> {};
 
-    // Extracts a numeric option (option in first place).
-    template <template<size_t> class T, size_t d, size_t i, typename... Ss>
-    struct option_num<T,d,T<i>,Ss...> : public std::integral_constant<size_t, i> {};
+    //! @brief Extracts a numeric option (option in first place).
+    template <template<intmax_t> class T, intmax_t d, intmax_t i, typename... Ss>
+    struct option_num<T,d,T<i>,Ss...> : public std::integral_constant<intmax_t, i> {};
 
-    // Extracts a numeric option (type sequence in first place).
-    template <template<size_t> class T, size_t d, typename... Ts, typename... Ss>
+    //! @brief Extracts a numeric option (type sequence in first place).
+    template <template<intmax_t> class T, intmax_t d, typename... Ts, typename... Ss>
     struct option_num<T,d,type_sequence<Ts...>,Ss...> : public option_num<T,d,Ts...,Ss...> {};
 
-    // Extracts a numeric option (something else in first place).
-    template <template<size_t> class T, size_t d, typename S, typename... Ss>
+    //! @brief Extracts a numeric option (something else in first place).
+    template <template<intmax_t> class T, intmax_t d, typename S, typename... Ss>
     struct option_num<T,d,S,Ss...> : public option_num<T,d,type_sequence_decay<S>,Ss...> {};
 
-    // Prepends indexes to an index sequence (general form).
-    template <typename T, size_t... is>
+    //! @brief Prepends indexes to an index sequence (general form).
+    template <typename T, intmax_t... is>
     struct nums_prepend;
 
-    // Prepends indexes to an index sequence (active form).
-    template <size_t... js, size_t... is>
-    struct nums_prepend<index_sequence<js...>, is...> {
-        using type = index_sequence<is..., js...>;
+    //! @brief Prepends indexes to an index sequence (active form).
+    template <intmax_t... js, intmax_t... is>
+    struct nums_prepend<number_sequence<js...>, is...> {
+        using type = number_sequence<is..., js...>;
     };
 
-    // Extracts a multinumeric option (no arguments).
-    template <template<size_t...> class T, typename... Ss>
+    //! @brief Extracts a multinumeric option (no arguments).
+    template <template<intmax_t...> class T, typename... Ss>
     struct option_nums {
-        using type = index_sequence<>;
+        using type = number_sequence<>;
     };
 
-    // Extracts a multinumeric option (option in first place).
-    template <template<size_t...> class T, size_t... is, typename... Ss>
+    //! @brief Extracts a multinumeric option (option in first place).
+    template <template<intmax_t...> class T, intmax_t... is, typename... Ss>
     struct option_nums<T, T<is...>, Ss...> : public nums_prepend<typename option_nums<T, Ss...>::type, is...> {};
 
-    // Extracts a multinumeric option (type sequence in first place).
-    template <template<size_t...> class T, typename... Ts, typename... Ss>
+    //! @brief Extracts a multinumeric option (type sequence in first place).
+    template <template<intmax_t...> class T, typename... Ts, typename... Ss>
     struct option_nums<T, type_sequence<Ts...>, Ss...> : public option_nums<T, Ts..., Ss...> {};
 
-    // Extracts a multinumeric option (something else in first place).
-    template <template<size_t...> class T, typename S, typename... Ss>
+    //! @brief Extracts a multinumeric option (something else in first place).
+    template <template<intmax_t...> class T, typename S, typename... Ss>
     struct option_nums<T, S, Ss...> : public option_nums<T, type_sequence_decay<S>, Ss...> {};
 
-    // Extracts a floating-point numeric option (no arguments).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ss>
+    //! @brief Extracts a floating-point numeric option (no arguments).
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename... Ss>
     struct option_float {
         static constexpr double value = dnum / (double)dden;
     };
 
-    // Extracts a floating-point numeric option (option in first place).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, size_t i, size_t j, typename... Ss>
+    //! @brief Extracts a floating-point numeric option (option in first place).
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, intmax_t i, intmax_t j, typename... Ss>
     struct option_float<T,dnum,dden,T<i,j>,Ss...> {
         static constexpr double value = i / (double)j;
     };
 
-    // Extracts a floating-point numeric option (type sequence in first place).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ts, typename... Ss>
+    //! @brief Extracts a floating-point numeric option (type sequence in first place).
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename... Ts, typename... Ss>
     struct option_float<T,dnum,dden,type_sequence<Ts...>,Ss...> : public option_float<T,dnum,dden,Ts...,Ss...> {};
 
-    // Extracts a floating-point numeric option (something else in first place).
-    template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename S, typename... Ss>
+    //! @brief Extracts a floating-point numeric option (something else in first place).
+    template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename S, typename... Ss>
     struct option_float<T,dnum,dden,S,Ss...> : public option_float<T,dnum,dden,type_sequence_decay<S>,Ss...> {};
 
-    // Extracts a type option (no arguments).
+    //! @brief Extracts a type option (no arguments).
     template <template<class> class T, typename D, typename... Ss>
     struct option_type {
         using type = D;
     };
 
-    // Extracts a type option (option in first place).
+    //! @brief Extracts a type option (option in first place).
     template <template<class> class T, typename D, typename S, typename... Ss>
     struct option_type<T,D,T<S>,Ss...> {
         using type = S;
     };
 
-    // Extracts a type option (type sequence in first place).
+    //! @brief Extracts a type option (type sequence in first place).
     template <template<class> class T, typename D, typename... Ts, typename... Ss>
     struct option_type<T,D,type_sequence<Ts...>,Ss...> : public option_type<T,D,Ts...,Ss...> {};
 
-    // Extracts a type option (something else in first place).
+    //! @brief Extracts a type option (something else in first place).
     template <template<class> class T, typename D, typename S, typename... Ss>
     struct option_type<T,D,S,Ss...> : public option_type<T,D,type_sequence_decay<S>,Ss...> {};
 
-    // Extracts a multitype option (no arguments).
+    //! @brief Extracts a multitype option (no arguments).
     template <template<class...> class T, typename... Ss>
     struct option_types {
         using type = type_sequence<>;
     };
 
-    // Extracts a multitype option (option in first place).
+    //! @brief Extracts a multitype option (option in first place).
     template <template<class...> class T, typename... Ts, typename... Ss>
     struct option_types<T, T<Ts...>, Ss...> {
         using type = typename option_types<T, Ss...>::type::template push_front<Ts...>;
     };
 
-    // Extracts a multitype option (type sequence in first place).
+    //! @brief Extracts a multitype option (type sequence in first place).
     template <template<class...> class T, typename... Ts, typename... Ss>
     struct option_types<T, type_sequence<Ts...>, Ss...> : public option_types<T, Ts..., Ss...> {};
 
-    // Extracts a multitype option (something else in first place).
+    //! @brief Extracts a multitype option (something else in first place).
     template <template<class...> class T, typename S, typename... Ss>
     struct option_types<T, S, Ss...> : public option_types<T, type_sequence_decay<S>, Ss...> {};
 
-    // Extracts a multitype option (no arguments).
+    //! @brief Extracts a multitype option (no arguments).
     template <template<class...> class T, typename... Ss>
     struct option_multitypes {
         using type = type_sequence<>;
     };
 
-    // Extracts a multitype option (option in first place).
+    //! @brief Extracts a multitype option (option in first place).
     template <template<class...> class T, typename... Ts, typename... Ss>
     struct option_multitypes<T, T<Ts...>, Ss...> {
         using type = typename option_multitypes<T, Ss...>::type::template push_front<common::type_sequence<Ts...>>;
     };
 
-    // Extracts a multitype option (type sequence in first place).
+    //! @brief Extracts a multitype option (type sequence in first place).
     template <template<class...> class T, typename... Ts, typename... Ss>
     struct option_multitypes<T, type_sequence<Ts...>, Ss...> : public option_multitypes<T, Ts..., Ss...> {};
 
-    // Extracts a multitype option (something else in first place).
+    //! @brief Extracts a multitype option (something else in first place).
     template <template<class...> class T, typename S, typename... Ss>
     struct option_multitypes<T, S, Ss...> : public option_multitypes<T, type_sequence_decay<S>, Ss...> {};
 
-    // Applies templates to arguments modelled as type sequences (base case).
+    //! @brief Applies templates to arguments modelled as type sequences (base case).
     template <typename S, template<class...> class... T>
     struct apply_templates {
         using type = S;
     };
 
-    // Applies templates to arguments modelled as type sequences (recursive form).
+    //! @brief Applies templates to arguments modelled as type sequences (recursive form).
     template <typename... Ss, template<class...> class T, template<class...> class... Ts>
     struct apply_templates<type_sequence<Ss...>, T, Ts...> {
         using type = T<typename apply_templates<Ss, Ts...>::type...>;
@@ -952,8 +1111,8 @@ constexpr bool option_flag = details::option_flag<T,d,Ss...>::value;
  * @param d Default value if the option is missing.
  * @param Ss Sequence of options.
  */
-template <template<size_t> class T, size_t d, typename... Ss>
-constexpr size_t option_num = details::option_num<T,d,Ss...>::value;
+template <template<intmax_t> class T, intmax_t d, typename... Ss>
+constexpr intmax_t option_num = details::option_num<T,d,Ss...>::value;
 
 /**
  * @brief Extracts a numeric or multi-numeric option from a sequence of options as an index sequence.
@@ -961,7 +1120,7 @@ constexpr size_t option_num = details::option_num<T,d,Ss...>::value;
  * @param T Multi-numeric option name.
  * @param Ss Sequence of options.
  */
-template <template<size_t...> class T, typename... Ss>
+template <template<intmax_t...> class T, typename... Ss>
 using option_nums = typename details::option_nums<T, Ss...>::type;
 
 /**
@@ -972,7 +1131,7 @@ using option_nums = typename details::option_nums<T, Ss...>::type;
  * @param dden Default denumerator of the value if the option is missing.
  * @param Ss Sequence of options.
  */
-template <template<size_t,size_t> class T, size_t dnum, size_t dden, typename... Ss>
+template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename... Ss>
 constexpr double option_float = details::option_float<T,dnum,dden,Ss...>::value;
 
 /**
@@ -1016,8 +1175,30 @@ using apply_templates = typename details::apply_templates<S,Ts...>::type;
 
 //! @cond INTERNAL
 namespace details {
+    // General form.
+    template <typename... Ts>
+    struct export_list {
+        using type = type_sequence<>;
+    };
+    // Type argument.
+    template <typename T, typename... Ts>
+    struct export_list<T,Ts...> : public type_unite<std::conditional_t<std::is_empty<T>::value, typename export_list<type_sequence_decay<T>>::type, common::type_sequence<T>>, typename export_list<Ts...>::type> {};
+    // Type sequence argument.
+    template <typename... Ts, typename... Ss>
+    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
+}
+//! @endcond
+
+//! @brief Merges export lists and types into a single type sequence.
+template <typename... Ts>
+using export_list = typename details::export_list<Ts...>::type;
+
+
+//! @cond INTERNAL
+namespace details {
     //! @brief Representation of constness and value type of a type.
     //! @{
+
     //! @brief base case.
     template <typename T>
     struct reference_string {
@@ -1030,7 +1211,7 @@ namespace details {
     };
     //! @brief const case.
     template <typename T>
-    struct reference_string<const T> {
+    struct reference_string<T const> {
         inline static std::string mangled() {
             return "K";
         }
@@ -1073,7 +1254,7 @@ std::string type_name() {
 template <typename T>
 std::string type_name() {
     int status = 42;
-    const char* name = typeid(T).name();
+    char const* name = typeid(T).name();
     std::unique_ptr<char, void(*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
     return (status==0) ? res.get() + details::reference_string<T>::demangled() : details::reference_string<T>::mangled() + name;
 }
@@ -1088,9 +1269,12 @@ inline std::string type_name(T&&) {
 
 //! @brief Escapes a value for clear printing.
 //! @{
+
+//! @brief Escapes a boolean value for clear printing.
 inline std::string escape(bool x) {
     return x ? "true" : "false";
 }
+//! @brief Escapes a char value for clear printing.
 inline std::string escape(char x) {
     if (x < 32 or x > 126) {
         int y = x < 0 ? x + 256 : x;
@@ -1099,12 +1283,15 @@ inline std::string escape(char x) {
     if (x == '\'') return "'\\''";
     return std::string("'") + x + "'";
 }
+//! @brief Escapes a signed byte value for clear printing.
 inline int escape(int8_t x) {
     return x;
 }
+//! @brief Escapes an unsigned byte value for clear printing.
 inline int escape(uint8_t x) {
     return x;
 }
+//! @brief Escapes a string value for clear printing.
 inline std::string escape(std::string x) {
     std::string r;
     r.push_back('"');
@@ -1115,14 +1302,17 @@ inline std::string escape(std::string x) {
     r.push_back('"');
     return r;
 }
-inline std::string escape(const char* x) {
+//! @brief Escapes a C-string value for clear printing.
+inline std::string escape(char const* x) {
     return escape(std::string(x));
 }
+//! @brief Escapes a empty value for clear printing.
 template <typename T, typename = std::enable_if_t<std::is_empty<T>::value>>
 inline std::string escape(T) {
     return type_name<T>();
 }
-template <typename T, typename = std::enable_if_t<type_count<T, bool, char, int8_t, uint8_t, std::string, const char*> == 0 and not std::is_empty<T>::value>>
+//! @brief Escapes any other value for clear printing.
+template <typename T, typename = std::enable_if_t<type_count<T, bool, char, int8_t, uint8_t, std::string, char const*> == 0 and not std::is_empty<T>::value>>
 inline T const& escape(T const& x) {
     return x;
 }
@@ -1130,6 +1320,7 @@ inline T const& escape(T const& x) {
 
 /**
  * @brief Declares that the type @param T is usable as an output stream.
+ *
  * Enabled by default for all subtypes of std::ostream.
  */
 template <typename T>
@@ -1139,9 +1330,11 @@ struct is_ostream : public std::is_base_of<std::ostream, T> {};
 template <typename A, typename T = void>
 using if_ostream = std::enable_if_t<fcpp::common::is_ostream<A>::value, T>;
 
-}
+} // namespace common
 
+//! @brief Allows usage of export_list in main namespace.
+using common::export_list;
 
-}
+} // namespace fcpp
 
 #endif  // FCPP_COMMON_TRAITS_H_

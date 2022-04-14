@@ -17,8 +17,8 @@ namespace details {
     std::shared_ptr<std::istream> make_istream(std::string const& s) {
         return std::shared_ptr<std::istream>(new std::ifstream(s));
     }
-    //! @brief Makes an istream reference from a `const char*` path.
-    std::shared_ptr<std::istream> make_istream(const char* s) {
+    //! @brief Makes an istream reference from a `char const*` path.
+    std::shared_ptr<std::istream> make_istream(char const* s) {
         return make_istream(std::string(s));
     }
     //! @brief Makes an istream reference from a stream pointer.

@@ -305,10 +305,10 @@ struct identifier {
             device_t m_next_uid;
 
             //! @brief The time sensitivity.
-            const times_t m_epsilon;
+            times_t const m_epsilon;
 
             //! @brief The number of threads to be used.
-            const size_t m_threads;
+            size_t const m_threads;
         };
     };
 };

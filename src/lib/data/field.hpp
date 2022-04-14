@@ -49,7 +49,7 @@ template <typename A>
 using to_field = field<common::extract_template<field, A>>;
 //! @brief Computes the result type of applying F pointwise to local versions of A.
 template <typename F, typename... A>
-using local_result = std::result_of_t<F(to_local<const A&>...)>;
+using local_result = std::result_of_t<F(to_local<A const&>...)>;
 //! @brief Computes the result type of applying F pointwise to local versions of A.
 template <typename F, typename... A>
 using field_result = field<local_result<F, A...>>;
@@ -157,6 +157,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
 
     //! @name constructors
     //! @{
+
     //! @brief Default constructor (dangerous: creates a field in an invalid state).
     field() = default;
 
@@ -171,7 +172,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     }
 
     //! @brief Copy constructor.
-    field(const field&) = default;
+    field(field const&) = default;
 
     //! @brief Move constructor.
     field(field&&) = default;
@@ -197,8 +198,9 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
-    field& operator=(const field&) = default;
+    field& operator=(field const&) = default;
 
     //! @brief Move assignment.
     field& operator=(field&&) = default;
@@ -228,34 +230,36 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
         swap(m_vals, f.m_vals);
     }
 
-    //! @brief Serialises the content from/to a given input/output stream.
-    template <typename S>
-    S& serialize(S& s) {
-        serialize_size(s);
+    //! @brief Serialises the content from a given input stream.
+    common::isstream& serialize(common::isstream& s) {
+        device_t size = 0;
+        s.read(size);
+        m_ids.resize(size);
+        m_vals.resize(size+1);
         for (size_t i = 0; i < m_ids.size(); ++i)
-            s & m_ids[i];
+            s >> m_ids[i];
+        serialize_vals(s, std::is_same<T, bool>{});
+        return s;
+    }
+
+    //! @brief Serialises the content to a given output stream.
+    common::osstream& serialize(common::osstream& s) const {
+        s.write((device_t)m_ids.size());
+        for (size_t i = 0; i < m_ids.size(); ++i)
+            s << m_ids[i];
         serialize_vals(s, std::is_same<T, bool>{});
         return s;
     }
 
   private:
-    //! @brief Serialises the size from a given input stream.
-    void serialize_size(common::isstream& s) {
-        device_t size = 0;
-        s.read(size);
-        m_ids.resize(size);
-        m_vals.resize(size+1);
+    //! @brief Serialises vals from an input stream if `T` is not `bool`.
+    void serialize_vals(common::isstream& s, std::false_type) {
+        for (size_t i = 0; i < m_vals.size(); ++i) s >> m_vals[i];
     }
 
-    //! @brief Serialises the size to a given output stream.
-    void serialize_size(common::osstream& s) {
-        s.write((device_t)m_ids.size());
-    }
-
-    //! @brief Serialises vals if `T` is not `bool`.
-    template <typename S>
-    void serialize_vals(S& s, std::false_type) {
-        for (size_t i = 0; i < m_vals.size(); ++i) s & m_vals[i];
+    //! @brief Serialises vals to an output stream if `T` is not `bool`.
+    void serialize_vals(common::osstream& s, std::false_type) const {
+        for (size_t i = 0; i < m_vals.size(); ++i) s << m_vals[i];
     }
 
     //! @brief Serialises vals from an input stream if `T` is `bool`.
@@ -268,7 +272,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     }
 
     //! @brief Serialises vals to an output stream if `T` is `bool`.
-    void serialize_vals(common::osstream& s, std::true_type) {
+    void serialize_vals(common::osstream& s, std::true_type) const {
         char c = 0;
         for (size_t i = 0; i < m_vals.size(); ++i) {
             c += m_vals[i] << (i%8);
@@ -297,7 +301,7 @@ namespace details {
     template <>
     struct field_base<true> {
         explicit operator bool() const {
-            field<bool> const& f = *((const field<bool>*)this);
+            field<bool> const& f = *((field<bool> const*)this);
             for (bool x : f.m_vals) if (not x) return false;
             return true;
         }

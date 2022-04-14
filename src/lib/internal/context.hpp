@@ -184,13 +184,13 @@ class context<true, pointer, M, Ts...> {
     to_field<A> nbr(trace_t trace, A const& def, device_t self) const {
         std::vector<device_t> ids;
         std::vector<to_local<A>> vals;
-        vals.push_back(details::other(def));
+        vals.push_back(fcpp::details::other(def));
         for (auto const& x : m_sorted_data)
             if ((*x.second)->template count<A>(trace)) {
                 ids.push_back(x.first);
-                vals.push_back(details::self(static_cast<A const&>((*x.second)->template at<A>(trace)), self));
+                vals.push_back(fcpp::details::self(static_cast<A const&>((*x.second)->template at<A>(trace)), self));
             }
-        return details::make_field(std::move(ids), std::move(vals));
+        return fcpp::details::make_field(std::move(ids), std::move(vals));
     }
 
     //! @brief Prints the context in a stream.
@@ -365,13 +365,13 @@ class context<false, pointer, M, Ts...> {
     to_field<A> nbr(trace_t trace, A const& def, device_t self) const {
         std::vector<device_t> ids;
         std::vector<to_local<A>> vals;
-        vals.push_back(details::other(def));
+        vals.push_back(fcpp::details::other(def));
         for (auto const& x : m_data)
             if (get<2>(x)->template count<A>(trace)) {
                 ids.push_back(get<0>(x));
-                vals.push_back(details::self(static_cast<A const&>(get<2>(x)->template at<A>(trace)), self));
+                vals.push_back(fcpp::details::self(static_cast<A const&>(get<2>(x)->template at<A>(trace)), self));
             }
-        return details::make_field(std::move(ids), std::move(vals));
+        return fcpp::details::make_field(std::move(ids), std::move(vals));
     }
 
     //! @brief Prints the context in a stream.

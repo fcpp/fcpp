@@ -99,6 +99,12 @@ class quaternion {
         return s & m_data;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    inline S& serialize(S& s) const {
+        return s << m_data;
+    }
+
   private:
     //! @brief The component data as C array.
     real_t m_data[4];
@@ -120,16 +126,19 @@ bool operator==(quaternion const&, quaternion const&);
 //! @brief Inequality operator.
 bool operator!=(quaternion const&, quaternion const&);
 
-//! @brief Norm comparison operators.
-//! @{
+
+//! @brief Norm less-than operator.
 bool operator<(quaternion const&, real_t);
 
+//! @brief Norm less-than-or-equal operator.
 bool operator<=(quaternion const&, real_t);
 
+//! @brief Norm greater-than operator.
 bool operator>(quaternion const&, real_t);
 
+//! @brief Norm greater-than-or-equal operator.
 bool operator>=(quaternion const&, real_t);
-//! @}
+
 
 //! @brief Unary plus operator.
 quaternion const& operator+(quaternion const&);
@@ -143,37 +152,38 @@ quaternion operator~(quaternion);
 //! @brief Inversion operator.
 quaternion operator!(quaternion);
 
-//! @brief Addition operator.
-//! @{
+
+//! @brief Infix addition operator.
 quaternion& operator+=(quaternion&, quaternion const&);
 
+//! @brief Addition operator (copying the first argument).
 quaternion operator+(quaternion, quaternion const&);
 
+//! @brief Addition operator (copying the second argument).
 quaternion operator+(quaternion const&, quaternion&&);
-//! @}
 
-//! @brief Subtraction operator.
-//! @{
+
+//! @brief Infix subtraction operator.
 quaternion& operator-=(quaternion&, quaternion const&);
 
+//! @brief Subtraction operator (copying the first argument).
 quaternion operator-(quaternion, quaternion const&);
 
+//! @brief Subtraction operator (copying the second argument).
 quaternion operator-(quaternion const&, quaternion&&);
-//! @}
+
 
 //! @brief Multiplication operator.
-//! @{
 quaternion operator*(quaternion const&, quaternion const&);
 
+//! @brief Infix multiplication operator.
 quaternion& operator*=(quaternion&, quaternion const&);
-//! @}
 
 //! @brief Division operator.
-//! @{
 quaternion operator/(quaternion const&, quaternion);
 
+//! @brief Infix division operator.
 quaternion& operator/=(quaternion&, quaternion);
-//! @}
 
 
 }

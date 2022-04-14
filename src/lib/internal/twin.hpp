@@ -35,21 +35,17 @@ class twin<T, true> {
     //! @brief The type of the content.
     typedef T value_type;
 
-  private:
-    //! @brief The content of the class.
-    T m_data;
-
-  public:
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     twin() = default;
 
     //! @brief Copy constructor.
-    twin(const twin<T, true>&) = default;
+    twin(twin const&) = default;
 
     //! @brief Move constructor.
-    twin(twin<T, true>&&) = default;
+    twin(twin&&) = default;
 
     //! @brief Initialising constructor.
     template <typename... Ts, typename = std::enable_if_t<not std::is_same<std::tuple<std::decay_t<Ts>...>, std::tuple<twin>>::value>>
@@ -58,15 +54,22 @@ class twin<T, true> {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
-    twin<T, true>& operator=(const twin<T, true>&) = default;
+    twin& operator=(twin const&) = default;
 
     //! @brief Move assignment.
-    twin<T, true>& operator=(twin<T, true>&&) = default;
+    twin& operator=(twin&&) = default;
     //! @}
 
+    //! @brief Exchanges contents of twin objects.
+    void swap(twin& m) {
+        using std::swap;
+        swap(m_data, m.m_data);
+    }
+
     //! @brief Equality operator.
-    bool operator==(const twin<T, true>& o) const {
+    bool operator==(twin const& o) const {
         return m_data == o.m_data;
     }
 
@@ -89,6 +92,10 @@ class twin<T, true> {
     T const& second() const {
         return m_data;
     }
+
+  private:
+    //! @brief The content of the class.
+    T m_data;
 };
 
 
@@ -99,61 +106,76 @@ class twin<T, false> {
     //! @brief The type of the content.
     typedef T value_type;
 
-  private:
-    //! @brief The content of the class.
-    T m_data1, m_data2;
-
-  public:
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     twin() = default;
 
     //! @brief Copy constructor.
-    twin(const twin<T, false>&) = default;
+    twin(twin const&) = default;
 
     //! @brief Move constructor.
-    twin(twin<T, false>&&) = default;
+    twin(twin&&) = default;
 
     //! @brief Initialising constructor.
     template <typename... Ts, typename = std::enable_if_t<not std::is_same<std::tuple<std::decay_t<Ts>...>, std::tuple<twin>>::value>>
-    twin(Ts&&... xs) : m_data1(std::forward<Ts>(xs)...), m_data2(std::forward<Ts>(xs)...) {}
+    twin(Ts&&... xs) : m_first(std::forward<Ts>(xs)...), m_second(std::forward<Ts>(xs)...) {}
     //! @}
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
-    twin<T, false>& operator=(const twin<T, false>&) = default;
+    twin& operator=(twin const&) = default;
 
     //! @brief Move assignment.
-    twin<T, false>& operator=(twin<T, false>&&) = default;
+    twin& operator=(twin&&) = default;
     //! @}
 
+    //! @brief Exchanges contents of twin objects.
+    void swap(twin& m) {
+        using std::swap;
+        swap(m_first, m.m_first);
+        swap(m_second, m.m_second);
+    }
+
     //! @brief Equality operator.
-    bool operator==(const twin<T, false>& o) const {
-        return m_data1 == o.m_data1 && m_data2 == o.m_data2;
+    bool operator==(twin const& o) const {
+        return m_first == o.m_first && m_second == o.m_second;
     }
 
     //! @brief Access to the first element.
     T& first() {
-        return m_data1;
+        return m_first;
     }
 
     //! @brief Const access to the first element.
     T const& first() const {
-        return m_data1;
+        return m_first;
     }
 
     //! @brief Access to the second element.
     T& second() {
-        return m_data2;
+        return m_second;
     }
 
     //! @brief Const access to the second element.
     T const& second() const {
-        return m_data2;
+        return m_second;
     }
+
+  private:
+    //! @brief The content of the class.
+    T m_first, m_second;
 };
+
+
+//! @brief Exchanges contents of twin objects.
+template <typename T, bool is_twin>
+void swap(twin<T, is_twin>& x, twin<T, is_twin>& y) {
+    x.swap(y);
+}
 
 
 }

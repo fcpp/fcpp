@@ -25,16 +25,16 @@ public:
     shader();
 
     //! @brief Constructor building and reading the shader.
-    shader(const char* vertexPath, const char* fragmentPath);
+    shader(char const* vertexPath, char const* fragmentPath);
 
     //! @brief Copy constructor.
-    shader(shader const& source);
+    shader(shader const&) = delete;
 
     //! @brief Move constructor.
     shader(shader&& source);
 
     //! @brief Copy assignment.
-    shader& operator=(shader const& source);
+    shader& operator=(shader const&) = delete;
 
     //! @brief Move assignment.
     shader& operator=(shader&& source);
@@ -47,13 +47,27 @@ public:
 
     //! @brief Uniform functions.
     //! @{
-    void setBool(const std::string &name, bool value) const;
-    void setInt(const std::string &name, int value) const;
-    void setFloat(const std::string &name, float value) const;
-    void setVec3(const std::string &name, const glm::vec3 &value) const;
-    void setVec4(const std::string &name, const glm::vec4 &value) const;
-    void setMat3(const std::string &name, const glm::mat3 &mat) const;
-    void setMat4(const std::string &name, const glm::mat4 &mat) const;
+
+    //! @brief Sets a boolean property.
+    void setBool(std::string const& name, bool value) const;
+
+    //! @brief Sets an integral property.
+    void setInt(std::string const& name, int value) const;
+
+    //! @brief Sets a floating point property.
+    void setFloat(std::string const& name, float value) const;
+
+    //! @brief Sets a vector property.
+    void setVec3(std::string const& name, glm::vec3 const& value) const;
+
+    //! @brief Sets a homogeneous vector property.
+    void setVec4(std::string const& name, glm::vec4 const& value) const;
+
+    //! @brief Sets a matrix property.
+    void setMat3(std::string const& name, glm::mat3 const& mat) const;
+
+    //! @brief Sets an homogeneous matrix property.
+    void setMat4(std::string const& name, glm::mat4 const& mat) const;
     //! @}
 };
 

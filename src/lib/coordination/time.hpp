@@ -181,6 +181,21 @@ T shared_decay(node_t& node, trace_t call_point, U initial, T value, real_t fact
 template <typename T, typename U = T> using shared_decay_t = common::export_list<T>;
 
 
+//! @brief Persists a non-null value for a given time.
+template <typename node_t, typename T>
+T timed_decay(node_t& node, trace_t call_point, T value, T null, times_t dt) {
+    using tuple_type = tuple<T, times_t>;
+
+    tuple_type v(value, node.current_time());
+    return get<0>(old(node, call_point, v, [&](tuple_type o){
+        return get<0>(v) == null and node.current_time() < get<1>(o) + dt ? o : v;
+    }));
+}
+
+//! @brief Export list for timed_decay.
+template <typename T> using timed_decay_t = common::export_list<tuple<T,times_t>>;
+
+
 //! @brief Maintains a shared clock across the network.
 template <typename node_t>
 inline times_t shared_clock(node_t& node, trace_t call_point) {

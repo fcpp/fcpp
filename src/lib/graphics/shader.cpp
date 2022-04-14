@@ -8,7 +8,7 @@
 
 shader::shader() : m_ID{ 0 } { }
 
-shader::shader(const char* vertexPath, const char* fragmentPath)
+shader::shader(char const* vertexPath, char const* fragmentPath)
 {
     /* RETRIEVE SOURCE CODE */
     std::string vertexCode;
@@ -42,8 +42,8 @@ shader::shader(const char* vertexPath, const char* fragmentPath)
     }
 
     // Getting code from strings
-    const char* vShaderCode{ vertexCode.c_str() };
-    const char* fShaderCode{ fragmentCode.c_str() };
+    char const* vShaderCode{ vertexCode.c_str() };
+    char const* fShaderCode{ fragmentCode.c_str() };
 
     /* COMPILE SHADERS */
     unsigned int vertex, fragment;
@@ -89,18 +89,7 @@ shader::shader(const char* vertexPath, const char* fragmentPath)
     glDeleteShader(fragment);
 }
 
-shader::shader(shader const& source) : m_ID{ source.m_ID } { }
-
 shader::shader(shader&& source) : m_ID{ source.m_ID } { source.m_ID = 0; }
-
-shader& shader::operator=(shader const& source) {
-    // Self-assignment detection
-    if (&source != this) {
-        m_ID = source.m_ID;
-    }
-
-    return *this;
-}
 
 shader& shader::operator=(shader&& source) {
     // Self-assignment detection
@@ -113,7 +102,7 @@ shader& shader::operator=(shader&& source) {
 }
 
 shader::~shader() {
-    if(glfwGetCurrentContext() != NULL) glDeleteProgram(m_ID);
+    if(m_ID != 0 and glfwGetCurrentContext() != NULL) glDeleteProgram(m_ID);
 }
 
 void shader::use() const

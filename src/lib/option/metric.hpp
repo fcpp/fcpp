@@ -38,13 +38,13 @@ struct once {
 
     //! @brief Measures an incoming message.
     template <typename N, typename S, typename T>
-    result_type build(N const& n, times_t, device_t d, const common::tagged_tuple<S,T>&) const {
+    result_type build(N const& n, times_t, device_t d, common::tagged_tuple<S,T> const&) const {
         return d == n.uid ? 0 : 1;
     }
 
     //! @brief Updates an existing measure.
     template <typename N>
-    result_type update(result_type const& r, const N&) const {
+    result_type update(result_type const& r, N const&) const {
         return r == 0 ? 0 : 2;
     }
 };
@@ -69,7 +69,7 @@ struct retain {
 
     //! @brief Measures an incoming message.
     template <typename N, typename S, typename T>
-    result_type build(N const& n, times_t t, device_t d, const common::tagged_tuple<S,T>&) const {
+    result_type build(N const& n, times_t t, device_t d, common::tagged_tuple<S,T> const&) const {
         return d == n.uid ? 0 : n.next_time() - t;
     }
 

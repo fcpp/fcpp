@@ -7,3 +7,9 @@ http_archive(
     build_file = "@//:gtest.BUILD",
     strip_prefix = "googletest-f5e592d8ee5ffb1d9af5be7f715ce3576b8bf9c4",
 )
+
+new_local_repository(
+    name = "stb_image",
+    path = "external/stb_image",
+    build_file = "stb_image.BUILD",
+)

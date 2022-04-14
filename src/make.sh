@@ -131,14 +131,20 @@ function mkdoc() {
         mkdir doc
     fi
     echo -e "\033[4mdoxygen Doxyfile\033[0m" >&2
-    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$"
+    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|'
     ndoc=`cat tmpdoc.err | grep "is not documented.$" | wc -l | tr -cd '0-9'`
+    nerr=`cat tmpdoc.err | grep '/fcpp/src/lib/' | wc -l | tr -cd '0-9'`
     if [ $ndoc -gt 0 ]; then
         cat tmpdoc.err | grep "is not documented" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |;s| is not documented.||' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|' | sort | uniq > tmpdoc2.err
         mv tmpdoc2.err tmpdoc.err
         ndoc=`cat tmpdoc.err | wc -l | tr -cd '0-9'`
         echo -e "\033[1m$ndoc items are not documented:\033[0m" >&2
         cat tmpdoc.err
+    fi
+    if [ $nerr -gt 0 ]; then
+        exitcodes=( ${exitcodes[@]} $nerr )
+        failcmd="\033[4mdoxygen Doxyfile\033[0m"
+        errored=( "${errored[@]}" "$failcmd" )
     fi
     rm tmpdoc.err
 }
@@ -184,7 +190,7 @@ function finder() {
     fi
     find="$1"
     rule="$2"
-    for pattern in "$find" "$find*" "*$find*"; do
+    for pattern in "$find" "$find*" "*$find" "*$find*"; do
         if [ "$targets" == "" ]; then
             targets=$(for base in ${folders[@]}; do
                 echo $base*/$pattern/ $base*/$pattern.cpp $base/*/$pattern.cpp | tr ' ' '\n' | grep -v "*" | filter "$rule"
@@ -195,34 +201,6 @@ function finder() {
     if [ "$targets" != "" ]; then
         targets=`echo $targets | tr ' ' '\n' | rev | sed 's|^ppc.||;s|/|:|;s|^:|.../|' | rev | sort | uniq`
     fi
-}
-
-function cmake_finder() {
-    search_folder="$1"
-    search_sources="$2"
-    search_suffix="$3"
-    shift 3
-    alltargets=""
-    for find in "$@"; do
-        targets=""
-        if [ "$find" == "all" ]; then
-            targets=$(echo $search_folder/*)
-        fi
-        for pattern in "$find" "$find*" "*$find*"; do
-            if [ "$targets" == "" ]; then
-                targets=$(echo $search_folder*/$pattern$search_suffix | tr ' ' '\n' | grep -v "*")
-            fi
-            if [ "$targets" == "" ]; then
-                targets=$(echo $search_sources/$pattern/*.cpp | tr ' ' '\n' | grep -v "*" | sed "s|.cpp$|$search_suffix|;s|^$search_sources/[^/]*/|$search_folder/|")
-            fi
-        done
-        if [ "$targets" == "" ]; then
-            echo -e "\033[1mtarget \"$find\" not found\033[0m" >&2
-        else
-            alltargets="$alltargets $targets"
-        fi
-    done
-    echo $alltargets | tr -s ' ' '\n' | grep . | sort | uniq
 }
 
 function builder() {
@@ -237,15 +215,50 @@ function builder() {
     reporter bazel $cmd $copts $asan $t
 }
 
-function cmake_builder() {
-    parseopt "$@"
-    nshift=$?
-    if [ "$platform" == Unix ]; then
+function cmake_folder_list() {
+    cat CMakeLists.txt | grep "fcpp_$1.*cpp" | sed 's|/[^/]*$||;s|.*/||' | sort | uniq
+}
+
+function cmake_file_list() {
+    cat CMakeLists.txt | grep "fcpp_$1.*cpp" | grep "$2" | sed "s|.*fcpp_$1.*/||;s|\.cpp.*||" | grep "$3"
+}
+
+function cmake_finderx() {
+    targets=""
+    find="$1"
+    shift 1
+    rule="$@"
+    targets=$(for kind in $rule; do
+        if [ "$kind" == "test" ]; then
+            sfx="_test"
+        else
+            sfx=""
+        fi
+        found=""
+        for pattern in "^$find$" "^$find" "$find$" "$find"; do
+            if [ "$found" == "" ]; then
+                for f in `cmake_folder_list $kind | grep "$pattern"`; do
+                    found="$found `cmake_file_list $kind "[^A-Za-z_0-9]$f/"`"
+                done
+                found="$found `cmake_file_list $kind . "$pattern"`"
+                found=`echo "$found" | sed 's|^ *||;s| *$||' | tr -s ' ' '\n'`
+                if [ "$found" != "" ]; then
+                    echo "$found"
+                fi
+            fi
+        done | sort | uniq | sed "s|$|$sfx|"
+    done)
+}
+
+function cmake_builderx() {
+    reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
+    if which nproc 2>/dev/null >&2; then
         opt="-j `nproc`"
     fi
-    reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
-    reporter cmake --build ./bin/ $opt
-    return $nshift
+    if [ "$1" != "" ]; then
+        opt="$opt --target"
+    fi
+    reporter cmake --build ./bin/ $opt "$@"
 }
 
 function powerset() {
@@ -274,6 +287,7 @@ while [ "$1" != "" ]; do
         shift 1
         gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
         gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
+        opts="$opts -DCMAKE_C_COMPILER=$gcc -DCMAKE_CXX_COMPILER=$gpp"
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
         export CC="$gpp"
         export CXX="$gpp"
@@ -343,19 +357,43 @@ while [ "$1" != "" ]; do
         quitter
     elif [ "$1" == "build" ]; then
         shift 1
+        parseopt "$@"
+        shift $?
+        alltargets=""
         if [ $builder == cmake ]; then
-            cmake_builder "$@"
-            shift $?
+            if [ "$*" ==  "all" ]; then
+                if [ `cmake_file_list test | wc -l` -gt 0 ]; then
+                    opts="$opts -DFCPP_BUILD_TESTS=ON"
+                fi
+                cmake_builderx
+            else
+                while [ "$1" != "" ]; do
+                    if [ "$1" == "fcpp" ]; then
+                        alltargets="$alltargets fcpp"
+                    else
+                        cmake_finderx "$1" target test
+                        if [ "$targets" == "" ]; then
+                            echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                        else
+                            alltargets="$alltargets $targets"
+                        fi
+                    fi
+                    shift 1
+                done
+                if [[ "$alltargets" =~ .*_test.* ]]; then
+                    opts="$opts -DFCPP_BUILD_TESTS=ON"
+                fi
+                if [ "$alltargets" != "" ]; then
+                    cmake_builderx $alltargets
+                fi
+            fi
         else
-            parseopt "$@"
-            shift $?
-            alltargets=""
-            while [ "$1" != "" ]; do
-                if [ "$1" == "all" ]; then
-                    for folder in ${folders[@]}; do
-                        alltargets="$alltargets $folder/..."
-                    done
-               else
+            if [ "$*" == "all" ]; then
+                for folder in ${folders[@]}; do
+                    alltargets="$alltargets $folder/..."
+                done
+            else
+                while [ "$1" != "" ]; do
                     finder "$1" "\(cc_library\|cc_binary\)"
                     finder "$1" "cc_test"
                     if [ "$targets" == "" ]; then
@@ -364,9 +402,9 @@ while [ "$1" != "" ]; do
                         alltargets="$alltargets $targets"
                         targets=""
                     fi
-                fi
-                shift 1
-            done
+                    shift 1
+                done
+            fi
             if [ "$alltargets" != "" ]; then
                 builder build $alltargets
             fi
@@ -390,8 +428,14 @@ while [ "$1" != "" ]; do
             max=0
             sum=0
             while true; do
-                tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
-                m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
+                if [ "$platform" == "MinGW" ]; then
+                    tim=`ps -f -p $pid | sed -E 's|^[^:]* ([0-9]*:[^ ]*).*$|\1|' | tail -n +2 | tr -d ' \t\n\r'`
+                    m=`wmic process where processid=$pid get WorkingSetSize | tail -n +2 | tr -d ' \t\n\r'`
+                    m=$[m/1024]
+                else
+                    tim=`ps -o time -p $pid | tail -n +2 | tr -d ' \t\n'`
+                    m=`ps -o rss -p $pid | tail -n +2 | tr -d ' \t\n'`
+                fi
                 if [ "$m" == "" ]; then break; else mem=$m; fi
                 num=$[num+1]
                 sum=$[sum+mem]
@@ -436,10 +480,30 @@ while [ "$1" != "" ]; do
                 mv $raw/${name}_*.txt output/raw/
             fi
         }
+        parseopt "$@"
+        shift $?
         if [ $builder == cmake ]; then
-            cmake_builder "$@"
-            shift $?
-            for target in $(cmake_finder bin/run run "" "$@"); do
+            alltargets=""
+            if [ "$*" ==  "all" ]; then
+                cmake_finderx "" target
+                alltargets="$targets"
+                cmake_builderx
+            else
+                while [ "$1" != "" ]; do
+                    cmake_finderx "$1" target
+                    if [ "$targets" == "" ]; then
+                        echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                    else
+                        alltargets="$alltargets $targets"
+                    fi
+                    shift 1
+                done
+                if [ "$alltargets" != "" ]; then
+                    cmake_builderx $alltargets
+                fi
+            fi
+            for t in $alltargets; do
+                target=bin/run/$t
                 if [ ${#exitcodes[@]} -gt 0 ]; then
                     quitter
                 fi
@@ -454,8 +518,6 @@ while [ "$1" != "" ]; do
                 monitor $pid $name $file $raw
             done
         else
-            parseopt "$@"
-            shift $?
             finder "$1" "cc_binary"
             if [ "$targets" == "" ]; then
                 echo -e "\033[1mtarget \"$1\" not found\033[0m"
@@ -479,16 +541,34 @@ while [ "$1" != "" ]; do
         quitter
     elif [ "$1" == "test" ]; then
         shift 1
+        parseopt "$@"
+        shift $?
         if [ $builder == cmake ]; then
+            alltargets=""
             opts="$opts -DFCPP_BUILD_TESTS=ON"
-            cmake_builder "$@"
-            shift $?
-            for target in $(cmake_finder bin/test test _test "$@"); do
+            if [ "$*" ==  "all" ]; then
+                cmake_finderx "" test
+                alltargets="$targets"
+                cmake_builderx
+            else
+                while [ "$1" != "" ]; do
+                    cmake_finderx "$1" test
+                    if [ "$targets" == "" ]; then
+                        echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                    else
+                        alltargets="$alltargets $targets"
+                    fi
+                    shift 1
+                done
+                if [ "$alltargets" != "" ]; then
+                    cmake_builderx $alltargets
+                fi
+            fi
+            for t in $alltargets; do
+                target=bin/test/$t
                 reporter $target
             done
         else
-            parseopt "$@"
-            shift $?
             alltargets=""
             while [ "$1" != "" ]; do
                 if [ "$1" == "all" ]; then
@@ -514,18 +594,18 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "all" ]; then
         shift 1
         mkdoc
-        if [ $builder == cmake ]; then
-            opts="$opts -DFCPP_BUILD_TESTS=ON"
-            cmake_builder "$@"
-        else
-            parseopt "$@"
-        fi
+        parseopt "$@"
         shift $?
         if [ "$1" != "" ]; then
             usage
         fi
         if [ $builder == cmake ]; then
-            for target in $(cmake_finder bin/test test _test all); do
+            opts="$opts -DFCPP_BUILD_TESTS=ON"
+            cmake_builderx
+            cmake_finderx "" test
+            alltargets="$targets"
+            for t in $alltargets; do
+                target=bin/test/$t
                 reporter $target
             done
         else
@@ -535,6 +615,20 @@ while [ "$1" != "" ]; do
             builder build $alltargets
             builder test $alltargets
         fi
+        quitter
+    elif [ "$1" == "multiall" ]; then
+        shift 1
+        $0 clean
+        reporter $0 test all
+        $0 clean
+        reporter $0 gcc test all
+        $0 bazel clean
+        $0 bazel test all
+        reporter $0 bazel test all
+        $0 bazel clean
+        $0 bazel gcc test all
+        reporter $0 bazel gcc test all
+        reporter $0 doc
         quitter
     else
         usage

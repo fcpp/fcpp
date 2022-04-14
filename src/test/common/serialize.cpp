@@ -15,8 +15,11 @@ using namespace fcpp;
 
 template <typename T>
 std::pair<T,T> rebuild(T y, T z) {
-    common::osstream os;
+    T const& x{y};
+    common::osstream os, osx;
     os << y;
+    osx << x;
+    EXPECT_EQ((std::vector<char>)os, (std::vector<char>)osx);
     common::isstream is(os);
     is >> z;
     return {y, z};
@@ -74,6 +77,26 @@ TEST(SerializeTest, Indexed) {
     SERIALIZE_CHECK(z, {});
 }
 
+namespace std {
+
+//! @brief STD tuple hasher.
+template <>
+struct hash<tuple<int,bool>> {
+    size_t operator()(tuple<int,bool> const& k) const {
+        return (get<0>(k) << 1) + get<1>(k);
+    }
+};
+
+//! @brief FCPP tuple hasher.
+template <>
+struct hash<fcpp::tuple<int,bool>> {
+    size_t operator()(fcpp::tuple<int,bool> const& k) const {
+        return (fcpp::get<0>(k) << 1) + fcpp::get<1>(k);
+    }
+};
+
+}
+
 TEST(SerializeTest, Iterable) {
     EXPECT_EQ(15ULL,     rebuild_size(15));
     EXPECT_EQ(3058ULL,   rebuild_size(3058));
@@ -93,6 +116,9 @@ TEST(SerializeTest, Iterable) {
         {{2, {{}, 1}}, {3, {{2,3,4}, 2}}}, 4.2
     };
     SERIALIZE_CHECK(y, {});
+    std::unordered_map<std::tuple<int,bool>, int> u;
+    u[std::make_tuple(4,false)] = 2;
+    SERIALIZE_CHECK(u, {});
 }
 
 TEST(SerializeTest, FCPP) {
@@ -124,6 +150,9 @@ TEST(SerializeTest, FCPP) {
     e->insert(1, 4.2);
     e->insert(3, details::make_field<bool>({2, 4}, {false, true, true}));
     SERIALIZE_CHECK(e, {});
+    std::unordered_map<tuple<int,bool>, int> u;
+    u[make_tuple(4,false)] = 2;
+    SERIALIZE_CHECK(u, {});
 }
 
 TEST(SerializeTest, Error) {

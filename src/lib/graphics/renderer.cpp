@@ -14,30 +14,30 @@ using namespace fcpp::internal;
 
 /* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
-    const std::string renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
-    const std::string renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
-    const std::string renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
-    const std::string renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
-    const std::string renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
-    const std::string renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
-    const std::string renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
-    const std::string renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
-    const std::string renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
-    const std::string renderer::TEXTURE_PATH{ ".\\textures\\" };
+    std::string const renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
+    std::string const renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
+    std::string const renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
+    std::string const renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
+    std::string const renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
+    std::string const renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
+    std::string const renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
+    std::string const renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
+    std::string const renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
+    std::string const renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
-    const std::string renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
-    const std::string renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
-    const std::string renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
-    const std::string renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
-    const std::string renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
-    const std::string renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
-    const std::string renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
-    const std::string renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
-    const std::string renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
-    const std::string renderer::TEXTURE_PATH{ "./textures/" };
+    std::string const renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
+    std::string const renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
+    std::string const renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
+    std::string const renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
+    std::string const renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
+    std::string const renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
+    std::string const renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
+    std::string const renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
+    std::string const renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
+    std::string const renderer::TEXTURE_PATH{ "./textures/" };
 #endif
-    const glm::vec3 renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
-    const glm::vec3 renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
+    glm::vec3 const renderer::LIGHT_DEFAULT_POS{ 0.0f, 0.0f, 0.0f };
+    glm::vec3 const renderer::LIGHT_COLOR{ 1.0f, 1.0f, 1.0f };
 
 
 /* --- PRIVATE STATIC VARIABLES --- */
@@ -247,6 +247,8 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 
 /* --- DESTRUCTOR --- */
 renderer::~renderer() {
+    if (m_window == NULL) return;
+
     // Destroy window and all associated resources (to do on main thread).
     glfwDestroyWindow(m_window);
 
@@ -409,10 +411,10 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
 
         // Calculate data for mesh generation
         int approx{ (gridMax.x - gridMin.x) * (gridMax.y - gridMin.y) > 2000 * gridScale * gridScale ? 10 : 1 };
-        int grid_min_x = std::floor(gridMin.x / gridScale / approx) * approx;
-        int grid_max_x = std::ceil(gridMax.x / gridScale / approx) * approx;
-        int grid_min_y = std::floor(gridMin.y / gridScale / approx) * approx;
-        int grid_max_y = std::ceil(gridMax.y / gridScale / approx) * approx;
+        int grid_min_x = std::ceil(gridMin.x / gridScale / approx) * approx;
+        int grid_max_x = std::floor(gridMax.x / gridScale / approx) * approx;
+        int grid_min_y = std::ceil(gridMin.y / gridScale / approx) * approx;
+        int grid_max_y = std::floor(gridMax.y / gridScale / approx) * approx;
         int numX{ grid_max_x - grid_min_x + 1 };
         int numY{ grid_max_y - grid_min_y + 1 };
 
@@ -429,11 +431,11 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         int gridNormIndex[(numX - numHighX) * 2 + (numY - numHighY) * 2]; // will contain the index data of the normal lines of the grid
         int gridHighIndex[numHighX * 2 + numHighY * 2]; // will contain the index data of the highlighted lines of the grid
         for (int x = grid_min_x; x <= grid_max_x; ++x) {
-            gridMesh[i * 6] = (float)(x * gridScale);
-            gridMesh[1 + i * 6] = (float)(grid_min_y * gridScale);
+            gridMesh[0 + i * 6] = (float)(x * gridScale);
+            gridMesh[1 + i * 6] = gridMin.y;
             gridMesh[2 + i * 6] = 0.0f;
             gridMesh[3 + i * 6] = (float)(x * gridScale);
-            gridMesh[4 + i * 6] = (float)(grid_max_y * gridScale);
+            gridMesh[4 + i * 6] = gridMax.y;
             gridMesh[5 + i * 6] = 0.0f;
             if (x % highlighter == 0) {
                 gridHighIndex[j * 2] = i * 2;
@@ -448,10 +450,10 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
             ++i;
         }
         for (int y = grid_min_y; y <= grid_max_y; ++y) {
-            gridMesh[i * 6] = (float)(grid_min_x * gridScale);
+            gridMesh[0 + i * 6] = gridMin.x;
             gridMesh[1 + i * 6] = (float)(y * gridScale);
             gridMesh[2 + i * 6] = 0.0f;
-            gridMesh[3 + i * 6] = (float)(grid_max_x * gridScale);
+            gridMesh[3 + i * 6] = gridMax.x;
             gridMesh[4 + i * 6] = (float)(y * gridScale);
             gridMesh[5 + i * 6] = 0.0f;
             if (y % highlighter == 0) {
@@ -486,10 +488,10 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         // Generating plane mesh
         float planeMesh[20]{
             // vertex coords                                                        // texture coords
-            (float)(grid_min_x * gridScale), (float)(grid_min_y * gridScale), 0.0f, 0.0f, 0.0f,
-            (float)(grid_min_x * gridScale), (float)(grid_max_y * gridScale), 0.0f, 0.0f, 1.0f,
-            (float)(grid_max_x * gridScale), (float)(grid_max_y * gridScale), 0.0f, 1.0f, 1.0f,
-            (float)(grid_max_x * gridScale), (float)(grid_min_y * gridScale), 0.0f, 1.0f, 0.0f
+            gridMin.x, gridMin.y, 0.0f, 0.0f, 0.0f,
+            gridMin.x, gridMax.y, 0.0f, 0.0f, 1.0f,
+            gridMax.x, gridMax.y, 0.0f, 1.0f, 1.0f,
+            gridMax.x, gridMin.y, 0.0f, 1.0f, 0.0f
         };
         int planeIndex[6]{
             0, 1, 2,
@@ -630,7 +632,7 @@ void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
         glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glDrawArrays(GL_LINES, 0, 6);
+        glDrawArrays(GL_LINES, 0, 2);
     }
 }
 

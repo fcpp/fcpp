@@ -54,3 +54,16 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'persister',
+    hdrs = ['persister.hpp'],
+    srcs = ['persister.cpp'],
+    deps = [
+        "//lib/common:serialize",
+        "//lib/component:base",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)

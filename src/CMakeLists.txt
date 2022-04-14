@@ -124,6 +124,7 @@ set(
     lib/deployment/hardware_identifier.cpp
     lib/deployment/hardware_logger.cpp
     lib/deployment/os.cpp
+    lib/deployment/persister.cpp
     lib/fcpp.cpp
     lib/internal.cpp
     lib/internal/context.cpp
@@ -279,6 +280,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/deployment/hardware_connector.cpp)
         fcpp_test(test/deployment/hardware_identifier.cpp)
         fcpp_test(test/deployment/hardware_logger.cpp)
+        fcpp_test(test/deployment/persister.cpp)
         fcpp_test(test/general/collection_compare.cpp)
         fcpp_test(test/general/embedded.cpp)
         fcpp_test(test/general/slow_distance.cpp)

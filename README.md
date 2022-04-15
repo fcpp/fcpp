@@ -115,43 +115,14 @@ If you use a VM with a graphical interface, refer to the section for the operati
 **Warning:** the graphical simulations are based on OpenGL, and common Virtual Machine software (e.g., VirtualBox) has faulty support for OpenGL. If you rely on a virtual machine for graphical simulations, it might work provided that you select hardware virtualization (as opposed to software virtualization). However, it is recommended to use the native OS whenever possible.
 
 
-## Build
-
-### Documentation
+## Documentation
 
 You should be able to build the same documentation [available oline](http://fcpp-doc.surge.sh) with the following command:
 ```
 ./make.sh doc
 ```
 
-### Windows
-
-Pre-requisites:
-- [Git Bash](https://gitforwindows.org) (for issuing unix-style commands)
-- [MinGW-w64](http://mingw-w64.org) (GCC 11.2.0 or higher)
-- [CMake 3.18](https://cmake.org) (or higher)
-- [Asymptote](http://asymptote.sourceforge.io) (for building the plots)
-
-During CMake installation, make sure you select to add `cmake` to the `PATH` (at least for the current user).
-
-It is recommended to install MinGW-w64 through [MSYS2](https://www.msys2.org/) in order to get the latest version of MinGW-w64's GCC. To do so:
-- Download and install MSYS2.
-- Run "MSYS2 MSYS" from the start menu; a terminal will appear.
-- Run `pacman -Syu`; a restart of all MSYS2 processes is required at the end of the update.
-- Run "MSYS2 MSYS" again, and run `pacman -Su`.
-- Run `pacman -S --needed base-devel mingw-w64-x86_64-toolchain` to install the MinGW-w64 toolchain.
-
-After the installation of MinGW-w64, make sure to add the compiler binaries' path to the `PATH` environment variable (e.g., by editing the `.bashrc` file in your home). They should reside in MSYS2's installation folder as such:
-```
-C:\msys64\mingw64\bin
-```
-but the actual path may vary depending on your installation (the compiler binaries are already in the path if you execute the 'MSYS2 MinGW x64' shortcut from the start menu). Then, you should be able to build the whole library with CMake through:
-```
-./make.sh gui windows
-```
-issued from the `src` subfolder.
-
-### Testing
+## Testing
 
 You can run all the automated tests (through the [googletest](https://github.com/google/googletest) framework) with the following command:
 ```
@@ -159,11 +130,11 @@ You can run all the automated tests (through the [googletest](https://github.com
 ```
 issued from the `src` subfolder. In order to test a specific target, substitute `all` with (a substring of) the target of your choice.
 
-### Plots
+## Plots
 
 FCPP includes a [plot generation tool](http://fcpp-doc.surge.sh/plot_8hpp.html), which can be integrated with the [logger](http://fcpp-doc.surge.sh/structfcpp_1_1component_1_1logger.html) component. The tool produces code that can be compiled into vector graphics through [Asymptote](http://asymptote.sourceforge.io) and a provided custom [header](https://github.com/fcpp/fcpp/blob/master/src/extras/plotter/plot.asy). Install Asymptote if you plan to use it.
 
-### Execution
+## Execution
 
 In order to build a project based on FCPP, it is recommended to start following the [sample](https://github.com/fcpp/fcpp-sample-project) or [exercises](https://github.com/fcpp/fcpp-exercises) projects. In short, add this repository as a sub-module of your repository, add a `make.sh` script forwarding its arguments to the inner `fcpp/src/make.sh` script, add your code which uses the library, then declare the executable sources appropriately in a `CMakeLists.txt` as `fcpp_target` (see the aforementioned repositories for reference). Then you will be able to run your targets with the following command:
 ```
@@ -171,7 +142,7 @@ In order to build a project based on FCPP, it is recommended to start following 
 ```
 You can omit the `gui` argument if you don't need the graphical user interface; or omit the `-O` argument for a debug build (instead of an optimised build). If you plan to produce plots, you will also need to copy the `src/extras/plotter/plot.asy` file into a `plot/` subfolder of your repository.
 
-### Graphical User Interface
+## Graphical User Interface
 
 If you write and launch your own graphical simulation, a window will open displaying the simulation scenario, initially still: you can start running the simulation by pressing `P` (current simulated time is displayed in the bottom-left corner). While the simulation is running, network statistics may be periodically printed in the console, and be possibly aggregated in form of an Asymptote plot at simulation end. You can interact with the simulation through the following keys:
 - `Esc` to end the simulation

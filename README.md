@@ -18,15 +18,23 @@ For backward compatibility (and faster testing), the [Bazel](https://bazel.build
 
 Pre-requisites:
 - [Git Bash](https://gitforwindows.org) (for issuing unix-style commands)
-- [MinGW-w64](http://mingw-w64.org) ([builds 8.1.0](http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download))
-- [CMake 3.9](https://cmake.org) (or higher)
-- [Asymptote](http://asymptote.sourceforge.io) (for building simulation plots)
+- [MinGW-w64](http://mingw-w64.org) (GCC 11.2.0 or higher)
+- [CMake 3.18](https://cmake.org) (or higher)
+- [Asymptote](http://asymptote.sourceforge.io) (for building the plots)
 - [Doxygen](http://www.doxygen.nl) (for building the documentation)
 
 During CMake installation, make sure you select to add `cmake` to the `PATH` (at least for the current user).
-During MinGW installation, make sure you select "posix" threads (should be the default) and not "win32" threads. After installing MinGW, you need to add its path to the environment variable `PATH`. The default path should be:
+
+It is recommended to install MinGW-w64 through [MSYS2](https://www.msys2.org/) in order to get the latest version of MinGW-w64's GCC. To do so:
+- Download and install MSYS2.
+- Run "MSYS2 MSYS" from the start menu; a terminal will appear.
+- Run `pacman -Syu`; a restart of all MSYS2 processes is required at the end of the update.
+- Run "MSYS2 MSYS" again, and run `pacman -Su`.
+- Run `pacman -S --needed base-devel mingw-w64-x86_64-toolchain` to install the MinGW-w64 toolchain.
+
+After the installation of MinGW-w64, make sure to add the compiler binaries' path to the `PATH` environment variable. They should reside in MSYS2's installation folder as such:
 ```
-C:\Program Files (x86)\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin
+C:\msys64\mingw64\bin
 ```
 but the actual path may vary depending on your installation.
 

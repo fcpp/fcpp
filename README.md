@@ -43,7 +43,7 @@ but the actual path may vary depending on your installation.
 Pre-requisites:
 - Xorg-dev package (X11)
 - G++ 9 (or higher)
-- CMake 3.9 (or higher)
+- CMake 3.18 (or higher)
 - Asymptote (for building simulation plots)
 - Doxygen (for building the documentation)
 
@@ -60,7 +60,7 @@ libX11-devel libXinerama-devel.x86_6 libXcursor-devel.x86_64 libXi-devel.x86_64 
 
 Pre-requisites:
 - Xcode Command Line Tools
-- CMake 3.9 (or higher)
+- CMake 3.18 (or higher)
 - Asymptote (for building simulation plots)
 - Doxygen (for building the documentation)
 

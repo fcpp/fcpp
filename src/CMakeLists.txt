@@ -18,15 +18,19 @@ macro(fcpp_setup)
     set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
-    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
-    else()
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -march=native")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+    if(NOT CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+        # -march=native is not supported by arm64
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
     endif()
     if(WIN32)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Os")
         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
         set(BUILD_SHARED_LIBS OFF)
         set(CMAKE_EXE_LINKER_FLAGS "-static")
+        if(FCPP_BUILD_GL)
+            set(CMAKE_DISABLE_FIND_PACKAGE_BrotliDec True)
+        endif(FCPP_BUILD_GL)
     endif(WIN32)
     if(FCPP_BUILD_TESTS)
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/test)
@@ -170,6 +174,7 @@ endif(FCPP_BUILD_GL)
 ######################
 # EXTERNAL LIBRARIES #
 ######################
+
 add_library(
         stb_image
         ./external/stb_image/stb_image.h

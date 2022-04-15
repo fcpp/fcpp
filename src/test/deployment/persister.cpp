@@ -81,4 +81,5 @@ MULTI_TEST(PersisterTest, Main, O, 1) {
         EXPECT_EQ(3.5f, network.next());
         network.run();
     }
+    remove(".persistence");
 }

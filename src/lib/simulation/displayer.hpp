@@ -713,6 +713,14 @@ struct displayer {
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
                     }
+                    if(m_mouseStartX!= std::numeric_limits<float>::infinity()){
+                       float sx{ (2.0f * (float)m_mouseStartX) / m_renderer.getFramebufferWidth() - 1.0f };
+                       float sy{ 1.0f - (2.0f * (float)m_mouseStartY) / m_renderer.getFramebufferHeight() };
+                       float lx{ (2.0f * (float)m_mouseLastX) / m_renderer.getFramebufferWidth() - 1.0f };
+                       float ly{ 1.0f - (2.0f * (float)m_mouseLastY) / m_renderer.getFramebufferHeight() };
+                       dragSelect();
+                       m_renderer.drawRectangle(sx, sy,lx,ly);
+                       }
                     {
                         PROFILE_COUNT("displayer/text");
                         if (m_legenda) {
@@ -921,28 +929,48 @@ struct displayer {
 
             //! @brief It highlights the node hovered by the cursor.
             void highlightHoveredNode() {
-                // Highlighting the right node
-                auto beg{ P::net::node_begin() };
-                auto end{ P::net::node_end() };
-                float minDist{ (float)INF };
-                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
-                    typename P::net::lock_type l;
-                    P::net::node_at(m_hoveredNode, l).highlight(0);
-                }
-                m_hoveredNode = -1;
-                for (size_t i = 0; i < end - beg; ++i) {
-                    float prj;
-                    float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) * 1.5f };
-                    if (intersectSphere(m_renderer.getCamera().getPosition(), m_rayCast, r, beg[i].second.get_cached_position(), prj)) {
-                        if (prj < minDist) {
-                            minDist = prj;
-                            m_hoveredNode = beg[i].second.uid;
+                if(m_mouseStartX== std::numeric_limits<float>::infinity()){
+                    // Highlighting the right node
+                    auto beg{ P::net::node_begin() };
+                    auto end{ P::net::node_end() };
+                    float minDist{ (float)INF };
+                    if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
+                        typename P::net::lock_type l;
+                        P::net::node_at(m_hoveredNode, l).highlight(0);
+                    }
+                    m_hoveredNode = -1;
+                    for (size_t i = 0; i < end - beg; ++i) {
+                        float prj;
+                        float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) * 1.5f };
+                        if (intersectSphere(m_renderer.getCamera().getPosition(), m_rayCast, r, beg[i].second.get_cached_position(), prj)) {
+                            if (prj < minDist) {
+                                minDist = prj;
+                                m_hoveredNode = beg[i].second.uid;
+                            }
                         }
                     }
+                    if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 0) {
+                        typename P::net::lock_type l;
+                        P::net::node_at(m_hoveredNode, l).highlight(1);
+                    }
                 }
-                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 0) {
-                    typename P::net::lock_type l;
-                    P::net::node_at(m_hoveredNode, l).highlight(1);
+            }
+
+            inline bool pointInsideRectangle(float x, float y) {
+                return x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX) and y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY);
+            }
+
+            void dragSelect() {
+                auto beg{ P::net::node_begin() };
+                auto end{ P::net::node_end() };
+                for (size_t i = 0; i < end - beg; ++i) {
+                    glm::vec4 clipSpacePos = m_renderer.getCamera().getPerspective() * (m_renderer.getCamera().getView() * glm::vec4(beg[i].second.get_cached_position(), 1.0));
+                    glm::vec3 ndcSpacePos{clipSpacePos.x/ clipSpacePos.w,clipSpacePos.y/clipSpacePos.w,clipSpacePos.z/clipSpacePos.w};
+                    float x = (ndcSpacePos.x + 1.0 ) * (m_renderer.getFramebufferWidth() / 2.0);
+                    float y = (-ndcSpacePos.y + 1.0) * (m_renderer.getFramebufferHeight() / 2.0);
+                    int h= beg[i].second.get_highlight();
+                    bool inRect = pointInsideRectangle(x,y);
+                    if(not inRect == h) beg[i].second.highlight(inRect);
                 }
             }
 
@@ -974,10 +1002,30 @@ struct displayer {
 
                     case mouse_type::click: {
                         GLFWwindow* window{ m_renderer.getWindow() };
-                        if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1 and glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-                            glfwMakeContextCurrent(NULL);
-                            m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
-                            glfwMakeContextCurrent(m_renderer.getWindow());
+                        auto beg{ P::net::node_begin() };
+                        auto end{ P::net::node_end() };
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                            if(P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1){
+                                glfwMakeContextCurrent(NULL);
+                                m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
+                                glfwMakeContextCurrent(m_renderer.getWindow());
+                            }
+                            else if(m_mouseStartX  == std::numeric_limits<float>::infinity()){
+                                m_mouseStartX = x;
+                                m_mouseStartY = y;
+                            }
+                        }
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE){
+                            for (size_t i = 0; i < end - beg; ++i) {
+                                device_t node = beg[i].second.uid;
+                                int h= beg[i].second.get_highlight();
+                                if(h == 1) {
+                                    glfwMakeContextCurrent(NULL);
+                                    m_info.emplace_back(new info_window<F>(*this, node));
+                                    glfwMakeContextCurrent(m_renderer.getWindow());
+                                }
+                            }
+                            m_mouseStartX=std::numeric_limits<float>::infinity();
                         }
                         m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;
@@ -1101,6 +1149,12 @@ struct displayer {
 
             //! @brief The running node-info windows.
             std::vector<std::unique_ptr<info_window<F>>> m_info;
+
+            //! @brief Start mouse X position when the right click is pressed.
+            float m_mouseStartX=std::numeric_limits<double>::infinity();
+
+            //! @brief Start mouse Y position when the right click is pressed.
+            float m_mouseStartY=std::numeric_limits<double>::infinity();
 
             //! @brief Last mouse X position.
             float m_mouseLastX;

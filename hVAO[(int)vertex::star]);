@@ -1,0 +1,120 @@
+[1mdiff --git a/src/lib/graphics/renderer.cpp b/src/lib/graphics/renderer.cpp[m
+[1mindex 14af29f..a22d1f0 100644[m
+[1m--- a/src/lib/graphics/renderer.cpp[m
+[1m+++ b/src/lib/graphics/renderer.cpp[m
+[36m@@ -317,6 +317,18 @@[m [mvoid renderer::generateMeshAttributePointers() {[m
+     glEnableVertexAttribArray(0);[m
+     glBindBuffer(GL_ARRAY_BUFFER, 0);[m
+     glBindVertexArray(0);[m
+[32m+[m
+[32m+[m[32m    // Allocate rectangle attribute pointers[m
+[32m+[m[32m    glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);[m
+[32m+[m[32m    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);[m
+[32m+[m[32m    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);[m
+[32m+[m[32m    glEnableVertexAttribArray(0);[m
+[32m+[m[32m    glBindBuffer(GL_ARRAY_BUFFER, 0);[m
+[32m+[m[32m    glBindVertexArray(0);[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+ }[m
+ [m
+ void renderer::generateFontBuffers() {[m
+[36m@@ -334,7 +346,6 @@[m [mvoid renderer::generateFontBuffers() {[m
+     glBindVertexArray(0);[m
+ }[m
+ [m
+[31m-[m
+ void renderer::generateShaderPrograms() {[m
+     // Generate actual shader programs[m
+     if (m_master) {[m
+[36m@@ -342,7 +353,6 @@[m [mvoid renderer::generateShaderPrograms() {[m
+         m_shaderProgramCol = shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };[m
+         m_shaderProgramTexture = shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };[m
+     }[m
+[31m-[m
+  m_shaderProgramFont = shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };[m
+ }[m
+ [m
+[36m@@ -687,26 +697,19 @@[m [mvoid renderer::drawRectangle(float x, float y, float a, float b) const {[m
+        1, 2, 3   // second Triangle[m
+    };[m
+ [m
+[31m-    glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);[m
+[31m-[m
+[31m-   //glBindBuffer(GL_ARRAY_BUFFER, VBO);[m
+[32m+[m[32m   glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);[m
+    glBindBuffer(GL_ARRAY_BUFFER,s_meshVBO[(int)vertex::rectangle]);[m
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);[m
+ [m
+[31m-   //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);[m
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,s_meshEBO[(int)index::rectangle]);[m
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);[m
+ [m
+[31m-[m
+[31m-   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);[m
+[31m-   glEnableVertexAttribArray(0);[m
+[32m+[m[32m   //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);[m
+[32m+[m[32m   //glEnableVertexAttribArray(0);[m
+ [m
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);[m
+  }[m
+ [m
+[31m-[m
+[31m-[m
+[31m-[m
+ void renderer::drawText(std::string text, float x, float y, float scale) const {[m
+     // Scale coordinates to renderbuffer's size[m
+     x *= m_renderScale;[m
+[1mdiff --git a/src/lib/simulation/displayer.hpp b/src/lib/simulation/displayer.hpp[m
+[1mindex 36d2b44..531c8b4 100644[m
+[1m--- a/src/lib/simulation/displayer.hpp[m
+[1m+++ b/src/lib/simulation/displayer.hpp[m
+[36m@@ -948,7 +948,7 @@[m [mstruct displayer {[m
+                     for (size_t i = 0; i < end - beg; ++i) {[m
+                         float prj;[m
+                         float r{ (float)(common::get_or<size_tag>(beg[i].second.storage_tuple(), float(size_val))) * 1.5f };[m
+[31m-                       if (intersectSphere(m_renderer.getCamera().getPosition(), m_rayCast, r, beg[i].second.get_cached_position(), prj)) {[m
+[32m+[m[32m                        if (intersectSphere(m_renderer.getCamera().getPosition(), m_rayCast, r, beg[i].second.get_cached_position(), prj)) {[m
+                             if (prj < minDist) {[m
+                                 minDist = prj;[m
+                                 m_hoveredNode = beg[i].second.uid;[m
+[36m@@ -963,12 +963,9 @@[m [mstruct displayer {[m
+             }[m
+ [m
+ [m
+[31m-            bool pointInsideRectangle(float x,float y){[m
+[31m-                  if((x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX)) and (y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY)))[m
+[31m-                    return inRect = 1 ;[m
+[31m-                  else[m
+[31m-                    return inRect= 0;[m
+[31m-            }[m
+[32m+[m[32m        inline bool pointInsideRectangle(float x, float y) {[m
+[32m+[m[32m              return x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX) and y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY);[m
+[32m+[m[32m        }[m
+ [m
+           void dragSelect() {[m
+                 auto beg{ P::net::node_begin() };[m
+[36m@@ -978,18 +975,9 @@[m [mstruct displayer {[m
+                     glm::vec3 ndcSpacePos{clipSpacePos.x/ clipSpacePos.w,clipSpacePos.y/clipSpacePos.w,clipSpacePos.z/clipSpacePos.w};[m
+                     float x = (ndcSpacePos.x + 1.0 ) * (m_renderer.getFramebufferWidth() / 2.0);[m
+                     float y = (-ndcSpacePos.y + 1.0) * (m_renderer.getFramebufferHeight() / 2.0);[m
+[31m-                    node = beg[i].second.uid;[m
+[31m-                    auto& n =P::net::node_at(node);[m
+[31m-                    h= n.get_highlight();[m
+[31m-                    pointInsideRectangle(x,y);[m
+[31m-                    if(inRect and h !=1){[m
+[31m-                        typename P::net::lock_type l;[m
+[31m-                        P::net::node_at(node, l).highlight(inRect);[m
+[31m-                    }[m
+[31m-                    if (!pointInsideRectangle(x,y) and h == 1){[m
+[31m-                        typename P::net::lock_type l;[m
+[31m-                        P::net::node_at(node, l).highlight(inRect);[m
+[31m-                    }[m
+[32m+[m[32m                    int h= beg[i].second.get_highlight();[m
+[32m+[m[32m                    bool inRect = pointInsideRectangle(x,y);[m
+[32m+[m[32m                    if(not inRect == h) beg[i].second.highlight(inRect);[m
+                 }[m
+             }[m
+ [m

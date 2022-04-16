@@ -12,7 +12,7 @@ An efficient C++14 implementation of the Pure Field Calculus, for fast and effec
 ## Setup
 
 The next sections contain the setup instructions based on the CMake build system for the various supported OSs and virtual containers. Jump to the section dedicated to your system of choice and ignore the others.
-For backward compatibility (and faster testing), the [Bazel](https://bazel.build) build system is also supported but not recommended: in particular, the OpenGL graphical user interface is not available with Bazel. In order to use Bazel instead of CMake for building, you have to install it and then substitute `./make.sh bazel` for `./make.sh` in the commands of the "Build" section.
+For backward compatibility (and faster testing), the [Bazel](https://bazel.build) build system is also supported but not recommended: in particular, the OpenGL graphical user interface is not available with Bazel. In order to use Bazel instead of CMake for building, you have to install it and then substitute `./make.sh bazel` for `./make.sh` in the commands of the "Testing" and "Execution" sections.
 
 ### Windows
 
@@ -47,7 +47,7 @@ Pre-requisites:
 - Xorg-dev package (X11)
 - G++ 9 (or higher)
 - CMake 3.18 (or higher)
-- Asymptote (for building simulation plots)
+- Asymptote (for building the plots)
 - Doxygen (for building the documentation)
 
 To install these packages in Ubuntu, type the following command:
@@ -64,7 +64,7 @@ libX11-devel libXinerama-devel.x86_6 libXcursor-devel.x86_64 libXi-devel.x86_64 
 Pre-requisites:
 - Xcode Command Line Tools
 - CMake 3.18 (or higher)
-- Asymptote (for building simulation plots)
+- Asymptote (for building the plots)
 - Doxygen (for building the documentation)
 
 To install them, assuming you have the [brew](https://brew.sh) package manager, type the following commands:
@@ -139,11 +139,11 @@ FCPP includes a [plot generation tool](http://fcpp-doc.surge.sh/plot_8hpp.html),
 
 ## Execution
 
-In order to build a project based on FCPP, it is recommended to start following the [sample](https://github.com/fcpp/fcpp-sample-project) or [exercises](https://github.com/fcpp/fcpp-exercises) projects. In short, add this repository as a sub-module of your repository, add a `make.sh` script forwarding its arguments to the inner `fcpp/src/make.sh` script, add your code which uses the library, then declare the executable sources appropriately in a `CMakeLists.txt` as `fcpp_target` (see the aforementioned repositories for reference). Then you will be able to run your targets with the following command:
+In order to build a project based on FCPP, it is recommended to start following the [sample](https://github.com/fcpp/fcpp-sample-project) or [exercises](https://github.com/fcpp/fcpp-exercises) projects. In short, add this repository as a sub-module of your repository, add a `make.sh` script forwarding its arguments to the inner `fcpp/src/make.sh` script (you can copy it from [here](https://github.com/fcpp/fcpp-sample-project/blob/master/make.sh)), add your code which uses the library, then declare the executable sources appropriately in a `CMakeLists.txt` as `fcpp_target` (see the aforementioned repositories for reference). Then you will be able to run your targets with the following command:
 ```
 ./make.sh [gui] run [-O] [target]
 ```
-You can omit the `gui` argument if you don't need the graphical user interface; or omit the `-O` argument for a debug build (instead of an optimised build). If you plan to produce plots, you will also need to copy the `src/extras/plotter/plot.asy` file into a `plot/` subfolder of your repository.
+You can omit the `gui` argument if you don't need the graphical user interface; or omit the `-O` argument for a debug build (instead of an optimised build).
 
 ## Graphical User Interface
 
@@ -161,6 +161,7 @@ If you write and launch your own graphical simulation, a window will open displa
 - `mouse scroll` for zooming in and out
 - `left-shift` added to the camera commands above for precision control
 - any other key will show/hide a legenda displaying this list
+
 Hovering on a node will also display its UID in the top-left corner.
 
 

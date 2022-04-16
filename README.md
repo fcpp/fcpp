@@ -36,10 +36,7 @@ After the installation of these packages, make sure to add their path to the `PA
 ```
 C:\msys64\mingw64\bin
 ```
-but the actual path may vary depending on your installation (GCC's and CMake's binaries are already in `PATH` if you execute the "MSYS2 MinGW x64" shortcut from the start menu). Then, you should be able to build the whole library with CMake through:
-```
-./make.sh gui windows
-```
+but the actual path may vary depending on your installation (GCC's and CMake's binaries are already in `PATH` if you execute the "MSYS2 MinGW x64" shortcut from the start menu).
 
 ### Linux
 

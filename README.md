@@ -143,7 +143,7 @@ In order to build a project based on FCPP, it is recommended to start following 
 ```
 ./make.sh [gui] run [-O] [target]
 ```
-You can omit the `gui` argument if you don't need the graphical user interface; or omit the `-O` argument for a debug build (instead of an optimised build).
+You can omit the `gui` argument if you don't need the graphical user interface; or omit the `-O` argument for a debug build (instead of an optimised build). On newer Mac M1 computers, the `-O` argument may induce compilation errors: in that case, use the `-O3` argument instead.
 
 ## Graphical User Interface
 

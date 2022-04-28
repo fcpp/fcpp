@@ -3,6 +3,7 @@
 #define FCPP_WARNING_TRACE false
 
 #include <algorithm>
+#include <sstream>
 
 #include "gtest/gtest.h"
 
@@ -257,6 +258,9 @@ TEST(CalculusTest, Status) {
     EXPECT_EQ(status::border, status::border_output xor status::output);
     EXPECT_EQ(status::border, status::output xor status::border_output);
     EXPECT_EQ(converter<status::border_output xor status::output>::value(), 2);
+    std::stringstream ss;
+    ss << status::border_output << status::output << status::internal;
+    EXPECT_EQ(ss.str(), "border_outputoutputinternal");
 }
 
 TEST(CalculusTest, Spawn) {

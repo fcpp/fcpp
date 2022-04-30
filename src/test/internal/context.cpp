@@ -71,12 +71,14 @@ MULTI_TEST_F(ContextTest, InsertErase, O, 1) {
     EXPECT_EQ(device_t(3), x.top());
     x.pop();
     EXPECT_EQ(device_t(2), x.top());
+    x.freeze(10, 0);
     x.unfreeze(0, metric{0.5}, 1.0);
     EXPECT_EQ(device_t(2), x.top());
     x.insert(3, m, 0.4, 1.5, 9);
     EXPECT_EQ(device_t(2), x.top());
     x.pop();
     EXPECT_EQ(device_t(3), x.top());
+    x.freeze(10, 0);
     x.unfreeze(0, metric{1.0}, 0.5);
     EXPECT_EQ(size_t(1), x.size(9));
 }

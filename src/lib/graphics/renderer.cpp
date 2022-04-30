@@ -675,21 +675,21 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 
 void renderer::drawRectangle(float x, float y, float a, float b) const {
 
-   m_shaderProgramCol.use();
-   m_shaderProgramCol.setMat4("u_projection",glm::mat4{ 1.0f });
-   m_shaderProgramCol.setMat4("u_view",glm::mat4{ 1.0f });
-   m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
-   m_shaderProgramCol.setVec4("u_color", m_rectangle_col);
+    m_shaderProgramCol.use();
+    m_shaderProgramCol.setMat4("u_projection",glm::mat4{ 1.0f });
+    m_shaderProgramCol.setMat4("u_view",glm::mat4{ 1.0f });
+    m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setVec4("u_color", m_rectangle_col);
 
     float vertices[] = {
-                    x, y, 0.0f,  // top right
-                    x, b, 0.0f,  // bottom right
-                    a, b, 0.0f,  // bottom left
-                    a, y, 0.0f  // top left
+        x, y, 0.0f,  // top right
+        x, b, 0.0f,  // bottom right
+        a, b, 0.0f,  // bottom left
+        a, y, 0.0f  // top left
     };
    unsigned int indices[] = {  // note that we start from 0!
-       0, 1, 3,  // first Triangle
-       1, 2, 3   // second Triangle
+        0, 1, 3,  // first Triangle
+        1, 2, 3   // second Triangle
    };
 
    glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);

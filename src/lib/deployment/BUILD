@@ -62,6 +62,7 @@ cc_library(
     deps = [
         "//lib/common:serialize",
         "//lib/component:base",
+        "//lib/component:calculus",
     ],
     visibility = [
         '//visibility:public',

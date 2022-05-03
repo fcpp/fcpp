@@ -15,6 +15,7 @@
 
 #include "lib/common/serialize.hpp"
 #include "lib/component/base.hpp"
+#include "lib/component/calculus.hpp"
 
 
 /**
@@ -66,6 +67,7 @@ struct persister {
         //! @cond INTERNAL
         DECLARE_COMPONENT(persister);
         REQUIRE_COMPONENT(persister,storage);
+        REQUIRE_COMPONENT(persister,calculus);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -78,7 +80,7 @@ struct persister {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_path(common::get_or<tags::persistence_path>(t, "")) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_path(common::get_or<tags::persistence_path>(t, "")), m_is({}) {
                 if (m_path.size()) {
                     stream_type in(m_path, std::ios_base::in);
                     std::vector<char> v;
@@ -87,8 +89,25 @@ struct persister {
                     if (v.size()) {
                         common::isstream is(std::move(v));
                         is >> P::node::storage_tuple();
+                        is >> fcpp::details::get_context(*this);
+                        is >> fcpp::details::get_export(*this);
+                        size_t l = is.size();
+                        v = std::move(is.data());
+                        v.erase(v.begin(), v.begin() + (v.size() - l));
+                        m_is.data() = std::move(v);
                     }
                 }
+            }
+
+            //! @brief Performs computations at round start with current time `t`.
+            void round_start(times_t t) {
+                if (m_is.data().size() > 0) {
+                    typename F::node::message_t m;
+                    m_is >> m;
+                    P::node::receive(t, P::node::uid, m);
+                    m_is.data().clear();
+                }
+                P::node::round_start(t);
             }
 
             //! @brief Performs computations at round end with current time `t`.
@@ -98,6 +117,10 @@ struct persister {
                     stream_type out(m_path, std::ios_base::out);
                     common::osstream os;
                     os << P::node::storage_tuple();
+                    os << fcpp::details::get_context(*this);
+                    os << fcpp::details::get_export(*this);
+                    typename F::node::message_t m;
+                    os << P::node::send(t, m);
                     for (char c : os.data())
                         out << c;
                 }
@@ -106,6 +129,9 @@ struct persister {
           private: // implementation details
             //! @brief The data storage.
             std::string m_path;
+
+            //! @brief The initial message.
+            common::isstream m_is;
         };
 
         //! @brief The global part of the component.

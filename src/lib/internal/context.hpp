@@ -27,6 +27,17 @@
 namespace fcpp {
 
 
+//! @cond INTERNAL
+//! @brief Namespace containing objects of common use.
+namespace common {
+
+//! @brief Stream-like object for input or output serialization (depending on `io`).
+template <bool io>
+class sstream;
+}
+//! @endcond
+
+
 //! @brief Namespace containing objects of internal use.
 namespace internal {
 
@@ -126,13 +137,13 @@ class context<true, pointer, M, Ts...> {
         for (auto const& x : m_data)
             m_sorted_data.emplace_back(x.first, &x.second);
         std::sort(m_sorted_data.begin(), m_sorted_data.end());
-        assert(m_sorted_data.size() > 0 xor m_data.size() == 0);
+        assert(m_sorted_data.size() == m_data.size());
     }
 
     //! @brief Changes the status of the context from "query" to "modify", updating metrics.
     template <typename N, typename T>
     void unfreeze(N const& node, T const& metric, metric_type threshold) {
-        assert(m_sorted_data.size() > 0 xor m_data.size() == 0);
+        assert(m_sorted_data.size() == m_data.size());
         m_sorted_data.clear();
         m_queue = {};
         for (auto it = m_metrics.begin(); it != m_metrics.end(); ) {
@@ -150,7 +161,7 @@ class context<true, pointer, M, Ts...> {
 
     //! @brief Returns list of all devices.
     std::vector<device_t> align(device_t self) const {
-        assert(m_sorted_data.size() > 0 xor m_data.size() == 0);
+        assert(m_sorted_data.size() == m_data.size());
         std::vector<device_t> v;
         auto it = m_sorted_data.begin();
         for (; it != m_sorted_data.end() and it->first < self; ++it)
@@ -164,7 +175,7 @@ class context<true, pointer, M, Ts...> {
 
     //! @brief Returns list of devices with specified trace.
     std::vector<device_t> align(trace_t trace, device_t self) const {
-        assert(m_sorted_data.size() > 0 xor m_data.size() == 0);
+        assert(m_sorted_data.size() == m_data.size());
         std::vector<device_t> v;
         auto it = m_sorted_data.begin();
         for (; it != m_sorted_data.end() and it->first < self; ++it)
@@ -183,7 +194,7 @@ class context<true, pointer, M, Ts...> {
     //! @brief Returns the old value for a certain trace (unaligned).
     template <typename A>
     A const& old(trace_t trace, A const& def, device_t self) const {
-        assert(m_sorted_data.size() > 0 or m_data.size() <= 1);
+        assert(m_sorted_data.size() == m_data.size() or m_data.size() == 1);
         if (m_data.count(self) and m_data.at(self)->template count<A>(trace))
             return m_data.at(self)->template at<A>(trace);
         return def;
@@ -192,7 +203,7 @@ class context<true, pointer, M, Ts...> {
     //! @brief Returns neighbours' values for a certain trace (default from `def`, and also self if not present).
     template <typename A>
     to_field<A> nbr(trace_t trace, A const& def, device_t self) const {
-        assert(m_sorted_data.size() > 0 xor m_data.size() == 0);
+        assert(m_sorted_data.size() == m_data.size());
         std::vector<device_t> ids;
         std::vector<to_local<A>> vals;
         vals.push_back(fcpp::details::other(def));
@@ -213,6 +224,20 @@ class context<true, pointer, M, Ts...> {
             else o << ", ";
             o << x.first << ":" << m_data.at(x.first) << "@" << 0+x.second;
         }
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    common::sstream<false>& serialize(common::sstream<false>& s) {
+        s >> m_data >> m_metrics;
+        m_sorted_data.clear();
+        for (auto const& x : m_metrics)
+            m_queue.emplace(x.second, x.first);
+        return s;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    common::sstream<true>& serialize(common::sstream<true>& s) const {
+        return s << m_data << m_metrics;
     }
 
   private:
@@ -282,8 +307,8 @@ class context<false, pointer, M, Ts...> {
     void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t) {
         if (m <= threshold) {
             if (m_data.size() > 0 and get<0>(m_data.back()) == d)
-                m_data.back() = data_type{d, m, e};
-            else m_data.emplace_back(d, m, e);
+                m_data.back() = data_type{d, m, std::move(e)};
+            else m_data.emplace_back(d, m, std::move(e));
         }
     }
 
@@ -394,6 +419,18 @@ class context<false, pointer, M, Ts...> {
             else o << ", ";
             o << get<0>(x) << ":" << get<2>(x) << "@" << 0+get<1>(x);
         }
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_data & m_self;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_data << m_self;
     }
 
   private:

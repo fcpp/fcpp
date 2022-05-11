@@ -719,7 +719,7 @@ struct displayer {
                         float lx{ (2.0f * (float)m_mouseLastX) / m_renderer.getFramebufferWidth() - 1.0f };
                         float ly{ 1.0f - (2.0f * (float)m_mouseLastY) / m_renderer.getFramebufferHeight() };
                         dragSelect();
-                        m_renderer.drawRectangle(sx, sy,lx,ly);
+                        m_renderer.drawRectangle(sx, sy, lx, ly);
                     }
                     {
                         PROFILE_COUNT("displayer/text");
@@ -875,6 +875,7 @@ struct displayer {
 
                     float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
                     float yoffset{ (float)(dspl.m_mouseLastY - ypos) };
+                    dspl.m_mouseLastX = (float)xpos;
                     dspl.m_mouseLastY = (float)ypos;
 
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);
@@ -1148,10 +1149,10 @@ struct displayer {
             std::vector<std::unique_ptr<info_window<F>>> m_info;
 
             //! @brief Start mouse X position when the right click is pressed.
-            float m_mouseStartX=std::numeric_limits<double>::infinity();
+            float m_mouseStartX = std::numeric_limits<double>::infinity();
 
             //! @brief Start mouse Y position when the right click is pressed.
-            float m_mouseStartY=std::numeric_limits<double>::infinity();
+            float m_mouseStartY = std::numeric_limits<double>::infinity();
 
             //! @brief Last mouse X position.
             float m_mouseLastX;

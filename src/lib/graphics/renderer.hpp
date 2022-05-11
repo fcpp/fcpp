@@ -29,10 +29,10 @@
 namespace fcpp {
     namespace internal {
         //! @brief Supported pointers to vertex buffers.
-        enum class vertex : char { singleLine, star, plane, grid, SIZE };
+        enum class vertex : char { singleLine, star, plane, grid, rectangle, SIZE };
 
         //! @brief Supported pointers to index buffers.
-        enum class index : char { plane, gridNorm, gridHigh, SIZE };
+        enum class index : char { plane, gridNorm, gridHigh, rectangle, SIZE };
 
         //! @brief Glyph struct.
         struct glyph {
@@ -81,6 +81,9 @@ namespace fcpp {
 
             //! @brief It draws the specified text in the specified window coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale) const;
+
+            //! @brief It draws the defined rectangle, given the information on color(s) and position
+            void drawRectangle(float x, float y, float a, float b) const;
 
             //! @brief Returns the aspect ratio of the window.
             float getAspectRatio();
@@ -292,6 +295,9 @@ namespace fcpp {
 
             //! @brief The background color.
             glm::vec4 m_background;
+
+            //! @brief The rectangle color.
+            glm::vec4 m_rectangle_col;
 
             //! @brief The foreground color.
             glm::vec4 m_foreground;

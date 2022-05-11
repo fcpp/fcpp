@@ -874,8 +874,7 @@ struct displayer {
                     }
 
                     float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
-                    float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
-                    dspl.m_mouseLastX = (float)xpos;
+                    float yoffset{ (float)(dspl.m_mouseLastY - ypos) };
                     dspl.m_mouseLastY = (float)ypos;
 
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);

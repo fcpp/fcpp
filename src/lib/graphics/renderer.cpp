@@ -676,8 +676,8 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 void renderer::drawRectangle(float x, float y, float a, float b) const {
 
     m_shaderProgramCol.use();
-    m_shaderProgramCol.setMat4("u_projection",glm::mat4{ 1.0f });
-    m_shaderProgramCol.setMat4("u_view",glm::mat4{ 1.0f });
+    m_shaderProgramCol.setMat4("u_projection", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setMat4("u_view", glm::mat4{ 1.0f });
     m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
     m_shaderProgramCol.setVec4("u_color", m_rectangle_col);
 
@@ -687,18 +687,18 @@ void renderer::drawRectangle(float x, float y, float a, float b) const {
         a, b, 0.0f,  // bottom left
         a, y, 0.0f  // top left
     };
-   unsigned int indices[] = {  // note that we start from 0!
+    unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
-   };
+    };
 
-   glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);
-   glBindBuffer(GL_ARRAY_BUFFER,s_meshVBO[(int)vertex::rectangle]);
-   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,s_meshEBO[(int)index::rectangle]);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::rectangle]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void renderer::drawText(std::string text, float x, float y, float scale) const {

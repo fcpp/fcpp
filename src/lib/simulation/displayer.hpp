@@ -713,7 +713,7 @@ struct displayer {
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
                     }
-                    if (m_mouseStartX!= std::numeric_limits<float>::infinity()) {
+                    if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
                         float sx{ (2.0f * (float)m_mouseStartX) / m_renderer.getFramebufferWidth() - 1.0f };
                         float sy{ 1.0f - (2.0f * (float)m_mouseStartY) / m_renderer.getFramebufferHeight() };
                         float lx{ (2.0f * (float)m_mouseLastX) / m_renderer.getFramebufferWidth() - 1.0f };
@@ -1006,12 +1006,12 @@ struct displayer {
                                 m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
                                 glfwMakeContextCurrent(m_renderer.getWindow());
                             }
-                            else if (m_mouseStartX  == std::numeric_limits<float>::infinity()) {
+                            else if (m_mouseStartX == std::numeric_limits<float>::infinity()) {
                                 m_mouseStartX = x;
                                 m_mouseStartY = y;
                             }
                         }
-                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE and m_mouseStartX != std::numeric_limits<float>::infinity()) {
                             auto beg{ P::net::node_begin() };
                             auto end{ P::net::node_end() };
                             for (size_t i = 0; i < end - beg; ++i) {
@@ -1024,6 +1024,7 @@ struct displayer {
                                 }
                             }
                             m_mouseStartX = std::numeric_limits<float>::infinity();
+                            m_mouseStartY = std::numeric_limits<float>::infinity();
                         }
                         m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;

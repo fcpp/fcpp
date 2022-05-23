@@ -67,7 +67,7 @@ TEST(BatchTest, Lists) {
     EXPECT_SAME(decltype(x4), std::vector<int>);
     std::vector<int> v4{1, 2, 4, 8, 16, 32, 64};
     EXPECT_EQ(x4, v4);
-    auto x5 = batch::recursive<void>(0, [](size_t i, int prev, auto const& tup) -> batch::option<int> {
+    auto x5 = batch::recursive<void>(0, [](size_t i, int prev, auto const& tup) -> common::option<int> {
         if (i == 0) return tup;
         if (prev == 1) return {};
         return prev%2 ? 3*prev+1 : prev/2;
@@ -179,6 +179,20 @@ TEST(BatchTest, Run) {
     v = {};
     batch::run(combomock{}, common::tags::parallel_execution{17}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5,8), batch::list<double>(2,7)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0,6), batch::list<char>(1,2,4)));
     EXPECT_NEQ(v, w);
+    std::sort(v.begin(), v.end());
+    std::sort(w.begin(), w.end());
+    EXPECT_EQ(v, w);
+    v = {};
+    w = {};
+    batch::run(combomock{}, common::tags::sequential_execution{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,3), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(1,2,3), batch::list<char>(2)));
+    w.push_back("(char => 1; double => 2)");
+    w.push_back("(char => 2; double => 2)");
+    w.push_back("(char => 3; double => 2)");
+    w.push_back("(char => 2; double => 1)");
+    w.push_back("(char => 2; double => 3)");
+    EXPECT_EQ(v, w);
+    v = {};
+    batch::run(combomock{}, common::tags::parallel_execution{17}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,3), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(1,2,3), batch::list<char>(2)));
     std::sort(v.begin(), v.end());
     std::sort(w.begin(), w.end());
     EXPECT_EQ(v, w);

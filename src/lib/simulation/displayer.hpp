@@ -9,6 +9,7 @@
 #define FCPP_SIMULATION_DISPLAYER_H_
 
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 
 #ifdef FCPP_GUI
@@ -52,7 +53,7 @@ namespace tags {
     struct shape_tag {};
 
     //! @brief Declaration tag associating to the base shape of nodes.
-    template <size_t n>
+    template <intmax_t n>
     struct shape_val {};
 
     //! @brief Declaration tag associating to a storage tag regulating the size of nodes.
@@ -60,7 +61,7 @@ namespace tags {
     struct size_tag {};
 
     //! @brief Declaration tag associating to the base size of nodes.
-    template <size_t num, size_t den = 1>
+    template <intmax_t num, intmax_t den = 1>
     struct size_val {};
 
     //! @brief Declaration tag associating to storage tags regulating the colors of nodes.
@@ -68,16 +69,26 @@ namespace tags {
     struct color_tag {};
 
     //! @brief Declaration tag associating to the base colors of nodes.
-    template <size_t... cs>
+    template <intmax_t... cs>
     struct color_val {};
 
+    //! @brief Declaration tag associating to the bounding coordinates of the grid area.
+    template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den = 1>
+    struct area;
+
     //! @brief Declaration tag associating to the antialiasing factor.
-    template <size_t n>
+    template <intmax_t n>
     struct antialias {};
 
     //! @brief Declaration flag associating to whether parallelism is enabled.
     template <bool b>
     struct parallel;
+
+    //! @brief Net initialisation tag associating to the minimum coordinates of the grid area.
+    struct area_min {};
+
+    //! @brief Net initialisation tag associating to the maximum coordinates of the grid area.
+    struct area_max {};
 
     //! @brief Net initialisation tag associating to the main name of a component composition instance.
     struct name;
@@ -228,6 +239,7 @@ class info_window {
             }
             else std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        glfwMakeContextCurrent(NULL);
     }
 
     //! @brief Updates the node info and draws it into the window.
@@ -334,7 +346,7 @@ class info_window {
     bool m_running = true;
 
     //! @brief Whether the contents of the window have been modified.
-    bool m_modified = true;
+    bool m_modified = false;
 
     //! @brief Rendering thread.
     std::thread m_thread;
@@ -350,6 +362,34 @@ class info_window {
 };
 
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief Converts a number sequence to a vec (general form).
+    template <typename T>
+    struct numseq_to_vec;
+    //! @brief Converts a number sequence to a vec (empty form).
+    template <>
+    struct numseq_to_vec<common::number_sequence<>> {
+        constexpr static vec<0> min{};
+        constexpr static vec<0> max{};
+    };
+    //! @brief Converts a number sequence to a vec (active form).
+    template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den>
+    struct numseq_to_vec<common::number_sequence<xmin,ymin,xmax,ymax,den>> {
+        constexpr static vec<2> min{xmin*1.0/den,ymin*1.0/den};
+        constexpr static vec<2> max{xmax*1.0/den,ymax*1.0/den};
+    };
+    //! @brief Converts a vec to a glm 3D vector, filling missing coordinates with x.
+    template <size_t n>
+    inline glm::vec3 vec_to_glm(vec<n> v, float x) {
+        glm::vec3 w(x, x, x);
+        for (size_t i=0; i<n; ++i) w[i] = v[i];
+        return w;
+    }
+}
+//! @endcond
+
+
 /**
  * @brief Component representing the simulation status graphically.
  *
@@ -362,12 +402,15 @@ class info_window {
  * - \ref tags::size_val defines the base size of nodes (defaults to 1).
  * - \ref tags::color_tag defines storage tags regulating the colors of nodes (defaults to none).
  * - \ref tags::color_val defines the base colors of nodes (defaults to none).
- * - \ref tags::antialias defines the the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
+ * - \ref tags::area defines the bounding coordinates of the grid area (defaults to the minimal area covering initial nodes).
+ * - \ref tags::antialias defines the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
  *
  * <b>Declaration flags:</b>
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  *
  * <b>Net initialisation tags:</b>
+ * - \ref tags::area_min associates to the the minimum coordinates of the grid area (defaults to the value in \ref tags::area).
+ * - \ref tags::area_max associates to the the maximum coordinates of the grid area (defaults to the value in \ref tags::area).
  * - \ref tags::refresh_rate associates to the refresh rate (0 for opportunistic frame refreshing, defaults to \ref FCPP_REFRESH_RATE).
  * - \ref tags::texture associates to the texture to be used for the reference plane (defaults to none).
  * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).
@@ -379,14 +422,19 @@ struct displayer {
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
+    //! @brief Bounding coordinates of the grid area.
+    using area = common::option_nums<tags::area, Ts...>;
+
+    static_assert(area::size == 5 or area::size == 0, "the bounding coordinates must be 4 integers");
+
     //! @brief Antialiasing factor.
-    constexpr static size_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;
+    constexpr static intmax_t antialias = common::option_num<tags::antialias, FCPP_ANTIALIAS, Ts...>;
 
     //! @brief Storage tag regulating the shape of nodes.
     using shape_tag = common::option_type<tags::shape_tag, void, Ts...>;
 
     //! @brief Base shape of nodes (defaults to cube).
-    constexpr static shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<size_t>(shape::cube), Ts...>);
+    constexpr static shape shape_val = static_cast<shape>(common::option_num<tags::shape_val, static_cast<intmax_t>(shape::cube), Ts...>);
 
     //! @brief Storage tag regulating the size of nodes.
     using size_tag = common::option_type<tags::size_tag, void, Ts...>;
@@ -426,7 +474,10 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {
+                m_colors.resize(std::max(size_t(1), color_val::size + color_tag::size));
+                color_val_put(m_colors, common::number_sequence<0>{}, color_val{});
+            }
 
             //! @brief Caches the current position for later use.
             glm::vec3 const& cache_position(times_t t) {
@@ -464,11 +515,9 @@ struct displayer {
                 P::node::round_end(t);
                 PROFILE_COUNT("displayer");
                 // update color list
-                m_colors.clear();
-                color_val_push(m_colors, color_val{});
-                color_tag_push(m_colors, color_tag{});
-                if (m_colors.empty()) m_colors.emplace_back(0.0f, 0.0f, 0.0f, 1.0f); // black if nothing else
-                if (m_highlight) for (color& c : m_colors) for (size_t i=0; i<3; ++i) c.rgba[i] = (c.rgba[i]+1)/2;
+                color_tag_put(m_colors, common::number_sequence<color_val::size>{}, color_tag{});
+                if (m_highlight) for (size_t j=color_val::size; j<color_val::size+color_tag::size; ++j)
+                    for (size_t i=0; i<3; ++i) m_colors[j].rgba[i] = (m_colors[j].rgba[i]+1)/2;
                 // update neighbours list
                 std::sort(m_nbr_uids.begin(), m_nbr_uids.end());
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
@@ -518,24 +567,26 @@ struct displayer {
                 return { p[0], p[1], 0 };
             }
 
-            //! @brief Pushes colors in an index sequence into a vector (base case).
-            void color_val_push(std::vector<color>&, common::index_sequence<>) const {}
+            //! @brief Pushes colors in a number sequence into a vector (base case).
+            template <intmax_t i>
+            inline void color_val_put(std::vector<color>&, common::number_sequence<i>, common::number_sequence<>) const {}
 
-            //! @brief Pushes colors in an index sequence into a vector (inductive case).
-            template <size_t i, size_t... is>
-            void color_val_push(std::vector<color>& c, common::index_sequence<i, is...>) const {
-                c.emplace_back(i);
-                color_val_push(c, common::index_sequence<is...>{});
+            //! @brief Pushes colors in a number sequence into a vector (inductive case).
+            template <intmax_t i, intmax_t x, intmax_t... xs>
+            inline void color_val_put(std::vector<color>& c, common::number_sequence<i>, common::number_sequence<x, xs...>) const {
+                c[i] = color(x);
+                color_val_put(c, common::number_sequence<i+1>{}, common::number_sequence<xs...>{});
             }
 
             //! @brief Pushes colors from storage tags into a vector (base case).
-            void color_tag_push(std::vector<color>&, common::type_sequence<>) const {}
+            template <intmax_t i>
+            inline void color_tag_put(std::vector<color>&, common::number_sequence<i>, common::type_sequence<>) const {}
 
             //! @brief Pushes colors from storage tags into a vector (inductive case).
-            template <typename S, typename... Ss>
-            void color_tag_push(std::vector<color>& c, common::type_sequence<S, Ss...>) const {
-                c.emplace_back(P::node::storage(S{}));
-                color_tag_push(c, common::type_sequence<Ss...>{});
+            template <intmax_t i, typename S, typename... Ss>
+            inline void color_tag_put(std::vector<color>& c, common::number_sequence<i>, common::type_sequence<S, Ss...>) const {
+                c[i] = P::node::storage(S{});
+                color_tag_put(c, common::number_sequence<i+1>{}, common::type_sequence<Ss...>{});
             }
 
             //! @brief Whether the node is highlighted.
@@ -565,13 +616,11 @@ struct displayer {
         public: // visible by node objects and the main program
           //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S, T>& t) :
+            net(common::tagged_tuple<S, T> const& t) :
                 P::net{ t },
                 m_threads( common::get_or<tags::threads>(t, FCPP_THREADS) ),
                 m_refresh{ 0 },
                 m_step( common::get_or<tags::refresh_rate>(t, FCPP_REFRESH_RATE) ),
-                m_viewport_max{ -INF, -INF, -INF },
-                m_viewport_min{ +INF, +INF, +INF },
                 m_rayCast{ 0.0, 0.0, 0.0 },
                 m_renderer{antialias, common::get_or<tags::name>(t, "FCPP")},
                 m_mouseLastX{ 0.0f },
@@ -589,6 +638,10 @@ struct displayer {
                 m_lastFraction{ 0.0f },
                 m_FPS{ 0 } {
                     m_frameCounts.push_back(0);
+                    constexpr auto max = details::numseq_to_vec<area>::max;
+                    constexpr auto min = details::numseq_to_vec<area>::min;
+                    m_viewport_max = details::vec_to_glm(common::get_or<tags::area_max>(t, max), -INF);
+                    m_viewport_min = details::vec_to_glm(common::get_or<tags::area_min>(t, min), +INF);
                 }
 
             /**
@@ -613,11 +666,22 @@ struct displayer {
                     if (not m_legenda) {
                         PROFILE_COUNT("displayer/nodes");
                         if (rt == 0) {
-                            common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
-                                viewport_update(n_beg[i].second.cache_position(t));
-                            });
+                            if (m_viewport_min.x > m_viewport_max.x) {
+                                common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                                    viewport_update(n_beg[i].second.cache_position(t));
+                                });
+                                double approx = 1;
+                                while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) > 2000 * approx * approx)
+                                    approx *= 10;
+                                while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) <= 20 * approx * approx)
+                                    approx /= 10;
+                                m_viewport_min.x = std::floor(m_viewport_min.x / approx) * approx;
+                                m_viewport_max.x = std::ceil(m_viewport_max.x / approx) * approx;
+                                m_viewport_min.y = std::floor(m_viewport_min.y / approx) * approx;
+                                m_viewport_max.y = std::ceil(m_viewport_max.y / approx) * approx;
+                            } else m_viewport_min[2] = m_viewport_max[2] = 0;
                         } else {
-                            if (m_pointer) highlightHoveredNode();
+                            if (m_pointer && m_mouseStartX == std::numeric_limits<float>::infinity()) highlightHoveredNode();
                             common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                                 n_beg[i].second.cache_position(t);
                             });
@@ -648,6 +712,14 @@ struct displayer {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
+                    }
+                    if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
+                        float sx{ (2.0f * (float)m_mouseStartX) / m_renderer.getFramebufferWidth() - 1.0f };
+                        float sy{ 1.0f - (2.0f * (float)m_mouseStartY) / m_renderer.getFramebufferHeight() };
+                        float lx{ (2.0f * (float)m_mouseLastX) / m_renderer.getFramebufferWidth() - 1.0f };
+                        float ly{ 1.0f - (2.0f * (float)m_mouseLastY) / m_renderer.getFramebufferHeight() };
+                        dragSelect();
+                        m_renderer.drawRectangle(sx, sy, lx, ly);
                     }
                     {
                         PROFILE_COUNT("displayer/text");
@@ -682,7 +754,16 @@ struct displayer {
                         } else {
                             // Draw hovered node, simulation time (t) and FPS
                             if (m_hoveredNode != device_t(-1)) m_renderer.drawText("Node " + std::to_string(m_hoveredNode), 16.0f, m_renderer.getWindowHeight() - 16.0f, 0.25f);
-                            m_renderer.drawText("Simulation time: " + std::to_string(t), 16.0f, 16.0f, 0.25f);
+                            std::string tt = "Simulation time: " + std::to_string(t);
+                            if (P::net::frequency() != 1 and P::net::frequency() != 0) {
+                                tt += " (";
+                                int f = P::net::frequency();
+                                tt += std::to_string(f);
+                                if (P::net::frequency() < 1) tt += "." + std::to_string(int((P::net::frequency() - f)*100));
+                                else if (P::net::frequency() < 10) tt += "." + std::to_string(int((P::net::frequency() - f)*10));
+                                tt += "x)";
+                            }
+                            m_renderer.drawText(tt, 16.0f, 16.0f, 0.25f);
                             m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 0.25f);
                         }
                     }
@@ -698,7 +779,8 @@ struct displayer {
                         // Destroy closed info windows
                         for (size_t i=0; i<m_info.size(); ) {
                             if (m_info[i]->closing()) {
-                                std::swap(m_info[i], m_info.back());
+                                using std::swap;
+                                swap(m_info[i], m_info.back());
                                 m_info.pop_back();
                             } else ++i;
                         }
@@ -792,7 +874,7 @@ struct displayer {
                     }
 
                     float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
-                    float yoffset{ (float)(dspl.m_mouseLastY - ypos) }; // reversed since y-coordinates range from bottom to top
+                    float yoffset{ (float)(dspl.m_mouseLastY - ypos) };
                     dspl.m_mouseLastX = (float)xpos;
                     dspl.m_mouseLastY = (float)ypos;
 
@@ -872,6 +954,24 @@ struct displayer {
                 }
             }
 
+            inline bool pointInsideRectangle(float x, float y) {
+                return x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX) and y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY);
+            }
+
+            void dragSelect() {
+                auto beg{ P::net::node_begin() };
+                auto end{ P::net::node_end() };
+                for (size_t i = 0; i < end - beg; ++i) {
+                    glm::vec4 clipSpacePos = m_renderer.getCamera().getPerspective() * (m_renderer.getCamera().getView() * glm::vec4(beg[i].second.get_cached_position(), 1.0));
+                    glm::vec3 ndcSpacePos{ clipSpacePos.x / clipSpacePos.w,clipSpacePos.y / clipSpacePos.w,clipSpacePos.z/clipSpacePos.w };
+                    float x = (ndcSpacePos.x + 1.0 ) * (m_renderer.getFramebufferWidth() / 2.0);
+                    float y = (-ndcSpacePos.y + 1.0) * (m_renderer.getFramebufferHeight() / 2.0);
+                    int h = beg[i].second.get_highlight();
+                    bool inRect = pointInsideRectangle(x,y);
+                    if (not inRect == h) beg[i].second.highlight(inRect);
+                }
+            }
+
             //! @brief It manages mouse input of the given type.
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
                 switch (type) {
@@ -900,10 +1000,31 @@ struct displayer {
 
                     case mouse_type::click: {
                         GLFWwindow* window{ m_renderer.getWindow() };
-                        if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1 and glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-                            glfwMakeContextCurrent(NULL);
-                            m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
-                            glfwMakeContextCurrent(m_renderer.getWindow());
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+                            if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
+                                glfwMakeContextCurrent(NULL);
+                                m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
+                                glfwMakeContextCurrent(m_renderer.getWindow());
+                            }
+                            else if (m_mouseStartX == std::numeric_limits<float>::infinity()) {
+                                m_mouseStartX = x;
+                                m_mouseStartY = y;
+                            }
+                        }
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE and m_mouseStartX != std::numeric_limits<float>::infinity()) {
+                            auto beg{ P::net::node_begin() };
+                            auto end{ P::net::node_end() };
+                            for (size_t i = 0; i < end - beg; ++i) {
+                                device_t node = beg[i].second.uid;
+                                int h = beg[i].second.get_highlight();
+                                if (h == 1) {
+                                    glfwMakeContextCurrent(NULL);
+                                    m_info.emplace_back(new info_window<F>(*this, node));
+                                    glfwMakeContextCurrent(m_renderer.getWindow());
+                                }
+                            }
+                            m_mouseStartX = std::numeric_limits<float>::infinity();
+                            m_mouseStartY = std::numeric_limits<float>::infinity();
                         }
                         m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;
@@ -1014,7 +1135,7 @@ struct displayer {
             }
 
             //! @brief The number of threads to be used.
-            const size_t m_threads;
+            size_t const m_threads;
 
             //! @brief The next refresh time.
             times_t m_refresh;
@@ -1027,6 +1148,12 @@ struct displayer {
 
             //! @brief The running node-info windows.
             std::vector<std::unique_ptr<info_window<F>>> m_info;
+
+            //! @brief Start mouse X position when the right click is pressed.
+            float m_mouseStartX = std::numeric_limits<double>::infinity();
+
+            //! @brief Start mouse Y position when the right click is pressed.
+            float m_mouseStartY = std::numeric_limits<double>::infinity();
 
             //! @brief Last mouse X position.
             float m_mouseLastX;

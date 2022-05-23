@@ -45,7 +45,7 @@ namespace tags {
     struct delay {};
 
     //! @brief Declaration tag associating to the dimensionality of the space.
-    template <size_t n>
+    template <intmax_t n>
     struct dimension;
 
     //! @brief Declaration flag associating to whether message sizes should be emulated.
@@ -75,9 +75,9 @@ namespace details {
       public:
         //! @brief Default constructors.
         cell() = default;
-        cell(const cell&) = delete;
+        cell(cell const&) = delete;
         cell(cell&&) = delete;
-        cell& operator=(const cell&) = delete;
+        cell& operator=(cell const&) = delete;
         cell& operator=(cell&&) = delete;
 
         //! @brief Inserts a node in the cell.
@@ -99,7 +99,7 @@ namespace details {
         }
 
         //! @brief Gives const access to linked cells.
-        std::conditional_t<parallel, std::vector<const cell*>, std::vector<const cell*> const&>
+        std::conditional_t<parallel, std::vector<cell const*>, std::vector<cell const*> const&>
         linked() const {
             common::shared_guard<parallel> l(m_mutex);
             return m_linked;
@@ -116,7 +116,7 @@ namespace details {
         std::unordered_set<N*> m_contents;
 
         //! @brief The linked cells.
-        std::vector<const cell*> m_linked;
+        std::vector<cell const*> m_linked;
 
         //! @brief A mutex regulating access to this cell.
         mutable common::shared_mutex<parallel> m_mutex;
@@ -164,7 +164,7 @@ struct simulated_connector {
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
     //! @brief The dimensionality of the space.
-    constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
+    constexpr static intmax_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
     //! @brief Type for representing a position.
     using position_type = vec<dimension>;
@@ -198,6 +198,7 @@ struct simulated_connector {
         CHECK_COMPONENT(identifier);
         CHECK_COMPONENT(randomizer);
         CHECK_COMPONENT(scheduler);
+        CHECK_COMPONENT(calculus);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -250,14 +251,19 @@ struct simulated_connector {
                 m_send = TIME_MAX;
             }
 
-            //! @brief Size of last message sent.
+            //! @brief Size of last message sent (zero if `message_size` is false).
             size_t msg_size() const {
-                return fcpp::details::self(m_nbr_msg_size.front(), P::node::uid);
+                if (message_size) return fcpp::details::self(m_nbr_msg_size.front(), P::node::uid);
+                else return 0;
             }
 
-            //! @brief Sizes of messages received from neighbours.
-            field<size_t> const& nbr_msg_size() const {
-                return m_nbr_msg_size.front();
+            /**
+             * @brief Sizes of messages received from neighbours.
+             *
+             * Returns a `field<size_t> const&` if `message_size` is true, otherwise it returns a `size_t` equal to zero.
+             */
+            auto nbr_msg_size() const {
+                return get_nbr_msg_size(common::bool_pack<message_size>{});
             }
 
             /**
@@ -305,6 +311,7 @@ struct simulated_connector {
             void round_start(times_t t) {
                 m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 P::node::round_start(t);
+                maybe_align_inplace_m_nbr_msg_size(common::bool_pack<has_calculus<P>::value and message_size>{});
             }
 
             //! @brief Performs computations at round end with current time `t`.
@@ -323,10 +330,26 @@ struct simulated_connector {
             }
 
           private: // implementation details
+            //! @brief Sizes of messages received from neighbours (disabled).
+            constexpr static size_t get_nbr_msg_size(common::bool_pack<false>) {
+                return 0;
+            }
+            //! @brief Sizes of messages received from neighbours (enabled).
+            field<size_t> const& get_nbr_msg_size(common::bool_pack<true>) const {
+                return m_nbr_msg_size.front();
+            }
+
+            //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids (disabled).
+            void maybe_align_inplace_m_nbr_msg_size(common::bool_pack<false>) {}
+            //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids (enabled).
+            void maybe_align_inplace_m_nbr_msg_size(common::bool_pack<true>) {
+                align_inplace(m_nbr_msg_size.front(), std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
+            }
+
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
-            void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
-            //! @brief Stores size of received message.
+            void receive_size(common::bool_pack<false>, device_t, common::tagged_tuple<S,T> const&) {}
+            //! @brief Stores size of received message (enabled).
             template <typename S, typename T>
             void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
                 common::osstream os;
@@ -413,7 +436,7 @@ struct simulated_connector {
             }
 
             //! @brief Returns the cells in proximity of node `n`.
-            cell_type const& cell_of(const typename F::node& n) const {
+            cell_type const& cell_of(typename F::node const& n) const {
                 common::shared_guard<parallel> l(m_node_mutex);
                 return m_nodes.at(n.uid)->second;
             }

@@ -46,7 +46,7 @@ TEST(AlgorithmTest, NthElements) {
 }
 
 TEST(AlgorithmTest, ParallelFor) {
-    const int N = 10000;
+    int const N = 10000;
     std::vector<int> v(N);
     int acc;
     for (size_t i=0; i<v.size(); ++i) v[i] = i;

@@ -78,7 +78,7 @@ struct mutex<false> {
     mutex() = default;
 
     //! @brief Deleted copy constructor.
-    mutex(const mutex&) = delete;
+    mutex(mutex const&) = delete;
 
     //! @brief Tries to acquire the lock, returning false if not available.
     inline bool try_lock() {
@@ -112,7 +112,7 @@ struct mutex<true> {
     }
 
     //! @brief Deleted copy constructor.
-    mutex(const mutex&) = delete;
+    mutex(mutex const&) = delete;
 
     //! @brief Tries to acquire the lock, returning false if not available.
     inline bool try_lock() {
@@ -156,7 +156,7 @@ struct shared_mutex<false> {
     shared_mutex() = default;
 
     //! @brief Deleted copy constructor.
-    shared_mutex(const shared_mutex&) = delete;
+    shared_mutex(shared_mutex const&) = delete;
 
     //! @brief Tries to acquire the exclusive lock, returning false if not available.
     inline bool try_lock() {
@@ -201,7 +201,7 @@ struct shared_mutex<true> {
     }
 
     //! @brief Deleted copy constructor.
-    shared_mutex(const shared_mutex&) = delete;
+    shared_mutex(shared_mutex const&) = delete;
 
     //! @brief Tries to acquire the exclusive lock, returning false if not available.
     inline bool try_lock() {
@@ -277,7 +277,7 @@ namespace details {
         unlock_guard(M& m, std::adopt_lock_t) : m_mutex(m) {}
 
         //! @brief Disabled copying.
-        unlock_guard(const unlock_guard&) = delete;
+        unlock_guard(unlock_guard const&) = delete;
 
         //! @brief Locking destructor.
         ~unlock_guard() {
@@ -300,7 +300,7 @@ namespace details {
         shared_guard(M& m, std::adopt_lock_t) : m_mutex(m) {}
 
         //! @brief Disabled copying.
-        shared_guard(const shared_guard&) = delete;
+        shared_guard(shared_guard const&) = delete;
 
         //! @brief Locking destructor.
         ~shared_guard() {
@@ -321,7 +321,7 @@ namespace details {
         bypassed_guard(M&, std::adopt_lock_t) {}
 
         //! @brief Disabled copying.
-        bypassed_guard(const bypassed_guard&) = delete;
+        bypassed_guard(bypassed_guard const&) = delete;
     };
 
     //! @brief Bypassed version of a lock (unique, shared or exclusive).
@@ -338,12 +338,12 @@ namespace details {
         bypassed_lock(M&, std::adopt_lock_t) {}
 
         template <class R, class P>
-        bypassed_lock(M&, const std::chrono::duration<R,P>&) {}
+        bypassed_lock(M&, std::chrono::duration<R,P> const&) {}
 
         template <class C, class D>
-        bypassed_lock(M&, const std::chrono::time_point<C,D>&) {}
+        bypassed_lock(M&, std::chrono::time_point<C,D> const&) {}
 
-        bypassed_lock(const bypassed_lock&) = delete;
+        bypassed_lock(bypassed_lock const&) = delete;
 
         bypassed_lock(bypassed_lock&&) {}
 
@@ -351,7 +351,7 @@ namespace details {
             return *this;
         }
 
-        inline bypassed_lock& operator=(const bypassed_lock&) = delete;
+        inline bypassed_lock& operator=(bypassed_lock const&) = delete;
 
         inline void swap(bypassed_lock&) noexcept {}
 
@@ -366,12 +366,12 @@ namespace details {
         }
 
         template <class R, class P>
-        inline bool try_lock_for(const std::chrono::duration<R,P>&) {
+        inline bool try_lock_for(std::chrono::duration<R,P> const&) {
             return true;
         }
 
         template <class C, class D>
-        inline bool try_lock_until(const std::chrono::time_point<C,D>&) {
+        inline bool try_lock_until(std::chrono::time_point<C,D> const&) {
             return true;
         }
 

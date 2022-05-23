@@ -37,7 +37,7 @@ namespace std {
     //! @brief Single-threaded mutex interface.
     struct mutex {
         mutex() = default;
-        mutex(const mutex&) = delete;
+        mutex(mutex const&) = delete;
         inline bool try_lock() {
             return true;
         }
@@ -48,7 +48,7 @@ namespace std {
     template <typename M>
     struct lock_guard {
         lock_guard(M const&) {}
-        lock_guard(const lock_guard&) = delete;
+        lock_guard(lock_guard const&) = delete;
     };
 }
 //! @endcond
@@ -70,12 +70,15 @@ namespace common {
 namespace tags {
     //! @brief Tag for sequential execution policy.
     struct sequential_execution {
+        //! @brief Constructor.
         sequential_execution(size_t = 1) {}
     };
 
     //! @brief Tag for parallel execution policy (with a given number of threads).
     struct parallel_execution {
+        //! @brief Constructor.
         parallel_execution(size_t n = std::thread::hardware_concurrency()) : num(n) {}
+        //! @brief Parallel threads number.
         size_t num;
     };
 
@@ -85,8 +88,12 @@ namespace tags {
 
     //! @brief Tag for parallel execution policy, assigning tasks dynamically (with a given number of threads and chunk size).
     struct dynamic_execution {
+        //! @brief Constructor.
         dynamic_execution(size_t n = std::thread::hardware_concurrency(), size_t s = 1) : num(n), size(s) {}
-        size_t num, size;
+        //! @brief Parallel threads number.
+        size_t num;
+        //! @brief Chunk size.
+        size_t size;
     };
 }
 
@@ -143,6 +150,7 @@ namespace details {
      */
     template <typename E, typename I, typename C>
     void nth_elements(E efirst, E elast, I ifirst, I ilast, C comp, size_t offs, size_t bound) {
+        using std::swap;
         // no indexes
         if (ifirst == ilast) return;
         // one index
@@ -151,13 +159,13 @@ namespace details {
             // is the first: just a min will do
             if (n == 0) {
                 E emin = std::min_element(efirst, elast, comp);
-                std::swap(*efirst, *emin);
+                swap(*efirst, *emin);
                 return;
             }
             // is the last: just a max will do
             if (n+1 == elast-efirst) {
                 E emax = std::max_element(efirst, elast, comp);
-                std::swap(*(elast-1), *emax);
+                swap(*(elast-1), *emax);
                 return;
             }
             // just call nth_element from the library

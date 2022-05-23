@@ -41,6 +41,12 @@ TEST(TupleTest, TupleCat) {
     EXPECT_EQ('x',   get<3>(s));
 }
 
+TEST(TupleTest, TupleElement) {
+    using type = tuple<int,double,bool,char>;
+    EXPECT_SAME(tuple_element_t<0, type>, int);
+    EXPECT_SAME(tuple_element_t<2, type>, bool);
+}
+
 TEST(TupleTest, Operators) {
     tuple<int,double> t{5,6};
     tuple<int,double> s = -t;

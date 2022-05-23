@@ -15,7 +15,7 @@
 namespace fcpp {
 
 //! @brief Supported mouse input type.
-enum class mouse_type { hover, click, drag, scroll };
+enum class mouse_type : char { hover, click, drag, scroll };
 
 //! @brief Default camera's depth
 constexpr float CAM_DEFAULT_DEPTH{ 10.0f };

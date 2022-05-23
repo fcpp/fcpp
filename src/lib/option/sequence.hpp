@@ -367,7 +367,7 @@ namespace details {
 
     // Helper function ignoring its arguments.
     template <class... Ts>
-    void ignore(const Ts&...) {}
+    void ignore(Ts const&...) {}
 }
 //! @endcond
 

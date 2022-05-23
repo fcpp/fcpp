@@ -40,6 +40,19 @@ cc_library(
 )
 
 cc_library(
+    name = 'functor',
+    hdrs = ['functor.hpp'],
+    srcs = ['functor.cpp'],
+    deps = [
+        "//lib:settings",
+        "//lib/common:tagged_tuple",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'metric',
     hdrs = ['metric.hpp'],
     srcs = ['metric.cpp'],

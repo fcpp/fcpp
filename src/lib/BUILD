@@ -106,6 +106,7 @@ cc_library(
         "//lib/deployment:hardware_identifier",
         "//lib/deployment:hardware_logger",
         "//lib/deployment:os",
+        "//lib/deployment:persister",
     ],
     visibility = [
         '//visibility:public',
@@ -157,6 +158,7 @@ cc_library(
         "//lib/option:aggregator",
         "//lib/option:connect",
         "//lib/option:distribution",
+        "//lib/option:functor",
         "//lib/option:metric",
         "//lib/option:sequence",
     ],
@@ -184,6 +186,7 @@ cc_library(
         "//lib/simulation:displayer",
         "//lib/simulation:simulated_connector",
         "//lib/simulation:simulated_positioner",
+        "//lib/simulation:simulated_map",
         "//lib/simulation:spawner",
     ],
     visibility = [

@@ -34,6 +34,7 @@ namespace filter {
     //! @brief Filters values within `L/den` and `U/den` (included).
     template <intmax_t L, intmax_t U, intmax_t den = 1>
     struct within {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             v *= den;
@@ -58,6 +59,7 @@ namespace filter {
     //! @brief Negate a filter.
     template <typename F>
     struct neg : F {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             return not F::operator()(v);
@@ -67,6 +69,7 @@ namespace filter {
     //! @brief Joins filters (or).
     template <typename F, typename G>
     struct vee : F, G {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             return F::operator()(v) or G::operator()(v);
@@ -76,6 +79,7 @@ namespace filter {
     //! @brief Disjoins filters (and).
     template <typename F, typename G>
     struct wedge : F, G {
+        //! @brief Filter check.
         template <typename V>
         bool operator()(V v) const {
             return F::operator()(v) and G::operator()(v);
@@ -198,24 +202,28 @@ O& operator<<(O& o, page const& p) {
 
 //! @brief Structure representing a whole file of plots.
 struct file {
+    //! @brief The type for options.
+    using option_type = std::vector<std::pair<std::string, std::string>>;
     //! @brief Constructor with a vector of pages.
-    file(std::string title, std::vector<page> p) : title(title), pages(p) {}
+    file(std::string title, std::vector<page> p, option_type opt = {}) : title(title), pages(p), options(opt) {}
     //! @brief Constructor with an array of pages.
     template <size_t N>
-    file(std::string title, std::array<page, N> p) : title(title), pages(p.begin(), p.end()) {}
+    file(std::string title, std::array<page, N> p, option_type opt = {}) : title(title), pages(p.begin(), p.end()), options(opt) {}
     //! @brief Constructor with a vector of plots.
-    file(std::string title, std::vector<plot> p) : title(title) {
+    file(std::string title, std::vector<plot> p, option_type opt = {}) : title(title), options(opt) {
         pages.emplace_back(p);
     }
     //! @brief Constructor with an array of plots.
     template <size_t N>
-    file(std::string title, std::array<plot, N> p) : title(title) {
+    file(std::string title, std::array<plot, N> p, option_type opt = {}) : title(title), options(opt) {
         pages.emplace_back(p);
     }
     //! @brief Title of the file.
     std::string title;
     //! @brief Page list.
     std::vector<page> pages;
+    //! @brief Custom plot options.
+    option_type options;
 };
 
 //! @brief Printing a file.
@@ -225,6 +233,10 @@ O& operator<<(O& o, file const& f) {
     o << "string name = \"" << f.title << "\";\n\n";
     o << "import \"plot.asy\" as plot;\n";
     o << "unitsize(1cm);\n\n";
+    if (not f.options.empty()) {
+        for (auto const& k : f.options) o << "plot." << k.first << " = " << k.second << ";\n";
+        o << "\n";
+    }
     for (page const& p : f.pages) o << p << "\n";
     o << "shipout(\"" << f.title << "\");\n";
     return o;
@@ -302,9 +314,15 @@ namespace details {
             return *this;
         }
 
-        //! @brief Serialises the content from/to a given input/output stream.
-        template <typename S>
-        S& serialize(S& s) {
+        //! @brief Serialises the content from a given input stream.
+        common::isstream& serialize(common::isstream& s) {
+            delta_type d = serialize_delta(s);
+            serialize_impl(s, d, typename T::tags{});
+            return s;
+        }
+
+        //! @brief Serialises the content to a given output stream.
+        common::osstream& serialize(common::osstream& s) const {
             delta_type d = serialize_delta(s);
             serialize_impl(s, d, typename T::tags{});
             return s;
@@ -317,14 +335,14 @@ namespace details {
             s.read(d);
             return d;
         }
-        delta_type serialize_delta(common::type_sequence<>) {
+        delta_type serialize_delta(common::type_sequence<>) const {
             return 0;
         }
         template <typename S, typename... Ss>
-        delta_type serialize_delta(common::type_sequence<S, Ss...>) {
+        delta_type serialize_delta(common::type_sequence<S, Ss...>) const {
             return (serialize_delta(common::type_sequence<Ss...>{}) << 1) + (common::get<S>(*this) == common::get<S>(m_ref));
         }
-        delta_type serialize_delta(common::osstream& s) {
+        delta_type serialize_delta(common::osstream& s) const {
             delta_type d = serialize_delta(typename T::tags{});
             s.write(d);
             return d;
@@ -332,19 +350,25 @@ namespace details {
 
         //! @brief Serialises a skipped field.
         template <typename S>
-        void serialize_skip(common::isstream const&, common::type_sequence<S>) {
+        inline void serialize_skip(common::isstream const&, common::type_sequence<S>) {
             common::get<S>(*this) = common::get<S>(m_ref);
         }
         template <typename S>
-        void serialize_skip(common::osstream const&, common::type_sequence<S>) {}
+        inline void serialize_skip(common::osstream const&, common::type_sequence<S>) const {}
 
         //! @brief Serialises given delta and tags.
         template <typename S>
-        void serialize_impl(S&, delta_type, common::type_sequence<>) {}
+        void serialize_impl(S&, delta_type, common::type_sequence<>) const {}
         template <typename S, typename S1, typename... Ss>
         void serialize_impl(S& s, delta_type d, common::type_sequence<S1, Ss...>) {
             if (d & 1) serialize_skip(s, common::type_sequence<S1>{});
             else s & common::get<S1>(*this);
+            serialize_impl(s, d >> 1, common::type_sequence<Ss...>{});
+        }
+        template <typename S1, typename... Ss>
+        void serialize_impl(common::osstream& s, delta_type d, common::type_sequence<S1, Ss...>) const {
+            if (d & 1) serialize_skip(s, common::type_sequence<S1>{});
+            else s << common::get<S1>(*this);
             serialize_impl(s, d >> 1, common::type_sequence<Ss...>{});
         }
 
@@ -413,8 +437,9 @@ class rows {
     //! @brief Prints the object's contents.
     template <typename O>
     void print(O& o) {
+        using std::swap;
         common::isstream rows({});
-        std::swap(rows.data(), m_rows.data());
+        swap(rows.data(), m_rows.data());
         std::string tstr = std::string(ctime(&m_start));
         tstr.pop_back();
         o << "########################################################\n";
@@ -442,7 +467,7 @@ class rows {
         o << "########################################################\n";
         o << "# FCPP execution finished at: " << tstr << " #\n";
         o << "########################################################" << std::endl;
-        std::swap(rows.data(), m_rows.data());
+        swap(rows.data(), m_rows.data());
     }
 
   private:
@@ -743,8 +768,8 @@ class value {
                 p.source = common::details::strip_namespaces(t.substr(0, pos));
                 p.unit = t.substr(pos+2);
             } else {
-                p.unit = "";
                 p.source = common::details::strip_namespaces(t);
+                p.unit = p.source;
             }
         }
         details::format_type(p.unit);
@@ -768,7 +793,7 @@ class value {
 
     //! @brief Tag name (if aggregator present).
     std::string tag_name(common::bool_pack<true>) const {
-        return common::type_name<typename S::type>();
+        return common::type_name<typename S::tag>();
     }
     //! @brief Tag name (if aggregator absent).
     std::string tag_name(common::bool_pack<false>) const {
@@ -882,6 +907,7 @@ template <typename S, typename A, typename... Ts>
 using values = typename details::values<S, A, Ts...>::type;
 
 
+//! @cond INTERNAL
 namespace details {
     //! @brief The type to be used for a single key.
     template <typename S>
@@ -937,6 +963,7 @@ namespace details {
     template <typename P>
     using promote = typename promote_impl<typename inspector<P>::type, inspector<P>::single>::type;
 }
+//! @endcond
 
 /**
  * Split rows depending on
@@ -1010,10 +1037,32 @@ class split {
             if (q.unit.size()) units.insert(q.unit);
             res[0].yvals.emplace_back(q.source, std::vector<double>{});
         }
-        for (std::string const& s : units) {
-            res[0].yname += (res[0].yname.size() ? "/" : "") + s;
-        }
         if (units.empty()) res[0].yname = "y";
+        else if (units.size() == 1) res[0].yname = *units.begin();
+        else {
+            std::vector<std::string> w1;
+            std::vector<std::set<std::string>> words;
+            auto filler = [](auto&& inserter, std::string const& s){
+                size_t pos = 0;
+                for (size_t p = s.find(" ", pos); p != std::string::npos; p = s.find(" ", pos)) {
+                    inserter(s.substr(pos, p-pos));
+                    pos = p+1;
+                }
+                inserter(s.substr(pos));
+            };
+            filler([&](std::string s){ w1.push_back(s); }, *units.begin());
+            for (auto it = ++units.begin(); it != units.end(); ++it) {
+                words.emplace_back();
+                filler([&](std::string s){ words.back().insert(s); }, *it);
+            }
+            for (std::string const& s : w1) {
+                bool ok = true;
+                for (size_t i=0; ok and i<words.size(); ++i) if (words[i].count(s) == 0) ok = false;
+                if (ok) res[0].yname += (res[0].yname.size() ? " " : "") + s;
+            }
+            if (res[0].yname.empty()) res[0].yname = "y";
+        }
+        if (res[0].yname.size() > 6) res[0].yname = details::shorten(res[0].yname);
         for (auto const& p : m) {
             res[0].xvals.push_back(std::get<0>(p.first));
             for (size_t i = 0; i < p.second.size(); ++i)

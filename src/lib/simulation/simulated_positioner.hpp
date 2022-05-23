@@ -30,7 +30,7 @@ namespace component {
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
     //! @brief Declaration tag associating to the dimensionality of the space.
-    template <size_t n>
+    template <intmax_t n>
     struct dimension {};
 
     //! @brief Node initialisation tag associating to a starting position.
@@ -77,7 +77,7 @@ namespace details {
 template <class... Ts>
 struct simulated_positioner {
     //! @brief The dimensionality of the space.
-    constexpr static size_t dimension = common::option_num<tags::dimension, 2, Ts...>;
+    constexpr static intmax_t dimension = common::option_num<tags::dimension, 2, Ts...>;
 
     /**
      * @brief The actual component.

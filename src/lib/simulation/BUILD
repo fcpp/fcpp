@@ -4,6 +4,7 @@ cc_library(
     srcs = ['batch.cpp'],
     deps = [
         "//lib/common:algorithm",
+        "//lib/common:option",
         "//lib/common:tagged_tuple",
     ],
     visibility = [
@@ -37,6 +38,22 @@ cc_library(
         '//visibility:public',
     ],
 )
+
+cc_library(
+    name = 'simulated_map',
+    hdrs = ['simulated_map.hpp'],
+    srcs = ['simulated_map.cpp'],
+    deps = [
+        "//lib/component:base",
+        "//lib/data:color",
+        "//lib/data:vec",
+        "@stb_image//:main",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
 
 cc_library(
     name = 'simulated_positioner',

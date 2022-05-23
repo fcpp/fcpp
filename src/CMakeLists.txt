@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 ####################
 # HELPER FUNCTIONS #
@@ -18,11 +18,19 @@ macro(fcpp_setup)
     set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -march=native")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+    if(NOT CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+        # -march=native is not supported by arm64
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
+    endif()
     if(WIN32)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Os")
         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
         set(BUILD_SHARED_LIBS OFF)
         set(CMAKE_EXE_LINKER_FLAGS "-static")
+        if(FCPP_BUILD_GL)
+            set(CMAKE_DISABLE_FIND_PACKAGE_BrotliDec True)
+        endif(FCPP_BUILD_GL)
     endif(WIN32)
     if(FCPP_BUILD_TESTS)
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/test)
@@ -30,7 +38,8 @@ macro(fcpp_setup)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/run)
 endmacro()
 
-function(fcpp_target target_name target_executable enable_gui)
+function(fcpp_target target_executable enable_gui)
+    get_filename_component(target_name ${target_executable} NAME_WE)
     add_executable(${target_name} ${target_executable})
     target_link_libraries(${target_name} PRIVATE fcpp)
     target_include_directories(${target_name} PRIVATE .)
@@ -44,7 +53,8 @@ function(fcpp_target target_name target_executable enable_gui)
     fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
 endfunction()
 
-function(fcpp_test target_name target_executable)
+function(fcpp_test target_executable)
+    get_filename_component(target_name ${target_executable} NAME_WE)
     if(FCPP_BUILD_TESTS)
         add_executable(${target_name}_test ${target_executable})
         target_link_libraries(${target_name}_test PRIVATE
@@ -118,6 +128,7 @@ set(
     lib/deployment/hardware_identifier.cpp
     lib/deployment/hardware_logger.cpp
     lib/deployment/os.cpp
+    lib/deployment/persister.cpp
     lib/fcpp.cpp
     lib/internal.cpp
     lib/internal/context.cpp
@@ -128,12 +139,14 @@ set(
     lib/option/aggregator.cpp
     lib/option/connect.cpp
     lib/option/distribution.cpp
+    lib/option/functor.cpp
     lib/option/metric.cpp
     lib/option/sequence.cpp
     lib/settings.cpp
     lib/simulation.cpp
     lib/simulation/batch.cpp
     lib/simulation/simulated_connector.cpp
+    lib/simulation/simulated_map.cpp
     lib/simulation/simulated_positioner.cpp
     lib/simulation/spawner.cpp
 )
@@ -162,6 +175,19 @@ endif(FCPP_BUILD_GL)
 # EXTERNAL LIBRARIES #
 ######################
 
+add_library(
+        stb_image
+        ./external/stb_image/stb_image.h
+        ./external/stb_image/stb_image.cpp
+)
+target_include_directories(stb_image PUBLIC ./external/stb_image)
+target_link_libraries(
+        fcpp PUBLIC
+        stb_image
+)
+if(UNIX)
+    target_compile_options(stb_image PUBLIC -fPIC)
+endif(UNIX)
 if(FCPP_BUILD_GL)
     option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
     option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
@@ -172,34 +198,26 @@ if(FCPP_BUILD_GL)
         ./external/glad-core-3.3/include/glad/glad.h
         ./external/glad-core-3.3/src/glad.c
     )
-    add_library(
-        stb_image
-        ./external/stb_image/stb_image.h
-        ./external/stb_image/stb_image.cpp
-    )
     add_subdirectory(./external/glm-0.9.9.8/glm)
-    add_subdirectory(./external/glfw-3.3.2)
-    add_subdirectory(./external/freetype-2.10.4)
+    add_subdirectory(./external/glfw-3.3.4)
+    add_subdirectory(./external/freetype-2.11.0)
     target_include_directories(glad PUBLIC ./external/glad-core-3.3/include)
-    target_include_directories(stb_image PUBLIC ./external/stb_image)
     target_include_directories(
         fcpp PUBLIC
         ./external
         ./external/glad-core-3.3/include
         ./external/glm-0.9.9.8/glm
-        ./external/glfw-3.3.2/include
-        ./external/freetype-2.10.4/devel
+        ./external/glfw-3.3.4/include
+        ./external/freetype-2.11.0/devel
     )
     target_link_libraries(
         fcpp PUBLIC
         glad
         glm
         glfw
-        stb_image
         freetype
     )
     if(UNIX)
-        target_compile_options(stb_image PUBLIC -fPIC)
         target_compile_options(glad PUBLIC -fPIC)
         target_compile_options(freetype PUBLIC -fPIC)
     endif(UNIX)
@@ -231,64 +249,60 @@ if(FCPP_BUILD_TESTS)
         gtest
     )
     if(FCPP_INTERNAL_TESTS)
-        set(
-            TEST_FILES
-            test/cloud/graph_connector.cpp
-            test/cloud/graph_spawner.cpp
-            test/common/algorithm.cpp
-            test/common/multitype_map.cpp
-            test/common/mutex.cpp
-            test/common/option.cpp
-            test/common/ostream.cpp
-            test/common/plot.cpp
-            test/common/profiler.cpp
-            test/common/quaternion.cpp
-            test/common/random_access_map.cpp
-            test/common/serialize.cpp
-            test/common/tagged_tuple.cpp
-            test/common/traits.cpp
-            test/component/base.cpp
-            test/component/calculus.cpp
-            test/component/identifier.cpp
-            test/component/logger.cpp
-            test/component/randomizer.cpp
-            test/component/scheduler.cpp
-            test/component/storage.cpp
-            test/component/timer.cpp
-            test/coordination/collection.cpp
-            test/coordination/election.cpp
-            test/coordination/geometry.cpp
-            test/coordination/spreading.cpp
-            test/coordination/time.cpp
-            test/coordination/utils.cpp
-            test/data/color.cpp
-            test/data/field.cpp
-            test/data/hyperloglog.cpp
-            test/data/tuple.cpp
-            test/data/vec.cpp
-            test/deployment/hardware_connector.cpp
-            test/deployment/hardware_identifier.cpp
-            test/deployment/hardware_logger.cpp
-            test/general/collection_compare.cpp
-            test/general/embedded.cpp
-            test/general/slow_distance.cpp
-            test/internal/context.cpp
-            test/internal/flat_ptr.cpp
-            test/internal/trace.cpp
-            test/internal/twin.cpp
-            test/option/aggregator.cpp
-            test/option/connect.cpp
-            test/option/distribution.cpp
-            test/option/metric.cpp
-            test/option/sequence.cpp
-            test/simulation/batch.cpp
-            test/simulation/simulated_connector.cpp
-            test/simulation/simulated_positioner.cpp
-            test/simulation/spawner.cpp
-        )
-        foreach(TESTFILE IN LISTS TEST_FILES)
-            get_filename_component(TESTNAME ${TESTFILE} NAME_WE)
-            fcpp_test(${TESTNAME} ${TESTFILE})
-        endforeach()
+        fcpp_test(test/cloud/graph_connector.cpp)
+        fcpp_test(test/cloud/graph_spawner.cpp)
+        fcpp_test(test/common/algorithm.cpp)
+        fcpp_test(test/common/multitype_map.cpp)
+        fcpp_test(test/common/mutex.cpp)
+        fcpp_test(test/common/option.cpp)
+        fcpp_test(test/common/ostream.cpp)
+        fcpp_test(test/common/plot.cpp)
+        fcpp_test(test/common/profiler.cpp)
+        fcpp_test(test/common/quaternion.cpp)
+        fcpp_test(test/common/random_access_map.cpp)
+        fcpp_test(test/common/serialize.cpp)
+        fcpp_test(test/common/tagged_tuple.cpp)
+        fcpp_test(test/common/traits.cpp)
+        fcpp_test(test/component/base.cpp)
+        fcpp_test(test/component/calculus.cpp)
+        fcpp_test(test/component/identifier.cpp)
+        fcpp_test(test/component/logger.cpp)
+        fcpp_test(test/component/randomizer.cpp)
+        fcpp_test(test/component/scheduler.cpp)
+        fcpp_test(test/component/storage.cpp)
+        fcpp_test(test/component/timer.cpp)
+        fcpp_test(test/coordination/collection.cpp)
+        fcpp_test(test/coordination/election.cpp)
+        fcpp_test(test/coordination/geometry.cpp)
+        fcpp_test(test/coordination/spreading.cpp)
+        fcpp_test(test/coordination/time.cpp)
+        fcpp_test(test/coordination/utils.cpp)
+        fcpp_test(test/data/color.cpp)
+        fcpp_test(test/data/field.cpp)
+        fcpp_test(test/data/hyperloglog.cpp)
+        fcpp_test(test/data/tuple.cpp)
+        fcpp_test(test/data/vec.cpp)
+        fcpp_test(test/deployment/hardware_connector.cpp)
+        fcpp_test(test/deployment/hardware_identifier.cpp)
+        fcpp_test(test/deployment/hardware_logger.cpp)
+        fcpp_test(test/deployment/persister.cpp)
+        fcpp_test(test/general/collection_compare.cpp)
+        fcpp_test(test/general/embedded.cpp)
+        fcpp_test(test/general/slow_distance.cpp)
+        fcpp_test(test/internal/context.cpp)
+        fcpp_test(test/internal/flat_ptr.cpp)
+        fcpp_test(test/internal/trace.cpp)
+        fcpp_test(test/internal/twin.cpp)
+        fcpp_test(test/option/aggregator.cpp)
+        fcpp_test(test/option/connect.cpp)
+        fcpp_test(test/option/distribution.cpp)
+        fcpp_test(test/option/functor.cpp)
+        fcpp_test(test/option/metric.cpp)
+        fcpp_test(test/option/sequence.cpp)
+        fcpp_test(test/simulation/batch.cpp)
+        fcpp_test(test/simulation/simulated_connector.cpp)
+        fcpp_test(test/simulation/simulated_positioner.cpp)
+        fcpp_test(test/simulation/simulated_map.cpp)
+        fcpp_test(test/simulation/spawner.cpp)
     endif(FCPP_INTERNAL_TESTS)
 endif(FCPP_BUILD_TESTS)

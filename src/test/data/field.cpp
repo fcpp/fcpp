@@ -49,7 +49,7 @@ class FieldTest : public ::testing::Test {
 
     template <typename T>
     T const& constify(T& x) {
-        return static_cast<const T&>(x);
+        return static_cast<T const&>(x);
     }
 
     template <typename T>
@@ -102,23 +102,23 @@ TEST_F(FieldTest, TupleAccess) {
     tuple<field<int>, double> t3{fi1, 2.5};
     tuple<tuple<field<int>,int>, field<double>> t4{{fi1, 42},fd};
     EXPECT_SAME(field<tuple<int,double>>&&,         decltype(std::move(t1)));
-    EXPECT_SAME(const field<tuple<int,double>>&,    decltype(constify(t1)));
-    EXPECT_SAME(const field<tuple<int,double>>&&,   decltype(std::move(constify(t1))));
+    EXPECT_SAME(field<tuple<int,double>> const&,    decltype(constify(t1)));
+    EXPECT_SAME(field<tuple<int,double>> const&&,   decltype(std::move(constify(t1))));
     EXPECT_SAME(tuple<int, double>&,                decltype(details::other(t1)));
     EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(t1))));
-    EXPECT_SAME(const tuple<int, double>&,          decltype(details::other(constify(t1))));
+    EXPECT_SAME(tuple<int, double> const&,          decltype(details::other(constify(t1))));
     EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(constify(t1)))));
     EXPECT_SAME(tuple<int&, double&>,               decltype(details::other(t2)));
     EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(t2))));
-    EXPECT_SAME(tuple<const int&, const double&>,   decltype(details::other(constify(t2))));
+    EXPECT_SAME(tuple<int const&, double const&>,   decltype(details::other(constify(t2))));
     EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(constify(t2)))));
-    EXPECT_SAME(tuple<int&, const double&>,         decltype(details::other(t3)));
+    EXPECT_SAME(tuple<int&, double const&>,         decltype(details::other(t3)));
     EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(t3))));
-    EXPECT_SAME(tuple<const int&, const double&>,   decltype(details::other(constify(t3))));
+    EXPECT_SAME(tuple<int const&, double const&>,   decltype(details::other(constify(t3))));
     EXPECT_SAME(tuple<int, double>,                 decltype(details::other(std::move(constify(t3)))));
-    EXPECT_SAME(tuple<tuple<int&, const int&>, double&>,             decltype(details::other(t4)));
+    EXPECT_SAME(tuple<tuple<int&, int const&>, double&>,             decltype(details::other(t4)));
     EXPECT_SAME(tuple<tuple<int, int>, double>,                      decltype(details::other(std::move(t4))));
-    EXPECT_SAME(tuple<tuple<const int&, const int&>, const double&>, decltype(details::other(constify(t4))));
+    EXPECT_SAME(tuple<tuple<int const&, int const&>, double const&>, decltype(details::other(constify(t4))));
     EXPECT_SAME(tuple<tuple<int, int>, double>,                      decltype(details::other(std::move(constify(t4)))));
     auto x1 = details::other(t1);
     EXPECT_EQ(42,  get<0>(x1));

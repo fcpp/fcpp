@@ -16,20 +16,28 @@ TEST(FlatPtrTest, Size) {
 
 TEST(FlatPtrTest, TrueOperators) {
     internal::flat_ptr<char, true> data('a');
-    internal::flat_ptr<char, true> x(data), y, z;
+    internal::flat_ptr<char, true> x(data), y, z, a, b;
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(data, z);
+    EXPECT_EQ(a, b);
+    swap(z, a);
+    EXPECT_EQ(data, a);
+    EXPECT_EQ(z, b);
 }
 
 TEST(FlatPtrTest, FalseOperators) {
     internal::flat_ptr<char, false> data('a');
-    internal::flat_ptr<char, false> x(data), y, z;
+    internal::flat_ptr<char, false> x(data), y, z, a, b;
     z = y;
     y = x;
     z = std::move(y);
     EXPECT_EQ(data, z);
+    EXPECT_EQ(a, b);
+    swap(z, a);
+    EXPECT_EQ(data, a);
+    EXPECT_EQ(z, b);
 }
 
 TEST(FlatPtrTest, Dereferencing) {

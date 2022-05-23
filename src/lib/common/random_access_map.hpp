@@ -48,7 +48,7 @@ namespace details {
         iterator() = default;
 
         //! @brief Copy constructor.
-        iterator(const iterator&) = default;
+        iterator(iterator const&) = default;
 
         //! @brief Move constructor.
         iterator(iterator&&) = default;
@@ -63,14 +63,15 @@ namespace details {
         //! @name assignment operators
         //! @{
         //! @brief Copy assignment.
-        iterator& operator=(const iterator&) = default;
+        iterator& operator=(iterator const&) = default;
 
         //! @brief Move assignment.
         iterator& operator=(iterator&&) = default;
 
         //! @brief Swap function.
         friend void swap(iterator& i, iterator& j) {
-            std::swap(i.m_it, j.m_it);
+            using std::swap;
+            swap(i.m_it, j.m_it);
         }
         //! @}
 
@@ -171,7 +172,7 @@ namespace details {
  * @param P Equality predicate type.
  * @param A Allocator type.
  */
-template <typename K, typename T, typename H = std::hash<K>, typename P = std::equal_to<K>, typename A = std::allocator<std::pair<const K,T>>>
+template <typename K, typename T, typename H = std::hash<K>, typename P = std::equal_to<K>, typename A = std::allocator<std::pair<K const,T>>>
 class random_access_map {
   private:
     //! @brief The internal unordered map type.
@@ -187,7 +188,7 @@ class random_access_map {
     //! @brief The mapped type.
     using mapped_type = T;
     //! @brief The value type.
-    using value_type = std::pair<const key_type, mapped_type>;
+    using value_type = std::pair<key_type const, mapped_type>;
     //! @brief The hasher type.
     using hasher = H;
     //! @brief The comparison predicate type.
@@ -197,7 +198,7 @@ class random_access_map {
     //! @brief Reference type.
     using reference = value_type&;
     //! @brief Const reference type.
-    using const_reference = const value_type&;
+    using const_reference = value_type const&;
     //! @brief Pointer type.
     using pointer = typename std::allocator_traits<A>::pointer;
     //! @brief Const pointer type.
@@ -214,11 +215,12 @@ class random_access_map {
   public:
     //! @name constructors
     //! @{
+
     //! @brief Default constructor.
     random_access_map() = default;
 
     //! @brief Copy constructor.
-    random_access_map(const random_access_map&) = default;
+    random_access_map(random_access_map const&) = default;
 
     //! @brief Move constructor.
     random_access_map(random_access_map&&) = default;
@@ -237,8 +239,9 @@ class random_access_map {
 
     //! @name assignment operators
     //! @{
+
     //! @brief Copy assignment.
-    random_access_map& operator=(const random_access_map&) = default;
+    random_access_map& operator=(random_access_map const&) = default;
 
     //! @brief Move assignment.
     random_access_map& operator=(random_access_map&&) = default;
@@ -273,10 +276,12 @@ class random_access_map {
         return m_iter.begin();
     }
 
-    //! @brief Returns a const iterator pointing to the first element in the container.
+    //! @brief Returns an iterator pointing to the first element in the container (const overload).
     const_iterator begin() const noexcept {
         return m_iter.begin();
     }
+
+    //! @brief Returns a const iterator pointing to the first element in the container.
     const_iterator cbegin() const noexcept {
         return m_iter.begin();
     }
@@ -286,15 +291,17 @@ class random_access_map {
         return m_iter.end();
     }
 
-    //! @brief Returns a const iterator pointing to the past-the-end element in the container.
+    //! @brief Returns an iterator pointing to the past-the-end element in the container (const overload).
     const_iterator end() const noexcept {
         return m_iter.end();
     }
+
+    //! @brief Returns a const iterator pointing to the past-the-end element in the container.
     const_iterator cend() const noexcept {
         return m_iter.end();
     }
 
-    //! @brief Accesses an element of the container (creating one if not found).
+    //! @brief Accesses an element of the container creating one if not found (const key overload).
     mapped_type& operator[](key_type const& k) {
         if (m_map.count(k) == 0) {
             m_map[k] = mapped_type();
@@ -302,6 +309,8 @@ class random_access_map {
         }
         return m_map[k];
     }
+
+    //! @brief Accesses an element of the container creating one if not found (value key overload).
     mapped_type& operator[](key_type&& k) {
         if (m_map.count(k) == 0) {
             m_map[k] = mapped_type();
@@ -310,18 +319,22 @@ class random_access_map {
         return m_map[std::move(k)];
     }
 
-    //! @brief Accesses an element of the container (throwing if not found).
+    //! @brief Accesses an element of the container throwing if not found.
     mapped_type& at(key_type const& k) {
         return m_map.at(k);
     }
+
+    //! @brief Accesses an element of the container throwing if not found (const overload).
     mapped_type const& at(key_type const& k) const {
         return m_map.at(k);
     }
 
-    //! @brief Searches the container for an element with a given key (end if not found).
+    //! @brief Searches the container for an element with a given key, returning end if not found.
     iterator find(key_type const& k) {
         return convert(m_map.find(k));
     }
+
+    //! @brief Searches the container for an element with a given key, returning end if not found (const overload).
     const_iterator find(key_type const& k) const {
         return convert(m_map.find(k));
     }
@@ -339,44 +352,56 @@ class random_access_map {
         return {convert(itb.first), itb.second};
     }
 
-    //! @brief Inserts new elements in the map.
+    //! @brief Inserts new elements in the map (const value overload).
     std::pair<iterator,bool> insert(value_type const& val) {
         auto itb = m_map.insert(val);
         if (itb.second) insert_impl(itb.first);
         return {convert(itb.first), itb.second};
     }
+
+    //! @brief Inserts new elements in the map (rvalue overload).
     std::pair<iterator,bool> insert(value_type&& val) {
         auto itb = m_map.insert(std::move(val));
         if (itb.second) insert_impl(itb.first);
         return {convert(itb.first), itb.second};
     }
+
+    //! @brief Inserts new elements in the map (range overload).
     template <class I>
     void insert(I first, I last) {
         for (I it = first; it != last; ++it) insert(*it);
     }
 
-    //! @brief Erases elements from the map.
+    //! @brief Erases elements from the map (iterator overload).
     iterator erase(iterator position) {
         auto it = convert(position);
         if (it != m_map.end()) erase_impl(it);
         return convert(m_map.erase(it));
     }
+
+    //! @brief Erases elements from the map (const iterator overload).
     iterator erase(const_iterator position) {
         auto it = convert(position);
         if (it != m_map.end()) erase_impl(it);
         return convert(m_map.erase(it));
     }
+
+    //! @brief Erases elements from the map (key overload).
     size_type erase(key_type const& k) {
         auto it = m_map.find(k);
         if (it != m_map.end()) erase_impl(it);
         return m_map.erase(k);
     }
+
+    //! @brief Erases elements from the map (range overload).
     iterator erase(iterator first, iterator last) {
         typename map_t::iterator f = convert(first);
         typename map_t::iterator l = convert(last);
         for (auto it = f; it != l; ++it) erase_impl(it);
         return convert(m_map.erase(first, last));
     }
+
+    //! @brief Erases elements from the map (const range overload).
     iterator erase(const_iterator first, const_iterator last) {
         typename map_t::const_iterator f = convert(first);
         typename map_t::const_iterator l = convert(last);
@@ -393,9 +418,10 @@ class random_access_map {
 
     //! @brief Swaps content with another map.
     void swap(random_access_map& o) {
-        std::swap(m_map,  o.m_map);
-        std::swap(m_idx,  o.m_idx);
-        std::swap(m_iter, o.m_iter);
+        using std::swap;
+        swap(m_map,  o.m_map);
+        swap(m_idx,  o.m_idx);
+        swap(m_iter, o.m_iter);
     }
 
     //! @brief Equality operator.

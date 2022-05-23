@@ -62,7 +62,7 @@ class clique {
 
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
-    clique(G&&, const common::tagged_tuple<S,T>&) {}
+    clique(G&&, common::tagged_tuple<S,T> const&) {}
 
     //! @brief The maximum radius of connection.
     real_t maximum_radius() const {
@@ -77,7 +77,7 @@ class clique {
 
     //! @brief Checks if connection is possible.
     template <typename G>
-    bool operator()(G&&, const data_type&, const position_type&, const data_type&, const position_type&) const {
+    bool operator()(G&&, data_type const&, position_type const&, data_type const&, position_type const&) const {
         return true;
     }
 };

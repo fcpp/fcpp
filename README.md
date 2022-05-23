@@ -9,28 +9,65 @@ An efficient C++14 implementation of the Pure Field Calculus, for fast and effec
 - FCPP presentation paper: [http://giorgio.audrito.info/static/fcpp.pdf](http://giorgio.audrito.info/static/fcpp.pdf).
 
 
-## Batch Simulation
+## Setup
 
-Batch simulations are preferably executed through the [Bazel](https://bazel.build) build system, and can be either done in a virtual environment for an easier setup, or in the native OS for increased performance.
+The next sections contain the setup instructions based on the CMake build system for the various supported OSs and virtual containers. Jump to the section dedicated to your system of choice and ignore the others.
+For backward compatibility (and faster testing), the [Bazel](https://bazel.build) build system is also supported but not recommended: in particular, the OpenGL graphical user interface is not available with Bazel. In order to use Bazel instead of CMake for building, you have to install it and then substitute `./make.sh bazel` for `./make.sh` in the commands of the "Testing" and "Execution" sections.
 
-### Vagrant
+### Windows
 
-Download Vagrant from [https://www.vagrantup.com](https://www.vagrantup.com), then type the following commands in a terminal, starting from the `src` folder of the repository:
+Pre-requisites:
+- [MSYS2](https://www.msys2.org)
+- [Asymptote](http://asymptote.sourceforge.io) (for building the plots)
+- [Doxygen](http://www.doxygen.nl) (for building the documentation)
+
+At this point, run "MSYS2 MinGW x64" from the start menu; a terminal will appear. Run the following commands:
 ```
-vagrant up
-vagrant ssh
-cd fcpp
-./make.sh test all
+pacman -Syu
 ```
-Then you should get output about building and testing the whole library (in the Vagrant virtual machine). After that you can exit and stop the virtual machine through:
+After updating packages, the terminal will close. Open it again, and then type:
 ```
-exit
-vagrant halt
+pacman -Sy --noconfirm --needed base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-make git
+```
+The build system should now be available from the "MSYS2 MinGW x64" terminal.
+
+### Linux
+
+Pre-requisites:
+- Xorg-dev package (X11)
+- G++ 9 (or higher)
+- CMake 3.18 (or higher)
+- Asymptote (for building the plots)
+- Doxygen (for building the documentation)
+
+To install these packages in Ubuntu, type the following command:
+```
+sudo apt-get install xorg-dev g++ cmake asymptote doxygen
+```
+In Fedora, the `xorg-dev` package is not available. Instead, install the packages:
+```
+libX11-devel libXinerama-devel.x86_6 libXcursor-devel.x86_64 libXi-devel.x86_64 libXrandr-devel.x86_64 mesa-libGL-devel.x86_64
 ```
 
-### Docker
+### MacOS
 
-Download Docker from [https://www.docker.com](https://www.docker.com), then download the Docker container from GitHub by typing the following command in a terminal:
+Pre-requisites:
+- Xcode Command Line Tools
+- CMake 3.18 (or higher)
+- Asymptote (for building the plots)
+- Doxygen (for building the documentation)
+
+To install them, assuming you have the [brew](https://brew.sh) package manager, type the following commands:
+```
+xcode-select --install
+brew install cmake asymptote doxygen
+```
+
+### Docker container
+
+**Warning:** the graphical simulations are based on OpenGL, which is **not** available in the Docker container. Use this system for batch simulations only.
+
+Download Docker from [https://www.docker.com](https://www.docker.com), then you can download the Docker container from GitHub by typing the following command in a terminal:
 ```
 docker pull docker.pkg.github.com/fcpp/fcpp/container:1.0
 ```
@@ -38,94 +75,69 @@ Alternatively, you can build the container yourself with the following command:
 ```
 docker build -t docker.pkg.github.com/fcpp/fcpp/container:1.0 .
 ```
-Once you have the Docker container locally available, type the following commands from the `src` folder of the repository:
+Once you have the Docker container locally available, type the following command to enter the container:
 ```
 docker run -it --volume $PWD:/fcpp --workdir /fcpp docker.pkg.github.com/fcpp/fcpp/container:1.0 bash
-./make.sh test all
 ```
-Then you should get output about building and testing the whole library (in the Docker container). After that you can exit and stop the container through:
+and the following command to exit it:
 ```
 exit
 ```
+In order to properly link the executables in Docker, you may need to add the `-pthread` option (substitute `-O` for `-O -pthread` below).
 
-### Custom Build
+### Vagrant container
 
-In order to get started on your machine you need the following installed:
+**Warning:** the graphical simulations are based on OpenGL, which is **not** available in the Vagrant container. Use this system for batch simulations only.
 
-- [Bazel](https://bazel.build) (tested with version 2.1.0)
-- [GCC](https://gcc.gnu.org) (tested with version 9.2.0) or [Clang](https://clang.llvm.org) (tested with Apple Clang 12.0.5)
-- [Doxygen](http://www.doxygen.nl)
+Download Vagrant from [https://www.vagrantup.com](https://www.vagrantup.com) and VirtualBox from [https://www.virtualbox.org](https://www.virtualbox.org), then type the following commands in a terminal to enter the Vagrant container:
+```
+vagrant up
+vagrant ssh
+cd fcpp
+```
+and the following commands to exit it:
+```
+exit
+vagrant halt
+```
 
-In the `src` folder, you should be able to run `./make.sh test all`, getting output about building and testing the whole library.
+### Virtual Machines
 
-### Documentation
+If you use a VM with a graphical interface, refer to the section for the operating system installed on it.
 
-Regardless of the method chosen above, you should be able to build the same documentation [available oline](http://fcpp-doc.surge.sh) with the following command:
+**Warning:** the graphical simulations are based on OpenGL, and common Virtual Machine software (e.g., VirtualBox) has faulty support for OpenGL. If you rely on a virtual machine for graphical simulations, it might work provided that you select hardware virtualization (as opposed to software virtualization). However, it is recommended to use the native OS whenever possible.
+
+
+## Documentation
+
+You should be able to build the same documentation [available oline](http://fcpp-doc.surge.sh) with the following command:
 ```
 ./make.sh doc
 ```
 
-### Plots
+## Testing
+
+You can run all the automated tests (through the [googletest](https://github.com/google/googletest) framework) with the following command:
+```
+./make.sh test all
+```
+issued from the `src` subfolder. In order to test a specific target, substitute `all` with (a substring of) the target of your choice.
+
+## Plots
 
 FCPP includes a [plot generation tool](http://fcpp-doc.surge.sh/plot_8hpp.html), which can be integrated with the [logger](http://fcpp-doc.surge.sh/structfcpp_1_1component_1_1logger.html) component. The tool produces code that can be compiled into vector graphics through [Asymptote](http://asymptote.sourceforge.io) and a provided custom [header](https://github.com/fcpp/fcpp/blob/master/src/extras/plotter/plot.asy). Install Asymptote if you plan to use it.
 
+## Execution
 
-## Graphical Simulation
-
-The OpenGL-based graphical simulations can only be built through the [CMake](https://cmake.org) build system in the native OS. Common Virtual Machine software (e.g., VirtualBox) has faulty support for OpenGL, hence running the graphical experiments in a VM is not supported: it may work for you, but it is not recommended.
-
-### Windows
-
-Pre-requisites:
-- [Git Bash](https://gitforwindows.org) (for issuing unix-style commands)
-- [MinGW-w64 builds 8.1.0](http://mingw-w64.org/doku.php/download/mingw-builds)
-- [CMake 3.9](https://cmake.org) (or higher)
-
-During CMake installation, make sure you select to add `cmake` to the `PATH` (at least for the current user).
-During MinGW installation, make sure you select "posix" threads (should be the default) and not "win32" threads. After installing MinGW, you need to add its path to the environment variable `PATH`. The default path should be:
+In order to build a project based on FCPP, it is recommended to start following the [sample](https://github.com/fcpp/fcpp-sample-project) or [exercises](https://github.com/fcpp/fcpp-exercises) projects. In short, add this repository as a sub-module of your repository, add a `make.sh` script forwarding its arguments to the inner `fcpp/src/make.sh` script (you can copy it from [here](https://github.com/fcpp/fcpp-sample-project/blob/master/make.sh)), add your code which uses the library, then declare the executable sources appropriately in a `CMakeLists.txt` as `fcpp_target` (see the aforementioned repositories for reference). Then you will be able to run your targets with the following command:
 ```
-C:\Program Files (x86)\mingw-w64\i686-8.1.0-posix-dwarf-rt_v6-rev0\mingw32\bin
+./make.sh [gui] run [-O] [target]
 ```
-but the actual path may vary depending on your installation. Then, you should be able to build the whole library with CMake through:
-```
-./make.sh gui windows
-```
+You can omit the `gui` argument if you don't need the graphical user interface; or omit the `-O` argument for a debug build (instead of an optimised build). On newer Mac M1 computers, the `-O` argument may induce compilation errors: in that case, use the `-O3` argument instead.
 
-### Linux
+## Graphical User Interface
 
-Pre-requisites:
-- Xorg-dev package (X11)
-- G++ 9 (or higher)
-- CMake 3.9 (or higher)
-
-To install these packages in Ubuntu, type the following command:
-```
-sudo apt-get install xorg-dev g++ cmake asymptote
-```
-Then, you should be able to build the whole library with CMake through:
-```
-./make.sh gui unix
-```
-
-### MacOS
-
-Pre-requisites:
-- Xcode Command Line Tools
-- CMake 3.9 (or higher)
-
-To install them, assuming you have the [brew](https://brew.sh) package manager, type the following commands:
-```
-xcode-select --install
-brew install cmake asymptote
-```
-Then, you should be able to build the whole library with CMake through:
-```
-./make.sh gui unix
-```
-
-### User Interface
-
-If you write and launch your own graphical simulation, a window will open displaying the simulation scenario, initially still: you can start running the simulation by pressing `P` (current simulated time is displayed in the bottom-left corner). While the simulation is running, network statistics will be periodically printed in the console. You can interact with the simulation through the following keys:
+If you write and launch your own graphical simulation, a window will open displaying the simulation scenario, initially still: you can start running the simulation by pressing `P` (current simulated time is displayed in the bottom-left corner). While the simulation is running, network statistics may be periodically printed in the console, and be possibly aggregated in form of an Asymptote plot at simulation end. You can interact with the simulation through the following keys:
 - `Esc` to end the simulation
 - `P` to stop/resume
 - `O`/`I` to speed-up/slow-down simulated time
@@ -138,6 +150,9 @@ If you write and launch your own graphical simulation, a window will open displa
 - `right-click`+`mouse drag` to rotate the camera
 - `mouse scroll` for zooming in and out
 - `left-shift` added to the camera commands above for precision control
+- any other key will show/hide a legenda displaying this list
+
+Hovering on a node will also display its UID in the top-left corner.
 
 
 ## Developers
@@ -159,5 +174,6 @@ If you write and launch your own graphical simulation, a window will open displa
 
 #### Contributors
 
+- [Gianmarco Rampulla](https://github.com/denoide1)
 - [Luigi Rapetta](https://github.com/rapfamily4)
 - [Gianluca Torta](http://www.di.unito.it/~torta)

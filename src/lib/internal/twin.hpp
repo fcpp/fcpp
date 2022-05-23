@@ -93,6 +93,18 @@ class twin<T, true> {
         return m_data;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_data;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_data;
+    }
+
   private:
     //! @brief The content of the class.
     T m_data;
@@ -163,6 +175,18 @@ class twin<T, false> {
     //! @brief Const access to the second element.
     T const& second() const {
         return m_second;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_first & m_second;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_first << m_second;
     }
 
   private:

@@ -106,6 +106,7 @@ cc_library(
         "//lib/deployment:hardware_identifier",
         "//lib/deployment:hardware_logger",
         "//lib/deployment:os",
+        "//lib/deployment:persister",
     ],
     visibility = [
         '//visibility:public',

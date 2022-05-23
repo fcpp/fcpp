@@ -3,6 +3,7 @@
 #define FCPP_WARNING_TRACE false
 
 #include <algorithm>
+#include <sstream>
 
 #include "gtest/gtest.h"
 
@@ -107,12 +108,6 @@ void sendall(T& x, T& y, T& z) {
     z.round_start(0);
 }
 
-template <typename T>
-void rounder(T& node) {
-    node.round_end(0);
-    node.round_start(0);
-}
-
 
 MULTI_TEST(CalculusTest, Size, O, 3) {
     typename combo<O>::net  network{common::make_tagged_tuple<>()};
@@ -170,33 +165,40 @@ MULTI_TEST(CalculusTest, Old, O, 3) {
     typename combo<O>::net  network{common::make_tagged_tuple<>()};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
     times_t d;
+    d0.round_start(0);
     d = delayed(d0, 0, 1);
     EXPECT_EQ(1, d);
+    d0.round_end(0);
     sendto(d0, d0);
-    rounder(d0);
+    d0.round_start(0);
     d = delayed(d0, 0, 3);
     EXPECT_EQ(1, d);
-    rounder(d0);
+    d0.round_end(0);
+    d0.round_start(0);
     d = delayed(d0, 0, 5);
     EXPECT_EQ(1, d);
+    d0.round_end(0);
     sendto(d0, d0);
-    rounder(d0);
+    d0.round_start(0);
     d = delayed(d0, 0, 3);
     EXPECT_EQ(5, d);
     d = delayed(d0, 1, 3, 2);
     EXPECT_EQ(2, d);
+    d0.round_end(0);
     sendto(d0, d0);
-    rounder(d0);
+    d0.round_start(0);
     d = delayed(d0, 1, 6, 2);
     EXPECT_EQ(3, d);
     d = counter(d0, 2);
     EXPECT_EQ(1, d);
+    d0.round_end(0);
     sendto(d0, d0);
-    rounder(d0);
+    d0.round_start(0);
     d = counter(d0, 2);
     EXPECT_EQ(2, d);
+    d0.round_end(0);
     sendto(d0, d0);
-    rounder(d0);
+    d0.round_start(0);
     d = counter(d0, 2);
     EXPECT_EQ(3, d);
 }
@@ -257,6 +259,9 @@ TEST(CalculusTest, Status) {
     EXPECT_EQ(status::border, status::border_output xor status::output);
     EXPECT_EQ(status::border, status::output xor status::border_output);
     EXPECT_EQ(converter<status::border_output xor status::output>::value(), 2);
+    std::stringstream ss;
+    ss << status::border_output << status::output << status::internal;
+    EXPECT_EQ(ss.str(), "border_outputoutputinternal");
 }
 
 TEST(CalculusTest, Spawn) {

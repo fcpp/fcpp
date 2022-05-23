@@ -27,7 +27,7 @@ namespace {
     //! @brief Number of bits used by an integer.
     constexpr size_t bit_size(size_t x) {
         size_t r = 0;
-        for (; (1ULL<<r) < x; ++r);
+        for (; (size_t(1)<<r) < x; ++r);
         return r;
     }
 
@@ -35,7 +35,7 @@ namespace {
     constexpr size_t get_msbMask(size_t register_bit_size, size_t word_bit_size) {
         size_t mask = 0;
         for (size_t i = register_bit_size - 1; i < word_bit_size; i += register_bit_size)
-            mask |= 1L << i;
+            mask |= size_t(1) << i;
         return mask;
     }
 
@@ -43,7 +43,7 @@ namespace {
     constexpr size_t get_lsbMask(size_t register_bit_size, size_t word_bit_size) {
         size_t mask = 0;
         for (size_t i = 0; i < word_bit_size-register_bit_size; i += register_bit_size)
-            mask |= 1L << i;
+            mask |= size_t(1) << i;
         return mask;
     }
 
@@ -172,7 +172,7 @@ class hyperloglog_counter {
     //! @brief Inserts a single element.
     void insert(T const& val) {
         // mask ensuring that the number of trailing zeros fits inside a register.
-        constexpr jenkins_type sentinelMask = 1ULL << (regMask - 1);
+        constexpr jenkins_type sentinelMask = jenkins_type(1) << (regMask - 1);
 
         jenkins_type rest = jenkins(m_hash(val));
         size_t j = rest % m;
@@ -250,7 +250,7 @@ class hyperloglog_counter {
 
   protected:
     //! @brief Mask of bits for a register.
-    constexpr static size_t regMask = (1ULL << register_bit_size) - 1;
+    constexpr static size_t regMask = (size_t(1) << register_bit_size) - 1;
     //! @brief Masks with max set bits for each register.
     constexpr static size_t msbMask = get_msbMask(register_bit_size, word_bit_size);
     //! @brief Masks with least set bits for each register.

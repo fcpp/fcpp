@@ -46,3 +46,20 @@ cc_test(
     args = ['--gtest_color=yes'],
     timeout = 'short',
 )
+
+cc_test(
+    name = "persister",
+    srcs = ["persister.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/component:scheduler",
+        "//lib/component:storage",
+        "//lib/deployment:hardware_identifier",
+        "//lib/deployment:persister",
+        "//test:fake_os",
+        "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)

@@ -219,6 +219,7 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
     m_foreground{ 0.0f, 0.0f, 0.0f, 1.0f },
+    m_rectangle_col{ 0.0f, 2.0f, 2.0f, 0.5f },
     m_camera{} {
     /* DEFINITION */
     // Initialize GLFW
@@ -311,6 +312,14 @@ void renderer::generateMeshAttributePointers() {
     // Allocate neighbour star attribute pointers
     glBindVertexArray(m_meshVAO[(int)vertex::star]);
     glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Allocate rectangle attribute pointers
+    glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -662,6 +671,33 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glBufferData(GL_ARRAY_BUFFER, sizeof(starData), starData, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDrawArrays(GL_LINES, 0, 2 * np.size());
+}
+
+void renderer::drawRectangle(float x, float y, float a, float b) const {
+    m_shaderProgramCol.use();
+    m_shaderProgramCol.setMat4("u_projection", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setMat4("u_view", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setVec4("u_color", m_rectangle_col);
+
+    float vertices[] = {
+        x, y, 0.0f,  // top right
+        x, b, 0.0f,  // bottom right
+        a, b, 0.0f,  // bottom left
+        a, y, 0.0f  // top left
+    };
+    unsigned int indices[] = {  // note that we start from 0!
+        0, 1, 3,  // first Triangle
+        1, 2, 3   // second Triangle
+    };
+
+    glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::rectangle]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void renderer::drawText(std::string text, float x, float y, float scale) const {

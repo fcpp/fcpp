@@ -117,25 +117,30 @@ struct graph_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, const common::tagged_tuple<S,T>& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_nbr_msg_size(0) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_nbr_msg_size(0) {
                 m_send = TIME_MAX;
             }
 
             //! @brief Destructor
             ~node() {
-                //***TODO*** also loop on m_neighbours.second()
-
                 while (!m_neighbours.first().empty()) {
                     auto p = m_neighbours.first().begin();
                     disconnect(p->first);
                 }
+		//*** TODO let Giorgio check
+                for (auto p : m_neighbours.second()) {
+		    if (p.second->m_neighbours.second().find(P::node::uid) != p.second->m_neighbours.second().end())
+			p.second->disconnect(P::node::uid);
+                }
             }
 
+            //! @brief Adds given node to neighbours.
             void connect(typename F::node *n) {
                 m_neighbours.first().emplace(n->uid,n);
                 n->m_neighbours.second().emplace(P::node::uid,&P::node::as_final());
             }
 
+            //! @brief Removes node with given device identifier from neighbours.
             void disconnect(device_t i) {
                 //***TODO*** remove
                 //                internal::twin<neighbour_list, symmetric> ineigh = (m_neighbours.first()[i])->m_neighbours;
@@ -144,6 +149,7 @@ struct graph_connector {
                 m_neighbours.first().erase(i);
             }
 
+            //! @brief Checks whether a given device identifier is within neighbours.
             bool connected(device_t i) const {
                 return m_neighbours.first().count(i);
             }
@@ -228,7 +234,7 @@ struct graph_connector {
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
-            inline void receive(times_t t, device_t d, const common::tagged_tuple<S,T>& m) {
+            inline void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 receive_size(common::bool_pack<message_size>{}, d, m);
             }
@@ -239,10 +245,10 @@ struct graph_connector {
 
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
-            void receive_size(common::bool_pack<false>, device_t, const common::tagged_tuple<S,T>&) {}
+            void receive_size(common::bool_pack<false>, device_t, common::tagged_tuple<S,T> const&) {}
             //! @brief Stores size of received message.
             template <typename S, typename T>
-            void receive_size(common::bool_pack<true>, device_t d, const common::tagged_tuple<S,T>& m) {
+            void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
                 common::osstream os;
                 os << m;
                 fcpp::details::self(m_nbr_msg_size.front(), d) = os.size();
@@ -281,7 +287,7 @@ struct graph_connector {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(const common::tagged_tuple<S,T>& t) : P::net(t) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {

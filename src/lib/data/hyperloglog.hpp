@@ -132,6 +132,7 @@ class hyperloglog_counter {
     hyperloglog_counter& operator=(std::initializer_list<T> il) {
         clear();
         insert(il);
+        return *this;
     }
 
     //! @brief Returns whether the counter is empty.

@@ -200,12 +200,14 @@ class list {
     using result_type = common::tagged_tuple_t<list<U>, std::vector<T>>;
 
     //! @brief Default constructor.
-    list() = default;
+    list() : m_items(1) {}
 
     //! @brief Combines aggregated values (cannot combine with a combination).
     list& operator+=(list const& o) {
         assert(o.m_items.size() == 1);
-        m_items.push_back(std::move(o.m_items[0]));
+        if (m_items.back().empty()) m_items.pop_back();
+        if (o.m_items[0].size() > 0)
+            m_items.push_back(std::move(o.m_items[0]));
         return *this;
     }
 
@@ -214,9 +216,8 @@ class list {
         assert(false);
     }
 
-    //! @brief Inserts a new value to be aggregated (disabled on combines lists).
+    //! @brief Inserts a new value to be aggregated (disabled on combined lists).
     void insert(T value) {
-        if (m_items.empty()) m_items.emplace_back();
         assert(m_items.size() == 1);
         m_items[0].push_back(value);
     }

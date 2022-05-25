@@ -111,28 +111,71 @@ struct graph_spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) :
-                P::net(t),
-                m_start(common::get_or<tags::start>(t, 0)),
-                m_arcsstream(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs"))),
-                m_nodesstream(details::make_istream(common::get_or<tags::nodesinput>(t, "index"))),
-                m_distributions(build_distributions(t, typename init_tuple_type::tags(), typename init_tuple_type::types()))
-            {
-                read_nodes();
-                read_arcs();
+            net(common::tagged_tuple<S,T> const& t) : P::net(t) {
+                read_nodes(
+                    details::make_istream(common::get_or<tags::nodesinput>(t, "nodes")),
+                    build_distributions(t, typename init_tuple_type::tags(), typename init_tuple_type::types()),
+                    common::get_or<tags::start>(t, 0)
+                );
+                read_arcs(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs")));
             }
 
           private: // implementation details
+            //! @brief Reads node information from file and creates corresponding nodes.
+            void read_nodes(std::shared_ptr<std::istream> is, init_tuple_type dist, times_t start) {
+                attributes_tuple_type row;
+                while (read_row(*is, row, typename attributes_tuple_type::tags{})) {
+                    using res_type = std::result_of_t<init_tuple_type(crand, common::tagged_tuple_t<>)>;
+                    using full_type = common::tagged_tuple_cat<attributes_tuple_type, res_type>;
+                    full_type tt = row;
+                    call_distribution(dist, get_generator(has_randomizer<P>{}, *this), tt, typename init_tuple_type::tags{});
+                    auto ttt = push_time(start, tt, typename attributes_tuple_type::tags::template intersect<tags::start>{});
+                    device_t n = P::net::node_emplace(ttt);
+                }
+            }
+
+            //! @brief Reads elements from a row of nodes file (empty overload).
+            inline bool read_row(std::istream&, attributes_tuple_type&, common::type_sequence<>) {
+                return true;
+            }
+
+            //! @brief Reads elements from a row of nodes file (non-empty overload).
+            template <typename S, typename... Ss>
+            inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<S, Ss...>) {
+                if (not (is >> common::get<S>(row))) {
+                    assert(is.eof());
+                    return false;
+                }
+                return read_row(is, row, common::type_sequence<Ss...>{});
+            }
+
+            //! @brief Reads arc information from file and creates corresponding connections.
+            void read_arcs(std::shared_ptr<std::istream> is) {
+                device_t d1, d2;
+                while (true) {
+                    *is >> d1;
+                    if (!*is) {
+                        assert(is->eof());
+                        break;
+                    }
+                    *is >> d2;
+                    assert(*is);
+                    assert(d1 != d2);
+                    typename net::lock_type l1, l2;
+                    P::net::node_at(d1,l1).connect(&P::net::node_at(d2,l2));
+                }
+            }
+
+            //! @brief Returns a `crand` generator if no randomizer.
+            template <typename N>
+            inline crand get_generator(std::false_type, N&) {
+                return {};
+            }
+
             //! @brief Returns the `randomizer` generator if available.
             template <typename N>
             inline auto& get_generator(std::true_type, N& n) {
                 return n.generator();
-            }
-
-            //! @brief Returns a `crand` generator otherwise.
-            template <typename N>
-            inline crand get_generator(std::false_type, N&) {
-                return {};
             }
 
             //! @brief Constructs the tuple of distributions, feeding the initialising tuple to all of them.
@@ -140,52 +183,6 @@ struct graph_spawner {
             common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Us...>>
             build_distributions(common::tagged_tuple<S,T> const& t, common::type_sequence<Ss...>, common::type_sequence<Us...>) {
                 return {Us{get_generator(has_randomizer<P>{}, *this),t}...};
-            }
-
-            //! @brief Adds a `start` time to a node file tuple (if not present in the file).
-            template <typename S, typename T>
-            auto push_time(common::tagged_tuple<S,T> const& tup, common::type_sequence<>) {
-                using tt_type = typename common::tagged_tuple<S,T>::template push_back<tags::start, times_t>;
-                tt_type tt(tup);
-                common::get<tags::start>(tt) = this->m_start;
-                return tt;
-            }
-
-            //! @brief No need to add a `start` time to a node file tuple (if present in the file).
-            template <typename T>
-            inline T const& push_time(T const& t, common::type_sequence<tags::start>) {
-                return t;
-            }
-
-            inline void read_nodes() {
-                attributes_tuple_type row;
-
-                while (read_row(*m_nodesstream, row, typename attributes_tuple_type::tags{})) {
-                    //                    auto trow = push_time(row, typename attributes_tuple_type::tags::template intersect<tags::start>());
-                    using tag_type = typename init_tuple_type::tags;
-                    using dist_type = std::decay_t<decltype(m_distributions)>;
-                    using res_type = std::decay_t<decltype(std::declval<dist_type>()(crand{}, common::tagged_tuple_t<>{}))>;
-                    using full_type = common::tagged_tuple_cat<attributes_tuple_type, res_type>;
-                    full_type tt;
-                    tt = row;
-                    call_distribution(m_distributions, get_generator(has_randomizer<P>{}, *this), tt, tag_type{});
-                    auto ttt = push_time(tt, typename attributes_tuple_type::tags::template intersect<tags::start>());
-                    device_t n = P::net::node_emplace(ttt);
-                    assert(P::net::node_at(n).next() == 0);
-                }
-            }
-
-            inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<>) {
-                return true;
-            }
-
-            template <typename S, typename... Ss>
-            inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<S, Ss...>) {
-                if (!(is >> common::get<S>(row))) {
-                    assert(is.eof());
-                    return false;
-                }
-                return read_row(is, row, common::type_sequence<Ss...>{});
             }
 
             //! @brief Calls a distribution, updating the tuple of results (empty case).
@@ -199,37 +196,20 @@ struct graph_spawner {
                 call_distribution(d, g, t, common::type_sequence<Ss...>{});
             }
 
-            inline void read_arcs() {
-                std::pair<size_t,size_t> row;
-
-                while (read_arc(*m_arcsstream, row)) {
-                    typename net::lock_type l1, l2;
-                    P::net::node_at(row.first,l1).connect(&P::net::node_at(row.second,l2));
-                }
+            //! @brief No need to add a `start` time to a node file tuple (if present in the file).
+            template <typename T>
+            inline T const& push_time(times_t, T const& t, common::type_sequence<tags::start>) {
+                return t;
             }
 
-            inline bool read_arc(std::istream& is, std::pair<size_t,size_t> &row) {
-                is >> row.first;
-                is >> row.second;
-                if (!is) {
-                    assert(is.eof());
-                    return false;
-                }
-
-                return true;
+            //! @brief Adds a `start` time to a node file tuple (if not present in the file).
+            template <typename S, typename T>
+            inline auto push_time(times_t start, common::tagged_tuple<S,T> const& tup, common::type_sequence<>) {
+                using tt_type = typename common::tagged_tuple<S,T>::template push_back<tags::start, times_t>;
+                tt_type tt(tup);
+                common::get<tags::start>(tt) = start;
+                return tt;
             }
-
-            //! @brief The default start of nodes.
-            size_t m_start;
-
-            //! @brief The stream describing graph nodes.
-            std::shared_ptr<std::istream> m_nodesstream;
-
-            //! @brief The stream describing graph arcs.
-            std::shared_ptr<std::istream> m_arcsstream;
-
-            //! @brief The generator tuple.
-            init_tuple_type m_distributions;
         };
     };
 };

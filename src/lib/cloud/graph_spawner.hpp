@@ -129,7 +129,7 @@ struct graph_spawner {
                     using full_type = common::tagged_tuple_cat<attributes_tuple_type, res_type>;
                     full_type tt = row;
                     call_distribution(dist, get_generator(has_randomizer<P>{}, *this), tt, typename init_tuple_type::tags{});
-                    auto ttt = push_time(start, tt, typename attributes_tuple_type::tags::template intersect<tags::start>{});
+                    auto ttt = push_time(start, tt, typename full_type::tags::template intersect<tags::start>{});
                     device_t n = P::net::node_emplace(ttt);
                 }
             }
@@ -161,8 +161,8 @@ struct graph_spawner {
                     *is >> d2;
                     assert(*is);
                     assert(d1 != d2);
-                    typename net::lock_type l1, l2;
-                    P::net::node_at(d1,l1).connect(&P::net::node_at(d2,l2));
+                    typename net::lock_type l;
+                    P::net::node_at(d1,l).connect(d2);
                 }
             }
 

@@ -23,6 +23,7 @@ cc_test(
         "//lib/component:identifier",
         "//lib/component:storage",
         "//lib/component:timer",
+        "//lib/option:distribution",
         "//lib/cloud:graph_connector",
         "//lib/cloud:graph_spawner",
         "//test:helper",

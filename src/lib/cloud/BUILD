@@ -3,6 +3,7 @@ cc_library(
     hdrs = ['graph_connector.hpp'],
     srcs = ['graph_connector.cpp'],
     deps = [
+        "//lib/common:algorithm",
         "//lib/common:option",
         "//lib/common:serialize",
         "//lib/component:base",
@@ -22,6 +23,7 @@ cc_library(
     deps = [
         "//lib/component:base",
         "//lib/component:storage",
+        "//lib/option:sequence",
     ],
     visibility = [
         '//visibility:public',

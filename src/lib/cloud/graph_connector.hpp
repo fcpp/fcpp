@@ -15,6 +15,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/serialize.hpp"
 #include "lib/component/base.hpp"
@@ -57,6 +58,9 @@ namespace tags {
     //! @brief Declaration flag associating to whether the topology of the graph is static. For FUTURE use.
     template <bool b>
     struct static_topology;
+
+    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    struct threads;
 }
 
 /**
@@ -87,6 +91,7 @@ struct graph_connector {
     //! @brief Delay generator for sending messages after rounds.
     using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
 
+    //! @brief The type of settings data regulating connection.
     using connection_data_type = common::tagged_tuple_t<>;
 
     /**
@@ -102,14 +107,13 @@ struct graph_connector {
     struct component : public P {
         //! @cond INTERNAL
         DECLARE_COMPONENT(connector);
+        REQUIRE_COMPONENT(connector,identifier);
         CHECK_COMPONENT(randomizer);
-        CHECK_COMPONENT(identifier);
         //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {
           public: // visible by net objects and the main program
-            //@{
             /**
              * @brief Main constructor.
              *
@@ -117,36 +121,66 @@ struct graph_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_nbr_msg_size(0) {
-                m_send = TIME_MAX;
-            }
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_msg_size(0) {}
 
-            //! @brief Destructor
+            //! @brief Destructor ensuring deadlock-free mutual disconnection.
             ~node() {
-                while (!m_neighbours.first().empty()) {
-                    auto p = m_neighbours.first().begin();
-                    disconnect(p->first);
+                while (m_neighbours.first().size() > 0) {
+                    if (P::node::mutex.try_lock()) {
+                        if (m_neighbours.first().size() > 0) {
+                            typename F::node* n = m_neighbours.first().begin()->second;
+                            if (n->mutex.try_lock()) {
+                                m_neighbours.first().erase(m_neighbours.first().begin());
+                                n->m_neighbours.second().erase(P::node::uid);
+                                n->mutex.unlock();
+                            }
+                        }
+                        P::node::mutex.unlock();
+                    }
                 }
-		//*** TODO let Giorgio check
-                for (auto p : m_neighbours.second()) {
-		    if (p.second->m_neighbours.second().find(P::node::uid) != p.second->m_neighbours.second().end())
-			p.second->disconnect(P::node::uid);
+                if (symmetric) return;
+                while (m_neighbours.second().size() > 0) {
+                    if (P::node::mutex.try_lock()) {
+                        if (m_neighbours.second().size() > 0) {
+                            typename F::node* n = m_neighbours.second().begin()->second;
+                            if (n->mutex.try_lock()) {
+                                m_neighbours.second().erase(m_neighbours.second().begin());
+                                n->m_neighbours.first().erase(P::node::uid);
+                                n->mutex.unlock();
+                            }
+                        }
+                        P::node::mutex.unlock();
+                    }
                 }
             }
 
-            //! @brief Adds given node to neighbours.
-            void connect(typename F::node *n) {
-                m_neighbours.first().emplace(n->uid,n);
-                n->m_neighbours.second().emplace(P::node::uid,&P::node::as_final());
+            //! @brief Adds given device to neighbours (returns true on succeed).
+            bool connect(device_t i) {
+                if (P::node::uid == i or m_neighbours.first().count(i) > 0) return false;
+                typename F::node* n = const_cast<typename F::node*>(&P::node::net.node_at(i));
+                m_neighbours.first().emplace(n->uid, n);
+                common::unlock_guard<parallel> u(P::node::mutex);
+                common::lock_guard<parallel> l(n->mutex);
+                n->m_neighbours.second().emplace(P::node::uid, &P::node::as_final());
+                return true;
             }
 
-            //! @brief Removes node with given device identifier from neighbours.
-            void disconnect(device_t i) {
-                //***TODO*** remove
-                //                internal::twin<neighbour_list, symmetric> ineigh = (m_neighbours.first()[i])->m_neighbours;
-
-                (m_neighbours.first()[i])->m_neighbours.second().erase(P::node::uid);
+            //! @brief Removes given device from neighbours (returns true on succeed).
+            bool disconnect(device_t i) {
+                if (P::node::uid == i or m_neighbours.first().count(i) == 0) return false;
+                typename F::node* n = m_neighbours.first().at(i);
                 m_neighbours.first().erase(i);
+                common::unlock_guard<parallel> u(P::node::mutex);
+                common::lock_guard<parallel> l(n->mutex);
+                n->m_neighbours.second().erase(P::node::uid);
+                return true;
+            }
+
+            //! @brief Disconnects from every neighbour (should only be used on all neighbours at once).
+            void global_disconnect() {
+                return;
+                m_neighbours.first().clear();
+                if (not symmetric) m_neighbours.second().clear();
             }
 
             //! @brief Checks whether a given device identifier is within neighbours.
@@ -211,11 +245,9 @@ struct graph_connector {
                     P::node::as_final().receive(t, P::node::uid, m);
                     common::unlock_guard<parallel> u(P::node::mutex);
                     for (std::pair<device_t, typename F::node*> p : m_neighbours.first()) {
-                        typename F::node *n = p.second;
-                        if (n != this) {
-                            common::lock_guard<parallel> l(n->mutex);
-                            n->receive(t, P::node::uid, m);
-                        }
+                        typename F::node* n = p.second;
+                        common::lock_guard<parallel> l(n->mutex);
+                        n->receive(t, P::node::uid, m);
                     }
                 } else P::node::update();
             }
@@ -225,11 +257,6 @@ struct graph_connector {
             void round_start(times_t t) {
                 m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 P::node::round_start(t);
-            }
-
-            //! @brief Performs computations at round end with current time `t`.
-            void round_end(times_t t) {
-                P::node::round_end(t);
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
@@ -287,38 +314,19 @@ struct graph_connector {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t) {}
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {
-                maybe_clear(has_identifier<P>{}, *this);
+                auto n_beg = P::net::node_begin();
+                auto n_end = P::net::node_end();
+                common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                    n_beg[i].second.global_disconnect();
+                });
             }
 
-          private: // implementation details
-            //! @brief Returns the `randomizer` generator if available.
-            template <typename N>
-            inline auto& get_generator(std::true_type, N& n) {
-                return n.generator();
-            }
-
-            //! @brief Returns a `crand` generator otherwise.
-            template <typename N>
-            inline crand get_generator(std::false_type, N&) {
-                return {};
-            }
-
-            //! @brief Deletes all nodes if parent identifier.
-            template <typename N>
-            inline void maybe_clear(std::true_type, N& n) {
-                return n.node_clear();
-            }
-
-            //! @brief Does nothing otherwise.
-            template <typename N>
-            inline void maybe_clear(std::false_type, N&) {}
-
-            //! @brief The mutex regulating access to maps.
-            common::mutex<parallel> m_mutex;
+            //! @brief The number of threads to be used.
+            size_t const m_threads;
         };
     };
 };

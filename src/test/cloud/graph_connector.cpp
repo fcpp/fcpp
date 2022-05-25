@@ -24,10 +24,11 @@ struct oth {};
 struct exposer {
     template <typename F, typename P>
     struct component : public P {
-        struct node : public P::node {
-            using P::node::node;
+        using node = typename P::node;
+        struct net : public P::net {
+            using P::net::net;
+            using P::net::node_emplace;
         };
-        using net = typename P::net;
     };
 };
 
@@ -46,21 +47,24 @@ using combo = component::combine_spec<
 >;
 
 MULTI_TEST(GraphConnectorTest, Arcs, O, 2) {
-    typename combo<O>::net  network{common::make_tagged_tuple<oth>("foo")};
-    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
-    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
-    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
-    typename combo<O>::node d3{network, common::make_tagged_tuple<uid>(3)};
-    typename combo<O>::node d4{network, common::make_tagged_tuple<uid>(4)};
+    typename combo<O>::net n{common::make_tagged_tuple<oth>("foo")};
+    n.node_emplace(common::make_tagged_tuple<uid>(0));
+    n.node_emplace(common::make_tagged_tuple<uid>(1));
+    n.node_emplace(common::make_tagged_tuple<uid>(2));
+    n.node_emplace(common::make_tagged_tuple<uid>(3));
+    n.node_emplace(common::make_tagged_tuple<uid>(4));
 
-    EXPECT_EQ(false, d1.connected(d0.uid));
-
-    d1.connect(&d0);
-    EXPECT_EQ(true, d1.connected(d0.uid));
-
-    d1.disconnect(d0.uid);
-    EXPECT_EQ(false, d1.connected(d0.uid));
-
+    EXPECT_EQ(false, n.node_at(1).connected(0));
+    {
+        typename combo<O>::net::lock_type l;
+        n.node_at(1, l).connect(0);
+    }
+    EXPECT_EQ(true, n.node_at(1).connected(0));
+    {
+        typename combo<O>::net::lock_type l;
+        n.node_at(1, l).disconnect(0);
+    }
+    EXPECT_EQ(false, n.node_at(1).connected(0));
 }
 
 MULTI_TEST(GraphConnectorTest, Messages, O, 2) {

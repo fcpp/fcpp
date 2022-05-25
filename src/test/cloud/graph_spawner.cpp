@@ -9,8 +9,7 @@
 #include "lib/component/identifier.hpp"
 #include "lib/component/storage.hpp"
 #include "lib/component/timer.hpp"
-#include "lib/component.hpp"
-#include "lib/cloud.hpp"
+#include "lib/option/distribution.hpp"
 #include "lib/cloud/graph_connector.hpp"
 #include "lib/cloud/graph_spawner.hpp"
 
@@ -18,11 +17,6 @@
 
 using namespace fcpp;
 using namespace component::tags;
-
-// Side of the deployment area.
-constexpr size_t side = 300;
-// The distribution of initial node positions (random in a given rectangle).
-using rectangle_d = distribution::rect_n<1, 0, 0, side, side>;
 
 struct tag {};
 struct gat {};
@@ -34,7 +28,7 @@ template <int O>
 using combo1 = component::combine_spec<
     component::graph_spawner<
         node_attributes<url,std::string,uid,device_t>,
-        init<x,rectangle_d> // initialise position randomly in a rectangle for new nodes
+        init<start,distribution::interval_n<times_t, 0, 1>>
     >,
     component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<

@@ -244,7 +244,7 @@ TEST(PlotTest, Rows) {
     EXPECT_SAME(typename plot::details::option_types<common::type_sequence<int, bool>>::type, common::type_sequence<int, bool>);
     EXPECT_SAME(typename plot::details::option_types<temps<int, bool>>::type, common::type_sequence<int, bool>);
     {
-        using plot_t = plot::rows<temps<tag, int, gat, double>>;
+        using plot_t = plot::first_rows<temps<tag, int, gat, double>>;
         EXPECT_SAME(plot_t::compressible_tuple_type, plot::details::delta_tuple<common::tagged_tuple_t<tag, int, gat, double>>);
         EXPECT_SAME(plot_t::mutable_tuple_type, common::tagged_tuple_t<>);
         EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<>);
@@ -294,7 +294,7 @@ TEST(PlotTest, Rows) {
         }
     }
     {
-        using plot_t = plot::rows<temps<tag, int>, temps<gat, double>, temps<oth_but, bool>, 50>;
+        using plot_t = plot::first_rows<temps<tag, int>, temps<gat, double>, temps<oth_but, bool>, 50>;
         EXPECT_SAME(plot_t::compressible_tuple_type, plot::details::delta_tuple<common::tagged_tuple_t<tag, int>>);
         EXPECT_SAME(plot_t::mutable_tuple_type, common::tagged_tuple_t<gat, double>);
         EXPECT_SAME(plot_t::fixed_tuple_type, common::tagged_tuple_t<oth_but, bool>);

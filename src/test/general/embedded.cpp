@@ -187,7 +187,7 @@ MAIN() {
 }
 
 
-using rows_type = plot::rows<
+using rows_type = plot::first_rows<
     tuple_store<
         min_uid,        device_t,
         hop_dist,       hops_t,

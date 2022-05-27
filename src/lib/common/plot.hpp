@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file plot.hpp
@@ -379,7 +379,7 @@ namespace details {
 //! @endcond
 
 /**
- * @brief Plotter storing all rows for later printing.
+ * @brief Plotter storing the first rows for later printing, stopping storage at a maximum size.
  *
  * @param C Tags and types to be delta-compressed upon serialisation.
  * @param M Tags and types not compressed on serialisation.
@@ -387,7 +387,7 @@ namespace details {
  * @param max_size The maximum size in bytes allowed for the buffer (0 for no maximum size).
  */
 template <typename C, typename M = void, typename F = void, size_t max_size = 0>
-class rows {
+class first_rows {
   public:
     //! @brief Sequence of tags and types to be delta-compressed upon serialisation.
     using compressible_tuple_type = details::delta_tuple<common::tagged_tuple_t<typename details::option_types<C>::type>>;
@@ -400,7 +400,7 @@ class rows {
     static constexpr size_t limit_size = max_size;
 
     //! @brief Default constructor.
-    rows() {
+    first_rows() {
         m_start = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
         m_rows.data().reserve(max_size);
         m_length = m_row_size = 0;
@@ -408,7 +408,7 @@ class rows {
 
     //! @brief Row processing.
     template <typename R>
-    rows& operator<<(R const& row) {
+    first_rows& operator<<(R const& row) {
         size_t prev_size = m_rows.size();
         if (max_size == 0 or prev_size + m_row_size < max_size) {
             m_fixed = row;
@@ -431,7 +431,7 @@ class rows {
 
     //! @brief The number of bytes occupied by the structure.
     size_t byte_size() const {
-        return sizeof(rows) + m_rows.size();
+        return sizeof(first_rows) + m_rows.size();
     }
 
     //! @brief Prints the object's contents.
@@ -504,7 +504,19 @@ class rows {
 };
 
 template <typename C, typename M, typename F, size_t max_size>
-constexpr size_t rows<C,M,F,max_size>::limit_size;
+constexpr size_t first_rows<C,M,F,max_size>::limit_size;
+
+//! @cond INTERNAL
+//! @brief Legacy name for class \ref first_rows (triggering meaningful errors).
+template <typename C, typename M = void, typename F = void, size_t max_size = 0>
+struct rows : public first_rows<C,M,F,max_size> {
+    #define REFACTORING_MESSAGE "class 'rows' has been renamed to 'first_rows', use that instead"
+    rows() : first_rows<C,M,F,max_size>() {
+        static_assert(not (max_size >= 0), REFACTORING_MESSAGE);
+    }
+    #undef REFACTORING_MESSAGE
+};
+//! @endcond
 
 
 //! @brief Filters values for column S according to property F in plotter P.

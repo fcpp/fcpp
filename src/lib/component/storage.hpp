@@ -89,7 +89,7 @@ struct storage {
             }
 
             //! @cond INTERNAL
-            #define MISSING_TYPE_MESSAGE "\033[1m\033[4munsupported tag access (add A to storage tag list)\033[0m"
+            #define MISSING_TYPE_MESSAGE "unsupported tag access (add 'A' above to storage tag list)"
             //! @endcond
 
             /**
@@ -139,6 +139,19 @@ struct storage {
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
+            //! @brief Struct behaving as a jolly value to suppress as many errors as possible.
+            struct any {
+                any() = default;
+                template <typename T>
+                any& operator=(T&&) {
+                    return *this;
+                }
+                template <typename T>
+                operator T&&() const {
+                    return std::declval<T&>();
+                }
+            };
+
             //! @brief Access to the data corresponding to an existing tag.
             template <typename T>
             inline auto& get_impl(common::bool_pack<true>) {
@@ -153,18 +166,21 @@ struct storage {
 
             //! @brief Access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline auto& get_impl(common::bool_pack<false>) {
-                return m_storage;
+            inline any& get_impl(common::bool_pack<false>) {
+                return m_any;
             }
 
             //! @brief Const access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline auto const& get_impl(common::bool_pack<false>) const {
-                return m_storage;
+            inline any const& get_impl(common::bool_pack<false>) const {
+                return m_any;
             }
 
             //! @brief The data storage.
             tuple_type m_storage;
+
+            //! @brief Dummy value for error suppression.
+            any m_any;
         };
 
         //! @brief The global part of the component.

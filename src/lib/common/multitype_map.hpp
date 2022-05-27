@@ -90,7 +90,7 @@ class multitype_map {
     }
 
     //! @cond INTERNAL
-    #define MISSING_TYPE_MESSAGE "\033[1m\033[4munsupported type access (add type A to exports type list)\033[0m"
+    #define MISSING_TYPE_MESSAGE "unsupported type access (add type 'A' to exports type list)"
     //! @endcond
 
     //! @brief Inserts value at corresponding key.
@@ -134,13 +134,13 @@ class multitype_map {
     //! @brief Immutable reference to the value of a certain type at a given key.
     template<typename A>
     A const& at(T key) const {
-        return get_map<A>(bool_pack<type_supported<A>>{}).at(key);
+        return map_at<A const>(get_map<A>(bool_pack<type_supported<A>>{}), key);
     }
 
     //! @brief Mutable reference to the value of a certain type at a given key.
     template<typename A>
     A& at(T key) {
-        return get_map<A>(bool_pack<type_supported<A>>{}).at(key);
+        return map_at<A>(get_map<A>(bool_pack<type_supported<A>>{}), key);
     }
 
     //! @brief Whether the key is present in the value map or not for a certain type.
@@ -189,6 +189,12 @@ class multitype_map {
     template <typename A>
     std::unordered_map<T, std::remove_reference_t<A>> get_map(bool_pack<false>) const {
         return {};
+    }
+
+    //! @brief Access to a map element (suppressing warnings on temporaries).
+    template <typename A, typename M>
+    inline A& map_at(M&& m, T key) const {
+        return m.at(key);
     }
 
     //! @brief Compares unordered maps, even in case `decltype(U == U)` is not implicitly convertible to bool.

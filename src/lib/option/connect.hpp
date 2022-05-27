@@ -190,7 +190,7 @@ class powered : public fixed<num,den,n> {
  */
 template <intmax_t r50, typename C>
 class radial : public C {
-    static_assert(1 <= r50 and r50 <= 99, "\033[1m\033[4mhalf radius out of bounds\033[0m");
+    static_assert(1 <= r50 and r50 <= 99, "half radius out of bounds");
 
     //! brief Shortcut to the power_ratio tag.
     using half_radius = component::tags::half_radius;

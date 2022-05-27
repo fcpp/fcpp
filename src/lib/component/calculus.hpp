@@ -449,7 +449,7 @@ namespace details {
     }
     template <typename A, typename C, typename = std::enable_if_t<not valid_tuple_return<A,C>::value>>
     inline C& maybe_second(common::type_sequence<A>, C& x) {
-        #define INVALID_RETURN_MESSAGE "\033[1m\033[4minvalid return type (C) for update function in calculus construct (of type A)\033[0m"
+        #define INVALID_RETURN_MESSAGE "invalid return type 'C' for update function in calculus construct (of type 'A')"
         static_assert(std::is_convertible<C,A>::value, INVALID_RETURN_MESSAGE);
         #undef INVALID_RETURN_MESSAGE
         return x;

@@ -121,7 +121,7 @@ struct base {
             using mutex_type = common::mutex<parallel>;
 
             //! @cond INTERNAL
-            #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::uid node initialisation tag\033[0m"
+            #define MISSING_TAG_MESSAGE "missing required 'tags::uid' node initialisation tag"
             //! @endcond
 
             //! @name constructors

@@ -104,7 +104,7 @@ struct simulated_positioner {
             using message_t = typename P::node::message_t::template push_back<positioner_tag, position_type>;
 
             //! @cond INTERNAL
-            #define MISSING_TAG_MESSAGE "\033[1m\033[4mmissing required tags::x node initialisation tag\033[0m"
+            #define MISSING_TAG_MESSAGE "missing required 'tags::x' node initialisation tag"
             //! @endcond
 
             //! @{

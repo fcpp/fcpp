@@ -225,6 +225,11 @@
 #define FCPP_FIELD_DRAW_LIMIT 8
 #endif
 
+#ifndef FCPP_MAX_PRINT_LEN
+//! @brief Setting defining the maximum length allowed when printing containers.
+#define FCPP_MAX_PRINT_LEN 8
+#endif
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.

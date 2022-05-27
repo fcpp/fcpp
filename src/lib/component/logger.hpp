@@ -15,6 +15,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -71,6 +72,9 @@ namespace tags {
     //! @brief Declaration flag associating to whether new values are pushed to aggregators or pulled when needed.
     template <bool b>
     struct value_push {};
+
+    //! @brief Net initialisation tag associating to the maximum length allowed when printing containers.
+    struct max_print_len {};
 
     //! @brief Net initialisation tag associating to the main name of a component composition instance.
     struct name {};
@@ -135,6 +139,24 @@ namespace details {
     inline U&& wrap(U&& x) {
         return std::forward<U>(x);
     }
+    //! @brief Checks whether a class has a size member function.
+    template<typename C>
+    struct is_container {
+      private:
+        template <typename T>
+        static constexpr auto check(T*) -> typename std::is_convertible<
+            decltype(T(std::declval<T const&>().begin(), ++std::declval<T const&>().begin()).size()),
+            size_t
+        >::type;
+
+        template <typename>
+        static constexpr std::false_type check(...);
+
+      public:
+        typedef decltype(check<C>(0)) type;
+
+        static constexpr bool value = type::value;
+    };
 }
 //! @endcond
 
@@ -159,6 +181,7 @@ namespace details {
  * - \ref tags::value_push defines whether new values are pushed to aggregators or pulled when needed (defaults to \ref FCPP_VALUE_PUSH).
  *
  * <b>Net initialisation tags:</b>
+ * - \ref tags::max_print_len associates to the maximum length allowed when printing containers (defaults to \ref FCPP_MAX_PRINT_LEN).
  * - \ref tags::name associates to the main name of a component composition instance (defaults to the empty string).
  * - \ref tags::output associates to an output stream for logging (defaults to `std::cout`).
  * - \ref tags::plotter associates to a pointer to a plotter object (defaults to `nullptr`).
@@ -264,7 +287,7 @@ struct logger {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)), m_max_print_len(common::get_or<tags::max_print_len>(t, FCPP_MAX_PRINT_LEN)) {
                 std::time_t time = clock_t::to_time_t(clock_t::now());
                 std::string tstr = std::string(ctime(&time));
                 tstr.pop_back();
@@ -339,50 +362,70 @@ struct logger {
             //! @brief The log tuple tags.
             using l_tags = typename log_type::tags;
 
-            //! @brief
+            //! @brief Initialises functors with the provided tuple.
             template <typename T,typename... Ss>
-            functors_type functor_init(T const& t, common::type_sequence<Ss...>) {
+            inline functors_type functor_init(T const& t, common::type_sequence<Ss...>) {
                 return {{get_generator(has_randomizer<P>{}, *this), details::wrap<Ss>(t)}...};
             }
 
             //! @brief Prints the aggregator headers.
-            void print_headers(common::type_sequence<>) const {}
+            inline void print_headers(common::type_sequence<>) const {}
             template <typename U, typename... Us>
-            void print_headers(common::type_sequence<U,Us...>) const {
+            inline void print_headers(common::type_sequence<U,Us...>) const {
                 common::get<U>(m_aggregators).header(*m_stream, common::details::strip_namespaces(common::type_name<U>()));
                 print_headers(common::type_sequence<Us...>());
             }
             //! @brief Prints the functor headers.
-            void print_tags(common::type_sequence<>) const {}
+            inline void print_tags(common::type_sequence<>) const {}
             template <typename U, typename... Us>
-            void print_tags(common::type_sequence<U,Us...>) const {
+            inline void print_tags(common::type_sequence<U,Us...>) const {
                 *m_stream << common::details::strip_namespaces(common::type_name<U>()) << " ";
                 print_tags(common::type_sequence<Us...>{});
             }
 
             //! @brief Prints the aggregator output.
-            void print_output(common::type_sequence<>) const {}
+            inline void print_output(common::type_sequence<>) const {}
             template <typename U, typename... Us>
-            void print_output(common::type_sequence<U,Us...>) const {
-                *m_stream << common::get<U>(m_row) << " ";
+            inline void print_output(common::type_sequence<U,Us...>) const {
+                using R = typename row_type::template tag_type<U>;
+                print_element(common::get<U>(m_row), typename details::is_container<R>::type{});
                 print_output(common::type_sequence<Us...>{});
+            }
+
+            //! @brief Prints a single element of the aggregator output (non-container overload).
+            template <typename T>
+            inline void print_element(T const& x, std::false_type) const {
+                *m_stream << x << " ";
+            }
+            //! @brief Prints a single element of the aggregator output (container overload).
+            template <typename T>
+            void print_element(T const& x, std::true_type) const {
+                if (m_max_print_len == 0)
+                    *m_stream << "(" << x.size() << "el) ";
+                else if (x.size() <= m_max_print_len)
+                    *m_stream << x << " ";
+                else {
+                    auto it = x.begin();
+                    std::advance(it, m_max_print_len);
+                    *m_stream << T(x.begin(), it) << "... ";
+                }
             }
 
             //! @brief Erases data from the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_erase_impl(S& a, T const& t, common::type_sequence<Us...>) {
+            inline void aggregator_erase_impl(S& a, T const& t, common::type_sequence<Us...>) {
                 common::details::ignore((common::get<Us>(a).erase(common::get<Us>(t)),0)...);
             }
 
             //! @brief Inserts data into the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<Us...>) {
+            inline void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<Us...>) {
                 common::details::ignore((common::get<Us>(a).insert(common::get<Us>(t)),0)...);
             }
 
             //! @brief Inserts an aggregator data into the aggregators.
             template <typename S, typename T, typename... Us>
-            void aggregator_add_impl(S& a,  T const& t, common::type_sequence<Us...>) {
+            inline void aggregator_add_impl(S& a,  T const& t, common::type_sequence<Us...>) {
                 common::details::ignore((common::get<Us>(a) += common::get<Us>(t))...);
             }
 
@@ -410,7 +453,7 @@ struct logger {
 
             //! @brief Collects data actively from nodes if `identifier` is available.
             template <typename N>
-            inline void data_puller(common::bool_pack<true>, N& n) {
+            void data_puller(common::bool_pack<true>, N& n) {
                 if (parallel == false or m_threads == 1) {
                     for (auto it = n.node_begin(); it != n.node_end(); ++it)
                         aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), a_tags());
@@ -468,6 +511,9 @@ struct logger {
 
             //! @brief The number of threads to be used.
             size_t const m_threads;
+
+            //! @brief The maximum length allowed when printing containers.
+            size_t const m_max_print_len;
         };
     };
 };

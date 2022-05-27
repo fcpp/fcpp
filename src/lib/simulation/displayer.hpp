@@ -115,7 +115,7 @@ class info_window {
 
   public:
     //! @brief Constructor.
-    info_window(net& n, device_t uid) :
+    info_window(net& n, std::vector<device_t> uid) :
         m_net(n),
         m_uid(uid),
         m_renderer(0, "node " + std::to_string(uid), false, n.getRenderer().getWindow()),
@@ -143,18 +143,25 @@ class info_window {
         m_keys.insert(m_keys.end(), vk.begin(), vk.end());
         size_t ml = 0;
         for (auto const& s : m_keys) {
-            ml = std::max(ml, s.size());
-            m_values.emplace_back();
+            std::vector<std::string> v1;
+            ml = std::max(ml,s.size());
+            for(int j=0; j<m_uid.size(); j++)
+                v1.emplace_back();
+            m_values.emplace_back(v1);
         }
+
         for (auto& s : m_keys) while (s.size() <= ml) s.push_back(' ');
         for (auto const& s : vk)
             m_types.emplace_back();
-        if (m_net.node_count(m_uid)) {
-            typename net::lock_type l;
-            node& n = m_net.node_at(m_uid, l);
-            update_values(n);
-            n.highlight(2);
-            n.set_window(this);
+
+        for(int i=0; i<m_uid.size(); i++){
+            if (m_net.node_count(m_uid[i])) {
+                typename net::lock_type l;
+                node& n = m_net.node_at(m_uid[i], l);
+                update_values(n);
+                n.highlight(2);
+                n.set_window(this);
+            }
         }
     }
 
@@ -168,11 +175,13 @@ class info_window {
     ~info_window() {
         m_running = false;
         m_thread.join();
-        if (m_net.node_count(m_uid)) {
-            typename net::lock_type l;
-            node& n = m_net.node_at(m_uid, l);
-            n.highlight(0);
-            n.set_window(nullptr);
+        for(int i=0; i<m_uid.size(); i++){
+            if (m_net.node_count(m_uid[i])) {
+                typename net::lock_type l;
+                node& n = m_net.node_at(m_uid[i], l);
+                n.highlight(0);
+                n.set_window(nullptr);
+            }
         }
     }
 
@@ -189,7 +198,14 @@ class info_window {
     //! @brief Updates values.
     void update_values(node& n) {
         m_modified = true;
+        int j=0;
+        for(int i=0; i<m_uid.size(); i++){
+            if(n.uid==m_uid[i]){
+                j=i;
+            }
+        }
         update_values(
+            j,
             fcpp::details::get_context(n).second().align(n.uid),
             n.storage_tuple(),
             "#@>---<@#",
@@ -243,14 +259,33 @@ class info_window {
     }
 
     //! @brief Updates the node info and draws it into the window.
+
     void draw() {
-        if (m_net.node_count(m_uid) == 0)
-            glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
+        if (m_net.node_count(m_uid[0]) == 0)
+             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
+
+        std::string nodes = "node_uid";
+        for(int j=0; j<m_uid.size(); j++){
+            while(nodes.size() < 30 * (j+1)) nodes = nodes  + " ";
+            nodes = nodes + "[" + std::to_string(m_uid[j]) +"]";
+        }
+        m_renderer.drawText(nodes, 0.16f, m_renderer.getWindowHeight() - 32.0f, 0.25f);
+
         for (size_t i=0; i<m_keys.size(); ++i) {
-            float y = (1 - (i+0.5f) / m_keys.size()) * m_renderer.getWindowHeight();
-            m_renderer.drawText(m_keys[i] + m_values[i], 16.0f, y, 0.25f);
+            std::string  s = m_keys[i];
+            for (size_t j=0; j<m_uid.size(); ++j) {
+                if(m_values[i][j].size() > 30){
+                    while(m_values[i][j].size() > 25) m_values[i][j].resize(m_values[i][j].size() - 1);
+                    m_values[i][j]=m_values[i][j] + "...";
+                }
+                while(m_values[i][j].size() < 30)  m_values[i][j] = m_values[i][j] + " ";
+                s=s+m_values[i][j] + " ";
+            }
+            float y = (1 - (i+0.5f) / m_keys.size()) * (m_renderer.getWindowHeight() - 64);
+            m_renderer.drawText(s, 0.16f, y, 0.25f);
         }
     }
+
 
     //! @brief Writes the tags from the tagged tuple.
     inline void init_storage_values(std::vector<std::string>&, common::type_sequence<>) {}
@@ -323,21 +358,21 @@ class info_window {
 
     //! @brief Updates values (internal).
     template <typename... Ss, typename T, typename... Ts>
-    void update_values(std::vector<device_t> n, common::tagged_tuple<common::type_sequence<Ss...>,T> const& t, Ts const&... xs) {
-        update_values(n, 0, common::get<Ss>(t)..., xs...);
+    void update_values(size_t j, std::vector<device_t> n, common::tagged_tuple<common::type_sequence<Ss...>,T> const& t, Ts const&... xs) {
+        update_values(j, n, 0, common::get<Ss>(t)..., xs...);
     }
-    inline void update_values(std::vector<device_t> const&, size_t) {}
+    inline void update_values(size_t, std::vector<device_t> const&, size_t) {}
     template <typename T, typename... Ts>
-    inline void update_values(std::vector<device_t> const& n, size_t i, T const& x, Ts const&... xs) {
-        m_values[i] = stringify(fcpp::details::align(x, n), m_types[i]);
-        update_values(n, i+1, xs...);
+    inline void update_values(size_t j, std::vector<device_t> const& n, size_t i, T const& x, Ts const&... xs) {
+        m_values[i][j] = stringify(fcpp::details::align(x, n), m_types[i]);
+        update_values(j, n, i+1, xs...);
     }
 
     //! @brief A reference to the corresponding net object.
     net& m_net;
 
     //! @brief The unique identifier of the displayed device.
-    device_t m_uid;
+    std::vector<device_t> m_uid;
 
     //! @brief Window renderer object.
     internal::renderer m_renderer;
@@ -355,7 +390,7 @@ class info_window {
     std::vector<std::string> m_keys;
 
     //! @brief Values to be represented.
-    std::vector<std::string> m_values;
+    std::vector<std::vector<std::string>> m_values;
 
     //! @brief Types of the values represented.
     std::vector<std::string> m_types;
@@ -713,13 +748,13 @@ struct displayer {
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
                     }
-                    if (m_mouseStartX!= std::numeric_limits<float>::infinity()) {
+                    if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
                         float sx{ (2.0f * (float)m_mouseStartX) / m_renderer.getFramebufferWidth() - 1.0f };
                         float sy{ 1.0f - (2.0f * (float)m_mouseStartY) / m_renderer.getFramebufferHeight() };
                         float lx{ (2.0f * (float)m_mouseLastX) / m_renderer.getFramebufferWidth() - 1.0f };
                         float ly{ 1.0f - (2.0f * (float)m_mouseLastY) / m_renderer.getFramebufferHeight() };
                         dragSelect();
-                        m_renderer.drawRectangle(sx, sy,lx,ly);
+                        m_renderer.drawRectangle(sx, sy, lx, ly);
                     }
                     {
                         PROFILE_COUNT("displayer/text");
@@ -875,6 +910,7 @@ struct displayer {
 
                     float xoffset{ (float)(xpos - dspl.m_mouseLastX) };
                     float yoffset{ (float)(dspl.m_mouseLastY - ypos) };
+                    dspl.m_mouseLastX = (float)xpos;
                     dspl.m_mouseLastY = (float)ypos;
 
                     dspl.mouseInput(dspl.m_mouseLastX, dspl.m_mouseLastY, 0.0, 0.0, mouse_type::hover, 0);
@@ -1002,31 +1038,38 @@ struct displayer {
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
                             if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
                                 glfwMakeContextCurrent(NULL);
-                                m_info.emplace_back(new info_window<F>(*this, m_hoveredNode));
+                                m_info.emplace_back(new info_window<F>(*this, {m_hoveredNode}));
                                 glfwMakeContextCurrent(m_renderer.getWindow());
                             }
-                            else if (m_mouseStartX  == std::numeric_limits<float>::infinity()) {
+                            else if (m_mouseStartX == std::numeric_limits<float>::infinity()) {
                                 m_mouseStartX = x;
                                 m_mouseStartY = y;
                             }
                         }
-                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE and m_mouseStartX != std::numeric_limits<float>::infinity()) {
+                            std::vector<device_t> nodes;
                             auto beg{ P::net::node_begin() };
                             auto end{ P::net::node_end() };
+                            int b=0;
                             for (size_t i = 0; i < end - beg; ++i) {
                                 device_t node = beg[i].second.uid;
                                 int h = beg[i].second.get_highlight();
                                 if (h == 1) {
-                                    glfwMakeContextCurrent(NULL);
-                                    m_info.emplace_back(new info_window<F>(*this, node));
-                                    glfwMakeContextCurrent(m_renderer.getWindow());
+                                    nodes.emplace_back(node);
                                 }
                             }
+                            if(nodes.size()>=1){
+                                glfwMakeContextCurrent(NULL);
+                                m_info.emplace_back(new info_window<F>(*this, nodes));
+                                glfwMakeContextCurrent(m_renderer.getWindow());
+                            }
                             m_mouseStartX = std::numeric_limits<float>::infinity();
+                            m_mouseStartY = std::numeric_limits<float>::infinity();
                         }
                         m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;
                     }
+
 
                     case mouse_type::drag: {
                         GLFWwindow* window{ m_renderer.getWindow() };
@@ -1148,10 +1191,10 @@ struct displayer {
             std::vector<std::unique_ptr<info_window<F>>> m_info;
 
             //! @brief Start mouse X position when the right click is pressed.
-            float m_mouseStartX=std::numeric_limits<double>::infinity();
+            float m_mouseStartX = std::numeric_limits<double>::infinity();
 
             //! @brief Start mouse Y position when the right click is pressed.
-            float m_mouseStartY=std::numeric_limits<double>::infinity();
+            float m_mouseStartY = std::numeric_limits<double>::infinity();
 
             //! @brief Last mouse X position.
             float m_mouseLastX;

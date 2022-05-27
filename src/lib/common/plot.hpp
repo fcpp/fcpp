@@ -518,6 +518,105 @@ struct rows : public first_rows<C,M,F,max_size> {
 };
 //! @endcond
 
+/**
+ * @brief Plotter storing the last received rows for later printing.
+ *
+ * @param M Tags and types that may vary across rows.
+ * @param F Tags and types assumed constant and stored only once.
+ * @param max_rows The maximum number of rows allowed in the buffer (0 for no maximum size).
+ */
+template <typename M, typename F = void, size_t max_rows = 0>
+class last_rows {
+  public:
+    //! @brief Sequence of tags and types not compressed on serialisation.
+    using row_type = common::tagged_tuple_t<typename details::option_types<M>::type>;
+    //! @brief Sequence of tags and types assumed constant and stored only once.
+    using fixed_tuple_type = common::tagged_tuple_t<typename details::option_types<F>::type>;
+
+    //! @brief Default constructor.
+    last_rows() {
+        m_start = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        m_rows.reserve(max_rows);
+        m_offset = 0;
+    }
+
+    //! @brief Row processing.
+    template <typename R>
+    last_rows& operator<<(R const& row) {
+        m_fixed = row;
+        if (max_rows == 0 or m_rows.size() < max_rows)
+            m_rows.emplace_back(row);
+        else {
+            m_rows[m_offset] = row;
+            m_offset = (m_offset+1) % max_rows;
+        }
+        return *this;
+    }
+
+    //! @brief The number of rows stored.
+    size_t size() const {
+        return m_rows.size();
+    }
+
+    //! @brief The last row stored.
+    row_type const& back() const {
+        return m_rows[max_rows == 0 ? m_rows.size()-1 : (m_offset+max_rows-1)%max_rows];
+    }
+
+    //! @brief Prints the object's contents.
+    template <typename O>
+    void print(O& o) {
+        std::string tstr = std::string(ctime(&m_start));
+        tstr.pop_back();
+        o << "########################################################\n";
+        o << "# FCPP execution started at:  " << tstr << " #\n";
+        o << "########################################################\n# ";
+        m_fixed.print(o, common::assignment_tuple);
+        o << "\n#\n";
+        o << "# The columns have the following meaning:\n# ";
+        print_headers(o, typename row_type::tags{});
+        o << "\n";
+        for (size_t i=0; i<m_rows.size(); ++i) {
+            print_output(o, m_rows[max_rows == 0 ? i : (m_offset+i)%max_rows], typename row_type::tags{});
+            o << "\n";
+        }
+        std::time_t m_end = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        tstr = std::string(ctime(&m_end));
+        tstr.pop_back();
+        o << "########################################################\n";
+        o << "# FCPP execution finished at: " << tstr << " #\n";
+        o << "########################################################" << std::endl;
+    }
+
+  private:
+    //! @brief Prints the storage headers.
+    template <typename O>
+    void print_headers(O&, common::type_sequence<>) const {}
+    template <typename O, typename U, typename... Us>
+    void print_headers(O& o, common::type_sequence<U,Us...>) const {
+        o << common::details::strip_namespaces(common::type_name<U>()) << " ";
+        print_headers(o, common::type_sequence<Us...>{});
+    }
+
+    //! @brief Prints the storage values.
+    template <typename O, typename T>
+    void print_output(O&, T const&, common::type_sequence<>) const {}
+    template <typename O, typename T, typename U, typename... Us>
+    void print_output(O& o, T const& t, common::type_sequence<U,Us...>) const {
+        o << common::escape(common::get<U>(t)) << " ";
+        print_output(o, t, common::type_sequence<Us...>{});
+    }
+
+    //! @brief Start time.
+    std::time_t m_start;
+    //! @brief Fixed data.
+    fixed_tuple_type m_fixed;
+    //! @brief The stored rows of data.
+    std::vector<row_type> m_rows;
+    //! @brief The offset of stored rows.
+    size_t m_offset;
+};
+
 
 //! @brief Filters values for column S according to property F in plotter P.
 template <typename S, typename F, typename P>

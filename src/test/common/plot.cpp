@@ -239,7 +239,7 @@ TEST(PlotTest, DeltaTuple) {
     EXPECT_SERIALIZE(3, 1.5, 1+sizeof(int)+sizeof(double));
 }
 
-TEST(PlotTest, Rows) {
+TEST(PlotTest, FirstRows) {
     EXPECT_SAME(typename plot::details::option_types<void>::type, common::type_sequence<>);
     EXPECT_SAME(typename plot::details::option_types<common::type_sequence<int, bool>>::type, common::type_sequence<int, bool>);
     EXPECT_SAME(typename plot::details::option_types<temps<int, bool>>::type, common::type_sequence<int, bool>);
@@ -340,6 +340,50 @@ TEST(PlotTest, Rows) {
             if (i != 1 and i != v.size()-2) {
                 EXPECT_EQ(line, v[i]);
             }
+        }
+    }
+}
+
+TEST(PlotTest, LastRows) {
+    using plot_t = plot::last_rows<temps<tag, int, gat, double>, temps<gat, double>, 2>;
+    plot_t p;
+    p << common::make_tagged_tuple<tag,gat,oth_but>(1, 2.5, true);
+    p << common::make_tagged_tuple<tag,gat,oth_but>(1, 3.5, true);
+    p << common::make_tagged_tuple<tag,gat,oth_but>(42, 3.5, true);
+    p << common::make_tagged_tuple<tag,gat,oth_but>(42, 4.5, true);
+    p << common::make_tagged_tuple<tag,gat,oth_but>(42, 5.5, true);
+    EXPECT_EQ(p.size(), 2ULL);
+    EXPECT_EQ(p.back(), (common::make_tagged_tuple<tag,gat>(42, 5.5)));
+    std::vector<std::string> v = {
+        "########################################################",
+        "# FCPP execution started at:  Fri Nov 20 13:22:29 2020 #",
+        "########################################################",
+        "# gat = 5.5",
+        "#",
+        "# The columns have the following meaning:",
+        "# tag gat ",
+        "42 4.5 ",
+        "42 5.5 ",
+        "########################################################",
+        "# FCPP execution finished at: Fri Nov 20 13:22:29 2020 #",
+        "########################################################"
+    };
+    std::stringstream ss;
+    p.print(ss);
+    for (size_t i=0; i<v.size(); ++i) {
+        std::string line;
+        getline(ss, line);
+        if (i != 1 and i != v.size()-2) {
+            EXPECT_EQ(line, v[i]);
+        }
+    }
+    ss.str("");
+    p.print(ss);
+    for (size_t i=0; i<v.size(); ++i) {
+        std::string line;
+        getline(ss, line);
+        if (i != 1 and i != v.size()-2) {
+            EXPECT_EQ(line, v[i]);
         }
     }
 }

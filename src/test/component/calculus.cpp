@@ -17,9 +17,10 @@ using namespace fcpp;
 using namespace component::tags;
 
 
-template <int O>
+template <int O, typename T>
 using combo = component::combine_spec<
     component::calculus<
+        retain<T>,
         exports<common::export_list<spawn_t<int, bool>, spawn_t<int, status>, field<int>, times_t, int>>,
         export_pointer<(O & 1) == 1>,
         export_split<(O & 2) == 2>,
@@ -110,60 +111,121 @@ void sendall(T& x, T& y, T& z) {
 
 
 MULTI_TEST(CalculusTest, Size, O, 3) {
-    typename combo<O>::net  network{common::make_tagged_tuple<>()};
-    typename combo<O>::node d0{network, common::make_tagged_tuple<uid, hoodsize>(0, device_t(3))};
-    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
-    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
-    typename combo<O>::node d3{network, common::make_tagged_tuple<uid>(3)};
-    typename combo<O>::node d4{network, common::make_tagged_tuple<uid>(4)};
-    d0.round_start(0);
-    EXPECT_EQ(1, (int)d0.size());
-    d0.round_end(0);
-    sendto(d0, d0);
-    d0.round_start(0);
-    EXPECT_EQ(1, (int)d0.size());
-    d0.round_end(0);
-    sendto(d1, d0);
-    d0.round_start(0);
-    EXPECT_EQ(2, (int)d0.size());
-    d0.round_end(0);
-    sendto(d2, d0);
-    d0.round_start(0);
-    EXPECT_EQ(2, (int)d0.size());
-    d0.round_end(0);
-    sendto(d0, d0);
-    sendto(d1, d0);
-    sendto(d2, d0);
-    d0.round_start(0);
-    EXPECT_EQ(3, (int)d0.size());
-    d0.round_end(0);
-    sendto(d0, d0);
-    sendto(d1, d0);
-    sendto(d2, d0);
-    sendto(d3, d0);
-    d0.round_start(0);
-    EXPECT_EQ(3, (int)d0.size());
-    d0.round_end(0);
-    sendto(d0, d0);
-    sendto(d1, d0);
-    sendto(d2, d0);
-    sendto(d3, d0);
-    sendto(d4, d0);
-    d0.round_start(0);
-    EXPECT_EQ(3, (int)d0.size());
-    d0.round_end(0);
-    d0.round_start(0);
-    EXPECT_EQ(1, (int)d0.size());
-    d0.round_end(0);
-    sendto(d4, d0);
-    d0.round_start(0);
-    EXPECT_EQ(2, (int)d0.size());
-    d0.round_end(0);
+    {
+        typename combo<O, metric::once>::net  network{common::make_tagged_tuple<>()};
+        typename combo<O, metric::once>::node d0{network, common::make_tagged_tuple<uid, hoodsize>(0, device_t(3))};
+        typename combo<O, metric::once>::node d1{network, common::make_tagged_tuple<uid>(1)};
+        typename combo<O, metric::once>::node d2{network, common::make_tagged_tuple<uid>(2)};
+        typename combo<O, metric::once>::node d3{network, common::make_tagged_tuple<uid>(3)};
+        typename combo<O, metric::once>::node d4{network, common::make_tagged_tuple<uid>(4)};
+        d0.round_start(0);
+        EXPECT_EQ(1, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        d0.round_start(0);
+        EXPECT_EQ(1, (int)d0.size());
+        d0.round_end(0);
+        sendto(d1, d0);
+        d0.round_start(0);
+        EXPECT_EQ(2, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        d0.round_start(0);
+        EXPECT_EQ(1, (int)d0.size());
+        d0.round_end(0);
+        sendto(d2, d0);
+        d0.round_start(0);
+        EXPECT_EQ(2, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        sendto(d3, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        sendto(d3, d0);
+        sendto(d4, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        d0.round_start(0);
+        EXPECT_EQ(1, (int)d0.size());
+        d0.round_end(0);
+        sendto(d4, d0);
+        d0.round_start(0);
+        EXPECT_EQ(2, (int)d0.size());
+        d0.round_end(0);
+    }
+    {
+        typename combo<O, metric::always>::net  network{common::make_tagged_tuple<>()};
+        typename combo<O, metric::always>::node d0{network, common::make_tagged_tuple<uid, hoodsize>(0, device_t(3))};
+        typename combo<O, metric::always>::node d1{network, common::make_tagged_tuple<uid>(1)};
+        typename combo<O, metric::always>::node d2{network, common::make_tagged_tuple<uid>(2)};
+        typename combo<O, metric::always>::node d3{network, common::make_tagged_tuple<uid>(3)};
+        typename combo<O, metric::always>::node d4{network, common::make_tagged_tuple<uid>(4)};
+        d0.round_start(0);
+        EXPECT_EQ(1, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        d0.round_start(0);
+        EXPECT_EQ(1, (int)d0.size());
+        d0.round_end(0);
+        sendto(d1, d0);
+        d0.round_start(0);
+        EXPECT_EQ(2, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        d0.round_start(0);
+        EXPECT_EQ(2, (int)d0.size());
+        d0.round_end(0);
+        sendto(d2, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        sendto(d3, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        sendto(d3, d0);
+        sendto(d4, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+        sendto(d4, d0);
+        d0.round_start(0);
+        EXPECT_EQ(3, (int)d0.size());
+        d0.round_end(0);
+    }
 }
 
 MULTI_TEST(CalculusTest, Old, O, 3) {
-    typename combo<O>::net  network{common::make_tagged_tuple<>()};
-    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O, metric::once>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O, metric::once>::node d0{network, common::make_tagged_tuple<uid>(0)};
     times_t d;
     d0.round_start(0);
     d = delayed(d0, 0, 1);
@@ -204,41 +266,85 @@ MULTI_TEST(CalculusTest, Old, O, 3) {
 }
 
 MULTI_TEST(CalculusTest, Nbr, O, 3) {
-    typename combo<O>::net  network{common::make_tagged_tuple<>()};
-    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
-    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
-    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
-    int d;
-    d = sharing(d0, 0, 4);
-    EXPECT_EQ(4, d);
-    d = sharing(d1, 0, 2);
-    EXPECT_EQ(2, d);
-    d = sharing(d2, 0, 1);
-    EXPECT_EQ(1, d);
-    d0.round_end(0);
-    d1.round_end(0);
-    d2.round_end(0);
-    sendto(d0, d0);
-    sendto(d1, d0);
-    sendto(d2, d0);
-    d0.round_start(0);
-    d = sharing(d0, 0, 3);
-    EXPECT_EQ(7, d);
-    d = gossip(d0, 1, 3);
-    EXPECT_EQ(3, d);
-    d = gossip(d1, 1, 2);
-    EXPECT_EQ(2, d);
-    d = gossip(d2, 1, 4);
-    EXPECT_EQ(4, d);
-    d0.round_end(0);
-    d1.round_end(0);
-    d2.round_end(0);
-    sendto(d0, d0);
-    sendto(d1, d0);
-    sendto(d2, d0);
-    d0.round_start(0);
-    d = gossip(d0, 1, 1);
-    EXPECT_EQ(4, d);
+    {
+        typename combo<O, metric::once>::net  network{common::make_tagged_tuple<>()};
+        typename combo<O, metric::once>::node d0{network, common::make_tagged_tuple<uid>(0)};
+        typename combo<O, metric::once>::node d1{network, common::make_tagged_tuple<uid>(1)};
+        typename combo<O, metric::once>::node d2{network, common::make_tagged_tuple<uid>(2)};
+        int d;
+        d0.round_start(0);
+        d1.round_start(0);
+        d2.round_start(0);
+        d = sharing(d0, 0, 4);
+        EXPECT_EQ(4, d);
+        d = sharing(d1, 0, 2);
+        EXPECT_EQ(2, d);
+        d = sharing(d2, 0, 1);
+        EXPECT_EQ(1, d);
+        d0.round_end(0);
+        d1.round_end(0);
+        d2.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        d0.round_start(0);
+        d = sharing(d0, 0, 3);
+        EXPECT_EQ(7, d);
+        d0.round_end(0);
+        sendto(d0, d0);
+        d0.round_start(0);
+        d1.round_start(0);
+        d2.round_start(0);
+        d = sharing(d0, 0, 3);
+        EXPECT_EQ(3, d);
+        d = gossip(d0, 1, 3);
+        EXPECT_EQ(3, d);
+        d = gossip(d1, 1, 2);
+        EXPECT_EQ(2, d);
+        d = gossip(d2, 1, 4);
+        EXPECT_EQ(4, d);
+        d0.round_end(0);
+        d1.round_end(0);
+        d2.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        d0.round_start(0);
+        d = gossip(d0, 1, 1);
+        EXPECT_EQ(4, d);
+        d0.round_end(0);
+    }
+    {
+        typename combo<O, metric::always>::net  network{common::make_tagged_tuple<>()};
+        typename combo<O, metric::always>::node d0{network, common::make_tagged_tuple<uid>(0)};
+        typename combo<O, metric::always>::node d1{network, common::make_tagged_tuple<uid>(1)};
+        typename combo<O, metric::always>::node d2{network, common::make_tagged_tuple<uid>(2)};
+        int d;
+        d0.round_start(0);
+        d1.round_start(0);
+        d2.round_start(0);
+        d = sharing(d0, 0, 4);
+        EXPECT_EQ(4, d);
+        d = sharing(d1, 0, 2);
+        EXPECT_EQ(2, d);
+        d = sharing(d2, 0, 1);
+        EXPECT_EQ(1, d);
+        d0.round_end(0);
+        d1.round_end(0);
+        d2.round_end(0);
+        sendto(d0, d0);
+        sendto(d1, d0);
+        sendto(d2, d0);
+        d0.round_start(0);
+        d = sharing(d0, 0, 3);
+        EXPECT_EQ(7, d);
+        d0.round_end(0);
+        sendto(d0, d0);
+        d0.round_start(0);
+        d = sharing(d0, 0, 3);
+        EXPECT_EQ(6, d);
+        d0.round_end(0);
+    }
 }
 
 template <status x>
@@ -266,10 +372,10 @@ TEST(CalculusTest, Status) {
 
 TEST(CalculusTest, Spawn) {
     constexpr size_t O = 0;
-    typename combo<O>::net  network{common::make_tagged_tuple<>()};
-    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
-    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
-    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
+    typename combo<O, metric::once>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O, metric::once>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O, metric::once>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    typename combo<O, metric::once>::node d2{network, common::make_tagged_tuple<uid>(2)};
     int d;
     d = spawning(d0, 0, false);
     EXPECT_EQ(0, d);
@@ -309,9 +415,9 @@ TEST(CalculusTest, Spawn) {
 
 TEST(CalculusText, NbrUid) {
     constexpr size_t O = 0;
-    typename combo<O>::net  network{common::make_tagged_tuple<>()};
-    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
-    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    typename combo<O, metric::once>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O, metric::once>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O, metric::once>::node d1{network, common::make_tagged_tuple<uid>(1)};
     EXPECT_EQ(0, (int)details::get_ids(d0.nbr_uid()).size());
     d0.round_start(0);
     d0.round_end(0);

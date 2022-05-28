@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -40,6 +40,21 @@ TEST(MetricTest, Once) {
     y = m.update(y, n);
     z = m.update(z, n);
     EXPECT_GT(y, x);
+    EXPECT_LE(z, x);
+}
+
+TEST(MetricTest, Always) {
+    using metric_type = metric::always;
+    mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
+    metric_type m;
+    metric_type::result_type x = m.build(), y, z;
+    y = m.build(n, 0.2f, 1, common::make_tagged_tuple<>());
+    z = m.build(n, 0.2f, 0, common::make_tagged_tuple<>());
+    EXPECT_LE(y, x);
+    EXPECT_LE(z, x);
+    y = m.update(y, n);
+    z = m.update(z, n);
+    EXPECT_LE(y, x);
     EXPECT_LE(z, x);
 }
 

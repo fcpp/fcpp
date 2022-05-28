@@ -327,19 +327,10 @@ class context<false, pointer, M, Ts...> {
         if (m_data.size() > w+1) m_data[w] = std::move(m_data.back());
         m_data.resize(w+1);
         if (m_data.size() > hoodsize) {
-            std::vector<size_t> v(m_data.size());
-            for (size_t i=0; i<m_data.size(); ++i) v[i] = i;
-            std::nth_element(v.begin(), v.begin()+hoodsize, v.end(), [this](size_t i, size_t j){
-                if (get<1>(m_data[i]) < get<1>(m_data[j])) return true;
-                if (get<1>(m_data[i]) > get<1>(m_data[j])) return false;
-                return get<0>(m_data[i]) < get<0>(m_data[j]);
+            std::nth_element(m_data.begin(), m_data.begin()+hoodsize, m_data.end(), [](data_type const& x, data_type const& y){
+                return get<1>(x) < get<1>(y);
             });
-            size_t i = v[hoodsize];
-            m_data.resize(std::remove_if(m_data.begin(), m_data.end(), [this, i](data_type const& x){
-                if (get<1>(x) > get<1>(m_data[i])) return true;
-                if (get<1>(x) < get<1>(m_data[i])) return false;
-                return get<0>(x) >= get<0>(m_data[i]);
-            }) - m_data.begin());
+            m_data.resize(hoodsize);
         }
         m_self = std::lower_bound(m_data.begin(), m_data.end(), data_type{self, metric_type{}, export_type{}}, [](data_type const& x, data_type const& y) {
             return get<0>(x) < get<0>(y);
@@ -352,7 +343,7 @@ class context<false, pointer, M, Ts...> {
         size_t w = 0;
         for (size_t r = 0; r < m_data.size(); ++r) {
             get<1>(m_data[r]) = metric.update(get<1>(m_data[r]), node);
-            if (get<1>(m_data[r]) < threshold) {
+            if (get<1>(m_data[r]) <= threshold) {
                 if (r > w) m_data[w] = std::move(m_data[r]);
                 ++w;
             }

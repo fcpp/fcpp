@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file metric.hpp
@@ -46,6 +46,56 @@ struct once {
     template <typename N>
     result_type update(result_type const& r, N const&) const {
         return r == 0 ? 0 : 2;
+    }
+};
+
+/**
+ * @brief Metric predicate which clears out nothing.
+ */
+struct always {
+    //! @brief The data type.
+    struct result_type {
+        //! @brief Equality operator.
+        bool operator==(result_type const&) const {
+            return true;
+        }
+        //! @brief Inequality operator.
+        bool operator!=(result_type const&) const {
+            return false;
+        }
+        //! @brief Less-than comparison operator.
+        bool operator<(result_type const&) const {
+            return false;
+        }
+        //! @brief Less-or-equal operator.
+        bool operator<=(result_type const&) const {
+            return true;
+        }
+        //! @brief Greater-than comparison operator.
+        bool operator>(result_type const&) const {
+            return false;
+        }
+        //! @brief Greater-or-equal operator.
+        bool operator>=(result_type const&) const {
+            return true;
+        }
+    };
+
+    //! @brief Default threshold.
+    result_type build() const {
+        return {};
+    }
+
+    //! @brief Measures an incoming message.
+    template <typename N, typename S, typename T>
+    result_type build(N const&, times_t, device_t, common::tagged_tuple<S,T> const&) const {
+        return {};
+    }
+
+    //! @brief Updates an existing measure.
+    template <typename N>
+    inline result_type update(result_type const&, N const&) const {
+        return {};
     }
 };
 

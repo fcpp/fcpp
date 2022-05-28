@@ -77,13 +77,17 @@ template <class... Ts>
 struct graph_spawner {
     //! @brief Type sequence of node attributes parameters.
     using attributes_tag_type = common::option_types<tags::node_attributes, Ts...>;
+
     //! @brief Type sequence of node attributes parameters, defaulting to tuple store parameters without node attributes.
     using attributes_type = std::conditional_t<std::is_same<attributes_tag_type, common::type_sequence<>>::value, common::option_types<tags::tuple_store, Ts...>, attributes_tag_type>;
-    //! @brief Tagged tuple of node attributes.
+
+    //! @brief Tagged tuple of node attributes parameters, defaulting to tuple store parameters without node attributes.
     using attributes_tuple_type = common::tagged_tuple_t<attributes_type>;
 
-    //! @brief Node initialisation tags and generating distributions as tagged tuples.
+    //! @brief Type sequence of node initialisation tags and generating distributions.
     using init_tag_type = common::option_types<tags::init, Ts...>;
+
+    //! @brief Tagged tuple of node initialisation tags and generating distributions.
     using init_tuple_type = common::tagged_tuple_t<init_tag_type>;
 
     /**

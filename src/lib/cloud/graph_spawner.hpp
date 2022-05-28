@@ -164,9 +164,10 @@ struct graph_spawner {
                     }
                     *is >> d2;
                     assert(*is);
-                    assert(d1 != d2);
-                    typename net::lock_type l;
-                    P::net::node_at(d1,l).connect(d2);
+                    if (d1 != d2) {
+                        typename net::lock_type l;
+                        P::net::node_at(d1,l).connect(d2);
+                    }
                 }
             }
 

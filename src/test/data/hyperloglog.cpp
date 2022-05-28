@@ -49,6 +49,8 @@ TEST(HyperLogLogTest, Operators) {
     hyperloglog_counter<16,6> y(x);
     hyperloglog_counter<16,6> z = std::move(x);
     EXPECT_EQ(z, y);
+    y.insert(1);
+    EXPECT_NE(y, x);
 }
 
 TEST(HyperLogLogTest, CountError) {

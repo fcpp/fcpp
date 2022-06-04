@@ -1050,9 +1050,6 @@ struct displayer {
                             std::vector<device_t> nodes;
                             auto beg{ P::net::node_begin() };
                             auto end{ P::net::node_end() };
-                            int b=0;
-                            auto beg{ P::net::node_begin() };
-                            auto end{ P::net::node_end() };
                             for (size_t i = 0; i < end - beg; ++i) {
                                 device_t node = beg[i].second.uid;
                                 int h = beg[i].second.get_highlight();
@@ -1064,11 +1061,6 @@ struct displayer {
                                 glfwMakeContextCurrent(NULL);
                                 m_info.emplace_back(new info_window<F>(*this, nodes));
                                 glfwMakeContextCurrent(m_renderer.getWindow());
-                            }
-                                    glfwMakeContextCurrent(NULL);
-                                    m_info.emplace_back(new info_window<F>(*this, node));
-                                    glfwMakeContextCurrent(m_renderer.getWindow());
-                                }
                             }
                             m_mouseStartX = std::numeric_limits<float>::infinity();
                             m_mouseStartY = std::numeric_limits<float>::infinity();

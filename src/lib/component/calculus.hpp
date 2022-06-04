@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file calculus.hpp
@@ -600,6 +600,16 @@ using oldnbr_t = common::export_list<T>;
  * `status::x and status::output` equals `status::x_output`.
  */
 enum class status : char { terminated, external, border, internal, terminated_output, external_output, border_output, internal_output, output };
+
+//! @brief String representation of a status.
+std::string to_string(status);
+
+//! @brief Printing status.
+template <typename O>
+O& operator<<(O& o, status s) {
+    o << to_string(s);
+    return o;
+}
 
 //! @brief Merges the output status with another status (undefined for other combinations of statuses).
 inline constexpr status operator&&(status x, status y) {

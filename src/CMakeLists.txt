@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 ####################
 # HELPER FUNCTIONS #
@@ -18,11 +18,19 @@ macro(fcpp_setup)
     set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -march=native")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+    if(NOT CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+        # -march=native is not supported by arm64
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
+    endif()
     if(WIN32)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Os")
         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
         set(BUILD_SHARED_LIBS OFF)
         set(CMAKE_EXE_LINKER_FLAGS "-static")
+        if(FCPP_BUILD_GL)
+            set(CMAKE_DISABLE_FIND_PACKAGE_BrotliDec True)
+        endif(FCPP_BUILD_GL)
     endif(WIN32)
     if(FCPP_BUILD_TESTS)
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/test)
@@ -120,6 +128,7 @@ set(
     lib/deployment/hardware_identifier.cpp
     lib/deployment/hardware_logger.cpp
     lib/deployment/os.cpp
+    lib/deployment/persister.cpp
     lib/fcpp.cpp
     lib/internal.cpp
     lib/internal/context.cpp
@@ -165,6 +174,7 @@ endif(FCPP_BUILD_GL)
 ######################
 # EXTERNAL LIBRARIES #
 ######################
+
 add_library(
         stb_image
         ./external/stb_image/stb_image.h
@@ -275,6 +285,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/deployment/hardware_connector.cpp)
         fcpp_test(test/deployment/hardware_identifier.cpp)
         fcpp_test(test/deployment/hardware_logger.cpp)
+        fcpp_test(test/deployment/persister.cpp)
         fcpp_test(test/general/collection_compare.cpp)
         fcpp_test(test/general/embedded.cpp)
         fcpp_test(test/general/slow_distance.cpp)

@@ -15,6 +15,7 @@
 #include "lib/deployment/hardware_identifier.hpp"
 #include "lib/deployment/hardware_logger.hpp"
 #include "lib/deployment/os.hpp"
+#include "lib/deployment/persister.hpp"
 
 
 /**
@@ -35,7 +36,7 @@ namespace component {
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(deployment, hardware_logger, storage, hardware_connector, timer, scheduler, hardware_identifier, randomizer, calculus);
+DECLARE_COMBINE(deployment, hardware_logger, persister, storage, hardware_connector, timer, scheduler, hardware_identifier, randomizer, calculus);
 
 }
 

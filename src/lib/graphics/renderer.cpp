@@ -674,7 +674,6 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 }
 
 void renderer::drawRectangle(float x, float y, float a, float b) const {
-
     m_shaderProgramCol.use();
     m_shaderProgramCol.setMat4("u_projection", glm::mat4{ 1.0f });
     m_shaderProgramCol.setMat4("u_view", glm::mat4{ 1.0f });

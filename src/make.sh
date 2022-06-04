@@ -152,7 +152,7 @@ function mkdoc() {
 function parseopt() {
     i=0
     while [ "${1:0:1}" == "-" ]; do
-        if [ "${1:0:2}" == "-O" ]; then
+        if [ "$1" == "-O" ]; then
             btype="Release"
         else
             copts="$copts --copt=$1"
@@ -252,7 +252,7 @@ function cmake_finderx() {
 
 function cmake_builderx() {
     reporter cmake -S ./ -B ./bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=$btype $opts "$cmakeopts"
-    if [ "$platform" == Unix ]; then
+    if which nproc 2>/dev/null >&2; then
         opt="-j `nproc`"
     fi
     if [ "$1" != "" ]; then

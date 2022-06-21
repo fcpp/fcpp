@@ -219,7 +219,7 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
     m_foreground{ 0.0f, 0.0f, 0.0f, 1.0f },
-    m_rectangle_col{0.0f, 2.0f, 2.0f, 0.5f},
+    m_rectangle_col{ 0.0f, 2.0f, 2.0f, 0.5f },
     m_camera{} {
     /* DEFINITION */
     // Initialize GLFW

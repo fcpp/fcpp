@@ -141,13 +141,11 @@ class info_window {
             "connector_data"
         };
         m_keys.insert(m_keys.end(), vk.begin(), vk.end());
+        std::sort(m_uid.begin(), m_uid.end());
         size_t ml = 0;
         for (auto const& s : m_keys) {
-            std::vector<std::string> v1;
             ml = std::max(ml,s.size());
-            for(int j=0; j<m_uid.size(); j++)
-                v1.emplace_back();
-            m_values.emplace_back(v1);
+            m_values.emplace_back(m_uid.size());
         }
 
         for (auto& s : m_keys) while (s.size() <= ml) s.push_back(' ');
@@ -198,12 +196,7 @@ class info_window {
     //! @brief Updates values.
     void update_values(node& n) {
         m_modified = true;
-        int j=0;
-        for(int i=0; i<m_uid.size(); i++){
-            if(n.uid==m_uid[i]){
-                j=i;
-            }
-        }
+        int j = std::lower_bound(m_uid.begin(), m_uid.end(), n.uid) - m_uid.begin();
         update_values(
             j,
             fcpp::details::get_context(n).second().align(n.uid),
@@ -259,17 +252,17 @@ class info_window {
     }
 
     //! @brief Updates the node info and draws it into the window.
-
     void draw() {
         if (m_net.node_count(m_uid[0]) == 0)
-             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
+            glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
 
-        std::string nodes = "node_uid";
+        std::string nodes = m_nodes_list;
         for(int j=0; j<m_uid.size(); j++){
             while(nodes.size() < 30 * (j+1)) nodes = nodes  + " ";
-            nodes = nodes + "[" + std::to_string(m_uid[j]) +"]";
+            nodes = nodes + std::to_string(m_uid[j]);
+            float y = (1 - (m_keys.size()+0.5f) / m_keys.size()+1) * (m_renderer.getWindowHeight() - 20);
+            m_renderer.drawText(nodes, 0.16f, y, 0.25f);
         }
-        m_renderer.drawText(nodes, 0.16f, m_renderer.getWindowHeight() - 32.0f, 0.25f);
 
         for (size_t i=0; i<m_keys.size(); ++i) {
             std::string  s = m_keys[i];
@@ -285,7 +278,6 @@ class info_window {
             m_renderer.drawText(s, 0.16f, y, 0.25f);
         }
     }
-
 
     //! @brief Writes the tags from the tagged tuple.
     inline void init_storage_values(std::vector<std::string>&, common::type_sequence<>) {}
@@ -370,6 +362,9 @@ class info_window {
 
     //! @brief A reference to the corresponding net object.
     net& m_net;
+
+    //! @brief Node represented.
+    std::string m_nodes_list = "node_uid";
 
     //! @brief The unique identifier of the displayed device.
     std::vector<device_t> m_uid;

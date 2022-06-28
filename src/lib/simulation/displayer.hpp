@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2022 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file displayer.hpp
@@ -118,7 +118,7 @@ class info_window {
     info_window(net& n, std::vector<device_t> uid) :
         m_net(n),
         m_uid(uid),
-        m_renderer(0, "node " + std::to_string(uid), false, n.getRenderer().getWindow()),
+        m_renderer(0, get_title(), false, n.getRenderer().getWindow()),
         m_thread(&info_window::draw_cycle, this) {
         using U = std::decay_t<decltype(m_net.node_at(0).storage_tuple())>;
         init_storage_values(m_keys, (typename U::tags){});
@@ -144,7 +144,7 @@ class info_window {
         std::sort(m_uid.begin(), m_uid.end());
         size_t ml = 0;
         for (auto const& s : m_keys) {
-            ml = std::max(ml,s.size());
+            ml = std::max(ml, s.size());
             m_values.emplace_back(m_uid.size());
         }
 
@@ -152,14 +152,12 @@ class info_window {
         for (auto const& s : vk)
             m_types.emplace_back();
 
-        for(int i=0; i<m_uid.size(); i++){
-            if (m_net.node_count(m_uid[i])) {
-                typename net::lock_type l;
-                node& n = m_net.node_at(m_uid[i], l);
-                update_values(n);
-                n.highlight(2);
-                n.set_window(this);
-            }
+        for (int i : m_uid) if (m_net.node_count(i)) {
+            typename net::lock_type l;
+            node& n = m_net.node_at(i, l);
+            update_values(n);
+            n.highlight(2);
+            n.set_window(this);
         }
     }
 
@@ -173,13 +171,11 @@ class info_window {
     ~info_window() {
         m_running = false;
         m_thread.join();
-        for(int i=0; i<m_uid.size(); i++){
-            if (m_net.node_count(m_uid[i])) {
-                typename net::lock_type l;
-                node& n = m_net.node_at(m_uid[i], l);
-                n.highlight(0);
-                n.set_window(nullptr);
-            }
+        for (int i : m_uid) if (m_net.node_count(i)) {
+            typename net::lock_type l;
+            node& n = m_net.node_at(i, l);
+            n.highlight(0);
+            n.set_window(nullptr);
         }
     }
 
@@ -220,6 +216,14 @@ class info_window {
     }
 
  private:
+    //! @brief Produces a title given the list of UIDs.
+    std::string get_title() {
+        if (m_uid.size() == 1) return "node " + std::to_string(m_uid);
+        std::string s = "nodes " + std::to_string(m_uid[0]);
+        for (int i=1; i<m_uid.size(); ++i) s += ", " + std::to_string(m_uid[i]);
+        return s;
+    }
+
     //! @brief It sets the window resize callback.
     void setResizeCallback() {
         // Associates this (the info_window instance) to m_window
@@ -253,26 +257,26 @@ class info_window {
 
     //! @brief Updates the node info and draws it into the window.
     void draw() {
-        if (m_net.node_count(m_uid[0]) == 0)
-            glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid) + " (terminated)").c_str());
+        if (m_uid.size() == 1 and m_net.node_count(m_uid[0]) == 0)
+            glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid[0]) + " (terminated)").c_str());
 
         std::string nodes = m_nodes_list;
-        for(int j=0; j<m_uid.size(); j++){
-            while(nodes.size() < 30 * (j+1)) nodes = nodes  + " ";
-            nodes = nodes + std::to_string(m_uid[j]);
+        for (int j=0; j<m_uid.size(); ++j) {
+            while (nodes.size() < 30 * (j+1)) nodes.push_back(' ');
+            nodes += std::to_string(m_uid[j]);
             float y = (1 - (m_keys.size()+0.5f) / m_keys.size()+1) * (m_renderer.getWindowHeight() - 20);
             m_renderer.drawText(nodes, 0.16f, y, 0.25f);
         }
 
         for (size_t i=0; i<m_keys.size(); ++i) {
-            std::string  s = m_keys[i];
+            std::string s = m_keys[i];
             for (size_t j=0; j<m_uid.size(); ++j) {
-                if(m_values[i][j].size() > 30){
-                    while(m_values[i][j].size() > 25) m_values[i][j].resize(m_values[i][j].size() - 1);
-                    m_values[i][j]=m_values[i][j] + "...";
+                if (m_values[i][j].size() > 30) {
+                    m_values[i][j].resize(27);
+                    m_values[i][j] += "...";
                 }
-                while(m_values[i][j].size() < 30)  m_values[i][j] = m_values[i][j] + " ";
-                s=s+m_values[i][j] + " ";
+                while (m_values[i][j].size() <= 30)  m_values[i][j].push_back(' ');
+                s += m_values[i][j];
             }
             float y = (1 - (i+0.5f) / m_keys.size()) * (m_renderer.getWindowHeight() - 64);
             m_renderer.drawText(s, 0.16f, y, 0.25f);
@@ -1052,7 +1056,7 @@ struct displayer {
                                     nodes.emplace_back(node);
                                 }
                             }
-                            if(nodes.size()>=1){
+                            if (nodes.size() > 0) {
                                 glfwMakeContextCurrent(NULL);
                                 m_info.emplace_back(new info_window<F>(*this, nodes));
                                 glfwMakeContextCurrent(m_renderer.getWindow());

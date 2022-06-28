@@ -193,7 +193,7 @@ using neighbour_elastic_force_t = common::export_list<>;
  * Can model a repulsive force if mass is negative.
  * The result is designed to be set as node.propulsion().
  */
-template <typename node_t, size_t n, typename A, typename B>
+template <typename node_t, size_t n>
 inline vec<n> point_gravitational_force(node_t& node, trace_t, vec<n> const& point, real_t mass) {
     vec<n> v = point - node.position();
     real_t d = norm(v);

@@ -120,6 +120,7 @@ class info_window {
         m_uid(uid),
         m_renderer(0, get_title(), false, n.getRenderer().getWindow()),
         m_thread(&info_window::draw_cycle, this) {
+        m_spacing = m_uid.size() == 1 ? 200 : std::max(70 - 10*(int)m_uid.size(), 15);
         using U = std::decay_t<decltype(m_net.node_at(0).storage_tuple())>;
         init_storage_values(m_keys, (typename U::tags){});
         init_storage_values(m_types, (typename U::types){});
@@ -148,6 +149,10 @@ class info_window {
             m_values.emplace_back(m_uid.size());
         }
 
+        for (int j=0; j<m_uid.size(); ++j) {
+            while (m_nodes_list.size() < ml + m_spacing * j + 1) m_nodes_list.push_back(' ');
+            m_nodes_list += std::to_string(m_uid[j]);
+        }
         for (auto& s : m_keys) while (s.size() <= ml) s.push_back(' ');
         for (auto const& s : vk)
             m_types.emplace_back();
@@ -218,7 +223,7 @@ class info_window {
  private:
     //! @brief Produces a title given the list of UIDs.
     std::string get_title() {
-        if (m_uid.size() == 1) return "node " + std::to_string(m_uid);
+        if (m_uid.size() == 1) return "node " + std::to_string(m_uid[0]);
         std::string s = "nodes " + std::to_string(m_uid[0]);
         for (int i=1; i<m_uid.size(); ++i) s += ", " + std::to_string(m_uid[i]);
         return s;
@@ -259,26 +264,23 @@ class info_window {
     void draw() {
         if (m_uid.size() == 1 and m_net.node_count(m_uid[0]) == 0)
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid[0]) + " (terminated)").c_str());
-
-        std::string nodes = m_nodes_list;
-        for (int j=0; j<m_uid.size(); ++j) {
-            while (nodes.size() < 30 * (j+1)) nodes.push_back(' ');
-            nodes += std::to_string(m_uid[j]);
-            float y = (1 - (m_keys.size()+0.5f) / m_keys.size()+1) * (m_renderer.getWindowHeight() - 20);
-            m_renderer.drawText(nodes, 0.16f, y, 0.25f);
+        int offs = 0;
+        if (m_uid.size() > 1) {
+            float y = (1 - (0.5f) / (m_keys.size()+2)) * (m_renderer.getWindowHeight());
+            m_renderer.drawText(m_nodes_list, 0.16f, y, 0.25f);
+            offs = 2;
         }
-
         for (size_t i=0; i<m_keys.size(); ++i) {
             std::string s = m_keys[i];
             for (size_t j=0; j<m_uid.size(); ++j) {
-                if (m_values[i][j].size() > 30) {
-                    m_values[i][j].resize(27);
+                while (s.size() < m_keys[i].size() + m_spacing * j) s.push_back(' ');
+                if (m_values[i][j].size() >= m_spacing) {
+                    m_values[i][j].resize(m_spacing - 4);
                     m_values[i][j] += "...";
                 }
-                while (m_values[i][j].size() <= 30)  m_values[i][j].push_back(' ');
                 s += m_values[i][j];
             }
-            float y = (1 - (i+0.5f) / m_keys.size()) * (m_renderer.getWindowHeight() - 64);
+            float y = (1 - (i+offs+0.5f) / (m_keys.size()+offs)) * (m_renderer.getWindowHeight());
             m_renderer.drawText(s, 0.16f, y, 0.25f);
         }
     }
@@ -368,7 +370,10 @@ class info_window {
     net& m_net;
 
     //! @brief Node represented.
-    std::string m_nodes_list = "node_uid";
+    std::string m_nodes_list = "uid";
+
+    //! @brief The length of each column.
+    int m_spacing;
 
     //! @brief The unique identifier of the displayed device.
     std::vector<device_t> m_uid;

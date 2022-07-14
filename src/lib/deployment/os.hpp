@@ -125,15 +125,17 @@ class network {
     //! @brief Manages the send and receive of messages.
     void manage() {
         while (m_running) {
-            if (not m_send.empty()) {
+            {
                 common::lock_guard<true> l(m_send_mutex);
-                m_send.push_back((char)std::min((m_node.net.internal_time() - m_send_time)*128, times_t{255}));
-                // sending
-                if (m_transceiver.send(m_node.uid, m_send, m_attempt))
-                    m_send.clear();
-                else {
-                    m_send.pop_back();
-                    ++m_attempt;
+                if (not m_send.empty()) {
+                    m_send.push_back((char)std::min((m_node.net.internal_time() - m_send_time)*128, times_t{255}));
+                    // sending
+                    if (m_transceiver.send(m_node.uid, m_send, m_attempt))
+                        m_send.clear();
+                    else {
+                        m_send.pop_back();
+                        ++m_attempt;
+                    }
                 }
             }
             std::this_thread::yield();

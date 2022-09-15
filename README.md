@@ -46,7 +46,7 @@ sudo apt-get install xorg-dev g++ cmake asymptote doxygen
 ```
 In Fedora, the `xorg-dev` package is not available. Instead, install the packages:
 ```
-libX11-devel libXinerama-devel.x86_6 libXcursor-devel.x86_64 libXi-devel.x86_64 libXrandr-devel.x86_64 mesa-libGL-devel.x86_64
+libX11-devel libXinerama-devel.x86_64 libXcursor-devel.x86_64 libXi-devel.x86_64 libXrandr-devel.x86_64 mesa-libGL-devel.x86_64
 ```
 
 ### MacOS

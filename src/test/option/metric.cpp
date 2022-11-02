@@ -31,7 +31,7 @@ struct mock_node {
 TEST(MetricTest, Once) {
     using metric_type = metric::once;
     mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
-    metric_type m;
+    metric_type m{common::make_tagged_tuple<>()};
     metric_type::result_type x = m.build(), y, z;
     y = m.build(n, 0.2f, 1, common::make_tagged_tuple<>());
     z = m.build(n, 0.2f, 0, common::make_tagged_tuple<>());
@@ -46,7 +46,28 @@ TEST(MetricTest, Once) {
 TEST(MetricTest, Retain) {
     using metric_type = metric::retain<>;
     mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
-    metric_type m;
+    metric_type m{common::make_tagged_tuple<>()};
+    metric_type::result_type x = m.build(), y, z;
+    y = m.build(n, 0.2f, 1, common::make_tagged_tuple<>());
+    z = m.build(n, 0.2f, 0, common::make_tagged_tuple<>());
+    EXPECT_LE(y, x);
+    EXPECT_LE(z, x);
+    y = m.update(y, n);
+    z = m.update(z, n);
+    EXPECT_LE(y, x);
+    EXPECT_LE(z, x);
+    n.ct = n.nt;
+    n.nt += 1;
+    y = m.update(y, n);
+    z = m.update(z, n);
+    EXPECT_GT(y, x);
+    EXPECT_LE(z, x);
+}
+
+TEST(MetricTest, VariableRetain) {
+    using metric_type = metric::retain<1, 10, tag>;
+    mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
+    metric_type m{common::make_tagged_tuple<tag>(1)};
     metric_type::result_type x = m.build(), y, z;
     y = m.build(n, 0.2f, 1, common::make_tagged_tuple<>());
     z = m.build(n, 0.2f, 0, common::make_tagged_tuple<>());
@@ -67,7 +88,7 @@ TEST(MetricTest, Retain) {
 TEST(MetricTest, Minkowski) {
     using metric_type = metric::minkowski<tag>;
     mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
-    metric_type m;
+    metric_type m{common::make_tagged_tuple<>()};
     metric_type::result_type x = m.build(), y, z;
     y = m.build(n, 0.2f, 1, common::make_tagged_tuple<tag>(make_vec(2, 2)));
     z = m.build(n, 0.2f, 0, common::make_tagged_tuple<tag>(make_vec(1.5f, 2.5f)));

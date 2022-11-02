@@ -58,6 +58,7 @@ cc_library(
     srcs = ['metric.cpp'],
     deps = [
         "//lib:settings",
+        "//lib/common:option",
         "//lib/common:tagged_tuple",
     ],
     visibility = [

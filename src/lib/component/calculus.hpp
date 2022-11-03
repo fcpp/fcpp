@@ -253,6 +253,16 @@ struct calculus {
                 return m_nbr_uid;
             }
 
+            //! @brief Accesses the threshold for message retain.
+            metric_type message_threshold() const {
+                return m_threshold;
+            }
+
+            //! @brief Modifies the threshold for message retain.
+            void message_threshold(metric_type t) {
+                m_threshold = t;
+            }
+
             //! @brief Stack trace maintained during aggregate function execution.
             internal::trace stack_trace;
 

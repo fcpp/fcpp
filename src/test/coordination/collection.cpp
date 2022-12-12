@@ -20,7 +20,8 @@ DECLARE_OPTIONS(options,
         coordination::sp_collection_t<int,real_t>,
         coordination::mp_collection_t<int,real_t>,
         coordination::wmp_collection_t<real_t>,
-        coordination::list_idem_collection_t<int>        
+        coordination::list_idem_collection_t<int>,
+        coordination::list_arith_collection_t<int>        
     >,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
@@ -298,4 +299,42 @@ MULTI_TEST(CollectionTest, LISTidemGraph, O, 3) {
     EXPECT_ROUND(n, {0, 1, 2, 3},
                     {0, 1, 2, 10},
                     {10, 10, 2, 10});                            
+}
+
+MULTI_TEST(CollectionTest, LISTarith, O, 3) {
+    test_net<combo<O>, std::tuple<real_t>(int, int)> n{
+        [&](auto& node, int id, int val){
+            return std ::make_tuple(
+                coordination::list_arith_collection(node, 0, id, val, 2, 0, 0, 1,adder)
+            );
+        }
+    };
+
+    EXPECT_ROUND(n, {0, 1, 2},
+                {1, 2, 4},
+                {1, 2, 4});
+
+    EXPECT_ROUND(n, {0, 1, 2},
+                {1, 2, 4},
+                {2, 4, 4});
+
+    EXPECT_ROUND(n, {0, 1, 2},
+                {1, 2, 4},
+                {2, 4, 4});
+
+    EXPECT_ROUND(n, {0, 1, 2},
+                {1, 2, 4},
+                {2, 4, 4});
+
+    EXPECT_ROUND(n, {0, 1, 2},
+                {1, 2, 2},
+                {2, 4, 2});
+
+    EXPECT_ROUND(n, {0, 1, 2},
+                {1, 2, 2},
+                {2, 4, 2});
+
+    EXPECT_ROUND(n, {0, 1, 2},
+                {1, 2, 2},
+                {2, 4, 2});
 }

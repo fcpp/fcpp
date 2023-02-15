@@ -1196,6 +1196,33 @@ using export_list = typename details::export_list<Ts...>::type;
 
 //! @cond INTERNAL
 namespace details {
+    // General form.
+    template <typename... Ts>
+    struct storage_list {
+        using type = type_sequence<>;
+    };
+    // Type argument.
+    template <typename S, typename T, typename... Ts>
+    struct storage_list<S,T,Ts...> {
+        using tmp = typename storage_list<Ts...>::type;
+        using type = std::conditional_t<tmp::template slice<0, -1, 2>::template count<S> == 0, typename tmp::template push_front<S,T>, tmp>;
+    };
+    // Single type sequence argument.
+    template <typename... Ts>
+    struct storage_list<type_sequence<Ts...>> : public storage_list<Ts...> {};
+    // Type sequence argument.
+    template <typename... Ts, typename S, typename... Ss>
+    struct storage_list<type_sequence<Ts...>,S,Ss...> : public storage_list<Ts...,S,Ss...> {};
+}
+//! @endcond
+
+//! @brief Merges storage lists and types into a single type sequence.
+template <typename... Ts>
+using storage_list = typename details::storage_list<Ts...>::type;
+
+
+//! @cond INTERNAL
+namespace details {
     //! @brief Representation of constness and value type of a type.
     //! @{
 
@@ -1334,6 +1361,9 @@ using if_ostream = std::enable_if_t<fcpp::common::is_ostream<A>::value, T>;
 
 //! @brief Allows usage of export_list in main namespace.
 using common::export_list;
+
+//! @brief Allows usage of storage_list in main namespace.
+using common::storage_list;
 
 } // namespace fcpp
 

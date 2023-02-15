@@ -40,7 +40,7 @@ namespace tags {
 template <typename... Ts>
 struct storage {
     //! @brief Sequence of tags and types for storing persistent data.
-    using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;
+    using tuple_store_type = common::storage_list<common::option_types<tags::tuple_store, Ts...>>;
 
     /**
      * @brief The actual component.

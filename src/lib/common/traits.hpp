@@ -1175,6 +1175,22 @@ using apply_templates = typename details::apply_templates<S,Ts...>::type;
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Decays a type into a type sequence (type not convertible to type sequence).
+    template <typename T, typename = void>
+    struct type_sequence_if_possible_impl {
+        using type = std::decay_t<T>;
+    };
+
+    //! @brief Decays a type into a type sequence (type is convertible to type sequence).
+    template <typename T>
+    struct type_sequence_if_possible_impl<T&, decltype(void(type_sequence_identity(std::declval<T>())))> {
+        using type = decltype(type_sequence_identity(std::declval<T>()));
+    };
+
+    //! @brief Decays a type into a type sequence if possible.
+    template <typename T>
+    using type_sequence_if_possible = typename type_sequence_if_possible_impl<T&>::type;
+
     // General form.
     template <typename... Ts>
     struct export_list {
@@ -1182,7 +1198,7 @@ namespace details {
     };
     // Type argument.
     template <typename T, typename... Ts>
-    struct export_list<T,Ts...> : public type_unite<std::conditional_t<std::is_empty<T>::value, typename export_list<type_sequence_decay<T>>::type, common::type_sequence<T>>, typename export_list<Ts...>::type> {};
+    struct export_list<T,Ts...> : public type_unite<common::type_sequence<T>, typename export_list<Ts...>::type> {};
     // Type sequence argument.
     template <typename... Ts, typename... Ss>
     struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
@@ -1191,7 +1207,7 @@ namespace details {
 
 //! @brief Merges export lists and types into a single type sequence.
 template <typename... Ts>
-using export_list = typename details::export_list<Ts...>::type;
+using export_list = typename details::export_list<details::type_sequence_if_possible<Ts>...>::type;
 
 
 //! @cond INTERNAL
@@ -1218,7 +1234,7 @@ namespace details {
 
 //! @brief Merges storage lists and types into a single type sequence.
 template <typename... Ts>
-using storage_list = typename details::storage_list<Ts...>::type;
+using storage_list = typename details::storage_list<details::type_sequence_if_possible<Ts>...>::type;
 
 
 //! @cond INTERNAL

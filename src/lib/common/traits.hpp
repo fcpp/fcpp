@@ -1175,21 +1175,31 @@ using apply_templates = typename details::apply_templates<S,Ts...>::type;
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Decays a function call type to its return type (general form).
+    template <typename T>
+    struct call_decay;
+
+    //! @brief Decays a function call type to its return type.
+    template <typename T>
+    struct call_decay<T()> {
+        using type = T;
+    };
+
     //! @brief Decays a type into a type sequence (type not convertible to type sequence).
     template <typename T, typename = void>
     struct type_sequence_if_possible_impl {
-        using type = std::decay_t<T>;
+        using type = typename call_decay<T>::type;
     };
 
     //! @brief Decays a type into a type sequence (type is convertible to type sequence).
     template <typename T>
-    struct type_sequence_if_possible_impl<T&, decltype(void(type_sequence_identity(std::declval<T>())))> {
+    struct type_sequence_if_possible_impl<T(), decltype(void(type_sequence_identity(std::declval<T>())))> {
         using type = decltype(type_sequence_identity(std::declval<T>()));
     };
 
     //! @brief Decays a type into a type sequence if possible.
     template <typename T>
-    using type_sequence_if_possible = typename type_sequence_if_possible_impl<T&>::type;
+    using type_sequence_if_possible = typename type_sequence_if_possible_impl<T()>::type;
 
     // General form.
     template <typename... Ts>
@@ -1201,7 +1211,7 @@ namespace details {
     struct export_list<T,Ts...> : public type_unite<common::type_sequence<T>, typename export_list<Ts...>::type> {};
     // Type sequence argument.
     template <typename... Ts, typename... Ss>
-    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
+    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<type_sequence_if_possible<Ts>...,Ss...> {};
 }
 //! @endcond
 
@@ -1225,10 +1235,10 @@ namespace details {
     };
     // Single type sequence argument.
     template <typename... Ts>
-    struct storage_list<type_sequence<Ts...>> : public storage_list<Ts...> {};
+    struct storage_list<type_sequence<Ts...>> : public storage_list<type_sequence_if_possible<Ts>...> {};
     // Type sequence argument.
     template <typename... Ts, typename S, typename... Ss>
-    struct storage_list<type_sequence<Ts...>,S,Ss...> : public storage_list<Ts...,S,Ss...> {};
+    struct storage_list<type_sequence<Ts...>,S,Ss...> : public storage_list<type_sequence_if_possible<Ts>...,S,Ss...> {};
 }
 //! @endcond
 

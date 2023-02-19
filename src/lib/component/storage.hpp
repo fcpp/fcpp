@@ -8,6 +8,7 @@
 #ifndef FCPP_COMPONENT_STORAGE_H_
 #define FCPP_COMPONENT_STORAGE_H_
 
+#include <cassert>
 #include <type_traits>
 
 #include "lib/component/base.hpp"
@@ -89,7 +90,7 @@ struct storage {
             }
 
             //! @cond INTERNAL
-            #define MISSING_TYPE_MESSAGE "\033[1m\033[4munsupported tag access (add A to storage tag list)\033[0m"
+            #define MISSING_TYPE_MESSAGE "unsupported tag access (add A to storage tag list)"
             //! @endcond
 
             /**
@@ -139,6 +140,23 @@ struct storage {
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
+            //! @brief Wildcard struct allowing arbitrary conversions to suppress as many error messages as possible.
+            struct wildcard {
+                //! @brief Generic constructor.
+                template <typename T>
+                wildcard(T&&) {}
+                //! @brief Generic assignment.
+                template <typename T>
+                wildcard& operator=(T&&) {
+                    return *this;
+                }
+                //! @brief Generic conversion.
+                template <typename T>
+                operator T() const {
+                    return *((std::decay_t<T>*)42);
+                }
+            };
+
             //! @brief Access to the data corresponding to an existing tag.
             template <typename T>
             inline auto& get_impl(common::bool_pack<true>) {
@@ -154,13 +172,15 @@ struct storage {
             //! @brief Access to the data corresponding to a non-existent tag.
             template <typename T>
             inline auto& get_impl(common::bool_pack<false>) {
-                return m_storage;
+                assert(false);
+                return *((wildcard*)42);
             }
 
             //! @brief Const access to the data corresponding to a non-existent tag.
             template <typename T>
             inline auto const& get_impl(common::bool_pack<false>) const {
-                return m_storage;
+                assert(false);
+                return *((wildcard*)42);
             }
 
             //! @brief The data storage.

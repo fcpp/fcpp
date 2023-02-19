@@ -119,6 +119,8 @@ TEST(SerializeTest, Iterable) {
     std::unordered_map<std::tuple<int,bool>, int> u;
     u[std::make_tuple(4,false)] = 2;
     SERIALIZE_CHECK(u, {});
+    std::string str = "thestring";
+    SERIALIZE_CHECK(u, {});
 }
 
 TEST(SerializeTest, FCPP) {

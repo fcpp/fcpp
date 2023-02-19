@@ -381,10 +381,10 @@ namespace details {
 /**
  * @brief Plotter storing all rows for later printing.
  *
- * @param C Tags and types to be delta-compressed upon serialisation.
- * @param M Tags and types not compressed on serialisation.
- * @param F Tags and types assumed constant and stored only once.
- * @param max_size The maximum size in bytes allowed for the buffer (0 for no maximum size).
+ * @tparam C Tags and types to be delta-compressed upon serialisation.
+ * @tparam M Tags and types not compressed on serialisation.
+ * @tparam F Tags and types assumed constant and stored only once.
+ * @tparam max_size The maximum size in bytes allowed for the buffer (0 for no maximum size).
  */
 template <typename C, typename M = void, typename F = void, size_t max_size = 0>
 class rows {
@@ -899,9 +899,9 @@ namespace details {
 /**
  * @brief Maintains values for multiple columns and aggregators.
  *
- * @param S The sequence of tags and aggregators for logging (intertwined).
- * @param A The sequence of row aggregators (if empty, `mean<double>` is assumed).
- * @param Ts Description of fields to be extracted as tags, aggregators or units (if empty, S is interpreted as fields).
+ * @tparam S The sequence of tags and aggregators for logging (intertwined).
+ * @tparam A The sequence of row aggregators (if empty, `mean<double>` is assumed).
+ * @tparam Ts Description of fields to be extracted as tags, aggregators or units (if empty, S is interpreted as fields).
  */
 template <typename S, typename A, typename... Ts>
 using values = typename details::values<S, A, Ts...>::type;
@@ -968,9 +968,9 @@ namespace details {
 /**
  * Split rows depending on
  *
- * @param S A column tag, or a `type_sequence` of column tags.
- * @param P The plotter to be split.
- * @param B A bucket size (as `std::ratio`, only for a single key).
+ * @tparam S A column tag, or a `type_sequence` of column tags.
+ * @tparam P The plotter to be split.
+ * @tparam B A bucket size (as `std::ratio`, only for a single key).
  */
 template <typename S, typename P, typename B = std::ratio<0>>
 class split {
@@ -1113,10 +1113,10 @@ class split {
 /**
  * @brief Produces a single plot.
  *
- * @param S The sequence of tags and aggregators for logging (intertwined).
- * @param X The tag to be used for the x axis.
- * @param Y The unit to be used for the y axis.
- * @param A The sequence of row aggregators (defaults to `mean<double>`).
+ * @tparam S The sequence of tags and aggregators for logging (intertwined).
+ * @tparam X The tag to be used for the x axis.
+ * @tparam Y The unit to be used for the y axis.
+ * @tparam A The sequence of row aggregators (defaults to `mean<double>`).
  */
 template <typename S, typename X, template<class> class Y, typename A = common::type_sequence<>>
 using plotter = split<X, values<S, A, unit<Y>>>;

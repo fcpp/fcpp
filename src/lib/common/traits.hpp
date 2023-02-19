@@ -232,9 +232,9 @@ namespace details {
 /**
  * @brief Extracts a subsequence from the type sequence.
  *
- * @param start  first element extracted
- * @param end    no element extracted after end (defaults to -1 = end of the sequence)
- * @param stride interval between element extracted (defaults to 1)
+ * @tparam start  first element extracted
+ * @tparam end    no element extracted after end (defaults to -1 = end of the sequence)
+ * @tparam stride interval between element extracted (defaults to 1)
  */
 template <int start, int end, int stride, typename... Ts>
 using type_slice = typename details::type_slice<start, end, stride, Ts...>::type;
@@ -282,9 +282,9 @@ struct type_sequence<T, Ts...> {
     /**
      * @brief Extracts a subsequence from the type sequence.
      *
-     * @param start  first element extracted
-     * @param end    no element extracted after end (defaults to -1 = end of the sequence)
-     * @param stride interval between element extracted (defaults to 1)
+     * @tparam start  first element extracted
+     * @tparam end    no element extracted after end (defaults to -1 = end of the sequence)
+     * @tparam stride interval between element extracted (defaults to 1)
      */
     template <int start, int end = -1, int stride = 1>
     using slice = type_slice<start, end, stride, T, Ts...>;
@@ -717,7 +717,7 @@ template <class A>
 using template_args = typename details::template_args<A>::type;
 
 
-//! @brief Enables template resolution if a callable class @param G complies to a given signature @param F.
+//! @brief Enables template resolution if a callable class @tparam G complies to a given signature @tparam F.
 template <typename G, typename F, typename T = void>
 using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value, T>;
 
@@ -794,9 +794,9 @@ namespace details {
 /**
  * @brief Extracts a subsequence from the number sequence.
  *
- * @param start  first element extracted
- * @param end    no element extracted after end (defaults to -1 = end of the sequence)
- * @param stride interval between element extracted (defaults to 1)
+ * @tparam start  first element extracted
+ * @tparam end    no element extracted after end (defaults to -1 = end of the sequence)
+ * @tparam stride interval between element extracted (defaults to 1)
  */
 template <int start, int end, int stride, intmax_t... xs>
 using number_slice = typename details::number_slice<start, end, stride, xs...>::type;
@@ -816,9 +816,9 @@ struct number_sequence<x, xs...> {
     /**
      * @brief Extracts a subsequence from the number sequence.
      *
-     * @param start  first element extracted
-     * @param end    no element extracted after end (defaults to -1 = end of the sequence)
-     * @param stride interval between element extracted (defaults to 1)
+     * @tparam start  first element extracted
+     * @tparam end    no element extracted after end (defaults to -1 = end of the sequence)
+     * @tparam stride interval between element extracted (defaults to 1)
      */
     template <int start, int end = -1, int stride = 1>
     using slice = number_slice<start, end, stride, x, xs...>;
@@ -1097,9 +1097,9 @@ namespace details {
 /**
  * @brief Extracts a boolean option from a sequence of options.
  *
- * @param T Flag option name.
- * @param d Default value if the option is missing.
- * @param Ss Sequence of options.
+ * @tparam T Flag option name.
+ * @tparam d Default value if the option is missing.
+ * @tparam Ss Sequence of options.
  */
 template <template<bool> class T, bool d, typename... Ss>
 constexpr bool option_flag = details::option_flag<T,d,Ss...>::value;
@@ -1107,9 +1107,9 @@ constexpr bool option_flag = details::option_flag<T,d,Ss...>::value;
 /**
  * @brief Extracts a numeric option from a sequence of options.
  *
- * @param T Numeric option name.
- * @param d Default value if the option is missing.
- * @param Ss Sequence of options.
+ * @tparam T Numeric option name.
+ * @tparam d Default value if the option is missing.
+ * @tparam Ss Sequence of options.
  */
 template <template<intmax_t> class T, intmax_t d, typename... Ss>
 constexpr intmax_t option_num = details::option_num<T,d,Ss...>::value;
@@ -1117,8 +1117,8 @@ constexpr intmax_t option_num = details::option_num<T,d,Ss...>::value;
 /**
  * @brief Extracts a numeric or multi-numeric option from a sequence of options as an index sequence.
  *
- * @param T Multi-numeric option name.
- * @param Ss Sequence of options.
+ * @tparam T Multi-numeric option name.
+ * @tparam Ss Sequence of options.
  */
 template <template<intmax_t...> class T, typename... Ss>
 using option_nums = typename details::option_nums<T, Ss...>::type;
@@ -1126,10 +1126,10 @@ using option_nums = typename details::option_nums<T, Ss...>::type;
 /**
  * @brief Extracts a floating-point numeric option from a sequence of options.
  *
- * @param T Floating-point numeric option name.
- * @param dnum Default numerator of the value if the option is missing.
- * @param dden Default denumerator of the value if the option is missing.
- * @param Ss Sequence of options.
+ * @tparam T Floating-point numeric option name.
+ * @tparam dnum Default numerator of the value if the option is missing.
+ * @tparam dden Default denumerator of the value if the option is missing.
+ * @tparam Ss Sequence of options.
  */
 template <template<intmax_t,intmax_t> class T, intmax_t dnum, intmax_t dden, typename... Ss>
 constexpr double option_float = details::option_float<T,dnum,dden,Ss...>::value;
@@ -1137,9 +1137,9 @@ constexpr double option_float = details::option_float<T,dnum,dden,Ss...>::value;
 /**
  * @brief Extracts a type option from a sequence of options.
  *
- * @param T Type option name.
- * @param D Default type if the option is missing.
- * @param Ss Sequence of options.
+ * @tparam T Type option name.
+ * @tparam D Default type if the option is missing.
+ * @tparam Ss Sequence of options.
  */
 template <template<class> class T, typename D, typename... Ss>
 using option_type = typename details::option_type<T,D,Ss...>::type;
@@ -1147,8 +1147,8 @@ using option_type = typename details::option_type<T,D,Ss...>::type;
 /**
  * @brief Extracts a type or multi-type option from a sequence of options as a type sequence.
  *
- * @param T Multi-type option name.
- * @param Ss Sequence of options.
+ * @tparam T Multi-type option name.
+ * @tparam Ss Sequence of options.
  */
 template <template<class...> class T, typename... Ss>
 using option_types = typename details::option_types<T, Ss...>::type;
@@ -1156,8 +1156,8 @@ using option_types = typename details::option_types<T, Ss...>::type;
 /**
  * @brief Extracts a multi-type option from a sequence of options as a type sequence of type sequences.
  *
- * @param T Multi-type option name.
- * @param Ss Sequence of options.
+ * @tparam T Multi-type option name.
+ * @tparam Ss Sequence of options.
  */
 template <template<class...> class T, typename... Ss>
 using option_multitypes = typename details::option_multitypes<T, Ss...>::type;
@@ -1166,8 +1166,8 @@ using option_multitypes = typename details::option_multitypes<T, Ss...>::type;
 /**
  * @brief Instantiates (possibly nested) templates with types wrapped in (possibly nested) type sequences.
  *
- * @param S The arguments as (possibly nested) type sequence.
- * @param Ts Sequence of templates, to be applied in nested levels.
+ * @tparam S The arguments as (possibly nested) type sequence.
+ * @tparam Ts Sequence of templates, to be applied in nested levels.
  */
 template <typename S, template<class...> class... Ts>
 using apply_templates = typename details::apply_templates<S,Ts...>::type;
@@ -1372,7 +1372,7 @@ inline T const& escape(T const& x) {
 //! @}
 
 /**
- * @brief Declares that the type @param T is usable as an output stream.
+ * @brief Declares that the type @tparam T is usable as an output stream.
  *
  * Enabled by default for all subtypes of std::ostream.
  */

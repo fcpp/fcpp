@@ -186,7 +186,7 @@
 
 #ifndef FCPP_WARNING_TRACE
     //! @brief Setting defining whether hash colliding of code points is admissible.
-    #define FCPP_WARNING_TRACE true
+    #define FCPP_WARNING_TRACE false
 #endif
 
 

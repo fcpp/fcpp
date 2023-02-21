@@ -1194,8 +1194,14 @@ _BOP_TYPE(field<A>,op,B) operator op(field<A> const& x, B const& y) {           
     return map_hood([](A const& a, to_local<B> const& b) { return a op b; }, x, y);                     \
 }                                                                                                       \
 template <typename A, typename B>                                                                       \
-_BOP_TYPE(field<A>,op,B) operator op(field<A>&& x, B const& y) {                                        \
+std::enable_if_t<std::is_same<_BOP_TYPE(field<A>,op,B), field<A>>::value, field<A>>                     \
+operator op(field<A>&& x, B const& y) {                                                                 \
     return mod_hood([](A const& a, to_local<B> const& b) { return std::move(a) op b; }, x, y);          \
+}                                                                                                       \
+template <typename A, typename B>                                                                       \
+std::enable_if_t<not std::is_same<_BOP_TYPE(field<A>,op,B), field<A>>::value, _BOP_TYPE(field<A>,op,B)> \
+operator op(field<A>&& x, B const& y) {                                                                 \
+    return map_hood([](A const& a, to_local<B> const& b) { return a op b; }, x, y);                     \
 }                                                                                                       \
 template <typename A, typename B>                                                                       \
 common::ifn_class_template<field, A, _BOP_TYPE(A,op,field<B>)>                                          \

@@ -306,8 +306,8 @@ inline to_local<A> sum_hood(node_t& node, trace_t call_point, A const& a) {
 
 //! @brief Reduces a field to a single value by addition with a given value for self.
 template <typename node_t, typename A, typename B>
-inline to_local<A> sum_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
-    return fold_hood(node, call_point, [] (to_local<A> const& x, to_local<A> const& y) -> to_local<A> {
+inline auto sum_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
+    return fold_hood(node, call_point, [] (to_local<A> const& x, auto const& y) {
         return x + y;
     }, a, b);
 }
@@ -323,8 +323,8 @@ inline to_local<A> mean_hood(node_t& node, trace_t call_point, A const& a) {
 
 //! @brief Reduces a field to a single value by averaging with a given value for self.
 template <typename node_t, typename A, typename B>
-inline to_local<A> mean_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
-    return fold_hood(node, call_point, [] (to_local<A> const& x, to_local<A> const& y) -> to_local<A> {
+inline auto mean_hood(node_t& node, trace_t call_point, A const& a, B const& b) {
+    return fold_hood(node, call_point, [] (to_local<A> const& x, auto const& y) {
         return x + y;
     }, a, b) / count_hood(node, call_point);
 }

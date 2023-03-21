@@ -15,8 +15,6 @@
 
 #include "lib/fcpp.hpp"
 #include <iostream>
-#define printer(v) std::cerr << #v << " = " << v << std::endl
-
 
 
 

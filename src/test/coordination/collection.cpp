@@ -8,7 +8,6 @@
 
 #include "test/test_net.hpp"
 
-//#define printer(v) std::cerr << #v << " = " << v << std::endl
 
 using namespace fcpp;
 using namespace component::tags;

@@ -19,7 +19,6 @@ For backward compatibility (and faster testing), the [Bazel](https://bazel.build
 Pre-requisites:
 - [MSYS2](https://www.msys2.org)
 - [Asymptote](http://asymptote.sourceforge.io) (for building the plots)
-- [Doxygen](http://www.doxygen.nl) (for building the documentation)
 
 At this point, run "MSYS2 MinGW x64" from the start menu; a terminal will appear. Run the following commands:
 ```
@@ -27,7 +26,7 @@ pacman -Syu
 ```
 After updating packages, the terminal will close. Open it again, and then type:
 ```
-pacman -Sy --noconfirm --needed base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-make git
+pacman -Sy --noconfirm --needed base-devel mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-make git doxygen
 ```
 The build system should now be available from the "MSYS2 MinGW x64" terminal.
 

@@ -159,10 +159,10 @@ T list_arith_collection(node_t& node, trace_t call_point, real_t const& distance
     field<real_t> maxDistNow = node.nbr_dist() + speed * node.nbr_lag();
     field<real_t> Vwst = mux(isfinite(distance) and maxDistNow < radius, (distance - Pu) / (Tu - t), (real_t)(-INF));
 
-    return old(node, 6, value, [&](field<T> x){
+    return old(node, 6, value, [&](T x){
 
-        tuple<field<real_t>, unsigned int, field<T>> data = make_tuple(Vwst,node.uid,x);
-        tuple<field<real_t>, unsigned int, field<T>> parentData = max_hood(node, 0, nbr(node,4,data));
+        tuple<field<real_t>, unsigned int, T> data = make_tuple(Vwst,node.uid,x);
+        tuple<field<real_t>, unsigned int, T> parentData = max_hood(node, 0, nbr(node,4,data));
 
         device_t parent = get<1>(parentData);
         field<T> sum = mux(nbr_uid(node, 0) == parent, get<2>(parentData), null);
@@ -175,7 +175,7 @@ T list_arith_collection(node_t& node, trace_t call_point, real_t const& distance
 
 
 //! @brief Export list for list_arith_collection.
-template <typename T> using list_arith_collection_t = common::export_list<T,real_t,fcpp::tuple<fcpp::field<double>, int>,    fcpp::tuple<fcpp::field<double>, unsigned int, int>,   field<int>,       fcpp::tuple<fcpp::field<double>, unsigned int, fcpp::field<int> >,     fcpp::tuple<fcpp::field<double>, fcpp::field<unsigned int>, fcpp::field<int> >>;
+template <typename T> using list_arith_collection_t = common::export_list<T,real_t,fcpp::tuple<fcpp::field<double>, unsigned int, int>>;
 
 
 }

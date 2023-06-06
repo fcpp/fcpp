@@ -749,6 +749,61 @@ void renderer::drawText(std::string text, float x, float y, float scale) const {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const {
+    float x = p.x;
+    float y = p.y;
+    float z = p.z;
+    // Scale coordinates to renderbuffer's size
+    x *= m_renderScale;
+    y *= m_renderScale;
+    scale *= m_renderScale;
+
+    // Activate corresponding render state
+    m_shaderProgramTexture.use();
+    m_shaderProgramTexture.setMat4("u_projection", m_camera.getPerspective());
+    m_shaderProgramTexture.setMat4("u_view", m_camera.getView());
+    m_shaderProgramTexture.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramTexture.setBool("u_drawTexture", true);
+    m_shaderProgramTexture.setVec4("u_color", col);
+    m_shaderProgramTexture.setInt("u_texture", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(m_fontVAO);
+
+    // Iterate through all characters
+    std::string::const_iterator c;
+    for (c = text.begin(); c != text.end(); c++) {
+        glyph ch = s_glyphs[*c];
+
+        float xpos = x + ch.bearing.x * scale;
+        float ypos = y - (ch.size.y - ch.bearing.y) * scale;
+
+        float w = ch.size.x * scale;
+        float h = ch.size.y * scale;
+        // Update VBO for each character
+        float vertices[30] = {
+            xpos,     ypos + h,   z, 0.0f, 0.0f,
+            xpos,     ypos,       z, 0.0f, 1.0f,
+            xpos + w, ypos,       z, 1.0f, 1.0f,
+
+            xpos,     ypos + h,   z, 0.0f, 0.0f,
+            xpos + w, ypos,       z, 1.0f, 1.0f,
+            xpos + w, ypos + h,   z, 1.0f, 0.0f
+        };
+        // Render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.textureID);
+        // Update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, m_fontVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // Render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += ch.advance * scale / 64; // bitshift by 6 to get value in pixels (2^6 = 64)
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 float renderer::getAspectRatio() {
     return (float)(m_windowWidth) / (float)(m_windowHeight);
 }

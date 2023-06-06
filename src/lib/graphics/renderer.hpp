@@ -82,6 +82,9 @@ namespace fcpp {
             //! @brief It draws the specified text in the specified window coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale) const;
 
+            //! @brief It draws the specified label in the specified window coordinates, scale and color.
+            void drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const;
+
             //! @brief It draws the defined rectangle, given the information on color(s) and position
             void drawRectangle(float x, float y, float a, float b) const;
 

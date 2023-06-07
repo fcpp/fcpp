@@ -263,6 +263,9 @@ namespace fcpp {
             //! @brief Vertex Buffer Object dedicated to label rendering; it's per renderer and it shouldn't be shared with others.
             unsigned int m_labelVBO;
 
+            //! @brief Element Buffer Object for label rendering; it can be shared among several contexts.
+            unsigned int m_labelEBO;
+
             //! @brief Main shader program, with diffuse lighting caluclations and color info; it's per context and it shouldn't be shared with others.
             shader m_shaderProgramDiff;
 

@@ -345,13 +345,29 @@ void renderer::generateFontBuffers() {
     glGenBuffers(1, &m_labelVBO);
 
     // Allocate (dynamic) font buffers
+//    glBindVertexArray(m_labelVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5, NULL, GL_DYNAMIC_DRAW);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+//    glEnableVertexAttribArray(0);
+//    glBindBuffer(GL_ARRAY_BUFFER, 0);
+//    glBindVertexArray(0);
+    int planeIndex[6]{
+        0, 1, 2,
+        2, 3, 0
+    };
     glBindVertexArray(m_labelVAO);
     glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_labelEBO); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(planeIndex), planeIndex, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void renderer::generateShaderPrograms() {

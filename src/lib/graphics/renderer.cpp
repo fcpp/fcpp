@@ -22,6 +22,8 @@ using namespace fcpp::internal;
     std::string const renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
     std::string const renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
     std::string const renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
+    std::string const renderer::VERTEX_LABEL_PATH{ ".\\shaders\\vertex_label.glsl" };
+    std::string const renderer::FRAGMENT_LABEL_PATH{ ".\\shaders\\fragment_label.glsl" };
     std::string const renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
     std::string const renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
@@ -33,6 +35,8 @@ using namespace fcpp::internal;
     std::string const renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
     std::string const renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
     std::string const renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
+    std::string const renderer::VERTEX_LABEL_PATH{ "./shaders/vertex_label.glsl" };
+    std::string const renderer::FRAGMENT_LABEL_PATH{ "./shaders/fragment_label.glsl" };
     std::string const renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
     std::string const renderer::TEXTURE_PATH{ "./textures/" };
 #endif
@@ -362,6 +366,7 @@ void renderer::generateShaderPrograms() {
         m_shaderProgramDiff = shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
         m_shaderProgramCol = shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
         m_shaderProgramTexture = shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
+        m_shaderProgramLabel = shader{ VERTEX_LABEL_PATH.c_str(), FRAGMENT_LABEL_PATH.c_str() };
     }
     m_shaderProgramFont = shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 }
@@ -765,44 +770,37 @@ void renderer::drawText(std::string text, float x, float y, float scale) const {
 }
 
 void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const {
-    float x = p.x;
-    float y = p.y;
-    float z = p.z;
-    // Scale coordinates to renderbuffer's size
-    x *= m_renderScale;
-    y *= m_renderScale;
-    scale *= m_renderScale;
-
     // Activate corresponding render state
-    m_shaderProgramTexture.use();
-    m_shaderProgramTexture.setMat4("u_projection", m_camera.getPerspective());
-    m_shaderProgramTexture.setMat4("u_view", m_camera.getView());
-    m_shaderProgramTexture.setMat4("u_model", glm::mat4{ 1.0f });
-    m_shaderProgramTexture.setBool("u_drawTexture", true);
-    m_shaderProgramTexture.setVec4("u_color", col);
-    m_shaderProgramTexture.setInt("u_texture", 0);
+    m_shaderProgramLabel.use();
+    m_shaderProgramLabel.setMat4("u_projection", m_camera.getPerspective());
+    m_shaderProgramLabel.setMat4("u_view", m_camera.getView());
+    m_shaderProgramLabel.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramLabel.setBool("u_drawTexture", true);
+    m_shaderProgramLabel.setVec4("u_color", col);
+    m_shaderProgramLabel.setInt("u_texture", 0);
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(m_labelVAO);
 
     // Iterate through all characters
+    float x = p.x;
     std::string::const_iterator c;
     for (c = text.begin(); c != text.end(); c++) {
         glyph ch = s_glyphs[*c];
 
         float xpos = x + ch.bearing.x * scale;
-        float ypos = y - (ch.size.y - ch.bearing.y) * scale;
+        float ypos = p.y - (ch.size.y - ch.bearing.y) * scale;
 
         float w = ch.size.x * scale;
         float h = ch.size.y * scale;
         // Update VBO for each character
         float vertices[30] = {
-            xpos,     ypos + h,   z, 0.0f, 0.0f,
-            xpos,     ypos,       z, 0.0f, 1.0f,
-            xpos + w, ypos,       z, 1.0f, 1.0f,
+            xpos,     ypos + h,   p.z, 0.0f, 0.0f,
+            xpos,     ypos,       p.z, 0.0f, 1.0f,
+            xpos + w, ypos,       p.z, 1.0f, 1.0f,
 
-            xpos,     ypos + h,   z, 0.0f, 0.0f,
-            xpos + w, ypos,       z, 1.0f, 1.0f,
-            xpos + w, ypos + h,   z, 1.0f, 0.0f
+            xpos,     ypos + h,   p.z, 0.0f, 0.0f,
+            xpos + w, ypos,       p.z, 1.0f, 1.0f,
+            xpos + w, ypos + h,   p.z, 1.0f, 0.0f
         };
         // Render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.textureID);

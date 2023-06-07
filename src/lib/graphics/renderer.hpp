@@ -158,6 +158,12 @@ namespace fcpp {
             //! @brief Default path to fragment_font shader.
             static std::string const FRAGMENT_FONT_PATH;
 
+            //! @brief Default path to vertex_label shader.
+            static std::string const VERTEX_LABEL_PATH;
+
+            //! @brief Default path to fragment_label shader.
+            static std::string const FRAGMENT_LABEL_PATH;
+
             //! @brief Default path to font.
             static std::string const FONT_PATH;
 
@@ -274,6 +280,9 @@ namespace fcpp {
 
             //! @brief Additional shader program used for fonts; it's per context and it shouldn't be shared with others.
             shader m_shaderProgramFont;
+
+            //! @brief Additional shader program used for labels; it's per context and it shouldn't be shared with others.
+            shader m_shaderProgramLabel;
 
             //! @brief Current width of the window.
             int m_windowWidth;

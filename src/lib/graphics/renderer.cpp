@@ -339,6 +339,19 @@ void renderer::generateFontBuffers() {
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    // Generate VAO and VBO
+    glGenVertexArrays(1, &m_labelVAO);
+    glGenBuffers(1, &m_labelVBO);
+
+    // Allocate (dynamic) font buffers
+    glBindVertexArray(m_labelVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 void renderer::generateShaderPrograms() {
@@ -792,7 +805,7 @@ void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, fl
         // Render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.textureID);
         // Update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, m_fontVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         // Render quad

@@ -616,11 +616,11 @@ struct displayer {
                 return m_position;
             }
 
-            //! @brief Updates the internal status of node component.
+            //! @brief Draws the opaque representation of the node component.
             void draw(bool star) const {
                 // gather shape and size
                 shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
-                double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
+                double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val);
                 if (m_highlight) d *= 1.5;
                 // gather personal position
                 glm::vec3 p = get_cached_position();
@@ -633,20 +633,25 @@ struct displayer {
                     color shadow_c = common::get_or<shadow_color_tag>(P::node::storage_tuple(), shadow_color_val == -1 ? m_colors[0] : color(shadow_color_val));
                     P::node::net.getRenderer().drawShadow(shadow_s, p, shadow_d, {shadow_c.rgba[0], shadow_c.rgba[1], shadow_c.rgba[2], shadow_c.rgba[3]});
                 }
-                // render the label
-                std::string label_text = common::get_or<label_text_tag>(P::node::storage_tuple(), "");
-                if (label_text != "") {
-                    d *= 0.5;
-                    double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), label_size_val);
-                    color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), color(label_color_val));
-                    P::node::net.getRenderer().drawLabel(label_text, {p.x + d, p.y + d, p.z + d}, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
-                }
                 if (star) {
                     // gather neighbours' positions
                     std::vector<glm::vec3> np;
                     for (device_t d : m_prev_nbr_uids)
                         np.push_back(P::node::net.node_at(d).get_cached_position());
                     P::node::net.getRenderer().drawStar(p, np);
+                }
+            }
+
+            //! @brief Draws the transparent representation of the node component.
+            void drawAlpha() const {
+                // render the label
+                std::string label_text = common::get_or<label_text_tag>(P::node::storage_tuple(), "");
+                if (label_text.size()) {
+                    double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val) * 0.5;
+                    glm::vec3 p = get_cached_position() + glm::vec3(d,d,d);
+                    double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), label_size_val);
+                    color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), color(label_color_val));
+                    P::node::net.getRenderer().drawLabel(label_text, p, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
                 }
             }
 
@@ -857,6 +862,9 @@ struct displayer {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
+                        // Draw labels
+                        if (not std::is_same<label_text_tag, void>::value)
+                            for (size_t i = 0; i < n_end-n_beg; ++i) n_beg[i].second.drawAlpha();
                     }
                     if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
                         float sx{ (2.0f * (float)m_mouseStartX) / m_renderer.getFramebufferWidth() - 1.0f };

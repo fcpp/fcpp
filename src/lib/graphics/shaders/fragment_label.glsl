@@ -10,6 +10,8 @@ uniform sampler2D u_texture;
 
 void main() {
     vec4 final = u_color;
-    final.w *= texture(u_texture, TexCoord).r;
+    float t = texture(u_texture, TexCoord).r;
+    if (t < 0.01) discard;
+    final.w *= t;
     FragColor = final;
 }

@@ -84,10 +84,8 @@ namespace tags {
     template <typename T>
     struct label_text_tag {};
 
-    ////////////////////
-
-    //! @brief Declaration tag associating to storage tags regulating the colors of node labels.
-    template <typename... Ts>
+    //! @brief Declaration tag associating to storage tags regulating the color of node labels.
+    template <typename T>
     struct label_color_tag {};
 
     //! @brief Declaration tag associating to the base colors of node labels.
@@ -98,9 +96,13 @@ namespace tags {
     template <typename T>
     struct shadow_shape_tag {};
 
-    //! @brief Declaration tag associating to storage tags regulating the colors of node shadows.
-    template <typename... Ts>
+    //! @brief Declaration tag associating to storage tags regulating the color of node shadows.
+    template <typename T>
     struct shadow_color_tag {};
+
+    //! @brief Declaration tag associating to the base shape of node shadows.
+    template <intmax_t n>
+    struct shadow_shape_val {};
 
     //! @brief Declaration tag associating to the base colors of node shadows.
     template <intmax_t... cs>
@@ -488,7 +490,8 @@ namespace details {
  * - \ref tags::label_color_tag defines storage tags regulating the colors of node labels (defaults to none).
  * - \ref tags::label_color_val defines the base colors of node labels (defaults to none).
  * - \ref tags::shadow_shape_tag defines a storage tag regulating the shape of node shadows (defaults to none).
- * - \ref tags::shadow_color_tag defines storage tags regulating the colors of node shadows (defaults to none).
+ * - \ref tags::shadow_shape_val defines the base shape of node shadows (defaults to none).
+ * - \ref tags::shadow_color_tag defines storage tags regulating the colors of node shadows (defaults to white).
  * - \ref tags::shadow_color_val defines the base colors of node shadows (defaults to none).
  * - \ref tags::shadow_size_tag defines storage tags regulating the size of node shadows (defaults to none).
  * - \ref tags::shadow_size_val defines the base size of node shadows (defaults to 1).
@@ -547,8 +550,8 @@ struct displayer {
     //! @brief Storage tags with the text of the node labels.
     using label_text_tag = common::option_type<tags::label_text_tag, void, Ts...>;
 
-    //! @brief Storage tags regulating the colors of node labels.
-    using label_color_tag = common::option_types<tags::label_color_tag, Ts...>;
+    //! @brief Storage tags regulating the color of node labels.
+    using label_color_tag = common::option_type<tags::label_color_tag, void, Ts...>;
 
     //! @brief Base colors of node labels (defaults to black).
     using label_color_val = common::option_nums<tags::label_color_val, Ts...>;
@@ -556,8 +559,11 @@ struct displayer {
     //! @brief Storage tag regulating the shape of node labels.
     using shadow_shape_tag = common::option_type<tags::shadow_shape_tag, void, Ts...>;
 
-    //! @brief Storage tags regulating the colors of node shadows.
-    using shadow_color_tag = common::option_types<tags::shadow_color_tag, Ts...>;
+    //! @brief Base shape of nodes (defaults to cube).
+    constexpr static shape shadow_shape_val = static_cast<shape>(common::option_num<tags::shadow_shape_val, static_cast<intmax_t>(shape::cube), Ts...>);
+
+    //! @brief Storage tags regulating the color of node shadows.
+    using shadow_color_tag = common::option_type<tags::shadow_color_tag, void, Ts...>;
 
     //! @brief Base colors of node shadows (defaults to black).
     using shadow_color_val = common::option_nums<tags::shadow_color_val, Ts...>;
@@ -565,8 +571,8 @@ struct displayer {
     //! @brief Storage tag regulating the size of node shadows.
     using shadow_size_tag = common::option_type<tags::shadow_size_tag, void, Ts...>;
 
-    //! @brief Base size of node shadows (defaults to 1).
-    constexpr static double shadow_size_val = common::option_float<tags::shadow_size_val, 1, 1, Ts...>;
+    //! @brief Base size of node shadows (defaults to 0).
+    constexpr static double shadow_size_val = common::option_float<tags::shadow_size_val, 0, 1, Ts...>;
 
     /**
      * @brief The actual component.
@@ -619,13 +625,20 @@ struct displayer {
                 glm::vec3 p = get_cached_position();
                 // render the node
                 P::node::net.getRenderer().drawShape(s, p, d, m_colors);
-                P::node::net.getRenderer().drawShadow(s, p, d, m_colors[0]);
+                // render the shadow
+                shape shadow_s = common::get_or<shadow_shape_tag>(P::node::storage_tuple(), shape(shadow_shape_val));
+                double shadow_d = common::get_or<shadow_size_tag>(P::node::storage_tuple(), double(shadow_size_val));
+                fcpp::color shadow_c = common::get_or<shadow_color_tag>(P::node::storage_tuple(), fcpp::color(WHITE));
+                if (shadow_d > 0) {
+                    P::node::net.getRenderer().drawShadow(shadow_s, p, shadow_d, {shadow_c.rgba[0], shadow_c.rgba[1], shadow_c.rgba[2], shadow_c.rgba[3]});
+                }
                 // render the label
                 d *= 0.5;
                 string label_text = common::get_or<label_text_tag>(P::node::storage_tuple(), "");
                 double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), double(label_size_val));
+                fcpp::color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), fcpp::color(BLACK));
                 if (label_text != "") {
-                    P::node::net.getRenderer().drawLabel(label_text, {p.x + d, p.y + d, p.z + d}, {0,0,0,1}, label_size);
+                    P::node::net.getRenderer().drawLabel(label_text, {p.x + d, p.y + d, p.z + d}, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
                 }
                 if (star) {
                     // gather neighbours' positions

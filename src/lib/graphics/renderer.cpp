@@ -775,7 +775,6 @@ void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, fl
     m_shaderProgramLabel.setMat4("u_projection", m_camera.getPerspective());
     m_shaderProgramLabel.setMat4("u_view", m_camera.getView());
     m_shaderProgramLabel.setMat4("u_model", glm::mat4{ 1.0f });
-    m_shaderProgramLabel.setBool("u_drawTexture", true);
     m_shaderProgramLabel.setVec4("u_color", col);
     m_shaderProgramLabel.setInt("u_texture", 0);
     glActiveTexture(GL_TEXTURE0);

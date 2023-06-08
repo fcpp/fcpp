@@ -539,8 +539,8 @@ struct displayer {
                 // render the node
                 P::node::net.getRenderer().drawShape(s, p, d, m_colors);
                 // render the label
-                glm::vec3 p_new = {p.x, p.y+0.1f, p.z + 0.01f};
-                P::node::net.getRenderer().drawLabel("label", p_new, glm::vec4(1.0f, 0.5f, 0.0f, 1.0f), 0.2f);
+                d *= 0.5;
+                P::node::net.getRenderer().drawLabel("label", {p.x + d, p.y + d, p.z + d}, {0,0,0,1}, 0.2f);
                 if (star) {
                     // gather neighbours' positions
                     std::vector<glm::vec3> np;

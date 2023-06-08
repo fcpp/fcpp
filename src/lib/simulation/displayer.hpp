@@ -538,6 +538,7 @@ struct displayer {
                 glm::vec3 p = get_cached_position();
                 // render the node
                 P::node::net.getRenderer().drawShape(s, p, d, m_colors);
+                P::node::net.getRenderer().drawShadow(s, p, d, m_colors[0]);
                 // render the label
                 d *= 0.5;
                 P::node::net.getRenderer().drawLabel("label", {p.x + d, p.y + d, p.z + d}, {0,0,0,1}, 0.2f);

@@ -52,6 +52,7 @@ bool renderer::s_commonIsReady{ false };
 bool renderer::s_gridIsReady{ false };
 shapes renderer::s_shapes{};
 unsigned int renderer::s_shapeVBO[(int)shape::SIZE];
+unsigned int renderer::s_shadowVBO[(int)shape::SIZE];
 unsigned int renderer::s_meshVBO[(int)vertex::SIZE];
 unsigned int renderer::s_meshEBO[(int)index::SIZE];
 std::unordered_map<char, glyph> renderer::s_glyphs{};
@@ -181,6 +182,7 @@ void renderer::allocateGlyphTextures() {
 void renderer::allocateShapeVertex() {
     // Generate VBOs for standard shapes
     glGenBuffers((int)shape::SIZE, s_shapeVBO);
+    glGenBuffers((int)shape::SIZE, s_shadowVBO);
 
     for (int i = 0; i < (int)shape::SIZE; i++) {
         // Get actual shape
@@ -189,6 +191,10 @@ void renderer::allocateShapeVertex() {
         // Allocate (static) shape VBO
         glBindBuffer(GL_ARRAY_BUFFER, s_shapeVBO[(int)sh]);
         glBufferData(GL_ARRAY_BUFFER, s_shapes[sh].data.size() * sizeof(float), s_shapes[sh].data.data(), GL_STATIC_DRAW);
+
+        // Allocate (static) shadow VBO
+        glBindBuffer(GL_ARRAY_BUFFER, s_shadowVBO[(int)sh]);
+        glBufferData(GL_ARRAY_BUFFER, s_shapes[sh].shadow.size() * sizeof(float), s_shapes[sh].shadow.data(), GL_STATIC_DRAW);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
@@ -284,6 +290,7 @@ int renderer::euclid(int a, int b) {
 void renderer::generateShapeAttributePointers() {
     // Generate VAOs and VBOs for standard shapes
     glGenVertexArrays((int)shape::SIZE, m_shapeVAO);
+    glGenVertexArrays((int)shape::SIZE, m_shadowVAO);
 
     for (int i = 0; i < (int)shape::SIZE; i++) {
         // Get actual shape
@@ -292,6 +299,16 @@ void renderer::generateShapeAttributePointers() {
         // Allocate shape attribute pointers
         glBindVertexArray(m_shapeVAO[(int)sh]);
         glBindBuffer(GL_ARRAY_BUFFER, s_shapeVBO[(int)sh]);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+        // Allocate shadow attribute pointers
+        glBindVertexArray(m_shadowVAO[(int)sh]);
+        glBindBuffer(GL_ARRAY_BUFFER, s_shadowVBO[(int)sh]);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -663,6 +680,30 @@ void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_LINES, 0, 2);
     }
+}
+
+void renderer::drawShadow(shape sh, glm::vec3 p, double d, color const& c) const {
+    // Create matrices (used several times)
+    glm::mat4 const& projection{ m_camera.getPerspective() };
+    glm::mat4 const& view{ m_camera.getView() };
+    glm::mat4 model{ 1.0f };
+    p.z = 0.001f;
+    model = glm::translate(model, p);
+    model = glm::scale(model, glm::vec3(d));
+    glm::mat3 normal{ glm::transpose(glm::inverse(view * model)) };
+
+    // Draw shape
+    m_shaderProgramDiff.use();
+    m_shaderProgramDiff.setVec3("u_lightPos", m_lightPos);
+    m_shaderProgramDiff.setFloat("u_ambientStrength", 0.4f);
+    m_shaderProgramDiff.setVec3("u_lightColor", LIGHT_COLOR);
+    m_shaderProgramDiff.setMat4("u_projection", projection);
+    m_shaderProgramDiff.setMat4("u_view", view);
+    m_shaderProgramDiff.setMat4("u_model", model);
+    m_shaderProgramDiff.setMat3("u_normal", normal);
+    glBindVertexArray(m_shadowVAO[(int)sh]);
+    m_shaderProgramDiff.setVec4("u_objectColor", color_to_vec(c));
+    glDrawArrays(GL_TRIANGLES, 0, s_shapes[sh].shadow.size());
 }
 
 //! @brief It draws a star of lines, given the center and sides.

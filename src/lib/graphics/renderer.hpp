@@ -76,6 +76,9 @@ namespace fcpp {
             //! @brief It draws the defined shape, given the information on color(s), dimension and position.
             void drawShape(shape sh, glm::vec3 const& p, double d, std::vector<color> const& c) const;
 
+            //! @brief It draws the defined shape shadow, given the information on color, dimension and position.
+            void drawShadow(shape sh, glm::vec3 p, double d, color const& c) const;
+
             //! @brief It draws a star of lines, given the center and sides.
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
 
@@ -191,6 +194,9 @@ namespace fcpp {
             //! @brief Vertex Buffer Objects for standard shapes; it can be shared among several contexts.
             static unsigned int s_shapeVBO[(int)shape::SIZE];
 
+            //! @brief Vertex Buffer Objects for standard shadows; it can be shared among several contexts.
+            static unsigned int s_shadowVBO[(int)shape::SIZE];
+
             //! @brief Vertex Buffer Objects for commonly used meshes; it can be shared among several contexts.
             static unsigned int s_meshVBO[(int)vertex::SIZE];
 
@@ -253,6 +259,9 @@ namespace fcpp {
 
             //! @brief Vertex Array Objects for standard shapes; it's per context and it can't be shared with others.
             unsigned int m_shapeVAO[(int)shape::SIZE];
+
+            //! @brief Vertex Array Objects for standard shadows; it's per context and it can't be shared with others.
+            unsigned int m_shadowVAO[(int)shape::SIZE];
 
             //! @brief Vertex Array Objects for commonly used meshes; it's per context and it can't be shared with others.
             unsigned int m_meshVAO[(int)vertex::SIZE];

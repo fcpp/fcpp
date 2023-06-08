@@ -26,8 +26,11 @@ namespace internal {
 
 //! @brief Collection of vertices.
 struct VertexData {
-    //! @brief Raw data of triangles as points and normals.
+    //! @brief Raw data of triangles as points and normals for the shape.
     std::vector<float> data;
+
+    //! @brief Raw data of triangles as points and normals for the shape shadow.
+    std::vector<float> shadow;
 
     //! @brief Index of the start of data (as points) for all the three colors; size[3] corresponds to the total number of points.
     size_t size[4];
@@ -39,17 +42,22 @@ struct VertexData {
 
     //! @brief Inserts a point in the raw data.
     inline void push_point(float x, float y, float z) {
-        data.push_back(x);
-        data.push_back(y);
-        data.push_back(z);
-        data.push_back(0);
-        data.push_back(0);
-        data.push_back(0);
+        pusher(data, x, y, z);
     }
 
     //! @brief Inserts a point in the raw data.
     inline void push_point(vec<3> const& xs) {
         push_point(xs[0], xs[1], xs[2]);
+    }
+
+    //! @brief Inserts a point in the raw data.
+    inline void push_shadow_point(float x, float y) {
+        pusher(shadow, x, y, 0);
+    }
+
+    //! @brief Inserts a point in the raw data.
+    inline void push_shadow_point(vec<3> const& xs) {
+        push_shadow_point(xs[0], xs[1]);
     }
 
     //! @brief Compute normals of every triangle.
@@ -60,6 +68,16 @@ struct VertexData {
 
     //! @brief Adds symmetric triangles (with respect to the origin).
     void symmetrize();
+
+  private:
+    inline void pusher(std::vector<float>& v, float x, float y, float z) {
+        v.push_back(x);
+        v.push_back(y);
+        v.push_back(z);
+        v.push_back(0);
+        v.push_back(0);
+        v.push_back(1);
+    }
 };
 
 //! @brief Class holding the collections of vertices for every shape.
@@ -96,7 +114,7 @@ private:
     //! @brief Generates vertex data for a star.
     void star(VertexData&);
 
-    //! @brief THe collection of vertices for every shape.
+    //! @brief The collection of vertices for every shape.
     VertexData m_vertices[(size_t)shape::SIZE];
 };
 

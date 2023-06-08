@@ -138,6 +138,9 @@ void shapes::tetr(VertexData& v) {
     for (float& x : v.data) x *= f;
     // fill missing pieces
     v.normalize();
+    // add shape shadow
+    for (int i=0; i<3; ++i)
+        v.push_shadow_point(vx[i] * f);
 }
 
 namespace {
@@ -182,6 +185,13 @@ void shapes::cube(VertexData& v) {
     // fill missing pieces
     v.normalize();
     v.symmetrize();
+    // add shape shadow
+    v.push_shadow_point(-0.5f, -0.5f);
+    v.push_shadow_point(+0.5f, +0.5f);
+    v.push_shadow_point(+0.5f, -0.5f);
+    v.push_shadow_point(-0.5f, -0.5f);
+    v.push_shadow_point(+0.5f, +0.5f);
+    v.push_shadow_point(-0.5f, +0.5f);
 }
 
 //! @brief Generates vertex data for a octahedron.
@@ -193,7 +203,8 @@ void shapes::octa(VertexData& v) {
         {0,-1, 0},
         {0, 0,-1},
         {0, 1, 0},
-        {1, 0, 0}
+        {1, 0, 0},
+        {-1,0, 0}
     };
     for (size_t i=0; i<4; ++i) {
         v.push_point(vx[5]);
@@ -216,6 +227,12 @@ void shapes::octa(VertexData& v) {
     // fill missing pieces
     v.normalize();
     v.symmetrize();
+    // add shape shadow
+    for (int i=0; i<2; ++i) {
+        v.push_shadow_point(vx[0] * f);
+        v.push_shadow_point(vx[2] * f);
+        v.push_shadow_point(vx[5+i] * f);
+    }
 }
 
 namespace {
@@ -272,13 +289,22 @@ void shapes::dome(VertexData& v, size_t k) {
                        {+le, (4*i+5)*lp/5},
                        k);
     // fill missing pieces
+    float f = cbrt(3/lp/8);
     if (k > 1)
-        v.spherify(cbrt(3/lp/8));
+        v.spherify(f);
     else {
         for (float& x : v.data) x *= 0.7332886800270005;
         v.normalize();
     }
     v.symmetrize();
+    // add shape shadow
+    size_t sizes = 3 << k;
+    double alpha = (atan(1) * 8) / sizes;
+    for (int i=0; i<sizes; ++i) {
+        v.push_shadow_point(0, 0);
+        v.push_shadow_point(cos(alpha*i)*f, sin(alpha*i)*f);
+        v.push_shadow_point(cos(alpha*(i+1))*f, sin(alpha*(i+1))*f);
+    }
 }
 
 //! @brief Generates vertex data for a star.
@@ -332,6 +358,21 @@ void shapes::star(VertexData& v) {
     // fill missing pieces
     v.normalize();
     v.symmetrize();
+    // add shape shadow
+    std::vector<vec<3>> vx = {
+        {0,    0,    0},
+        {0.25, 0.25, 0},
+        {0,    1,    0},
+        {1,    0,    0}
+    };
+    f = cbrt(0.75);
+    for (int x=-1; x<=1; x+=2)
+        for (int y=-1; y<=1; y+=2)
+            for (int i=0; i<2; ++i) {
+                v.push_shadow_point(vx[0][0] * f * x, vx[0][1] * f * y);
+                v.push_shadow_point(vx[1][0] * f * x, vx[1][1] * f * y);
+                v.push_shadow_point(vx[2+i][0] * f * x, vx[2+i][1] * f * y);
+            }
 }
 
 

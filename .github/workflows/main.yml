@@ -12,13 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository...
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run tests...
         uses: ./.github/action-test
-      - name: Deploy documentation...
-        uses: dswistowski/surge-sh-action@v1
+      - name: Setting up node.js...
+        uses: actions/setup-node@v3
         with:
-          domain: 'fcpp-doc.surge.sh'
-          project: './src/doc/html'
-          login: ${{ secrets.surge_login }}
-          token: ${{ secrets.surge_token }}
+          node-version: 16
+      - name: Installing surge...
+        run: npm install -g surge
+      - name: Deploy documentation...
+        run: surge './src/doc/html' 'fcpp-doc.surge.sh' --token ${{ secrets.SURGE_TOKEN }}

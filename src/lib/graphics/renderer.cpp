@@ -22,6 +22,8 @@ using namespace fcpp::internal;
     std::string const renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
     std::string const renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
     std::string const renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
+    std::string const renderer::VERTEX_LABEL_PATH{ ".\\shaders\\vertex_label.glsl" };
+    std::string const renderer::FRAGMENT_LABEL_PATH{ ".\\shaders\\fragment_label.glsl" };
     std::string const renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
     std::string const renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
@@ -33,6 +35,8 @@ using namespace fcpp::internal;
     std::string const renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
     std::string const renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
     std::string const renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
+    std::string const renderer::VERTEX_LABEL_PATH{ "./shaders/vertex_label.glsl" };
+    std::string const renderer::FRAGMENT_LABEL_PATH{ "./shaders/fragment_label.glsl" };
     std::string const renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
     std::string const renderer::TEXTURE_PATH{ "./textures/" };
 #endif
@@ -48,6 +52,7 @@ bool renderer::s_commonIsReady{ false };
 bool renderer::s_gridIsReady{ false };
 shapes renderer::s_shapes{};
 unsigned int renderer::s_shapeVBO[(int)shape::SIZE];
+unsigned int renderer::s_shadowVBO[(int)shape::SIZE];
 unsigned int renderer::s_meshVBO[(int)vertex::SIZE];
 unsigned int renderer::s_meshEBO[(int)index::SIZE];
 std::unordered_map<char, glyph> renderer::s_glyphs{};
@@ -177,6 +182,7 @@ void renderer::allocateGlyphTextures() {
 void renderer::allocateShapeVertex() {
     // Generate VBOs for standard shapes
     glGenBuffers((int)shape::SIZE, s_shapeVBO);
+    glGenBuffers((int)shape::SIZE, s_shadowVBO);
 
     for (int i = 0; i < (int)shape::SIZE; i++) {
         // Get actual shape
@@ -185,6 +191,10 @@ void renderer::allocateShapeVertex() {
         // Allocate (static) shape VBO
         glBindBuffer(GL_ARRAY_BUFFER, s_shapeVBO[(int)sh]);
         glBufferData(GL_ARRAY_BUFFER, s_shapes[sh].data.size() * sizeof(float), s_shapes[sh].data.data(), GL_STATIC_DRAW);
+
+        // Allocate (static) shadow VBO
+        glBindBuffer(GL_ARRAY_BUFFER, s_shadowVBO[(int)sh]);
+        glBufferData(GL_ARRAY_BUFFER, s_shapes[sh].shadow.size() * sizeof(float), s_shapes[sh].shadow.data(), GL_STATIC_DRAW);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
@@ -280,6 +290,7 @@ int renderer::euclid(int a, int b) {
 void renderer::generateShapeAttributePointers() {
     // Generate VAOs and VBOs for standard shapes
     glGenVertexArrays((int)shape::SIZE, m_shapeVAO);
+    glGenVertexArrays((int)shape::SIZE, m_shadowVAO);
 
     for (int i = 0; i < (int)shape::SIZE; i++) {
         // Get actual shape
@@ -288,6 +299,16 @@ void renderer::generateShapeAttributePointers() {
         // Allocate shape attribute pointers
         glBindVertexArray(m_shapeVAO[(int)sh]);
         glBindBuffer(GL_ARRAY_BUFFER, s_shapeVBO[(int)sh]);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+        // Allocate shadow attribute pointers
+        glBindVertexArray(m_shadowVAO[(int)sh]);
+        glBindBuffer(GL_ARRAY_BUFFER, s_shadowVBO[(int)sh]);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -339,6 +360,21 @@ void renderer::generateFontBuffers() {
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    // Generate VAO and VBO
+    glGenVertexArrays(1, &m_labelVAO);
+    glGenBuffers(1, &m_labelVBO);
+
+    // Allocate (dynamic) font buffers
+    glBindVertexArray(m_labelVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 void renderer::generateShaderPrograms() {
@@ -347,6 +383,7 @@ void renderer::generateShaderPrograms() {
         m_shaderProgramDiff = shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
         m_shaderProgramCol = shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
         m_shaderProgramTexture = shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
+        m_shaderProgramLabel = shader{ VERTEX_LABEL_PATH.c_str(), FRAGMENT_LABEL_PATH.c_str() };
     }
     m_shaderProgramFont = shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
 }
@@ -645,6 +682,30 @@ void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
     }
 }
 
+void renderer::drawShadow(shape sh, glm::vec3 p, double d, color const& c) const {
+    // Create matrices (used several times)
+    glm::mat4 const& projection{ m_camera.getPerspective() };
+    glm::mat4 const& view{ m_camera.getView() };
+    glm::mat4 model{ 1.0f };
+    p.z = 0.001f;
+    model = glm::translate(model, p);
+    model = glm::scale(model, glm::vec3(d));
+    glm::mat3 normal{ glm::transpose(glm::inverse(view * model)) };
+
+    // Draw shape
+    m_shaderProgramDiff.use();
+    m_shaderProgramDiff.setVec3("u_lightPos", m_lightPos);
+    m_shaderProgramDiff.setFloat("u_ambientStrength", 0.4f);
+    m_shaderProgramDiff.setVec3("u_lightColor", LIGHT_COLOR);
+    m_shaderProgramDiff.setMat4("u_projection", projection);
+    m_shaderProgramDiff.setMat4("u_view", view);
+    m_shaderProgramDiff.setMat4("u_model", model);
+    m_shaderProgramDiff.setMat3("u_normal", normal);
+    glBindVertexArray(m_shadowVAO[(int)sh]);
+    m_shaderProgramDiff.setVec4("u_objectColor", color_to_vec(c));
+    glDrawArrays(GL_TRIANGLES, 0, s_shapes[sh].shadow.size());
+}
+
 //! @brief It draws a star of lines, given the center and sides.
 void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const {
     // Create matrices (used several times)
@@ -744,6 +805,53 @@ void renderer::drawText(std::string text, float x, float y, float scale) const {
         glDrawArrays(GL_TRIANGLES, 0, 6);
         // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
         x += (ch.advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const {
+    // Activate corresponding render state
+    m_shaderProgramLabel.use();
+    m_shaderProgramLabel.setMat4("u_projection", m_camera.getPerspective());
+    m_shaderProgramLabel.setMat4("u_view", m_camera.getView());
+    m_shaderProgramLabel.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramLabel.setVec4("u_color", col);
+    m_shaderProgramLabel.setInt("u_texture", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(m_labelVAO);
+
+    // Iterate through all characters
+    float x = p.x;
+    std::string::const_iterator c;
+    for (c = text.begin(); c != text.end(); c++) {
+        glyph ch = s_glyphs[*c];
+
+        float xpos = x + ch.bearing.x * scale;
+        float ypos = p.y - (ch.size.y - ch.bearing.y) * scale;
+
+        float w = ch.size.x * scale;
+        float h = ch.size.y * scale;
+        // Update VBO for each character
+        float vertices[30] = {
+            xpos,     ypos + h,   p.z, 0.0f, 0.0f,
+            xpos,     ypos,       p.z, 0.0f, 1.0f,
+            xpos + w, ypos,       p.z, 1.0f, 1.0f,
+
+            xpos,     ypos + h,   p.z, 0.0f, 0.0f,
+            xpos + w, ypos,       p.z, 1.0f, 1.0f,
+            xpos + w, ypos + h,   p.z, 1.0f, 0.0f
+        };
+        // Render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.textureID);
+        // Update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // Render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += ch.advance * scale / 64; // bitshift by 6 to get value in pixels (2^6 = 64)
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);

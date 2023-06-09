@@ -168,7 +168,6 @@ T list_arith_collection(node_t& node, trace_t call_point, real_t const& distance
     });
 }
 
-
 //! @brief Export list for list_arith_collection.
 template <typename T> using list_arith_collection_t = common::export_list<T,real_t,tuple<field<double>, unsigned int, int>>;
 

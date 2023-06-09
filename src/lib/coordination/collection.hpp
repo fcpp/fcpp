@@ -13,10 +13,6 @@
 
 #include "lib/coordination/utils.hpp"
 
-#include "lib/fcpp.hpp"
-#include <iostream>
-
-
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -147,7 +143,6 @@ T list_idem_collection(node_t& node, trace_t call_point, real_t const& distance,
 template <typename T> using list_idem_collection_t = common::export_list<T,real_t>;
 
 
-
 //! @brief Collects distributed data with a arithmetic strategy.
 template <typename node_t, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
 T list_arith_collection(node_t& node, trace_t call_point, real_t const& distance, T const& value, real_t radius, real_t speed, T const& null, real_t epsilon, G&& accumulate) {
@@ -175,12 +170,10 @@ T list_arith_collection(node_t& node, trace_t call_point, real_t const& distance
 
 
 //! @brief Export list for list_arith_collection.
-template <typename T> using list_arith_collection_t = common::export_list<T,real_t,fcpp::tuple<fcpp::field<double>, unsigned int, int>>;
+template <typename T> using list_arith_collection_t = common::export_list<T,real_t,tuple<field<double>, unsigned int, int>>;
 
 
 }
-
-
 
 
 }

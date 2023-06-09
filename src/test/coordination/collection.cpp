@@ -8,7 +8,6 @@
 
 #include "test/test_net.hpp"
 
-
 using namespace fcpp;
 using namespace component::tags;
 
@@ -115,7 +114,6 @@ DECLARE_COMBINE(calc_dist1, lagdist1, component::calculus);
 template <int O>
 using combo1 = calc_dist1<options<O>>;
 
-
 template <class...>
 struct lagdist2 {
     template <typename F, typename P>
@@ -143,8 +141,6 @@ struct lagdist2 {
                     return fcpp::details::make_field<real_t>({4,5,7,8}, {INF,1,1,0,2});
                 else if (uid == 8)
                     return fcpp::details::make_field<real_t>({6,7,8}, {INF,3,2,0});
-
-
             }
 
             field<real_t> nbr_lag() const {
@@ -170,7 +166,7 @@ struct lagdist2 {
         using net = typename P::net;
     };
 };
-DECLARE_COMBINE(calc_dist2, lagdist1, component::calculus);
+DECLARE_COMBINE(calc_dist2, lagdist2, component::calculus);
 
 template <int O>
 using combo2 = calc_dist2<options<O>>;
@@ -186,14 +182,6 @@ real_t divider(real_t x, size_t n) {
 
 real_t multiplier(real_t x, real_t f) {
     return x*f;
-}
-
-real_t radiusMax(real_t radius) {
-    if (radius>11){
-        return 11;
-    }else{
-        return radius;
-    }
 }
 
 
@@ -414,10 +402,7 @@ MULTI_TEST(CollectionTest, LISTarith, O, 3) {
     EXPECT_ROUND(n, {0, 1, 2},
                 {1, 2, 2},
                 {5, 4, 2});
-
 }
-
-
 
 MULTI_TEST(CollectionTest, LISTarithGraph, O, 3) {
     using topo_type = std::vector<std::vector<int>>;
@@ -457,7 +442,6 @@ MULTI_TEST(CollectionTest, LISTarithGraph, O, 3) {
                     {12, 11, 12, 10});                           
 }
 
-
 MULTI_TEST(CollectionTest, LISTarithSevenGraph, O, 3) {
     using topo_type = std::vector<std::vector<int>>;
     std::vector<real_t> distance {0,1,3,5,7,8,10,13,15}; 
@@ -466,7 +450,7 @@ MULTI_TEST(CollectionTest, LISTarithSevenGraph, O, 3) {
         {{0,1,2},{0,1,3,4},{0,2,4,5},{1,3,6},{1,2,4,6,7},{2,5,7},{3,4,6,8},{4,5,7,8},{6,7,8}}, 
         [&](auto& node, int id, int val){
             return std::make_tuple(
-                coordination::list_arith_collection(node, 0, distance[id], val, radiusMax(17), 0, 0, 1,adder)
+                coordination::list_arith_collection(node, 0, distance[id], val, 11, 0, 0, 1,adder)
             );
         }
     };
@@ -502,5 +486,4 @@ MULTI_TEST(CollectionTest, LISTarithSevenGraph, O, 3) {
     EXPECT_ROUND(n, {0, 1, 2, 3, 4, 5, 6, 7, 8},
                     {0, 1, 2, 3, 4, 5, 6, 7, 8},
                     {22, 20, 22, 17, 19, 20, 14, 15, 8});
-                            
 }

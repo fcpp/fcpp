@@ -1,4 +1,4 @@
-// Copyright © 2020 Luigi Rapetta. All Rights Reserved.
+// Copyright Â© 2020 Luigi Rapetta. All Rights Reserved.
 // Thanks to www.learnopengl.com for the initial structure!
 
 #version 330 core

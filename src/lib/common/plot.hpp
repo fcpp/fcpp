@@ -16,6 +16,7 @@
 #include <ratio>
 #include <set>
 #include <sstream>
+#include <tuple>
 #include <vector>
 
 #include "lib/common/mutex.hpp"
@@ -115,6 +116,12 @@ struct point {
     std::string source;
     //! @brief The measured value.
     double value;
+    //! @brief The upwards deviation of the value.
+    double devup;
+    //! @brief The downwards deviation of the value.
+    double devdn;
+    //! @brief The default value used when the deviation is not available.
+    static constexpr double no_dev = -std::numeric_limits<double>::infinity();
 };
 
 //! @brief Printing a single point.
@@ -122,7 +129,9 @@ template <typename O>
 O& operator<<(O& o, point const& p) {
     o << "(";
     if (p.unit.size()) o << p.unit << ", ";
-    o << p.source << ", " << p.value << ")";
+    o << p.source << ", " << p.value;
+    if (p.devup != point::no_dev or p.devdn != point::no_dev) o << " + " << p.devup << " - " << p.devdn;
+    o << ")";
     return o;
 }
 
@@ -140,7 +149,7 @@ struct plot {
     //! @brief Values of x coordinates.
     std::vector<double> xvals;
     //! @brief Values of y coordinates with labels.
-    std::vector<std::pair<std::string, std::vector<double>>> yvals;
+    std::vector<std::pair<std::string, std::vector<std::tuple<double,double,double>>>> yvals;
 };
 
 //! @brief Printing a single plot.
@@ -161,9 +170,45 @@ O& operator<<(O& o, plot const& p) {
         o << "{";
         for (size_t i=0; i<y.second.size(); ++i) {
             if (i > 0) o << ", ";
-            o << "(" << p.xvals[i] << ", " << y.second[i] << ")";
+            o << "(" << p.xvals[i] << ", " << std::get<0>(y.second[i]) << ")";
         }
         o << "}";
+    }
+    bool hasdev = false;
+    for (auto const& y : p.yvals) for (size_t i=0; i<y.second.size() and not hasdev; ++i)
+        if (std::get<1>(y.second[i]) != point::no_dev or std::get<2>(y.second[i]) != point::no_dev)
+            hasdev = true;
+    if (hasdev) {
+        o << "}, new real[][] {";
+        first = true;
+        for (auto const& y : p.yvals) {
+            if (first) first = false;
+            else o << ", ";
+            o << "{";
+            for (size_t i=0; i<y.second.size(); ++i) {
+                if (i > 0) o << ", ";
+                o << std::get<1>(y.second[i]);
+            }
+            o << "}";
+        }
+        hasdev = false;
+        for (auto const& y : p.yvals) for (size_t i=0; i<y.second.size() and not hasdev; ++i)
+            if (std::get<2>(y.second[i]) != point::no_dev)
+                hasdev = true;
+        if (hasdev) {
+            o << "}, new real[][] {";
+            first = true;
+            for (auto const& y : p.yvals) {
+                if (first) first = false;
+                else o << ", ";
+                o << "{";
+                for (size_t i=0; i<y.second.size(); ++i) {
+                    if (i > 0) o << ", ";
+                    o << std::get<2>(y.second[i]);
+                }
+                o << "}";
+            }
+        }
     }
     o << "}));\n";
     return o;
@@ -777,7 +822,10 @@ class value {
         std::string ar = A::name(); // row aggregator
         std::string ad = aggregator_name(common::bool_pack<details::has_name_method<S>::value>{}); // device aggregator
         p.source += " (" + ad + ar + ")";
-        p.value = std::get<0>(m_aggregator.template result<S>());
+        auto r = m_aggregator.template result<S>();
+        p.value = std::get<0>(r);
+        p.devup = maybe_tuple_get<1>(r);
+        p.devdn = maybe_tuple_get<2>(r);
         return {p};
     }
 
@@ -798,6 +846,20 @@ class value {
     //! @brief Tag name (if aggregator absent).
     std::string tag_name(common::bool_pack<false>) const {
         return common::type_name<S>();
+    }
+
+    //! @brief Gets the i-th element of a result tuple (if present).
+    template <size_t i, typename T, typename... Ts>
+    static std::enable_if_t<i < sizeof...(Ts), double>
+    maybe_tuple_get(common::tagged_tuple<T, common::type_sequence<Ts...>> const& t) {
+        return std::get<i>(t);
+    }
+
+    //! @brief Gets the i-th element of a result tuple (if absent).
+    template <size_t i, typename T, typename... Ts>
+    static std::enable_if_t<i >= sizeof...(Ts), double>
+    maybe_tuple_get(common::tagged_tuple<T, common::type_sequence<Ts...>> const&) {
+        return point::no_dev;
     }
 
     //! @brief A mutex for synchronised access to the aggregator.
@@ -1035,7 +1097,7 @@ class split {
         std::set<std::string> units;
         if (m.size()) for (point const& q : m.begin()->second) {
             if (q.unit.size()) units.insert(q.unit);
-            res[0].yvals.emplace_back(q.source, std::vector<double>{});
+            res[0].yvals.emplace_back(q.source, std::vector<std::tuple<double,double,double>>{});
         }
         if (units.empty()) res[0].yname = "y";
         else if (units.size() == 1) res[0].yname = *units.begin();
@@ -1066,7 +1128,7 @@ class split {
         for (auto const& p : m) {
             res[0].xvals.push_back(std::get<0>(p.first));
             for (size_t i = 0; i < p.second.size(); ++i)
-                res[0].yvals[i].second.push_back(p.second[i].value);
+                res[0].yvals[i].second.emplace_back(p.second[i].value, p.second[i].devup, p.second[i].devdn);
         }
     }
     //! @brief Multiple plot building.

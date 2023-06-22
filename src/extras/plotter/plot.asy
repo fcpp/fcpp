@@ -7,6 +7,7 @@ int  ROWS = 2;       // rows of plots per page
 int  COLS = 3;       // columns of plots per page
 real MAX_CROP = 1.1; // maximum cropping allowed (usually 1.3)
 real LOG_LIN = 2;    // factor of comparison between linear and logarithmic plots
+real ALPHA = 0.1;    // opacity of deviation areas
 bool LEGENDA = true; // whether to draw the legenda or not
 bool SUBPLOT = false;// whether to compile subplots
 
@@ -81,7 +82,7 @@ real fit(real x, real a = 0, real b = 1, real l = 1, bool logmode = false) {
 }
 
 // produces a single plot
-picture plot(real endx = 0, string ppath, string title, string xlabel, string ylabel, string[] names = new string[] {}, pair[][] values) {
+picture plot(real endx = 0, string ppath, string title, string xlabel, string ylabel, string[] names = new string[] {}, pair[][] values, real[][] devup = {}, real[][] devdn = {}) {
     picture pic;
     unitsize(pic, 1cm);
 
@@ -186,9 +187,55 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
     real xscale = approx(bminx, bmaxx, DIM.x);
     real yscale = approx(bminy, bmaxy, DIM.y);
 
-    for (int l=0; l<values.length; ++l) {
+    if (devup.length > 0 && devdn.length == 0) devdn = devup;
+    if (devup.length > 0) for (int l=0; l<values.length; ++l) if (values[l].length > 0) {
         pen pn = styles[l%styles.length]+colors[l%colors.length];
-        if (values[l].length == 0) continue;
+        path pup, pdn;
+        bool drawing = false;
+        pair lp = (0,nan), lpup = (0,nan), lpdn = (0,nan);
+        for (int i=0; i<values[l].length; ++i) {
+            real x = fit(values[l][i].x, bminx, bmaxx, DIM.x);
+            real y = fit(values[l][i].y, bminy, bmaxy, DIM.y, logmode);
+            real yup = fit(values[l][i].y + devup[l][i], bminy, bmaxy, DIM.y, logmode);
+            real ydn = fit(values[l][i].y - devdn[l][i], bminy, bmaxy, DIM.y, logmode);
+            if (isnan(lp.y)) { lp = (x,y); lpup = (x,yup); lpdn = (x,ydn); }
+            else if (lp.y == -inf) lp = lpup = lpdn = (x,0);
+            else if (lp.y == inf) lp = lpup = lpdn = (x,DIM.y);
+            else if (isnan(y)) ;
+            else if (y == -inf) lp = lpup = lpdn = (lp.x,0);
+            else if (y == inf) lp = lpup = lpdn = (lp.x,DIM.y);
+            else if (y != lp.y) {
+                pair p0 = (lp.x + (x-lp.x)*(0    -lp.y)/(y-lp.y), 0);
+                pair p1 = (lp.x + (x-lp.x)*(DIM.y-lp.y)/(y-lp.y), DIM.y);
+                pair p0up = (lpup.x + (x-lpup.x)*(0    -lpup.y)/(y-lpup.y), 0);
+                pair p0dn = (lpdn.x + (x-lpdn.x)*(0    -lpdn.y)/(y-lpdn.y), 0);
+                pair p1up = (lpup.x + (x-lpup.x)*(DIM.y-lpup.y)/(y-lpup.y), DIM.y);
+                pair p1dn = (lpdn.x + (x-lpdn.x)*(DIM.y-lpdn.y)/(y-lpdn.y), DIM.y);
+                if      (lp.y < 0     && y > DIM.y) fill(pic, p0up -- p1up -- p1dn -- p0dn -- cycle, pn+opacity(ALPHA));
+                else if (lp.y > DIM.y && y < 0    ) fill(pic, p1up -- p0up -- p0dn -- p1dn -- cycle, pn+opacity(ALPHA));
+                else if ((y < 0)     ^ (lp.y < 0    )) { lp = p0; lpup = p0up; lpdn = p0dn; }
+                else if ((y > DIM.y) ^ (lp.y > DIM.y)) { lp = p1; lpup = p1up; lpdn = p1dn; }
+            }
+            if (0 <= y && y <= DIM.y) {
+                if (!drawing) {
+                    pup = lpup;
+                    pdn = lpdn;
+                }
+                pup = pup -- (x,min(yup,DIM.y));
+                pdn = pdn -- (x,max(ydn,0));
+                drawing = true;
+            } else {
+                if (drawing) fill(pic, pup -- reverse(pdn) -- cycle, pn+opacity(ALPHA));
+                drawing = false;
+            };
+            lp = (x,y);
+            lpup = (x,yup);
+            lpdn = (x,ydn);
+        }
+        if (drawing) fill(pic, pup -- reverse(pdn) -- cycle, pn+opacity(ALPHA));
+    }
+    for (int l=0; l<values.length; ++l) if (values[l].length > 0) {
+        pen pn = styles[l%styles.length]+colors[l%colors.length];
         path p;
         bool drawing = false;
         pair lp = (0,nan);
@@ -198,7 +245,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
             if (isnan(lp.y)) lp = (x,y);
             else if (lp.y == -inf) lp = (x,0);
             else if (lp.y == inf) lp = (x,DIM.y);
-            else if (isnan(y)) lp = lp;
+            else if (isnan(y)) ;
             else if (y == -inf) lp = (lp.x,0);
             else if (y == inf) lp = (lp.x,DIM.y);
             else if (y != lp.y) {

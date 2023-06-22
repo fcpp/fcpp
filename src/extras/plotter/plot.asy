@@ -8,6 +8,7 @@ int  COLS = 3;       // columns of plots per page
 real MAX_CROP = 1.1; // maximum cropping allowed (usually 1.3)
 real LOG_LIN = 2;    // factor of comparison between linear and logarithmic plots
 real ALPHA = 0.1;    // opacity of deviation areas
+real SIGMA = 1;      // number of standard deviations to show
 bool LEGENDA = true; // whether to draw the legenda or not
 bool SUBPLOT = false;// whether to compile subplots
 
@@ -196,8 +197,8 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         for (int i=0; i<values[l].length; ++i) {
             real x = fit(values[l][i].x, bminx, bmaxx, DIM.x);
             real y = fit(values[l][i].y, bminy, bmaxy, DIM.y, logmode);
-            real yup = fit(values[l][i].y + devup[l][i], bminy, bmaxy, DIM.y, logmode);
-            real ydn = fit(values[l][i].y - devdn[l][i], bminy, bmaxy, DIM.y, logmode);
+            real yup = fit(values[l][i].y + SIGMA*devup[l][i], bminy, bmaxy, DIM.y, logmode);
+            real ydn = fit(values[l][i].y - SIGMA*devdn[l][i], bminy, bmaxy, DIM.y, logmode);
             if (isnan(lp.y)) { lp = (x,y); lpup = (x,yup); lpdn = (x,ydn); }
             else if (lp.y == -inf) lp = lpup = lpdn = (x,0);
             else if (lp.y == inf) lp = lpup = lpdn = (x,DIM.y);
@@ -218,8 +219,8 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
             }
             if (0 <= y && y <= DIM.y) {
                 if (!drawing) {
-                    pup = lpup;
-                    pdn = lpdn;
+                    pup = (lpup.x,min(lpup.y,DIM.y));
+                    pdn = (lpdn.x,max(lpdn.y,0));
                 }
                 pup = pup -- (x,min(yup,DIM.y));
                 pdn = pdn -- (x,max(ydn,0));

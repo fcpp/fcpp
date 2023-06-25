@@ -229,7 +229,7 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     m_lightPos{ LIGHT_DEFAULT_POS },
     m_background{ 1.0f, 1.0f, 1.0f, 1.0f },
     m_foreground{ 0.0f, 0.0f, 0.0f, 1.0f },
-    m_rectangle_col{ 0.0f, 2.0f, 2.0f, 0.5f },
+    m_rectangle_col{ 0.0f, 1.0f, 1.0f, 0.5f },
     m_camera{} {
     /* DEFINITION */
     // Initialize GLFW
@@ -949,4 +949,10 @@ void renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHe
     m_framebufferHeight = fbHeight;
     m_renderScale = fbWidth / winWidth;
     m_camera.setScreen(fbWidth, fbHeight);
+}
+
+void renderer::setColorTheme(color background, color foreground, color selection) {
+    m_background = {background.rgba[0], background.rgba[1], background.rgba[2], background.rgba[3]};
+    m_foreground = {foreground.rgba[0], foreground.rgba[1], foreground.rgba[2], foreground.rgba[3]};
+    m_rectangle_col = {selection.rgba[0], selection.rgba[1], selection.rgba[2], selection.rgba[3]*0.5f};
 }

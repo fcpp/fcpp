@@ -136,6 +136,9 @@ namespace fcpp {
             //! @brief It resizes the viewport, given the new width and height values.
             void viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight);
 
+            //! @brief Sets the main color theme to be used in the user interface.
+            void setColorTheme(color background, color foreground, color selection);
+
         private:
             //! @brief Default path to vertex_phong shader.
             static std::string const VERTEX_PHONG_PATH;

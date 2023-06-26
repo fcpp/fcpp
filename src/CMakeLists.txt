@@ -146,6 +146,7 @@ set(
     lib/coordination/time.cpp
     lib/coordination/utils.cpp
     lib/data.cpp
+    lib/data/bloom.cpp
     lib/data/color.cpp
     lib/data/field.cpp
     lib/data/hyperloglog.cpp
@@ -306,6 +307,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/coordination/spreading.cpp)
         fcpp_test(test/coordination/time.cpp)
         fcpp_test(test/coordination/utils.cpp)
+        fcpp_test(test/data/bloom.cpp)
         fcpp_test(test/data/color.cpp)
         fcpp_test(test/data/field.cpp)
         fcpp_test(test/data/hyperloglog.cpp)

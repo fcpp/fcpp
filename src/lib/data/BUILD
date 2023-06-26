@@ -1,4 +1,13 @@
 cc_library(
+    name = 'bloom',
+    hdrs = ['bloom.hpp'],
+    srcs = ['bloom.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'color',
     hdrs = ['color.hpp'],
     srcs = ['color.cpp'],

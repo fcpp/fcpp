@@ -59,6 +59,14 @@ namespace details {
         }
         return z + t;
     }
+
+    //! @brief The largest integer type that is a divisor of a given type.
+    template <typename T>
+    using word_type = std::conditional_t<
+        sizeof(T) % 4 == 0,
+        std::conditional_t<sizeof(T) % 8 == 0, uint64_t, uint32_t>,
+        std::conditional_t<sizeof(T) % 2 == 0, uint16_t, uint8_t>
+    >;
 }
 //! @endcond
 
@@ -143,6 +151,7 @@ class bloom_filter {
     bloom_filter& operator=(std::initializer_list<T> il) {
         clear();
         insert(il);
+        return *this;
     }
 
     //! @brief Returns whether the filter is empty.
@@ -218,6 +227,24 @@ class bloom_filter {
     //! @brief Inplace bitwise-or operator merging filter contents.
     bloom_filter& operator|=(bloom_filter const& f) noexcept {
         m_data |= f.m_data;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        using wtype = details::word_type<std::bitset<bits>>;
+        for (size_t i = 0; i < sizeof(m_data)/sizeof(wtype); ++i)
+            s & ((wtype*)&m_data)[i];
+        return s;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        using wtype = details::word_type<std::bitset<bits>>;
+        for (size_t i = 0; i < sizeof(m_data)/sizeof(wtype); ++i)
+            s << ((wtype*)&m_data)[i];
+        return s;
     }
 
   private:

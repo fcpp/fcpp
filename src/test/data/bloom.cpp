@@ -72,10 +72,18 @@ TEST(BloomTest, Math) {
 }
 
 TEST(BloomTest, Operators) {
-    bloom_filter<4,2048> x;
+    bloom_filter<4,2048> x{1, 3, 13, 17, 42};
     bloom_filter<4,2048> y(x);
     bloom_filter<4,2048> z = std::move(x);
     EXPECT_EQ(z, y);
+    x = {};
+    EXPECT_TRUE(x.empty());
+    x.insert(1);
+    x.insert(3);
+    x.insert(13);
+    x.insert(17);
+    x.insert(42);
+    EXPECT_EQ(x, z);
 }
 
 TEST(BloomTest, CountError) {

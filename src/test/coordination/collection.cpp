@@ -139,7 +139,7 @@ struct lagdist2 {
                     return fcpp::details::make_field<real_t>({3,4,6,8}, {INF,5,2,0,3});
                 else if (uid == 7)
                     return fcpp::details::make_field<real_t>({4,5,7,8}, {INF,1,1,0,2});
-                else if (uid == 8)
+                else
                     return fcpp::details::make_field<real_t>({6,7,8}, {INF,3,2,0});
             }
 

@@ -208,10 +208,10 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
             else if (y != lp.y) {
                 pair p0 = (lp.x + (x-lp.x)*(0    -lp.y)/(y-lp.y), 0);
                 pair p1 = (lp.x + (x-lp.x)*(DIM.y-lp.y)/(y-lp.y), DIM.y);
-                pair p0up = (lpup.x + (x-lpup.x)*(0    -lpup.y)/(y-lpup.y), 0);
-                pair p0dn = (lpdn.x + (x-lpdn.x)*(0    -lpdn.y)/(y-lpdn.y), 0);
-                pair p1up = (lpup.x + (x-lpup.x)*(DIM.y-lpup.y)/(y-lpup.y), DIM.y);
-                pair p1dn = (lpdn.x + (x-lpdn.x)*(DIM.y-lpdn.y)/(y-lpdn.y), DIM.y);
+                pair p0up = y == lpup.y ? lpup : (lpup.x + (x-lpup.x)*(0    -lpup.y)/(y-lpup.y), 0);
+                pair p0dn = y == lpdn.y ? lpdn : (lpdn.x + (x-lpdn.x)*(0    -lpdn.y)/(y-lpdn.y), 0);
+                pair p1up = y == lpup.y ? lpup : (lpup.x + (x-lpup.x)*(DIM.y-lpup.y)/(y-lpup.y), DIM.y);
+                pair p1dn = y == lpdn.y ? lpdn : (lpdn.x + (x-lpdn.x)*(DIM.y-lpdn.y)/(y-lpdn.y), DIM.y);
                 if      (lp.y < 0     && y > DIM.y) fill(pic, p0up -- p1up -- p1dn -- p0dn -- cycle, pn+opacity(ALPHA));
                 else if (lp.y > DIM.y && y < 0    ) fill(pic, p1up -- p0up -- p0dn -- p1dn -- cycle, pn+opacity(ALPHA));
                 else if ((y < 0)     ^ (lp.y < 0    )) { lp = p0; lpup = p0up; lpdn = p0dn; }

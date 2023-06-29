@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
 #include <iostream>
@@ -732,6 +732,48 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
     glBufferData(GL_ARRAY_BUFFER, sizeof(starData), starData, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDrawArrays(GL_LINES, 0, 2 * np.size());
+}
+
+//! @brief It draws the tail of a node, as a sequence of lines given their endpoints, the color to be used and a width.
+void renderer::drawTail(std::deque<glm::vec3> const& p, color const& c, float w) const {
+    glm::vec4 col = color_to_vec(c);
+    col.a /= 2;
+    col = {0, 0, 0, 0.5};
+    // Create matrices (used several times)
+    m_shaderProgramCol.use();
+    m_shaderProgramCol.setMat4("u_projection", m_camera.getPerspective());
+    m_shaderProgramCol.setMat4("u_view", m_camera.getView());
+    m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
+    m_shaderProgramCol.setVec4("u_color", col);
+
+    float tailVertices[6 * p.size()];
+    for (int i = 0; i < p.size(); ++i) {
+        float k = i/(p.size()-1.0f);
+        k *= k * w * 0.62f;
+        tailVertices[6 * i + 0] = p[i][0];
+        tailVertices[6 * i + 1] = p[i][1];
+        tailVertices[6 * i + 2] = p[i][2] + k;
+        tailVertices[6 * i + 3] = p[i][0];
+        tailVertices[6 * i + 4] = p[i][1];
+        tailVertices[6 * i + 5] = p[i][2] - k;
+    }
+    unsigned int tailIndices[6 * p.size() - 6];
+    for (int i = 0; i < p.size()-1; ++i) {
+        tailIndices[6 * i + 0] = 2*i;
+        tailIndices[6 * i + 1] = 2*i + 1;
+        tailIndices[6 * i + 2] = 2*i + 2;
+        tailIndices[6 * i + 3] = 2*i + 1;
+        tailIndices[6 * i + 4] = 2*i + 2;
+        tailIndices[6 * i + 5] = 2*i + 3;
+    }
+
+    glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);
+    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(tailVertices), tailVertices, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::rectangle]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tailIndices), tailIndices, GL_STATIC_DRAW);
+    glDrawElements(GL_TRIANGLES, sizeof(tailIndices), GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void renderer::drawRectangle(float x, float y, float a, float b) const {

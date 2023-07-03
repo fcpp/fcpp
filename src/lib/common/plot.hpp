@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file plot.hpp
@@ -297,9 +297,26 @@ class none {
     //! @brief Default constructor.
     none() = default;
 
+    //! @brief Copy constructor.
+    none(none const&) = default;
+
+    //! @brief Move constructor.
+    none(none&&) = default;
+
+    //! @brief Copy assignment.
+    none& operator=(none const&) = default;
+
+    //! @brief Move assignment.
+    none& operator=(none&&) = default;
+
     //! @brief Row processing.
     template <typename R>
     none& operator<<(R const&) {
+        return *this;
+    }
+
+    //! @brief Plot merging.
+    none& operator+=(none const&) {
         return *this;
     }
 
@@ -562,11 +579,29 @@ class filter {
     //! @brief Default constructor.
     filter() = default;
 
+    //! @brief Copy constructor.
+    filter(filter const&) = default;
+
+    //! @brief Move constructor.
+    filter(filter&&) = default;
+
+    //! @brief Copy assignment.
+    filter& operator=(filter const&) = default;
+
+    //! @brief Move assignment.
+    filter& operator=(filter&&) = default;
+
     //! @brief Row processing.
     template <typename R>
     filter& operator<<(R const& row) {
         if (m_filter(common::get<S>(row)))
             (m_plotter << row);
+        return *this;
+    }
+
+    //! @brief Plot merging.
+    filter& operator+=(filter const& o) {
+        m_plotter += o.m_plotter;
         return *this;
     }
 
@@ -708,6 +743,24 @@ class join {
         return *this;
     }
 
+    //! @brief Copy constructor.
+    join(join const&) = default;
+
+    //! @brief Move constructor.
+    join(join&&) = default;
+
+    //! @brief Copy assignment.
+    join& operator=(join const&) = default;
+
+    //! @brief Move assignment.
+    join& operator=(join&&) = default;
+
+    //! @brief Plot merging.
+    join& operator+=(join const& o) {
+        sum_impl(o, std::make_index_sequence<sizeof...(Ps)>{});
+        return *this;
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         build_type res;
@@ -733,6 +786,12 @@ class join {
         for (size_t j = 0; j < ri.size(); ++j)
             res[x+j] = std::move(ri[j]);
         build_impl(res, std::index_sequence<is...>{}, x + ri.size());
+    }
+
+    //! @brief Merges all sub-plots.
+    template <size_t... is>
+    inline void sum_impl(join const& o, std::index_sequence<is...>) {
+        common::details::ignore((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
     }
 
     //! @brief The plotters.
@@ -796,6 +855,28 @@ class value {
     value& operator<<(R const& row) {
         common::lock_guard<true> l(m_mutex);
         m_aggregator.insert(common::get<S>(row));
+        return *this;
+    }
+
+    //! @brief Copy constructor.
+    value(value const& o) : m_aggregator(o.m_aggregator) {}
+
+    //! @brief Move constructor.
+    value(value&& o) : m_aggregator(o.m_aggregator) {}
+
+    //! @brief Copy assignment.
+    value& operator=(value const& o) {
+        m_aggregator = o.m_aggregator;
+    }
+
+    //! @brief Move assignment.
+    value& operator=(value&& o) {
+        m_aggregator = o.m_aggregator;
+    }
+
+    //! @brief Plot merging.
+    value& operator+=(value const& o) {
+        m_aggregator += o.m_aggregator;
         return *this;
     }
 
@@ -1053,6 +1134,22 @@ class split {
     //! @brief Default constructor.
     split() = default;
 
+    //! @brief Copy constructor.
+    split(split const& o) : m_plotters(o.m_plotters) {}
+
+    //! @brief Move constructor.
+    split(split&& o) : m_plotters(o.m_plotters) {}
+
+    //! @brief Copy assignment.
+    split& operator=(split const& o) {
+        m_plotters = o.m_plotters;
+    }
+
+    //! @brief Move assignment.
+    split& operator=(split&& o) {
+        m_plotters = o.m_plotters;
+    }
+
     //! @brief Row processing.
     template <typename R>
     split& operator<<(R const& row) {
@@ -1064,6 +1161,22 @@ class split {
             p = &m_plotters[k];
         }
         *p << row;
+        return *this;
+    }
+
+    //! @brief Plot merging.
+    split& operator+=(split const& o) {
+        std::vector<std::pair<const key_type, P>> new_keys;
+        auto it = o.m_plotters.begin();
+        for (auto& x : m_plotters) {
+            for (; it != o.m_plotters.end() and it->first < x.first; ++it)
+                new_keys.push_back(*it);
+            if (it == o.m_plotters.end()) break;
+            if (it->first == x.first) x.second += it->second;
+        }
+        for (; it != o.m_plotters.end(); ++it)
+            new_keys.push_back(*it);
+        m_plotters.insert(new_keys.begin(), new_keys.end());
         return *this;
     }
 

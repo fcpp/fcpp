@@ -116,6 +116,10 @@ namespace tags {
     template <intmax_t c>
     struct shadow_color_val {};
 
+    //! @brief Declaration tag associating to the colors of the general theme.
+    template <intmax_t background, intmax_t foreground, intmax_t selection>
+    struct color_theme {};
+
     //! @brief Declaration tag associating to the bounding coordinates of the grid area.
     template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den = 1>
     struct area;
@@ -496,6 +500,7 @@ namespace details {
  * - \ref tags::shadow_color_val defines the base color of node shadows (defaults to the same color as the node).
  * - \ref tags::shadow_size_tag defines a storage tag regulating the size of node shadows (defaults to none).
  * - \ref tags::shadow_size_val defines the base size of node shadows (defaults to 0).
+ * - \ref tags::color_theme defines the colors of the general theme (defaults to WHITE/BLACK/CYAN).
  * - \ref tags::area defines the bounding coordinates of the grid area (defaults to the minimal area covering initial nodes).
  * - \ref tags::antialias defines the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
  *
@@ -515,6 +520,11 @@ template <class... Ts>
 struct displayer {
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Colors of the general theme.
+    using color_theme = common::option_nums<tags::color_theme, Ts...>;
+
+    static_assert(color_theme::size == 3 or color_theme::size == 0, "the colors of a theme must be 3 integers");
 
     //! @brief Bounding coordinates of the grid area.
     using area = common::option_nums<tags::area, Ts...>;
@@ -792,6 +802,7 @@ struct displayer {
                     constexpr auto min = details::numseq_to_vec<area>::min;
                     m_viewport_max = details::vec_to_glm(common::get_or<tags::area_max>(t, max), -INF);
                     m_viewport_min = details::vec_to_glm(common::get_or<tags::area_min>(t, min), +INF);
+                    maybe_set_color_theme(color_theme{});
                 }
 
             /**
@@ -955,7 +966,21 @@ struct displayer {
                 return m_deltaTime;
             }
 
+            //! @brief Sets the color theme.
+            inline void set_color_theme(color background, color foreground, color selection) {
+                m_renderer.setColorTheme(background, foreground, selection);
+            }
+
         private: // implementation details
+            //! @brief Sets the color theme based on options (empty overload).
+            inline void maybe_set_color_theme(common::number_sequence<>) {}
+
+            //! @brief Sets the color theme based on options (active overload).
+            template <intmax_t background, intmax_t foreground, intmax_t selection>
+            inline void maybe_set_color_theme(common::number_sequence<background,foreground,selection>) {
+                set_color_theme(color(background), color(foreground), color(selection));
+            }
+
             //! @brief Updates the viewport adding a position to it.
             void viewport_update(glm::vec3 pos) {
                 for (int i=0; i<3; ++i) {

@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -77,25 +77,58 @@ TEST(PlotTest, Value) {
         plot::point& q = pb[0];
         EXPECT_POINT(q, "temp", "tag (mean-distinct)", 2.0);
     }
+    {
+        plot::value<aggregator::mean<temp<tag>>, aggregator::distinct<int>> p1, p2;
+        p1 << common::make_tagged_tuple<plot::time,aggregator::mean<temp<tag>>>(1.0, 2);
+        p2 << common::make_tagged_tuple<plot::time,aggregator::mean<temp<tag>>,gat>(0.0, 4, 3.0);
+        p2 << common::make_tagged_tuple<plot::time,aggregator::mean<temp<tag>>,gat>(2.0, 2, 1.0);
+        p1 += p2;
+        std::array<plot::point, 1> pb = p1.build();
+        plot::point& q = pb[0];
+        EXPECT_POINT(q, "temp", "tag (mean-distinct)", 2.0);
+    }
 }
 
 TEST(PlotTest, FilterValue) {
-    plot::filter<plot::time, filter::above<10>, plot::value<tag>> p;
-    p << common::make_tagged_tuple<plot::time,tag>(0.0, 2.0);
-    p << common::make_tagged_tuple<plot::time,tag,gat>(10.0, 4.0, 3.0);
-    p << common::make_tagged_tuple<plot::time,tag>(20.0, 6.0);
-    std::array<plot::point, 1> pb = p.build();
-    plot::point& q = pb[0];
-    EXPECT_POINT(q, "tag", "tag (mean)", 5.0);
+    {
+        plot::filter<plot::time, filter::above<10>, plot::value<tag>> p;
+        p << common::make_tagged_tuple<plot::time,tag>(0.0, 2.0);
+        p << common::make_tagged_tuple<plot::time,tag,gat>(10.0, 4.0, 3.0);
+        p << common::make_tagged_tuple<plot::time,tag>(20.0, 6.0);
+        std::array<plot::point, 1> pb = p.build();
+        plot::point& q = pb[0];
+        EXPECT_POINT(q, "tag", "tag (mean)", 5.0);
+    }
+    {
+        plot::filter<plot::time, filter::above<10>, plot::value<tag>> p1, p2;
+        p1 << common::make_tagged_tuple<plot::time,tag>(0.0, 2.0);
+        p2 << common::make_tagged_tuple<plot::time,tag,gat>(10.0, 4.0, 3.0);
+        p2 << common::make_tagged_tuple<plot::time,tag>(20.0, 6.0);
+        p1 += p2;
+        std::array<plot::point, 1> pb = p1.build();
+        plot::point& q = pb[0];
+        EXPECT_POINT(q, "tag", "tag (mean)", 5.0);
+    }
 }
 
 TEST(PlotTest, JoinValue) {
-    plot::join<plot::value<tag>, plot::value<gat>> p;
-    p << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 4.0, 3.0);
-    p << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 6.0, 1.0);
-    std::array<plot::point, 2> pb = p.build();
-    EXPECT_POINT(pb[0], "tag", "tag (mean)", 5.0);
-    EXPECT_POINT(pb[1], "gat", "gat (mean)", 2.0);
+    {
+        plot::join<plot::value<tag>, plot::value<gat>> p;
+        p << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 4.0, 3.0);
+        p << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 6.0, 1.0);
+        std::array<plot::point, 2> pb = p.build();
+        EXPECT_POINT(pb[0], "tag", "tag (mean)", 5.0);
+        EXPECT_POINT(pb[1], "gat", "gat (mean)", 2.0);
+    }
+    {
+        plot::join<plot::value<tag>, plot::value<gat>> p1, p2;
+        p1 << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 4.0, 3.0);
+        p2 << common::make_tagged_tuple<plot::time,tag,gat>(0.0, 6.0, 1.0);
+        p1 += p2;
+        std::array<plot::point, 2> pb = p1.build();
+        EXPECT_POINT(pb[0], "tag", "tag (mean)", 5.0);
+        EXPECT_POINT(pb[1], "gat", "gat (mean)", 2.0);
+    }
 }
 
 TEST(PlotTest, Values) {
@@ -123,14 +156,27 @@ TEST(PlotTest, Values) {
 using splitjoinvalue = plot::split<plot::time, plot::join<plot::value<temp<tag>>, plot::value<temp<gat>>>>;
 
 TEST(PlotTest, SplitJoinValue) {
-    splitjoinvalue p;
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(0, 10, 0);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(1, 5,  5);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(2, 0, 10);
-    std::array<plot::plot, 1> pb = p.build();
-    std::stringstream ss;
-    ss << pb[0];
-    EXPECT_EQ(ss.str(), "plot.put(plot.plot(name+\"-timtemp\", \"\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n");
+    {
+        splitjoinvalue p;
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(0, 10, 0);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(1, 5,  5);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(2, 0, 10);
+        std::array<plot::plot, 1> pb = p.build();
+        std::stringstream ss;
+        ss << pb[0];
+        EXPECT_EQ(ss.str(), "plot.put(plot.plot(name+\"-timtemp\", \"\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n");
+    }
+    {
+        splitjoinvalue p1, p2;
+        p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(0, 10, 0);
+        p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(1, 5,  5);
+        p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(2, 0, 10);
+        p1 += p2;
+        std::array<plot::plot, 1> pb = p1.build();
+        std::stringstream ss;
+        ss << pb[0];
+        EXPECT_EQ(ss.str(), "plot.put(plot.plot(name+\"-timtemp\", \"\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n");
+    }
 }
 
 using filtersplitvalue = plot::filter<plot::time, filter::above<1>, plot::split<temp<tag>, plot::value<temp<gat>>>>;
@@ -197,20 +243,39 @@ TEST(PlotTest, SplitJoinFilterSplitJoinValue) {
 using joinsplitjoinfiltersplitjoinvalue = plot::join<splitjoinfiltersplitjoinvalue, filtersplitvalue>;
 
 TEST(PlotTest, JoinSplitJoinFilterSplitJoinValue) {
-    joinsplitjoinfiltersplitjoinvalue p;
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 10, 0, -2);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +1);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 0, 10, +4);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 10, 0, +6);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +9);
-    p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 0, 10, +13);
-    std::array<plot::page, 2> pb = p.build();
-    std::stringstream ss;
-    ss << pb[0];
-    EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0\", \"oth but = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0\", \"oth but = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10\", \"oth but = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10\", \"oth but = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
-    ss.str("");
-    ss << pb[1];
-    EXPECT_EQ(ss.str(), "plot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5), (10, 0)}}));\n\n");
+    {
+        joinsplitjoinfiltersplitjoinvalue p;
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 10, 0, -2);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +1);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 0, 10, +4);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 10, 0, +6);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +9);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 0, 10, +13);
+        std::array<plot::page, 2> pb = p.build();
+        std::stringstream ss;
+        ss << pb[0];
+        EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0\", \"oth but = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0\", \"oth but = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10\", \"oth but = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10\", \"oth but = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
+        ss.str("");
+        ss << pb[1];
+        EXPECT_EQ(ss.str(), "plot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5), (10, 0)}}));\n\n");
+    }
+    {
+        joinsplitjoinfiltersplitjoinvalue p1, p2;
+        p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 10, 0, -2);
+        p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +1);
+        p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 0, 10, +4);
+        p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(2, 10, 0, +6);
+        p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(1, 5,  5, +9);
+        p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but>(0, 0, 10, +13);
+        p1 += p2;
+        std::array<plot::page, 2> pb = p1.build();
+        std::stringstream ss;
+        ss << pb[0];
+        EXPECT_EQ(ss.str(), "plot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0\", \"oth but = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0\", \"oth but = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10\", \"oth but = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10\", \"oth but = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n");
+        ss.str("");
+        ss << pb[1];
+        EXPECT_EQ(ss.str(), "plot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-ttagtemp\", \"\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5), (10, 0)}}));\n\n");
+    }
 }
 
 #define EXPECT_SERIALIZE(a, b, s) \

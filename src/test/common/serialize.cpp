@@ -6,7 +6,10 @@
 #include "lib/common/ostream.hpp"
 #include "lib/common/serialize.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/data/bloom.hpp"
 #include "lib/data/field.hpp"
+#include "lib/data/hyperloglog.hpp"
+#include "lib/data/tuple.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/internal/flat_ptr.hpp"
 
@@ -132,6 +135,10 @@ TEST(SerializeTest, FCPP) {
     SERIALIZE_CHECK(t, {});
     vec<3> v{1.0, 2.5, 5.25};
     SERIALIZE_CHECK(v, {});
+    bloom_filter<2, 128> bf{1, 6, 10, 27};
+    SERIALIZE_CHECK(bf, {});
+    hyperloglog_counter<64> hll{1, 6, 10, 27};
+    SERIALIZE_CHECK(hll, {});
     common::tagged_tuple_t<void,bool,char,int> tt{true,42};
     SERIALIZE_CHECK(tt, {});
     common::multitype_map<trace_t, bool, char, int> m;

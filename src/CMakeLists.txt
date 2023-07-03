@@ -43,7 +43,6 @@ function(fcpp_target target_executable enable_gui)
     add_executable(${target_name} ${target_executable})
     target_link_libraries(${target_name} PRIVATE fcpp)
     target_include_directories(${target_name} PRIVATE .)
-    set_target_properties(${target_name} PROPERTIES PREFIX "run/")
     if(${enable_gui} STREQUAL ON)
         if(FCPP_BUILD_GL)
             fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} textures)
@@ -51,6 +50,7 @@ function(fcpp_target target_executable enable_gui)
         endif()
     endif()
     fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
+    set_target_properties(${target_name} PROPERTIES PREFIX "run/")
 endfunction()
 
 function(fcpp_header target_executable enable_gui)
@@ -108,6 +108,7 @@ project(
     DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
 option(FCPP_BUILD_GL        "Build OpenGL features."          OFF)
+option(FCPP_BUILD_MPI        "Build MPI features."          OFF)
 option(FCPP_BUILD_TESTS     "Build Google Tests features."    OFF)
 option(FCPP_INTERNAL_TESTS  "Build internal tests for FCPP."  ON)
 fcpp_setup()
@@ -210,10 +211,29 @@ add_library(
         ./external/stb_image/stb_image.cpp
 )
 target_include_directories(stb_image PUBLIC ./external/stb_image)
-target_link_libraries(
-        fcpp PUBLIC
+if(FCPP_BUILD_MPI)
+	find_package(MPI REQUIRED)
+	target_link_libraries(
+    	fcpp PUBLIC
         stb_image
-)
+		${MPI_LIBRARIES}
+	)
+	target_include_directories(fcpp PUBLIC ${MPI_INCLUDE_PATH})
+	if(MPI_COMPILE_FLAGS)
+		set_target_properties(fcpp PROPERTIES
+			COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+	endif()
+	if(MPI_LINK_FLAGS)
+		set_target_properties(fcpp PROPERTIES
+   			LINK_FLAGS "${MPI_LINK_FLAGS}")
+	endif()
+else()
+	target_link_libraries(
+    	fcpp PUBLIC
+    	stb_image
+	)
+endif(FCPP_BUILD_MPI)
+set_target_properties(${target_name} PROPERTIES PREFIX "run/")
 if(UNIX)
     target_compile_options(stb_image PUBLIC -fPIC)
 endif(UNIX)

@@ -297,6 +297,9 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "gui" ]; then
         shift 1
         opts="$opts -DFCPP_BUILD_GL=ON"
+	elif [ "$1" == "mpi" ]; then
+		shift 1
+		opts="$opts -DFCPP_BUILD_MPI=ON"
     elif [ "$1" == "windows" ]; then
         shift 1
         platform="MinGW"

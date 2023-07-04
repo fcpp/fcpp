@@ -8,6 +8,7 @@ function usage() {
     echo -e "    \033[1mclean\033[0m:                           cleans all built files before command execution"
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation before command execution"
     echo -e "    \033[1mgui\033[0m:                             enables the graphical user interface on cmake"
+    echo -e "    \033[1mmpi\033[0m:                             enables the message passing interface for running on clusters"
     echo -e "    \033[1munix\033[0m:                            overrides the auto-detected cmake platform to unix"
     echo -e "    \033[1mwindows\033[0m:                         overrides the auto-detected cmake platform to windows"
     echo -e "    \033[1mbazel\033[0m:                           sets the build tool to bazel instead of cmake"
@@ -297,9 +298,9 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "gui" ]; then
         shift 1
         opts="$opts -DFCPP_BUILD_GL=ON"
-	elif [ "$1" == "mpi" ]; then
-		shift 1
-		opts="$opts -DFCPP_BUILD_MPI=ON"
+    elif [ "$1" == "mpi" ]; then
+        shift 1
+        opts="$opts -DFCPP_BUILD_MPI=ON"
     elif [ "$1" == "windows" ]; then
         shift 1
         platform="MinGW"

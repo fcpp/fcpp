@@ -108,7 +108,7 @@ project(
     DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
 option(FCPP_BUILD_GL        "Build OpenGL features."          OFF)
-option(FCPP_BUILD_MPI        "Build MPI features."          OFF)
+option(FCPP_BUILD_MPI       "Build MPI features."             OFF)
 option(FCPP_BUILD_TESTS     "Build Google Tests features."    OFF)
 option(FCPP_INTERNAL_TESTS  "Build internal tests for FCPP."  ON)
 fcpp_setup()
@@ -213,26 +213,24 @@ add_library(
 )
 target_include_directories(stb_image PUBLIC ./external/stb_image)
 if(FCPP_BUILD_MPI)
-	find_package(MPI REQUIRED)
-	target_link_libraries(
-    	fcpp PUBLIC
+    find_package(MPI REQUIRED)
+    target_link_libraries(
+        fcpp PUBLIC
         stb_image
-		${MPI_LIBRARIES}
-	)
-	target_include_directories(fcpp PUBLIC ${MPI_INCLUDE_PATH})
-	if(MPI_COMPILE_FLAGS)
-		set_target_properties(fcpp PROPERTIES
-			COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
-	endif()
-	if(MPI_LINK_FLAGS)
-		set_target_properties(fcpp PROPERTIES
-   			LINK_FLAGS "${MPI_LINK_FLAGS}")
-	endif()
+        ${MPI_LIBRARIES}
+    )
+    target_include_directories(fcpp PUBLIC ${MPI_INCLUDE_PATH})
+    if(MPI_COMPILE_FLAGS)
+        set_target_properties(fcpp PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+    endif()
+    if(MPI_LINK_FLAGS)
+        set_target_properties(fcpp PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
+    endif()
 else()
-	target_link_libraries(
-    	fcpp PUBLIC
-    	stb_image
-	)
+    target_link_libraries(
+        fcpp PUBLIC
+        stb_image
+    )
 endif(FCPP_BUILD_MPI)
 set_target_properties(${target_name} PROPERTIES PREFIX "run/")
 if(UNIX)

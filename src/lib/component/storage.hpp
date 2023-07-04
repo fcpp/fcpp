@@ -185,9 +185,6 @@ struct storage {
 
             //! @brief The data storage.
             tuple_type m_storage;
-
-            //! @brief Dummy value for error suppression.
-            any m_any;
         };
 
         //! @brief The global part of the component.

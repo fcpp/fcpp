@@ -86,6 +86,10 @@ struct always {
         }
     };
 
+    //! @brief Constructor.
+    template <typename S, typename T>
+    always(common::tagged_tuple<S,T> const&) {}
+
     //! @brief Default threshold.
     result_type build() const {
         return {};

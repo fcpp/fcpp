@@ -46,7 +46,7 @@ TEST(MetricTest, Once) {
 TEST(MetricTest, Always) {
     using metric_type = metric::always;
     mock_node n(0, 0, 0.5f, {1.5f, 2.5f});
-    metric_type m;
+    metric_type m{common::make_tagged_tuple<>()};
     metric_type::result_type x = m.build(), y, z;
     y = m.build(n, 0.2f, 1, common::make_tagged_tuple<>());
     z = m.build(n, 0.2f, 0, common::make_tagged_tuple<>());

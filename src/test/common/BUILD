@@ -123,6 +123,7 @@ cc_test(
         "@gtest//:main",
         "//lib/common:multitype_map",
         "//lib/common:ostream",
+        "//lib/common:plot",
         "//lib/common:serialize",
         "//lib/common:tagged_tuple",
         "//lib/data:bloom",

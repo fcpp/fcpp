@@ -315,6 +315,16 @@ class none {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(none const& o) const {
+        return true;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(none const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot merging.
     none& operator+=(none const&) {
         return *this;
@@ -324,18 +334,12 @@ class none {
     build_type build() const {
         return {};
     }
-	
-	//! @brief Serialises the content from/to a given input/output stream.
-	template <typename S>
-	S& serialize(S& s) {
-    	return s;
-	}
 
-	//! @brief Serialises the content from/to a given input/output stream (const overload).
-	template <typename S>
-	S& serialize(S& s) const {
-   		return s;
-	}
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) const {
+        return s;
+    }
 };
 
 
@@ -617,22 +621,32 @@ class filter {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(filter const& o) const {
+        return m_plotter == o.m_plotter;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(filter const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         return m_plotter.build();
     }
-	
-	//! @brief Serialises the content from/to a given input/output stream.
-	template <typename T>
-	T& serialize(T& s) {
-    	return s & m_plotter & m_filter;
-	}
 
-	//! @brief Serialises the content from/to a given input/output stream (const overload).
-	template <typename T>
-	T& serialize(T& s) const {
-   		return s << m_plotter << m_filter;
-	}
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_plotter;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_plotter;
+    }
 
   private:
     //! @brief The plotter.
@@ -785,11 +799,33 @@ class join {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(join const& o) const {
+        return m_plotters == o.m_plotters;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(join const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         build_type res;
         build_impl(res, std::make_index_sequence<sizeof...(Ps)>{});
         return res;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_plotters;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_plotters;
     }
 
   private:
@@ -817,18 +853,6 @@ class join {
     inline void sum_impl(join const& o, std::index_sequence<is...>) {
         common::details::ignore((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
     }
-	
-	//! @brief Serialises the content from/to a given input/output stream.
-	template <typename S>
-	S& serialize(S& s) {
-    	return s & m_plotters;
-	}
-
-	//! @brief Serialises the content from/to a given input/output stream (const overload).
-	template <typename S>
-	S& serialize(S& s) const {
-   		return s << m_plotters;
-	}
 
     //! @brief The plotters.
     std::tuple<Ps...> m_plotters;
@@ -916,6 +940,16 @@ class value {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(value const& o) const {
+        return m_aggregator == o.m_aggregator;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(value const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         point p;
@@ -944,6 +978,18 @@ class value {
         p.devup = maybe_tuple_get<1>(r);
         p.devdn = maybe_tuple_get<2>(r);
         return {p};
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_aggregator;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_aggregator;
     }
 
   private:
@@ -978,23 +1024,11 @@ class value {
     maybe_tuple_get(common::tagged_tuple<T, common::type_sequence<Ts...>> const&) {
         return point::no_dev;
     }
-	
-	//! @brief Serialises the content from/to a given input/output stream.
-	template <typename T>
-	T& serialize(T& s) {
-    	return s & m_aggregator;
-	}
 
-	//! @brief Serialises the content from/to a given input/output stream (const overload).
-	template <typename T>
-	T& serialize(T& s) const {
-		return s << m_aggregator;
-	}
-
-//! @brief A mutex for synchronised access to the aggregator.
-common::mutex<true> m_mutex;
-//! @brief The aggregator.
-A m_aggregator;
+    //! @brief A mutex for synchronised access to the aggregator.
+    common::mutex<true> m_mutex;
+    //! @brief The aggregator.
+    A m_aggregator;
 };
 
 
@@ -1228,6 +1262,16 @@ class split {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(split const& o) const {
+        return m_plotters == o.m_plotters;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(split const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         std::map<key_type, parent_build_type> m;
@@ -1236,6 +1280,18 @@ class split {
         build_type res;
         build_impl(res, m);
         return res;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_plotters;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_plotters;
     }
 
   private:
@@ -1325,18 +1381,6 @@ class split {
             }
         }
     }
-	
-	//! @brief Serialises the content from/to a given input/output stream.
-	template <typename T>
-	T& serialize(T& s) {
-    	return s & m_plotters;
-	}
-
-	//! @brief Serialises the content from/to a given input/output stream (const overload).
-	template <typename T>
-	T& serialize(T& s) const {
-   		return s << m_plotters;
-	}
 
     //! @brief A mutex for synchronised access to the map.
     common::mutex<true> m_mutex;

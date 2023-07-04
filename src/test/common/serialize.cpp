@@ -4,6 +4,7 @@
 
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/ostream.hpp"
+#include "lib/common/plot.hpp"
 #include "lib/common/serialize.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/data/bloom.hpp"
@@ -15,6 +16,9 @@
 #include "lib/option/aggregator.hpp"
 
 using namespace fcpp;
+
+struct tag {};
+struct gat {};
 
 
 template <typename T>
@@ -235,6 +239,29 @@ TEST(SerializeTest, Aggregators) {
     combine.insert(2);
     combine.insert(4);
     SERIALIZE_CHECK(combine, {});
+}
+
+TEST(SerializeTest, Plots) {
+    plot::none none;
+    none << common::make_tagged_tuple<tag,gat>(4,2);
+    none << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(none, {});
+    plot::value<tag> value;
+    value << common::make_tagged_tuple<tag,gat>(4,2);
+    value << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(value, {});
+    plot::filter<gat, filter::above<1>, plot::value<tag>> filter;
+    filter << common::make_tagged_tuple<tag,gat>(4,2);
+    filter << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(filter, {});
+    plot::join<plot::value<tag>, plot::filter<gat, filter::above<1>, plot::none>> join;
+    join << common::make_tagged_tuple<tag,gat>(4,2);
+    join << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(join, {});
+    plot::split<gat, plot::join<plot::value<tag>, plot::filter<gat, filter::above<1>, plot::none>>> split;
+    split << common::make_tagged_tuple<tag,gat>(4,2);
+    split << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(split, {});
 }
 
 TEST(SerializeTest, Error) {

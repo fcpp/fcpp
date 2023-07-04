@@ -13,8 +13,8 @@
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <type_traits>
 
@@ -275,6 +275,16 @@ namespace details {
     }
 
     template <typename S, typename K>
+    S& serialize(S& s, std::multiset<K>& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
+    }
+
+    template <typename K>
+    osstream& serialize(osstream& s, std::multiset<K> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
+    }
+
+    template <typename S, typename K>
     S& serialize(S& s, std::set<K>& x) {
         return iterable_serialize(s, x, wrapper<K>{});
     }
@@ -292,6 +302,16 @@ namespace details {
     template <typename K, typename V>
     osstream& serialize(osstream& s, std::map<K, V> const& x) {
         return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
+    }
+
+    template <typename S, typename K>
+    S& serialize(S& s, std::unordered_multiset<K>& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
+    }
+
+    template <typename K>
+    osstream& serialize(osstream& s, std::unordered_multiset<K> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
     }
 
     template <typename S, typename K>

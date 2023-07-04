@@ -26,6 +26,8 @@ function usage() {
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mall\033[0m:                             builds all possible targets and documentation"
     echo -e "       <copts...>"
+    echo -e "    \033[1mmultiall\033[0m:                        tests everything with clang/gcc and bazel/cmake"
+    echo -e "       <copts...>"
     echo -e "Targets can be substrings demanding builds for all possible expansions."
     exit 1
 }

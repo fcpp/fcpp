@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -12,6 +12,7 @@
 #include "lib/data/tuple.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/internal/flat_ptr.hpp"
+#include "lib/option/aggregator.hpp"
 
 using namespace fcpp;
 
@@ -107,8 +108,12 @@ TEST(SerializeTest, Iterable) {
     EXPECT_EQ(7646860119211199969ULL, rebuild_size(7646860119211199969LL));
     std::vector<int> x = {1, 2, 4, 8};
     SERIALIZE_CHECK(x, {});
+    std::multiset<int> ms = {1, 2, 4, 8};
+    SERIALIZE_CHECK(ms, {});
     std::set<int> s = {1, 2, 4, 8};
     SERIALIZE_CHECK(s, {});
+    std::unordered_multiset<trace_t> mt = {1, 2, 4, 8};
+    SERIALIZE_CHECK(mt, {});
     std::unordered_set<trace_t> t = {1, 2, 4, 8};
     SERIALIZE_CHECK(t, {});
     std::map<trace_t,double> m = {{4, 2}, {42, 2.4}};
@@ -162,6 +167,74 @@ TEST(SerializeTest, FCPP) {
     std::unordered_map<tuple<int,bool>, int> u;
     u[make_tuple(4,false)] = 2;
     SERIALIZE_CHECK(u, {});
+}
+
+TEST(SerializeTest, Aggregators) {
+    aggregator::count<bool> count;
+    count.insert(false);
+    count.insert(true);
+    count.insert(true);
+    SERIALIZE_CHECK(count, {});
+    aggregator::distinct<int> distinct;
+    distinct.insert(4);
+    distinct.insert(2);
+    distinct.insert(4);
+    SERIALIZE_CHECK(distinct, {});
+    aggregator::list<int> list;
+    list.insert(4);
+    list.insert(2);
+    list.insert(4);
+    SERIALIZE_CHECK(list, {});
+    aggregator::sum<int> sum;
+    sum.insert(4);
+    sum.insert(2);
+    sum.insert(4);
+    SERIALIZE_CHECK(sum, {});
+    aggregator::mean<double> mean;
+    mean.insert(4);
+    mean.insert(2);
+    mean.insert(4);
+    SERIALIZE_CHECK(mean, {});
+    aggregator::moment<double,3> moment;
+    moment.insert(4);
+    moment.insert(2);
+    moment.insert(4);
+    SERIALIZE_CHECK(moment, {});
+    aggregator::deviation<double> deviation;
+    deviation.insert(4);
+    deviation.insert(2);
+    deviation.insert(4);
+    SERIALIZE_CHECK(deviation, {});
+    aggregator::deviation<double> stats;
+    stats.insert(4);
+    stats.insert(2);
+    stats.insert(4);
+    SERIALIZE_CHECK(stats, {});
+    aggregator::min<int> min;
+    min.insert(4);
+    min.insert(2);
+    min.insert(4);
+    SERIALIZE_CHECK(min, {});
+    aggregator::max<int> max;
+    max.insert(4);
+    max.insert(2);
+    max.insert(4);
+    SERIALIZE_CHECK(max, {});
+    aggregator::quantile<double,true,false,50> quantilefalse;
+    quantilefalse.insert(4);
+    quantilefalse.insert(2);
+    quantilefalse.insert(4);
+    SERIALIZE_CHECK(quantilefalse, {});
+    aggregator::quantile<double,false,true,50> quantiletrue;
+    quantiletrue.insert(4);
+    quantiletrue.insert(2);
+    quantiletrue.insert(4);
+    SERIALIZE_CHECK(quantiletrue, {});
+    aggregator::combine<aggregator::min<int>, aggregator::max<int>> combine;
+    combine.insert(4);
+    combine.insert(2);
+    combine.insert(4);
+    SERIALIZE_CHECK(combine, {});
 }
 
 TEST(SerializeTest, Error) {

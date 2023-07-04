@@ -324,6 +324,18 @@ class none {
     build_type build() const {
         return {};
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s;
+	}
 };
 
 
@@ -609,6 +621,18 @@ class filter {
     build_type build() const {
         return m_plotter.build();
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename T>
+	T& serialize(T& s) {
+    	return s & m_plotter & m_filter;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename T>
+	T& serialize(T& s) const {
+   		return s << m_plotter << m_filter;
+	}
 
   private:
     //! @brief The plotter.
@@ -793,6 +817,18 @@ class join {
     inline void sum_impl(join const& o, std::index_sequence<is...>) {
         common::details::ignore((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_plotters;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_plotters;
+	}
 
     //! @brief The plotters.
     std::tuple<Ps...> m_plotters;
@@ -942,11 +978,23 @@ class value {
     maybe_tuple_get(common::tagged_tuple<T, common::type_sequence<Ts...>> const&) {
         return point::no_dev;
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename T>
+	T& serialize(T& s) {
+    	return s & m_aggregator;
+	}
 
-    //! @brief A mutex for synchronised access to the aggregator.
-    common::mutex<true> m_mutex;
-    //! @brief The aggregator.
-    A m_aggregator;
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename T>
+	T& serialize(T& s) const {
+		return s << m_aggregator;
+	}
+
+//! @brief A mutex for synchronised access to the aggregator.
+common::mutex<true> m_mutex;
+//! @brief The aggregator.
+A m_aggregator;
 };
 
 
@@ -956,37 +1004,37 @@ struct unit;
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Smart append of a plotter to a join.
-    template <typename Q, typename... Ps>
-    struct appender {
-        using type = join<Ps..., Q>;
-    };
-    //! @brief Smart append of a join to a join.
-    template <typename... Qs, typename... Ps>
-    struct appender<join<Qs...>, Ps...> {
-        using type = join<Ps..., Qs...>;
-    };
+//! @brief Smart append of a plotter to a join.
+template <typename Q, typename... Ps>
+struct appender {
+using type = join<Ps..., Q>;
+};
+//! @brief Smart append of a join to a join.
+template <typename... Qs, typename... Ps>
+struct appender<join<Qs...>, Ps...> {
+using type = join<Ps..., Qs...>;
+};
 
-    //! @brief Smart join of plotters.
-    template <typename... Ps>
-    struct joiner;
-    //! @brief Smart join of one plotter.
-    template <typename P>
-    struct joiner<P> {
-        using type = P;
-    };
-    //! @brief Smart join of two plotters (first non-join).
-    template <typename P, typename Q>
-    struct joiner<P, Q> : public appender<Q, P> {};
-    //! @brief Smart join of two plotter (first join).
-    template <typename... Ps, typename Q>
-    struct joiner<join<Ps...>, Q> : public appender<Q, Ps...> {};
-    //! @brief Smart join of multiple plotters.
-    template <typename P, typename Q, typename... Qs>
-    struct joiner<P, Q, Qs...>  : public joiner<typename joiner<P, Q>::type, Qs...> {};
+//! @brief Smart join of plotters.
+template <typename... Ps>
+struct joiner;
+//! @brief Smart join of one plotter.
+template <typename P>
+struct joiner<P> {
+using type = P;
+};
+//! @brief Smart join of two plotters (first non-join).
+template <typename P, typename Q>
+struct joiner<P, Q> : public appender<Q, P> {};
+//! @brief Smart join of two plotter (first join).
+template <typename... Ps, typename Q>
+struct joiner<join<Ps...>, Q> : public appender<Q, Ps...> {};
+//! @brief Smart join of multiple plotters.
+template <typename P, typename Q, typename... Qs>
+struct joiner<P, Q, Qs...>  : public joiner<typename joiner<P, Q>::type, Qs...> {};
 
-    //! @brief Searches type T within tags and aggregators in S (general form).
-    template <typename T, typename S>
+//! @brief Searches type T within tags and aggregators in S (general form).
+template <typename T, typename S>
     struct field_grep;
     //! @brief Searches type T within tags and aggregators in S.
     template <typename T, typename... Ss, typename... As>
@@ -1277,6 +1325,18 @@ class split {
             }
         }
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename T>
+	T& serialize(T& s) {
+    	return s & m_plotters;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename T>
+	T& serialize(T& s) const {
+   		return s << m_plotters;
+	}
 
     //! @brief A mutex for synchronised access to the map.
     common::mutex<true> m_mutex;

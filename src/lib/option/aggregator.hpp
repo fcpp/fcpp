@@ -115,6 +115,18 @@ class count {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_count;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_count;
+	}
 
   private:
     //! @brief The counter.
@@ -178,6 +190,18 @@ class distinct {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_counts;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_counts;
+	}
 
   private:
     //! @brief Counters for every distinct item.
@@ -251,6 +275,18 @@ class list {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_items;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_items;
+	}
 
   private:
     //! @brief The list of items (in a per-thread basis).
@@ -316,6 +352,18 @@ class sum {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_sum;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_sum;
+	}
 
   private:
     T m_sum = 0;
@@ -384,6 +432,18 @@ class mean {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_sum & m_count;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_sum << m_count;
+	}
 
   private:
     T m_sum = 0;
@@ -453,6 +513,18 @@ class moment {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_sum & m_count;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_sum << m_count;
+	}
 
   private:
     T m_sum = 0;
@@ -529,6 +601,18 @@ class deviation {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_sum & m_sqsum & m_count;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_sum << m_sqsum << m_count;
+	}
 
   private:
     T m_sum = 0;
@@ -604,6 +688,18 @@ class stats {
         auto res = result<void>();
         os << std::get<0>(res) << " " << std::get<1>(res) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_sum & m_sqsum & m_count;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_sum << m_sqsum << m_count;
+	}
 
   private:
     T m_sum = 0;
@@ -676,6 +772,18 @@ class min {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_min;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_min;
+	}
 
   private:
     T m_min = std::numeric_limits<T>::has_infinity ? std::numeric_limits<T>::infinity() : std::numeric_limits<T>::max();
@@ -739,6 +847,18 @@ class max {
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_max;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_max;
+	}
 
   private:
     T m_max = std::numeric_limits<T>::has_infinity ? -std::numeric_limits<T>::infinity() : std::numeric_limits<T>::lowest();
@@ -875,6 +995,18 @@ class quantile<T, only_finite, false, qs...> {
     void output(O& os) const {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_quantiles & m_values;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_quantiles << m_values;
+	}
 
   private:
     std::array<char, sizeof...(qs)> const m_quantiles = {qs...};
@@ -939,6 +1071,18 @@ class quantile<T, only_finite, true, qs...> {
     void output(O& os) const {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
+	
+	//! @brief Serialises the content from/to a given input/output stream.
+	template <typename S>
+	S& serialize(S& s) {
+    	return s & m_quantiles & m_values;
+	}
+
+	//! @brief Serialises the content from/to a given input/output stream (const overload).
+	template <typename S>
+	S& serialize(S& s) const {
+   		return s << m_quantiles << m_values;
+	}
 
   private:
     std::array<char, sizeof...(qs)> const m_quantiles = {qs...};

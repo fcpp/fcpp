@@ -411,16 +411,40 @@ struct logger {
                 }
             }
 
-            //! @brief Erases data from the aggregators.
-            template <typename S, typename T, typename... Us>
-            inline void aggregator_erase_impl(S& a, T const& t, common::type_sequence<Us...>) {
-                common::details::ignore((common::get<Us>(a).erase(common::get<Us>(t)),0)...);
+            //! @brief Accesses a tuple (effective overload).
+            template <typename U, typename S, typename T>
+            inline auto const& smart_getter(S&, T const& t, common::bool_pack<true>) {
+                return common::get<U>(t);
             }
 
+            //! @brief Accesses a tuple (pretender overload).
+            template <typename U, typename S, typename T>
+            inline auto smart_getter(S&, T const&, common::bool_pack<false>) {
+                using A = typename S::template tag_type<U>::type;
+                return *((A*)42);
+            }
+
+            //! @brief Erases data from the aggregators (empty overload).
+            template <typename S, typename T>
+            inline void aggregator_erase_impl(S& a, T const& t, common::type_sequence<>) {}
+
+            //! @brief Erases data from the aggregators.
+            template <typename S, typename T, typename U, typename... Us>
+            inline void aggregator_erase_impl(S& a, T const& t, common::type_sequence<U, Us...>) {
+                common::get<U>(a).erase(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                aggregator_erase_impl(a, t, common::type_sequence<Us...>{});
+            }
+
+            //! @brief Inserts data into the aggregators (empty overload).
+            template <typename S, typename T>
+            inline void aggregator_insert_impl(S&,  T const&, common::type_sequence<>) {}
+
             //! @brief Inserts data into the aggregators.
-            template <typename S, typename T, typename... Us>
-            inline void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<Us...>) {
-                common::details::ignore((common::get<Us>(a).insert(common::get<Us>(t)),0)...);
+            template <typename S, typename T, typename U, typename... Us>
+            inline void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<U, Us...>) {
+                static_assert(T::tags::template count<U> != 0, "unsupported tag in aggregators (add U to storage tag list)");
+                common::get<U>(a).insert(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                aggregator_insert_impl(a, t, common::type_sequence<Us...>{});
             }
 
             //! @brief Inserts an aggregator data into the aggregators.

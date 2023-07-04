@@ -142,6 +142,36 @@ T list_idem_collection(node_t& node, trace_t call_point, real_t const& distance,
 //! @brief Export list for list_idem_collection.
 template <typename T> using list_idem_collection_t = common::export_list<T,real_t>;
 
+
+//! @brief Collects distributed data with a arithmetic strategy.
+template <typename node_t, typename T, typename G, typename = common::if_signature<G, T(T,T)>>
+T list_arith_collection(node_t& node, trace_t call_point, real_t const& distance, T const& value, real_t radius, real_t speed, T const& null, real_t epsilon, G&& accumulate) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+
+    real_t t = node.current_time();
+    field<real_t> Tu = nbr(node, 1, node.next_time() + epsilon);
+    field<real_t> Pu = nbr(node, 2, distance + speed * (node.next_time() - t));
+    field<real_t> maxDistNow = node.nbr_dist() + speed * node.nbr_lag();
+    field<real_t> Vwst = mux(isfinite(distance) and maxDistNow < radius, (distance - Pu) / (Tu - t), (real_t)(-INF));
+
+    return old(node, 6, value, [&](T x){
+
+        tuple<field<real_t>, unsigned int, T> data = make_tuple(Vwst,node.uid,x);
+        tuple<field<real_t>, unsigned int, T> parentData = max_hood(node, 0, nbr(node,4,data));
+
+        device_t parent = get<1>(parentData);
+        field<T> sum = mux(nbr_uid(node, 0) == parent, get<2>(parentData), null);
+        T v = fold_hood(node, 0, accumulate, sum, value);
+
+        return v;
+
+    });
+}
+
+//! @brief Export list for list_arith_collection.
+template <typename T> using list_arith_collection_t = common::export_list<T,real_t,tuple<field<double>, unsigned int, int>>;
+
+
 }
 
 

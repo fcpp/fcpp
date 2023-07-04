@@ -160,6 +160,14 @@ TEST(TraitsTest, ExportList) {
                 common::type_sequence<int, double, void, char, bool, float>);
 }
 
+TEST(TraitsTest, StorageList) {
+    using namespace common;
+    using a = storage_list<void*, bool, int*, char>;
+    using b = storage_list<>;
+    struct c : storage_list<char*, int, int*, char> {};
+    EXPECT_SAME(storage_list<a, double*, double, b, c>, type_sequence<void*, bool, double*, double, char*, int, int*, char>);
+}
+
 TEST(TraitsTest, BoolPack) {
     bool val;
     val = common::all_true<>;

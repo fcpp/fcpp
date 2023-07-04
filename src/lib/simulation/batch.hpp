@@ -344,11 +344,17 @@ template <typename T, typename exec_t, typename... S, typename... U>
 common::ifn_class_template<std::vector, exec_t>
 run(T, exec_t e, std::vector<common::tagged_tuple<S,U>> const&... vs) {
     auto v = details::join_vectors(vs...);
-    std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::endl;
-    common::parallel_for(e, v.size(), [&](size_t i, size_t){
+    std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::flush;
+    size_t p = 0;
+    common::parallel_for(e, v.size(), [&](size_t i, size_t t){
+        if (t == 0 and i*100/v.size() > p) {
+            p = i*100/v.size();
+            std::cerr << p << "%..." << std::flush;
+        }
         typename T::net network{v[i]};
         network.run();
     });
+    std::cerr << "done." << std::endl;
 }
 
 //! @brief No running, given an empty sequence of component combinations.
@@ -366,23 +372,13 @@ run(common::type_sequence<T, Ts...>, exec_t e, std::vector<common::tagged_tuple<
 //! @brief Running a single component combination (assuming dynamic execution policy).
 template <typename T, typename... S, typename... U>
 void run(T x, std::vector<common::tagged_tuple<S,U>> const&... vs) {
-    using exec_t = std::conditional_t<
-        sizeof...(vs) >= 1,
-        common::tags::dynamic_execution,
-        common::tags::sequential_execution
-    >;
-    run(x, exec_t{}, vs...);
+    run(x, common::tags::dynamic_execution{}, vs...);
 }
 
 //! @brief Running a non-empty sequence of component combinations (assuming dynamic execution policy).
 template <typename T, typename... Ts, typename... S, typename... U>
 void run(common::type_sequence<T, Ts...> x, std::vector<common::tagged_tuple<S,U>> const&... vs) {
-    using exec_t = std::conditional_t<
-        sizeof...(vs) >= 1,
-        common::tags::dynamic_execution,
-        common::tags::sequential_execution
-    >;
-    run(x, exec_t{}, vs...);
+    run(x, common::tags::dynamic_execution{}, vs...);
 }
 //! @}
 

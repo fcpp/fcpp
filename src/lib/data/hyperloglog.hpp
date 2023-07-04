@@ -249,6 +249,18 @@ class hyperloglog_counter {
         return 1.06/sqrt(m);
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_data;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_data;
+    }
+
   protected:
     //! @brief Mask of bits for a register.
     constexpr static size_t regMask = (size_t(1) << register_bit_size) - 1;

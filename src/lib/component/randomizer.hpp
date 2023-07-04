@@ -90,11 +90,6 @@ struct randomizer {
             template <typename S, typename T>
             node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_generator(common::get_or<tags::seed>(t, P::node::uid)) {}
 
-            /**
-             * @brief Write access to stored data.
-             *
-             * @param T The tag corresponding to the data to be accessed.
-             */
             //! @brief Gives access to the random number generator.
             inline generator_type& generator() {
                 return m_generator;

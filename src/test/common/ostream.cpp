@@ -36,6 +36,7 @@ TEST(OstreamTest, FCPP) {
     std::stringstream ss;
     ss << std::setprecision(2) << std::fixed;
     using namespace fcpp;
+    PRINT_EQ("{0:false, 2:false, *:true}", details::make_field({0,1,2}, std::vector<bool>{true,false,true,false}));
     PRINT_EQ("{0:'y', 2:'z', *:'x'}", details::make_field({0,2}, std::vector<char>{'x','y','z'}));
     PRINT_EQ("[4.00, 2.00, 0.00]", vec<3>{4,2,0});
     PRINT_EQ("(false; 'a'; fcpp::common::type_sequence<void>)",

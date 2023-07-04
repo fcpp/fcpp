@@ -8,6 +8,7 @@
 #ifndef FCPP_COMPONENT_STORAGE_H_
 #define FCPP_COMPONENT_STORAGE_H_
 
+#include <cassert>
 #include <type_traits>
 
 #include "lib/component/base.hpp"
@@ -40,7 +41,7 @@ namespace tags {
 template <typename... Ts>
 struct storage {
     //! @brief Sequence of tags and types for storing persistent data.
-    using tuple_store_type = common::option_types<tags::tuple_store, Ts...>;
+    using tuple_store_type = common::storage_list<common::option_types<tags::tuple_store, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -139,16 +140,20 @@ struct storage {
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
-            //! @brief Struct behaving as a jolly value to suppress as many errors as possible.
-            struct any {
-                any() = default;
+            //! @brief Wildcard struct allowing arbitrary conversions to suppress as many error messages as possible.
+            struct wildcard {
+                //! @brief Generic constructor.
                 template <typename T>
-                any& operator=(T&&) {
+                wildcard(T&&) {}
+                //! @brief Generic assignment.
+                template <typename T>
+                wildcard& operator=(T&&) {
                     return *this;
                 }
+                //! @brief Generic conversion.
                 template <typename T>
-                operator T&&() const {
-                    return std::declval<T&>();
+                operator T() const {
+                    return *((std::decay_t<T>*)42);
                 }
             };
 
@@ -166,14 +171,16 @@ struct storage {
 
             //! @brief Access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline any& get_impl(common::bool_pack<false>) {
-                return m_any;
+            inline auto& get_impl(common::bool_pack<false>) {
+                assert(false);
+                return *((wildcard*)42);
             }
 
             //! @brief Const access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline any const& get_impl(common::bool_pack<false>) const {
-                return m_any;
+            inline auto const& get_impl(common::bool_pack<false>) const {
+                assert(false);
+                return *((wildcard*)42);
             }
 
             //! @brief The data storage.

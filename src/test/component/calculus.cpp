@@ -118,6 +118,11 @@ MULTI_TEST(CalculusTest, Size, O, 3) {
         typename combo<O, metric::once>::node d2{network, common::make_tagged_tuple<uid>(2)};
         typename combo<O, metric::once>::node d3{network, common::make_tagged_tuple<uid>(3)};
         typename combo<O, metric::once>::node d4{network, common::make_tagged_tuple<uid>(4)};
+        EXPECT_EQ(1, d0.message_threshold());
+        d0.message_threshold(2);
+        EXPECT_EQ(2, d0.message_threshold());
+        d0.message_threshold(1);
+        EXPECT_EQ(1, d0.message_threshold());
         d0.round_start(0);
         EXPECT_EQ(1, (int)d0.size());
         d0.round_end(0);
@@ -173,6 +178,11 @@ MULTI_TEST(CalculusTest, Size, O, 3) {
         typename combo<O, metric::always>::node d2{network, common::make_tagged_tuple<uid>(2)};
         typename combo<O, metric::always>::node d3{network, common::make_tagged_tuple<uid>(3)};
         typename combo<O, metric::always>::node d4{network, common::make_tagged_tuple<uid>(4)};
+        EXPECT_EQ(1, d0.message_threshold());
+        d0.message_threshold(2);
+        EXPECT_EQ(2, d0.message_threshold());
+        d0.message_threshold(1);
+        EXPECT_EQ(1, d0.message_threshold());
         d0.round_start(0);
         EXPECT_EQ(1, (int)d0.size());
         d0.round_end(0);

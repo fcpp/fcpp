@@ -76,11 +76,17 @@ namespace fcpp {
             //! @brief It draws the defined shape, given the information on color(s), dimension and position.
             void drawShape(shape sh, glm::vec3 const& p, double d, std::vector<color> const& c) const;
 
+            //! @brief It draws the defined shape shadow, given the information on color, dimension and position.
+            void drawShadow(shape sh, glm::vec3 p, double d, color const& c) const;
+
             //! @brief It draws a star of lines, given the center and sides.
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
 
             //! @brief It draws the specified text in the specified window coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale) const;
+
+            //! @brief It draws the specified label in the specified window coordinates, scale and color.
+            void drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const;
 
             //! @brief It draws the defined rectangle, given the information on color(s) and position
             void drawRectangle(float x, float y, float a, float b) const;
@@ -130,6 +136,9 @@ namespace fcpp {
             //! @brief It resizes the viewport, given the new width and height values.
             void viewportResize(int winWidth, int winHeight, int fbWidth, int fbHeight);
 
+            //! @brief Sets the main color theme to be used in the user interface.
+            void setColorTheme(color background, color foreground, color selection);
+
         private:
             //! @brief Default path to vertex_phong shader.
             static std::string const VERTEX_PHONG_PATH;
@@ -154,6 +163,12 @@ namespace fcpp {
 
             //! @brief Default path to fragment_font shader.
             static std::string const FRAGMENT_FONT_PATH;
+
+            //! @brief Default path to vertex_label shader.
+            static std::string const VERTEX_LABEL_PATH;
+
+            //! @brief Default path to fragment_label shader.
+            static std::string const FRAGMENT_LABEL_PATH;
 
             //! @brief Default path to font.
             static std::string const FONT_PATH;
@@ -181,6 +196,9 @@ namespace fcpp {
 
             //! @brief Vertex Buffer Objects for standard shapes; it can be shared among several contexts.
             static unsigned int s_shapeVBO[(int)shape::SIZE];
+
+            //! @brief Vertex Buffer Objects for standard shadows; it can be shared among several contexts.
+            static unsigned int s_shadowVBO[(int)shape::SIZE];
 
             //! @brief Vertex Buffer Objects for commonly used meshes; it can be shared among several contexts.
             static unsigned int s_meshVBO[(int)vertex::SIZE];
@@ -245,6 +263,9 @@ namespace fcpp {
             //! @brief Vertex Array Objects for standard shapes; it's per context and it can't be shared with others.
             unsigned int m_shapeVAO[(int)shape::SIZE];
 
+            //! @brief Vertex Array Objects for standard shadows; it's per context and it can't be shared with others.
+            unsigned int m_shadowVAO[(int)shape::SIZE];
+
             //! @brief Vertex Array Objects for commonly used meshes; it's per context and it can't be shared with others.
             unsigned int m_meshVAO[(int)vertex::SIZE];
 
@@ -253,6 +274,12 @@ namespace fcpp {
 
             //! @brief Vertex Buffer Object dedicated to font rendering; it's per renderer and it shouldn't be shared with others.
             unsigned int m_fontVBO;
+
+            //! @brief Vertex Array Object dedicated to label rendering; it's per context and it can't be shared with others.
+            unsigned int m_labelVAO;
+
+            //! @brief Vertex Buffer Object dedicated to label rendering; it's per renderer and it shouldn't be shared with others.
+            unsigned int m_labelVBO;
 
             //! @brief Main shader program, with diffuse lighting caluclations and color info; it's per context and it shouldn't be shared with others.
             shader m_shaderProgramDiff;
@@ -265,6 +292,9 @@ namespace fcpp {
 
             //! @brief Additional shader program used for fonts; it's per context and it shouldn't be shared with others.
             shader m_shaderProgramFont;
+
+            //! @brief Additional shader program used for labels; it's per context and it shouldn't be shared with others.
+            shader m_shaderProgramLabel;
 
             //! @brief Current width of the window.
             int m_windowWidth;

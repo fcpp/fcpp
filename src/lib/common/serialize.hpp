@@ -12,6 +12,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
@@ -263,6 +264,16 @@ namespace details {
         return s;
     }
 
+    template <typename S>
+    S& serialize(S& s, std::string& x) {
+        return iterable_serialize(s, x, wrapper<char>{});
+    }
+
+    template <typename S>
+    S& serialize(S& s, std::string const& x) {
+        return iterable_serialize(s, x, wrapper<char>{});
+    }
+
     template <typename S, typename K>
     S& serialize(S& s, std::set<K>& x) {
         return iterable_serialize(s, x, wrapper<K>{});
@@ -314,6 +325,15 @@ namespace details {
     }
     //! @}
 
+    //! @brief Checks whether a type is a bounded char array, that can be trivially serialised.
+    template <class> struct is_bounded_char_array : std::false_type {};
+
+    template <size_t N>
+    struct is_bounded_char_array<char[N]> : std::true_type {};
+
+    template <size_t N>
+    struct is_bounded_char_array<const char[N]> : std::true_type {};
+
     //! @brief Checks whether a class has a serialize member function.
     template<typename C>
     struct has_serialize_method {
@@ -349,7 +369,7 @@ namespace details {
         typedef decltype(check<C>(0)) type;
 
       public:
-        static constexpr bool value = type::value and not has_serialize_method<C>::value;
+        static constexpr bool value = type::value and not has_serialize_method<C>::value and not is_bounded_char_array<C>::value;
     };
 
     //! @brief Checks whether a class has a trivial serialize.

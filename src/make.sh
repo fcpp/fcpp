@@ -285,8 +285,8 @@ while [ "$1" != "" ]; do
         export TEST_TMPDIR=`pwd`/..
     elif [ "$1" == "gcc" ]; then
         shift 1
-        gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]*$" | uniq))
-        gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]*$" | uniq))
+        gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]$" | sort | tail -n 1))
+        gpp=$(which $(compgen -c g++- | grep "^g++-[1-9][0-9]$" | sort | tail -n 1))
         opts="$opts -DCMAKE_C_COMPILER=$gcc -DCMAKE_CXX_COMPILER=$gpp"
         export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
         export CC="$gpp"

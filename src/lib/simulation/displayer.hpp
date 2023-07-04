@@ -72,6 +72,54 @@ namespace tags {
     template <intmax_t... cs>
     struct color_val {};
 
+    //! @brief Declaration tag associating to storage tags with the text of the node labels.
+    template <typename T>
+    struct label_text_tag {};
+
+    //! @brief Declaration tag associating to storage tags regulating the size of node labels.
+    template <typename T>
+    struct label_size_tag {};
+
+    //! @brief Declaration tag associating to the base size of node labels.
+    template <intmax_t num, intmax_t den = 1>
+    struct label_size_val {};
+
+    //! @brief Declaration tag associating to storage tags regulating the color of node labels.
+    template <typename T>
+    struct label_color_tag {};
+
+    //! @brief Declaration tag associating to the base colors of node labels.
+    template <intmax_t c>
+    struct label_color_val {};
+
+    //! @brief Declaration tag associating to a storage tag regulating the shape of node shadows.
+    template <typename T>
+    struct shadow_shape_tag {};
+
+    //! @brief Declaration tag associating to the base shape of node shadows.
+    template <intmax_t n>
+    struct shadow_shape_val {};
+
+    //! @brief Declaration tag associating to storage tags regulating the size of node shadows.
+    template <typename T>
+    struct shadow_size_tag {};
+
+    //! @brief Declaration tag associating to the base size of node shadows.
+    template <intmax_t num, intmax_t den = 1>
+    struct shadow_size_val {};
+
+    //! @brief Declaration tag associating to storage tags regulating the color of node shadows.
+    template <typename T>
+    struct shadow_color_tag {};
+
+    //! @brief Declaration tag associating to the base colors of node shadows.
+    template <intmax_t c>
+    struct shadow_color_val {};
+
+    //! @brief Declaration tag associating to the colors of the general theme.
+    template <intmax_t background, intmax_t foreground, intmax_t selection>
+    struct color_theme {};
+
     //! @brief Declaration tag associating to the bounding coordinates of the grid area.
     template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den = 1>
     struct area;
@@ -440,7 +488,19 @@ namespace details {
  * - \ref tags::size_tag defines a storage tag regulating the size of nodes (defaults to none).
  * - \ref tags::size_val defines the base size of nodes (defaults to 1).
  * - \ref tags::color_tag defines storage tags regulating the colors of nodes (defaults to none).
- * - \ref tags::color_val defines the base colors of nodes (defaults to none).
+ * - \ref tags::color_val defines the base colors of nodes (defaults to white).
+ * - \ref tags::label_text_tag defines a storage tag regulating the text of node labels (defaults to no text).
+ * - \ref tags::label_size_tag defines a storage tag regulating the size of node labels (defaults to none).
+ * - \ref tags::label_size_val defines the base size of node labels (defaults to 1).
+ * - \ref tags::label_color_tag defines a storage tag regulating the color of node labels (defaults to none).
+ * - \ref tags::label_color_val defines the base color of node labels (defaults to black).
+ * - \ref tags::shadow_shape_tag defines a storage tag regulating the shape of node shadows (defaults to none).
+ * - \ref tags::shadow_shape_val defines the base shape of node shadows (defaults to the same shape as the node).
+ * - \ref tags::shadow_color_tag defines a storage tag regulating the color of node shadows (defaults to none).
+ * - \ref tags::shadow_color_val defines the base color of node shadows (defaults to the same color as the node).
+ * - \ref tags::shadow_size_tag defines a storage tag regulating the size of node shadows (defaults to none).
+ * - \ref tags::shadow_size_val defines the base size of node shadows (defaults to 0).
+ * - \ref tags::color_theme defines the colors of the general theme (defaults to WHITE/BLACK/CYAN).
  * - \ref tags::area defines the bounding coordinates of the grid area (defaults to the minimal area covering initial nodes).
  * - \ref tags::antialias defines the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
  *
@@ -460,6 +520,11 @@ template <class... Ts>
 struct displayer {
     //! @brief Whether parallelism is enabled.
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
+
+    //! @brief Colors of the general theme.
+    using color_theme = common::option_nums<tags::color_theme, Ts...>;
+
+    static_assert(color_theme::size == 3 or color_theme::size == 0, "the colors of a theme must be 3 integers");
 
     //! @brief Bounding coordinates of the grid area.
     using area = common::option_nums<tags::area, Ts...>;
@@ -484,8 +549,41 @@ struct displayer {
     //! @brief Storage tags regulating the colors of nodes.
     using color_tag = common::option_types<tags::color_tag, Ts...>;
 
-    //! @brief Base colors of nodes (defaults to black).
+    //! @brief Base colors of nodes (defaults to white).
     using color_val = common::option_nums<tags::color_val, Ts...>;
+
+    //! @brief Storage tag associated to the text of the node labels.
+    using label_text_tag = common::option_type<tags::label_text_tag, void, Ts...>;
+
+    //! @brief Storage tag regulating the size of node labels.
+    using label_size_tag = common::option_type<tags::label_size_tag, void, Ts...>;
+
+    //! @brief Base size of node labels (defaults to 1).
+    constexpr static double label_size_val = common::option_float<tags::label_size_val, 1, 1, Ts...>;
+
+    //! @brief Storage tag regulating the color of node labels.
+    using label_color_tag = common::option_type<tags::label_color_tag, void, Ts...>;
+
+    //! @brief Base color of node labels (defaults to black).
+    constexpr static intmax_t label_color_val = common::option_num<tags::label_color_val, BLACK, Ts...>;
+
+    //! @brief Storage tag regulating the shape of node labels.
+    using shadow_shape_tag = common::option_type<tags::shadow_shape_tag, void, Ts...>;
+
+    //! @brief Base shape of nodes (defaults to the same shape as the node).
+    constexpr static intmax_t shadow_shape_val = common::option_num<tags::shadow_shape_val, -1, Ts...>;
+
+    //! @brief Storage tags regulating the color of node shadows.
+    using shadow_color_tag = common::option_type<tags::shadow_color_tag, void, Ts...>;
+
+    //! @brief Base colors of node shadows (defaults to the same color as the node).
+    constexpr static intmax_t shadow_color_val = common::option_num<tags::shadow_color_val, -1, Ts...>;
+
+    //! @brief Storage tag regulating the size of node shadows.
+    using shadow_size_tag = common::option_type<tags::shadow_size_tag, void, Ts...>;
+
+    //! @brief Base size of node shadows (defaults to 0).
+    constexpr static double shadow_size_val = common::option_float<tags::shadow_size_val, 0, 1, Ts...>;
 
     /**
      * @brief The actual component.
@@ -530,22 +628,42 @@ struct displayer {
                 return m_position;
             }
 
-            //! @brief Updates the internal status of node component.
+            //! @brief Draws the opaque representation of the node component.
             void draw(bool star) const {
                 // gather shape and size
                 shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
-                double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
+                double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val);
                 if (m_highlight) d *= 1.5;
                 // gather personal position
                 glm::vec3 p = get_cached_position();
                 // render the node
                 P::node::net.getRenderer().drawShape(s, p, d, m_colors);
+                // render the shadow
+                double shadow_d = common::get_or<shadow_size_tag>(P::node::storage_tuple(), shadow_size_val);
+                if (shadow_d > 0) {
+                    shape shadow_s = common::get_or<shadow_shape_tag>(P::node::storage_tuple(), shadow_shape_val == -1 ? s : shape(shadow_shape_val));
+                    color shadow_c = common::get_or<shadow_color_tag>(P::node::storage_tuple(), shadow_color_val == -1 ? m_colors[0] : color(shadow_color_val));
+                    P::node::net.getRenderer().drawShadow(shadow_s, p, shadow_d, {shadow_c.rgba[0], shadow_c.rgba[1], shadow_c.rgba[2], shadow_c.rgba[3]});
+                }
                 if (star) {
                     // gather neighbours' positions
                     std::vector<glm::vec3> np;
                     for (device_t d : m_prev_nbr_uids)
                         np.push_back(P::node::net.node_at(d).get_cached_position());
                     P::node::net.getRenderer().drawStar(p, np);
+                }
+            }
+
+            //! @brief Draws the transparent representation of the node component.
+            void drawAlpha() const {
+                // render the label
+                std::string label_text = common::get_or<label_text_tag>(P::node::storage_tuple(), "");
+                if (label_text.size()) {
+                    double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val) * 0.5;
+                    glm::vec3 p = get_cached_position() + glm::vec3(d,d,d);
+                    double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), label_size_val);
+                    color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), color(label_color_val));
+                    P::node::net.getRenderer().drawLabel(label_text, p, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
                 }
             }
 
@@ -650,6 +768,9 @@ struct displayer {
 
             //! @brief The list of colors for the node.
             std::vector<color> m_colors;
+
+            //! @brief The type name for node labels.
+            std::string m_label_type;
         };
 
         //! @brief The global part of the component.
@@ -683,6 +804,7 @@ struct displayer {
                     constexpr auto min = details::numseq_to_vec<area>::min;
                     m_viewport_max = details::vec_to_glm(common::get_or<tags::area_max>(t, max), -INF);
                     m_viewport_min = details::vec_to_glm(common::get_or<tags::area_min>(t, min), +INF);
+                    maybe_set_color_theme(color_theme{});
                 }
 
             /**
@@ -753,6 +875,9 @@ struct displayer {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
+                        // Draw labels
+                        if (not std::is_same<label_text_tag, void>::value)
+                            for (size_t i = 0; i < n_end-n_beg; ++i) n_beg[i].second.drawAlpha();
                     }
                     if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
                         float sx{ (2.0f * (float)m_mouseStartX) / m_renderer.getFramebufferWidth() - 1.0f };
@@ -843,7 +968,21 @@ struct displayer {
                 return m_deltaTime;
             }
 
+            //! @brief Sets the color theme.
+            inline void set_color_theme(color background, color foreground, color selection) {
+                m_renderer.setColorTheme(background, foreground, selection);
+            }
+
         private: // implementation details
+            //! @brief Sets the color theme based on options (empty overload).
+            inline void maybe_set_color_theme(common::number_sequence<>) {}
+
+            //! @brief Sets the color theme based on options (active overload).
+            template <intmax_t background, intmax_t foreground, intmax_t selection>
+            inline void maybe_set_color_theme(common::number_sequence<background,foreground,selection>) {
+                set_color_theme(color(background), color(foreground), color(selection));
+            }
+
             //! @brief Updates the viewport adding a position to it.
             void viewport_update(glm::vec3 pos) {
                 for (int i=0; i<3; ++i) {

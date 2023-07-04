@@ -11,6 +11,7 @@
 #include <limits>
 
 #include "lib/settings.hpp"
+#include "lib/common/option.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
 
@@ -30,6 +31,10 @@ namespace metric {
 struct once {
     //! @brief The data type.
     using result_type = char;
+
+    //! @brief Constructor.
+    template <typename S, typename T>
+    once(common::tagged_tuple<S,T> const&) {}
 
     //! @brief Default threshold.
     result_type build() const {
@@ -106,15 +111,24 @@ struct always {
  *
  * @param period The period of time after which values are discarded.
  * @param scale A scale by which `period` is divided.
+ * @param period_tag An initialisation tag from which a period can be read.
  */
-template <intmax_t period = 1, intmax_t scale = 1>
+template <intmax_t period = 1, intmax_t scale = 1, typename period_tag = void>
 struct retain {
+    //! @brief Whether a tag has been provided.
+    constexpr static bool has_tag = not std::is_same<period_tag, void>::value;
+
+  public:
     //! @brief The data type.
     using result_type = times_t;
 
+    //! @brief Constructor.
+    template <typename S, typename T>
+    retain(common::tagged_tuple<S,T> const& t) : m_period(set_period(t, common::bool_pack<has_tag>{})) {}
+
     //! @brief Default threshold.
     result_type build() const {
-        return period / times_t(scale);
+        return get_period(common::bool_pack<has_tag>{});
     }
 
     //! @brief Measures an incoming message.
@@ -128,6 +142,32 @@ struct retain {
     result_type update(result_type const& r, N const& n) const {
         return r == 0 ? 0 : r + n.next_time() - n.current_time();
     }
+
+  private:
+    //! @brief Initialises the period from tagged tuple values (empty overload).
+    template <typename S, typename T>
+    inline static common::option<result_type, has_tag> set_period(common::tagged_tuple<S,T> const& t, common::bool_pack<false>) {
+        return {};
+    }
+
+    //! @brief Initialises the period from tagged tuple values (active overload).
+    template <typename S, typename T>
+    inline static result_type set_period(common::tagged_tuple<S,T> const& t, common::bool_pack<true>) {
+        return common::get<period_tag>(t);
+    }
+
+    //! @brief Reads the period from template parameters.
+    inline result_type get_period(common::bool_pack<false>) const {
+        return period / result_type(scale);
+    }
+
+    //! @brief Reads the period from class data.
+    inline result_type get_period(common::bool_pack<true>) const {
+        return m_period;
+    }
+
+    //! @brief The period of time after which values are discarded.
+    common::option<result_type, has_tag> m_period;
 };
 
 /**
@@ -147,6 +187,10 @@ template <typename position_tag, intmax_t radius = 1, intmax_t period = 1, intma
 struct minkowski {
     //! @brief The data type.
     using result_type = real_t;
+
+    //! @brief Constructor.
+    template <typename S, typename T>
+    minkowski(common::tagged_tuple<S,T> const&) {}
 
     //! @brief Default threshold.
     result_type build() const {

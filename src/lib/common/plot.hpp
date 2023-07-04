@@ -1,4 +1,4 @@
-// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file plot.hpp
@@ -16,6 +16,7 @@
 #include <ratio>
 #include <set>
 #include <sstream>
+#include <tuple>
 #include <vector>
 
 #include "lib/common/mutex.hpp"
@@ -115,6 +116,12 @@ struct point {
     std::string source;
     //! @brief The measured value.
     double value;
+    //! @brief The upwards deviation of the value.
+    double devup;
+    //! @brief The downwards deviation of the value.
+    double devdn;
+    //! @brief The default value used when the deviation is not available.
+    static constexpr double no_dev = -std::numeric_limits<double>::infinity();
 };
 
 //! @brief Printing a single point.
@@ -122,7 +129,9 @@ template <typename O>
 O& operator<<(O& o, point const& p) {
     o << "(";
     if (p.unit.size()) o << p.unit << ", ";
-    o << p.source << ", " << p.value << ")";
+    o << p.source << ", " << p.value;
+    if (p.devup != point::no_dev or p.devdn != point::no_dev) o << " + " << p.devup << " - " << p.devdn;
+    o << ")";
     return o;
 }
 
@@ -140,7 +149,7 @@ struct plot {
     //! @brief Values of x coordinates.
     std::vector<double> xvals;
     //! @brief Values of y coordinates with labels.
-    std::vector<std::pair<std::string, std::vector<double>>> yvals;
+    std::vector<std::pair<std::string, std::vector<std::tuple<double,double,double>>>> yvals;
 };
 
 //! @brief Printing a single plot.
@@ -161,9 +170,45 @@ O& operator<<(O& o, plot const& p) {
         o << "{";
         for (size_t i=0; i<y.second.size(); ++i) {
             if (i > 0) o << ", ";
-            o << "(" << p.xvals[i] << ", " << y.second[i] << ")";
+            o << "(" << p.xvals[i] << ", " << std::get<0>(y.second[i]) << ")";
         }
         o << "}";
+    }
+    bool hasdev = false;
+    for (auto const& y : p.yvals) for (size_t i=0; i<y.second.size() and not hasdev; ++i)
+        if (std::get<1>(y.second[i]) != point::no_dev or std::get<2>(y.second[i]) != point::no_dev)
+            hasdev = true;
+    if (hasdev) {
+        o << "}, new real[][] {";
+        first = true;
+        for (auto const& y : p.yvals) {
+            if (first) first = false;
+            else o << ", ";
+            o << "{";
+            for (size_t i=0; i<y.second.size(); ++i) {
+                if (i > 0) o << ", ";
+                o << std::get<1>(y.second[i]);
+            }
+            o << "}";
+        }
+        hasdev = false;
+        for (auto const& y : p.yvals) for (size_t i=0; i<y.second.size() and not hasdev; ++i)
+            if (std::get<2>(y.second[i]) != point::no_dev)
+                hasdev = true;
+        if (hasdev) {
+            o << "}, new real[][] {";
+            first = true;
+            for (auto const& y : p.yvals) {
+                if (first) first = false;
+                else o << ", ";
+                o << "{";
+                for (size_t i=0; i<y.second.size(); ++i) {
+                    if (i > 0) o << ", ";
+                    o << std::get<2>(y.second[i]);
+                }
+                o << "}";
+            }
+        }
     }
     o << "}));\n";
     return o;
@@ -252,9 +297,26 @@ class none {
     //! @brief Default constructor.
     none() = default;
 
+    //! @brief Copy constructor.
+    none(none const&) = default;
+
+    //! @brief Move constructor.
+    none(none&&) = default;
+
+    //! @brief Copy assignment.
+    none& operator=(none const&) = default;
+
+    //! @brief Move assignment.
+    none& operator=(none&&) = default;
+
     //! @brief Row processing.
     template <typename R>
     none& operator<<(R const&) {
+        return *this;
+    }
+
+    //! @brief Plot merging.
+    none& operator+=(none const&) {
         return *this;
     }
 
@@ -381,10 +443,10 @@ namespace details {
 /**
  * @brief Plotter storing the first rows for later printing, stopping storage at a maximum size.
  *
- * @param C Tags and types to be delta-compressed upon serialisation.
- * @param M Tags and types not compressed on serialisation.
- * @param F Tags and types assumed constant and stored only once.
- * @param max_size The maximum size in bytes allowed for the buffer (0 for no maximum size).
+ * @tparam C Tags and types to be delta-compressed upon serialisation.
+ * @tparam M Tags and types not compressed on serialisation.
+ * @tparam F Tags and types assumed constant and stored only once.
+ * @tparam max_size The maximum size in bytes allowed for the buffer (0 for no maximum size).
  */
 template <typename C, typename M = void, typename F = void, size_t max_size = 0>
 class first_rows {
@@ -628,11 +690,29 @@ class filter {
     //! @brief Default constructor.
     filter() = default;
 
+    //! @brief Copy constructor.
+    filter(filter const&) = default;
+
+    //! @brief Move constructor.
+    filter(filter&&) = default;
+
+    //! @brief Copy assignment.
+    filter& operator=(filter const&) = default;
+
+    //! @brief Move assignment.
+    filter& operator=(filter&&) = default;
+
     //! @brief Row processing.
     template <typename R>
     filter& operator<<(R const& row) {
         if (m_filter(common::get<S>(row)))
             (m_plotter << row);
+        return *this;
+    }
+
+    //! @brief Plot merging.
+    filter& operator+=(filter const& o) {
+        m_plotter += o.m_plotter;
         return *this;
     }
 
@@ -774,6 +854,24 @@ class join {
         return *this;
     }
 
+    //! @brief Copy constructor.
+    join(join const&) = default;
+
+    //! @brief Move constructor.
+    join(join&&) = default;
+
+    //! @brief Copy assignment.
+    join& operator=(join const&) = default;
+
+    //! @brief Move assignment.
+    join& operator=(join&&) = default;
+
+    //! @brief Plot merging.
+    join& operator+=(join const& o) {
+        sum_impl(o, std::make_index_sequence<sizeof...(Ps)>{});
+        return *this;
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         build_type res;
@@ -799,6 +897,12 @@ class join {
         for (size_t j = 0; j < ri.size(); ++j)
             res[x+j] = std::move(ri[j]);
         build_impl(res, std::index_sequence<is...>{}, x + ri.size());
+    }
+
+    //! @brief Merges all sub-plots.
+    template <size_t... is>
+    inline void sum_impl(join const& o, std::index_sequence<is...>) {
+        common::details::ignore((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
     }
 
     //! @brief The plotters.
@@ -865,6 +969,28 @@ class value {
         return *this;
     }
 
+    //! @brief Copy constructor.
+    value(value const& o) : m_aggregator(o.m_aggregator) {}
+
+    //! @brief Move constructor.
+    value(value&& o) : m_aggregator(o.m_aggregator) {}
+
+    //! @brief Copy assignment.
+    value& operator=(value const& o) {
+        m_aggregator = o.m_aggregator;
+    }
+
+    //! @brief Move assignment.
+    value& operator=(value&& o) {
+        m_aggregator = o.m_aggregator;
+    }
+
+    //! @brief Plot merging.
+    value& operator+=(value const& o) {
+        m_aggregator += o.m_aggregator;
+        return *this;
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         point p;
@@ -888,7 +1014,10 @@ class value {
         std::string ar = A::name(); // row aggregator
         std::string ad = aggregator_name(common::bool_pack<details::has_name_method<S>::value>{}); // device aggregator
         p.source += " (" + ad + ar + ")";
-        p.value = std::get<0>(m_aggregator.template result<S>());
+        auto r = m_aggregator.template result<S>();
+        p.value = std::get<0>(r);
+        p.devup = maybe_tuple_get<1>(r);
+        p.devdn = maybe_tuple_get<2>(r);
         return {p};
     }
 
@@ -909,6 +1038,20 @@ class value {
     //! @brief Tag name (if aggregator absent).
     std::string tag_name(common::bool_pack<false>) const {
         return common::type_name<S>();
+    }
+
+    //! @brief Gets the i-th element of a result tuple (if present).
+    template <size_t i, typename T, typename... Ts>
+    static std::enable_if_t<i < sizeof...(Ts), double>
+    maybe_tuple_get(common::tagged_tuple<T, common::type_sequence<Ts...>> const& t) {
+        return std::get<i>(t);
+    }
+
+    //! @brief Gets the i-th element of a result tuple (if absent).
+    template <size_t i, typename T, typename... Ts>
+    static std::enable_if_t<i >= sizeof...(Ts), double>
+    maybe_tuple_get(common::tagged_tuple<T, common::type_sequence<Ts...>> const&) {
+        return point::no_dev;
     }
 
     //! @brief A mutex for synchronised access to the aggregator.
@@ -1010,9 +1153,9 @@ namespace details {
 /**
  * @brief Maintains values for multiple columns and aggregators.
  *
- * @param S The sequence of tags and aggregators for logging (intertwined).
- * @param A The sequence of row aggregators (if empty, `mean<double>` is assumed).
- * @param Ts Description of fields to be extracted as tags, aggregators or units (if empty, S is interpreted as fields).
+ * @tparam S The sequence of tags and aggregators for logging (intertwined).
+ * @tparam A The sequence of row aggregators (if empty, `mean<double>` is assumed).
+ * @tparam Ts Description of fields to be extracted as tags, aggregators or units (if empty, S is interpreted as fields).
  */
 template <typename S, typename A, typename... Ts>
 using values = typename details::values<S, A, Ts...>::type;
@@ -1079,9 +1222,9 @@ namespace details {
 /**
  * Split rows depending on
  *
- * @param S A column tag, or a `type_sequence` of column tags.
- * @param P The plotter to be split.
- * @param B A bucket size (as `std::ratio`, only for a single key).
+ * @tparam S A column tag, or a `type_sequence` of column tags.
+ * @tparam P The plotter to be split.
+ * @tparam B A bucket size (as `std::ratio`, only for a single key).
  */
 template <typename S, typename P, typename B = std::ratio<0>>
 class split {
@@ -1102,6 +1245,22 @@ class split {
     //! @brief Default constructor.
     split() = default;
 
+    //! @brief Copy constructor.
+    split(split const& o) : m_plotters(o.m_plotters) {}
+
+    //! @brief Move constructor.
+    split(split&& o) : m_plotters(o.m_plotters) {}
+
+    //! @brief Copy assignment.
+    split& operator=(split const& o) {
+        m_plotters = o.m_plotters;
+    }
+
+    //! @brief Move assignment.
+    split& operator=(split&& o) {
+        m_plotters = o.m_plotters;
+    }
+
     //! @brief Row processing.
     template <typename R>
     split& operator<<(R const& row) {
@@ -1113,6 +1272,22 @@ class split {
             p = &m_plotters[k];
         }
         *p << row;
+        return *this;
+    }
+
+    //! @brief Plot merging.
+    split& operator+=(split const& o) {
+        std::vector<std::pair<const key_type, P>> new_keys;
+        auto it = o.m_plotters.begin();
+        for (auto& x : m_plotters) {
+            for (; it != o.m_plotters.end() and it->first < x.first; ++it)
+                new_keys.push_back(*it);
+            if (it == o.m_plotters.end()) break;
+            if (it->first == x.first) x.second += it->second;
+        }
+        for (; it != o.m_plotters.end(); ++it)
+            new_keys.push_back(*it);
+        m_plotters.insert(new_keys.begin(), new_keys.end());
         return *this;
     }
 
@@ -1146,7 +1321,7 @@ class split {
         std::set<std::string> units;
         if (m.size()) for (point const& q : m.begin()->second) {
             if (q.unit.size()) units.insert(q.unit);
-            res[0].yvals.emplace_back(q.source, std::vector<double>{});
+            res[0].yvals.emplace_back(q.source, std::vector<std::tuple<double,double,double>>{});
         }
         if (units.empty()) res[0].yname = "y";
         else if (units.size() == 1) res[0].yname = *units.begin();
@@ -1177,7 +1352,7 @@ class split {
         for (auto const& p : m) {
             res[0].xvals.push_back(std::get<0>(p.first));
             for (size_t i = 0; i < p.second.size(); ++i)
-                res[0].yvals[i].second.push_back(p.second[i].value);
+                res[0].yvals[i].second.emplace_back(p.second[i].value, p.second[i].devup, p.second[i].devdn);
         }
     }
     //! @brief Multiple plot building.
@@ -1224,10 +1399,10 @@ class split {
 /**
  * @brief Produces a single plot.
  *
- * @param S The sequence of tags and aggregators for logging (intertwined).
- * @param X The tag to be used for the x axis.
- * @param Y The unit to be used for the y axis.
- * @param A The sequence of row aggregators (defaults to `mean<double>`).
+ * @tparam S The sequence of tags and aggregators for logging (intertwined).
+ * @tparam X The tag to be used for the x axis.
+ * @tparam Y The unit to be used for the y axis.
+ * @tparam A The sequence of row aggregators (defaults to `mean<double>`).
  */
 template <typename S, typename X, template<class> class Y, typename A = common::type_sequence<>>
 using plotter = split<X, values<S, A, unit<Y>>>;

@@ -68,6 +68,20 @@ function(fcpp_header target_executable enable_gui)
     fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
 endfunction()
 
+function(fcpp_headers target_name enable_gui source_list extra_libs)
+    add_library(${target_name} SHARED ${source_list})
+    target_link_libraries(${target_name} PRIVATE fcpp ${extra_libs})
+    target_include_directories(${target_name} PRIVATE .)
+    set_target_properties(${target_name} PROPERTIES PREFIX "run/")
+    if(${enable_gui} STREQUAL ON)
+        if(FCPP_BUILD_GL)
+            fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} textures)
+            target_compile_options(${target_name} PUBLIC -DFCPP_CONFIGURATION=FCPP_CONFIGURATION_DEPENDENT -DFCPP_GUI)
+        endif()
+    endif()
+    fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
+endfunction()
+
 function(fcpp_test target_executable)
     get_filename_component(target_name ${target_executable} NAME_WE)
     if(FCPP_BUILD_TESTS)
@@ -132,6 +146,7 @@ set(
     lib/coordination/time.cpp
     lib/coordination/utils.cpp
     lib/data.cpp
+    lib/data/bloom.cpp
     lib/data/color.cpp
     lib/data/field.cpp
     lib/data/hyperloglog.cpp
@@ -292,6 +307,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/coordination/spreading.cpp)
         fcpp_test(test/coordination/time.cpp)
         fcpp_test(test/coordination/utils.cpp)
+        fcpp_test(test/data/bloom.cpp)
         fcpp_test(test/data/color.cpp)
         fcpp_test(test/data/field.cpp)
         fcpp_test(test/data/hyperloglog.cpp)

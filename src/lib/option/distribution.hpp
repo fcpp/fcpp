@@ -186,7 +186,7 @@ struct name {                               \
 //! @{
 /**
  * @brief With value as distribution.
- * @param D The value (as distribution).
+ * @tparam D The value (as distribution).
  */
 template <typename D>
 struct constant {
@@ -209,10 +209,10 @@ struct constant {
 };
 /**
  * @brief With value as numeric template parameter.
- * @param R The result type.
- * @param num The (integral) numerator of the value.
- * @param den The (integral) denominator of the value.
- * @param val_tag The tag corresponding to the value in initialisation values.
+ * @tparam R The result type.
+ * @tparam num The (integral) numerator of the value.
+ * @tparam den The (integral) denominator of the value.
+ * @tparam val_tag The tag corresponding to the value in initialisation values.
  */
 template <typename R, intmax_t num, intmax_t den = 1, typename val_tag = void>
 struct constant_n {
@@ -260,8 +260,8 @@ struct constant_n<R, num, den, void> {
 //! @endcond
 /**
  * @brief With value at initialisation.
- * @param R The result type.
- * @param val_tag The tag corresponding to the value in initialisation values.
+ * @tparam R The result type.
+ * @tparam val_tag The tag corresponding to the value in initialisation values.
  */
 template <typename R, typename val_tag>
 struct constant_i {
@@ -289,7 +289,7 @@ struct constant_i {
 //! @{
 /**
  * @brief With value as distribution.
- * @param D The value (as distribution).
+ * @tparam D The value (as distribution).
  */
 template <typename D>
 struct variable {
@@ -308,8 +308,8 @@ struct variable {
 };
 /**
  * @brief With value at initialisation.
- * @param R The result type.
- * @param val_tag The tag corresponding to the value in initialisation values.
+ * @tparam R The result type.
+ * @tparam val_tag The tag corresponding to the value in initialisation values.
  */
 template <typename R, typename val_tag>
 using variable_i = variable<constant_i<R, val_tag>>;
@@ -318,11 +318,11 @@ using variable_i = variable<constant_i<R, val_tag>>;
 
 /**
  * @brief Standard real distribution.
- * @param std_dist The standard distribution in the `<random>` header.
- * @param mean     The mean of the distribution (as distribution).
- * @param dev      The standard deviation of the distribution (as distribution).
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam std_dist The standard distribution in the `<random>` header.
+ * @tparam mean     The mean of the distribution (as distribution).
+ * @tparam dev      The standard deviation of the distribution (as distribution).
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <template<class> class std_dist, typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
 class standard {
@@ -352,29 +352,29 @@ class standard {
 //! @{
 /**
  * @brief With mean and deviation as distributions.
- * @param mean     The mean of the distribution (as distribution).
- * @param dev      The standard deviation of the distribution (as distribution).
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam mean     The mean of the distribution (as distribution).
+ * @tparam dev      The standard deviation of the distribution (as distribution).
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
 using uniform = standard<std::uniform_real_distribution, mean, dev, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as numeric template parameters.
- * @param T        The type returned by the distribution.
- * @param mean     The (integral) mean of the distribution.
- * @param dev      The (integral) standard deviation of the distribution.
- * @param scale    An (optional) scale factor by which `mean` and `dev` are divided.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean     The (integral) mean of the distribution.
+ * @tparam dev      The (integral) standard deviation of the distribution.
+ * @tparam scale    An (optional) scale factor by which `mean` and `dev` are divided.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
 using uniform_n = uniform<constant_n<T, mean, scale>, constant_n<T, dev, scale>, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as initialisation values.
- * @param T        The type returned by the distribution.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, typename mean_tag, typename dev_tag>
 using uniform_i = uniform<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>;
@@ -385,10 +385,10 @@ using uniform_i = uniform<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>
 //! @{
 /**
  * @brief With mean and deviation as distributions.
- * @param min     The minimum of the distribution (as distribution).
- * @param max     The maximum of the distribution (as distribution).
- * @param min_tag The tag corresponding to the minimum in initialisation values.
- * @param max_tag The tag corresponding to the maximum in initialisation values.
+ * @tparam min     The minimum of the distribution (as distribution).
+ * @tparam max     The maximum of the distribution (as distribution).
+ * @tparam min_tag The tag corresponding to the minimum in initialisation values.
+ * @tparam max_tag The tag corresponding to the maximum in initialisation values.
  */
 template <typename min, typename max, typename min_tag = void, typename max_tag = void>
 class interval {
@@ -414,20 +414,20 @@ class interval {
 };
 /**
  * @brief With mean and deviation as numeric template parameters.
- * @param T       The type returned by the distribution.
- * @param min     The (integral) minimum of the distribution.
- * @param max     The (integral) maximum of the distribution.
- * @param scale   An (optional) scale factor by which `min` and `max` are divided.
- * @param min_tag The tag corresponding to the minimum in initialisation values.
- * @param max_tag The tag corresponding to the maximum in initialisation values.
+ * @tparam T       The type returned by the distribution.
+ * @tparam min     The (integral) minimum of the distribution.
+ * @tparam max     The (integral) maximum of the distribution.
+ * @tparam scale   An (optional) scale factor by which `min` and `max` are divided.
+ * @tparam min_tag The tag corresponding to the minimum in initialisation values.
+ * @tparam max_tag The tag corresponding to the maximum in initialisation values.
  */
 template <typename T, intmax_t min, intmax_t max, intmax_t scale = 1, typename min_tag = void, typename max_tag = void>
 using interval_n = interval<constant_n<T, min, scale>, constant_n<T, max, scale>, min_tag, max_tag>;
 /**
  * @brief With mean and deviation as initialisation values.
- * @param T       The type returned by the distribution.
- * @param min_tag The tag corresponding to the minimum in initialisation values.
- * @param max_tag The tag corresponding to the maximum in initialisation values.
+ * @tparam T       The type returned by the distribution.
+ * @tparam min_tag The tag corresponding to the minimum in initialisation values.
+ * @tparam max_tag The tag corresponding to the maximum in initialisation values.
  */
 template <typename T, typename min_tag, typename max_tag>
 using interval_i = interval<constant_n<T, 0>, constant_n<T, 0>, min_tag, max_tag>;
@@ -438,29 +438,29 @@ using interval_i = interval<constant_n<T, 0>, constant_n<T, 0>, min_tag, max_tag
 //! @{
 /**
  * @brief With mean and deviation as distributions.
- * @param mean     The mean of the distribution (as distribution).
- * @param dev      The standard deviation of the distribution (as distribution).
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam mean     The mean of the distribution (as distribution).
+ * @tparam dev      The standard deviation of the distribution (as distribution).
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
 using normal = standard<std::normal_distribution, mean, dev, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as numeric template parameters.
- * @param T        The type returned by the distribution.
- * @param mean     The (integral) mean of the distribution.
- * @param dev      The (integral) standard deviation of the distribution.
- * @param scale    An (optional) scale factor by which `mean` and `dev` are divided.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean     The (integral) mean of the distribution.
+ * @tparam dev      The (integral) standard deviation of the distribution.
+ * @tparam scale    An (optional) scale factor by which `mean` and `dev` are divided.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
 using normal_n = normal<constant_n<T, mean, scale>, constant_n<T, dev, scale>, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as initialisation values.
- * @param T        The type returned by the distribution.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, typename mean_tag, typename dev_tag>
 using normal_i = normal<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>;
@@ -471,8 +471,8 @@ using normal_i = normal<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>;
 //! @{
 /**
  * @brief With mean as distribution.
- * @param mean     The mean of the distribution (as distribution).
- * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam mean     The mean of the distribution (as distribution).
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
  */
 template <typename mean, typename mean_tag = void>
 class exponential {
@@ -496,17 +496,17 @@ class exponential {
 };
 /**
  * @brief With mean as numeric template parameter.
- * @param T        The type returned by the distribution.
- * @param mean     The (integral) mean of the distribution.
- * @param scale    An (optional) scale factor by which `mean` and `dev` are divided.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean     The (integral) mean of the distribution.
+ * @tparam scale    An (optional) scale factor by which `mean` and `dev` are divided.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t scale = 1, typename mean_tag = void>
 using exponential_n = exponential<constant_n<T, mean, scale>, mean_tag>;
 /**
  * @brief With mean as initialisation value.
- * @param T        The type returned by the distribution.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
  */
 template <typename T, typename mean_tag>
 using exponential_i = exponential<constant_n<T, 0>, mean_tag>;
@@ -517,29 +517,29 @@ using exponential_i = exponential<constant_n<T, 0>, mean_tag>;
 //! @{
 /**
  * @brief With mean and deviation as distributions.
- * @param mean     The mean of the distribution (as distribution).
- * @param dev      The standard deviation of the distribution (as distribution).
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam mean     The mean of the distribution (as distribution).
+ * @tparam dev      The standard deviation of the distribution (as distribution).
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename mean, typename dev, typename mean_tag = void, typename dev_tag = void>
 using weibull = standard<std::weibull_distribution, mean, dev, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as numeric template parameters.
- * @param T        The type returned by the distribution.
- * @param mean     The (integral) mean of the distribution.
- * @param dev      The (integral) standard deviation of the distribution.
- * @param scale    An (optional) scale factor by which `mean` and `dev` are divided.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean     The (integral) mean of the distribution.
+ * @tparam dev      The (integral) standard deviation of the distribution.
+ * @tparam scale    An (optional) scale factor by which `mean` and `dev` are divided.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, intmax_t mean, intmax_t dev, intmax_t scale = 1, typename mean_tag = void, typename dev_tag = void>
 using weibull_n = weibull<constant_n<T, mean, scale>, constant_n<T, dev, scale>, mean_tag, dev_tag>;
 /**
  * @brief With mean and deviation as initialisation values.
- * @param T        The type returned by the distribution.
- * @param mean_tag The tag corresponding to the mean in initialisation values.
- * @param dev_tag  The tag corresponding to the deviation in initialisation values.
+ * @tparam T        The type returned by the distribution.
+ * @tparam mean_tag The tag corresponding to the mean in initialisation values.
+ * @tparam dev_tag  The tag corresponding to the deviation in initialisation values.
  */
 template <typename T, typename mean_tag, typename dev_tag>
 using weibull_i = weibull<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>;
@@ -551,7 +551,7 @@ using weibull_i = weibull<constant_n<T, 0>, constant_n<T, 0>, mean_tag, dev_tag>
  *
  * Assumes that the probability of generating positive numbers is high.
  *
- * @param D A real distribution.
+ * @tparam D A real distribution.
  */
 template <typename D>
 struct positive : public D {
@@ -577,7 +577,7 @@ struct positive : public D {
  *
  * All `Ds::type` must be convertible to `real_t`.
  *
- * @param Ds The coordinates (as distributions).
+ * @tparam Ds The coordinates (as distributions).
  */
 template <typename... Ds>
 class point {
@@ -607,14 +607,14 @@ class point {
 };
 /**
  * @brief With coordinates as numeric template parameters.
- * @param scale A scale factor by which the coordinates are divided.
- * @param x The (integral) coordinates.
+ * @tparam scale A scale factor by which the coordinates are divided.
+ * @tparam x The (integral) coordinates.
  */
 template <intmax_t scale, intmax_t... x>
 using point_n = point<constant_n<real_t, x, scale>...>;
 /**
  * @brief With coordinates as initialisation values.
- * @param x_tag The tags corresponding to coordinates in initialisation values.
+ * @tparam x_tag The tags corresponding to coordinates in initialisation values.
  */
 template <typename... x_tag>
 using point_i = point<constant_i<real_t, x_tag>...>;
@@ -638,7 +638,7 @@ namespace details {
  *
  * All `Ds::type` must be convertible to `real_t`.
  *
- * @param Ds The extremes (as distributions).
+ * @tparam Ds The extremes (as distributions).
  */
 template <typename... Ds>
 using rect  = typename details::rect<
@@ -647,14 +647,14 @@ using rect  = typename details::rect<
 >::type;
 /**
  * @brief With extremes as numeric template parameters.
- * @param scale A scale factor by which the extremes are divided.
- * @param x The (integral) extremes.
+ * @tparam scale A scale factor by which the extremes are divided.
+ * @tparam x The (integral) extremes.
  */
 template <intmax_t scale, intmax_t... x>
 using rect_n = rect<constant_n<real_t, x, scale>...>;
 /**
  * @brief With extremes as initialisation values.
- * @param x_tag The tags corresponding to extremes in initialisation values.
+ * @tparam x_tag The tags corresponding to extremes in initialisation values.
  */
 template <typename... x_tag>
 using rect_i = rect<constant_i<real_t, x_tag>...>;

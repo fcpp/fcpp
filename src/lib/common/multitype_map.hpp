@@ -8,6 +8,7 @@
 #ifndef FCPP_COMMON_MULTITYPE_MAP_H_
 #define FCPP_COMMON_MULTITYPE_MAP_H_
 
+#include <cassert>
 #include <ostream>
 #include <tuple>
 #include <type_traits>
@@ -187,8 +188,9 @@ class multitype_map {
 
     //! @brief Access to a map corresponding to a missing type.
     template <typename A>
-    std::unordered_map<T, std::remove_reference_t<A>> get_map(bool_pack<false>) const {
-        return {};
+    std::unordered_map<T, std::remove_reference_t<A>>& get_map(bool_pack<false>) const {
+        assert(false);
+        return *((std::unordered_map<T, std::remove_reference_t<A>>*)42);
     }
 
     //! @brief Access to a map element (suppressing warnings on temporaries).

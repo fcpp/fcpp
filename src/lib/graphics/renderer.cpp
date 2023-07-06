@@ -771,8 +771,8 @@ void renderer::drawTail(std::deque<glm::vec3> const& p, color const& c, float w)
     glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(tailVertices), tailVertices, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::rectangle]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tailIndices), tailIndices, GL_STATIC_DRAW);
-    glDrawElements(GL_TRIANGLES, sizeof(tailIndices), GL_UNSIGNED_INT, 0);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tailIndices), tailIndices, GL_DYNAMIC_DRAW);
+    glDrawElements(GL_TRIANGLES, sizeof(tailIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

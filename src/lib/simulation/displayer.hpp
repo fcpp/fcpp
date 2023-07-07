@@ -128,6 +128,22 @@ namespace tags {
     template <intmax_t num, intmax_t den = 1>
     struct tail_granularity {};
 
+    //! @brief Declaration tag associating to storage tags regulating the color of the node tail.
+    template <typename T>
+    struct tail_color_tag {};
+
+    //! @brief Declaration tag associating to the color of the node tail.
+    template <intmax_t c>
+    struct tail_color_val {};
+
+    //! @brief Declaration tag associating to storage tags regulating the width of the node tail.
+    template <typename T>
+    struct tail_width_tag {};
+
+    //! @brief Declaration tag associating to the width of the node tail as fraction of node size.
+    template <intmax_t num, intmax_t den = 1>
+    struct tail_width_val {};
+
     //! @brief Declaration tag associating to the colors of the general theme.
     template <intmax_t background, intmax_t foreground, intmax_t selection>
     struct color_theme {};
@@ -513,8 +529,12 @@ namespace details {
  * - \ref tags::shadow_size_tag defines a storage tag regulating the size of node shadows (defaults to none).
  * - \ref tags::shadow_size_val defines the base size of node shadows (defaults to 0).
  * - \ref tags::tail_time_tag defines a storage tag regulating the time duration of past positions creating the node tail (defaults to none).
- * - \ref tags::tail_time_val defines the time duration of past positions creating the node tail (defaults to 0).
+ * - \ref tags::tail_time_val defines the base time duration of past positions creating the node tail (defaults to 0).
  * - \ref tags::tail_granularity defines the maximum granularity of snapshot points in tails in FPS (defaults to FCPP_TAIL_GRANULARITY).
+ * - \ref tags::tail_color_tag defines a storage tag regulating the color of the node tail (defaults to none).
+ * - \ref tags::tail_color_val defines the base color of the node tail (defaults to \ref BLACK).
+ * - \ref tags::tail_width_tag defines a storage tag regulating the width of the node tail (defaults to none).
+ * - \ref tags::tail_width_val defines the base width of the node tail as fraction of node size (defaults to 1).
  * - \ref tags::color_theme defines the colors of the general theme (defaults to WHITE/BLACK/CYAN).
  * - \ref tags::area defines the bounding coordinates of the grid area (defaults to the minimal area covering initial nodes).
  * - \ref tags::antialias defines the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
@@ -609,8 +629,26 @@ struct displayer {
     //! @brief Maximum granularity of snapshot points in tails in FPS (defaults to FCPP_TAIL_GRANULARITY).
     constexpr static double tail_granularity = 1.0 / common::option_float<tags::tail_granularity, FCPP_TAIL_GRANULARITY, 1, Ts...>;
 
+    //! @brief Storage tag regulating the color of the node tail.
+    using tail_color_tag = common::option_type<tags::tail_color_tag, void, Ts...>;
+
+    //! @brief Base color of the node tail (defaults to \ref BLACK).
+    constexpr static intmax_t tail_color_val = common::option_num<tags::tail_color_val, BLACK, Ts...>;
+
+    //! @brief Storage tag regulating the width of the node tail.
+    using tail_width_tag = common::option_type<tags::tail_width_tag, void, Ts...>;
+
+    //! @brief Base width of the node tail as fraction of node size (defaults to 1).
+    constexpr static double tail_width_val = common::option_float<tags::tail_width_val, 1, 1, Ts...>;
+
+    //! @brief Whether there are labels to be drawn.
+    constexpr static bool has_label = not std::is_same<label_text_tag, void>::value and (not std::is_same<label_size_tag, void>::value or label_size_val > 0);
+
+    //! @brief Whether there are tails to be drawn.
+    constexpr static bool has_tail = tail_width_val > 0 and (not std::is_same<tail_time_tag, void>::value or tail_time_val != 0);
+
     //! @brief Whether the drawAlpha phase is needed.
-    constexpr static bool has_transparency = not std::is_same<label_text_tag, void>::value or not std::is_same<tail_time_tag, void>::value or tail_time_val != 0;
+    constexpr static bool has_transparency = has_label or has_tail;
 
     /**
      * @brief The actual component.
@@ -638,7 +676,7 @@ struct displayer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids() {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_highlight(0), m_window(nullptr), m_nbr_uids(), m_prev_nbr_uids(), m_tail_color(tail_color_val) {
                 m_colors.resize(std::max(size_t(1), color_val::size + color_tag::size));
                 color_val_put(m_colors, common::number_sequence<0>{}, color_val{});
             }
@@ -652,7 +690,7 @@ struct displayer {
                 }
                 m_tail_points.push_back(m_position);
                 m_tail_times.push_back(t);
-                double dt = common::get_or<tail_time_tag>(P::node::storage_tuple(), tail_time_val) + 10; //TODO: remove +10
+                double dt = common::get_or<tail_time_tag>(P::node::storage_tuple(), tail_time_val);
                 while (m_tail_times.front() < t - dt) {
                     m_tail_points.pop_front();
                     m_tail_times.pop_front();
@@ -705,7 +743,8 @@ struct displayer {
                 if (m_tail_points.size() > 1) {
                     double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val);
                     if (m_highlight) d *= 1.5;
-                    P::node::net.getRenderer().drawTail(m_tail_points, m_colors[0], d);
+                    d *= common::get_or<tail_width_tag>(P::node::storage_tuple(), tail_width_val);
+                    P::node::net.getRenderer().drawTail(m_tail_points, m_tail_color, d);
                 }
             }
 
@@ -724,6 +763,7 @@ struct displayer {
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
                 m_prev_nbr_uids = std::move(m_nbr_uids);
                 m_nbr_uids.clear();
+                maybe_set_tail_color(P::node::storage_tuple(), common::bool_pack<std::is_same<tail_color_tag, void>::value>{});
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
@@ -790,6 +830,16 @@ struct displayer {
                 color_tag_put(c, common::number_sequence<i+1>{}, common::type_sequence<Ss...>{});
             }
 
+            //! @brief Does not set the tail color, if there are no tails.
+            template <typename T>
+            inline void maybe_set_tail_color(T const&, common::bool_pack<true>) {}
+
+            //! @brief Sets the tail color, if there are tails.
+            template <typename T>
+            inline void maybe_set_tail_color(T const& t, common::bool_pack<false>) {
+                m_tail_color = common::get<tail_color_tag>(t);
+            }
+
             //! @brief Whether the node is highlighted.
             //! 0 - not highlighted
             //! 1 - yes, with cursor hovering
@@ -811,11 +861,17 @@ struct displayer {
             //! @brief The list of colors for the node.
             std::vector<color> m_colors;
 
+            //! @brief The color of the tail.
+            color m_tail_color;
+
             //! @brief The type name for node labels.
             std::string m_label_type;
 
             //! @brief The vector of points comprising the tail.
             std::deque<glm::vec3> m_tail_points;
+
+            //! @brief The vector of vectors defining the tail width.
+            std::deque<glm::vec3> m_tail_normals;
 
             //! @brief The vector of times for points in the tail.
             std::deque<times_t> m_tail_times;
@@ -923,9 +979,8 @@ struct displayer {
                         PROFILE_COUNT("displayer/grid");
                         // Draw grid
                         m_renderer.drawGrid(m_texture == "" ? 0.3f : 1.0f);
-                        // Draw labels
-                        if (has_transparency or true)
-                            for (size_t i = 0; i < n_end-n_beg; ++i) n_beg[i].second.drawAlpha();
+                        // Draw labels and tails
+                        if (has_transparency) for (size_t i = 0; i < n_end-n_beg; ++i) n_beg[i].second.drawAlpha();
                     }
                     if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
                         float sx{ (2.0f * (float)m_mouseStartX) / m_renderer.getFramebufferWidth() - 1.0f };

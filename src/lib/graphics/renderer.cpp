@@ -738,7 +738,6 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 void renderer::drawTail(std::deque<glm::vec3> const& p, color const& c, float w) const {
     glm::vec4 col = color_to_vec(c);
     col.a /= 2;
-    col = {0, 0, 0, 0.5};
     // Create matrices (used several times)
     m_shaderProgramCol.use();
     m_shaderProgramCol.setMat4("u_projection", m_camera.getPerspective());

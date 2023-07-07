@@ -686,13 +686,27 @@ struct displayer {
                 m_position = to_vec3(P::node::position(t));
                 if (m_tail_times.size() > 1 and t - m_tail_times[m_tail_times.size()-2] < tail_granularity) {
                     m_tail_points.pop_back();
+                    m_tail_normals.pop_back();
                     m_tail_times.pop_back();
                 }
                 m_tail_points.push_back(m_position);
                 m_tail_times.push_back(t);
+                size_t s = m_tail_times.size();
+                if (s > 2) {
+                    vec<2> n{m_tail_points[s-3].y - m_tail_points[s-1].y, m_tail_points[s-1].x - m_tail_points[s-3].x};
+                    if (n < 0.1) m_tail_normals.back() = {0,0};
+                    else m_tail_normals.back() = unit(std::move(n));
+                }
+                if (s == 1) m_tail_normals.push_back({0,0});
+                else {
+                    vec<2> n{m_tail_points[s-2].y - m_tail_points[s-1].y, m_tail_points[s-1].x - m_tail_points[s-2].x};
+                    if (n < 0.1) m_tail_normals.push_back({0,0});
+                    else m_tail_normals.push_back(unit(std::move(n)));
+                }
                 double dt = common::get_or<tail_time_tag>(P::node::storage_tuple(), tail_time_val);
                 while (m_tail_times.front() < t - dt) {
                     m_tail_points.pop_front();
+                    m_tail_normals.pop_front();
                     m_tail_times.pop_front();
                 }
                 return m_position;
@@ -744,7 +758,7 @@ struct displayer {
                     double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val);
                     if (m_highlight) d *= 1.5;
                     d *= common::get_or<tail_width_tag>(P::node::storage_tuple(), tail_width_val);
-                    P::node::net.getRenderer().drawTail(m_tail_points, m_tail_color, d);
+                    P::node::net.getRenderer().drawTail(m_tail_points, m_tail_normals, m_tail_color, d);
                 }
             }
 
@@ -871,7 +885,7 @@ struct displayer {
             std::deque<glm::vec3> m_tail_points;
 
             //! @brief The vector of vectors defining the tail width.
-            std::deque<glm::vec3> m_tail_normals;
+            std::deque<vec<2>> m_tail_normals;
 
             //! @brief The vector of times for points in the tail.
             std::deque<times_t> m_tail_times;

@@ -735,7 +735,7 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) co
 }
 
 //! @brief It draws the tail of a node, as a sequence of lines given their endpoints, the color to be used and a width.
-void renderer::drawTail(std::deque<glm::vec3> const& p, color const& c, float w) const {
+void renderer::drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const& n, color const& c, float w) const {
     glm::vec4 col = color_to_vec(c);
     col.a /= 2;
     // Create matrices (used several times)
@@ -749,12 +749,12 @@ void renderer::drawTail(std::deque<glm::vec3> const& p, color const& c, float w)
     for (int i = 0; i < p.size(); ++i) {
         float k = i/(p.size()-1.0f);
         k *= k * w * 0.62f;
-        tailVertices[6 * i + 0] = p[i][0];
-        tailVertices[6 * i + 1] = p[i][1];
-        tailVertices[6 * i + 2] = p[i][2] + k;
-        tailVertices[6 * i + 3] = p[i][0];
-        tailVertices[6 * i + 4] = p[i][1];
-        tailVertices[6 * i + 5] = p[i][2] - k;
+        tailVertices[6 * i + 0] = p[i][0] + n[i][0] * k;
+        tailVertices[6 * i + 1] = p[i][1] + n[i][1] * k;
+        tailVertices[6 * i + 2] = p[i][2];
+        tailVertices[6 * i + 3] = p[i][0] - n[i][0] * k;
+        tailVertices[6 * i + 4] = p[i][1] - n[i][1] * k;
+        tailVertices[6 * i + 5] = p[i][2];
     }
     unsigned int tailIndices[6 * p.size() - 6];
     for (int i = 0; i < p.size()-1; ++i) {

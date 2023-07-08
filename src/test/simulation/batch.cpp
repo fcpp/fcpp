@@ -183,6 +183,24 @@ TEST(BatchTest, Lists) {
         EXPECT_EQ(t, tuple_type(3.5));
     }
     {
+        using tuple_type = common::tagged_tuple_t<tag, double>;
+        auto x = batch::arithmetic<tag>(2.0, 3.0, 0.5, 3.25, 3.75);
+        EXPECT_SAME(typename decltype(x)::value_type, tuple_type);
+        EXPECT_EQ(x.core_size(), 2);
+        EXPECT_EQ(x.extra_size(), 3);
+        tuple_type t;
+        EXPECT_TRUE(x(t, 0));
+        EXPECT_EQ(t, tuple_type(3.25));
+        EXPECT_TRUE(x(t, 1));
+        EXPECT_EQ(t, tuple_type(3.75));
+        EXPECT_TRUE(x(t, 2));
+        EXPECT_EQ(t, tuple_type(2.0));
+        EXPECT_TRUE(x(t, 3));
+        EXPECT_EQ(t, tuple_type(2.5));
+        EXPECT_TRUE(x(t, 4));
+        EXPECT_EQ(t, tuple_type(3.0));
+    }
+    {
         using tuple_type = common::tagged_tuple_t<tag, int>;
         auto x = batch::geometric<tag>(1, 100, 2);
         EXPECT_SAME(typename decltype(x)::value_type, tuple_type);
@@ -256,6 +274,24 @@ TEST(BatchTest, Lists) {
         EXPECT_TRUE(x(t, 2));
         EXPECT_EQ(t, tuple_type(2));
         EXPECT_TRUE(x(t, 3));
+        EXPECT_EQ(t, tuple_type(4));
+    }
+    {
+        using tuple_type = common::tagged_tuple_t<tag, int>;
+        auto x = batch::geometric<tag>(1, 4, 2, 3, 6);
+        EXPECT_SAME(typename decltype(x)::value_type, tuple_type);
+        EXPECT_EQ(x.core_size(), 2);
+        EXPECT_EQ(x.extra_size(), 3);
+        tuple_type t;
+        EXPECT_TRUE(x(t, 0));
+        EXPECT_EQ(t, tuple_type(3));
+        EXPECT_TRUE(x(t, 1));
+        EXPECT_EQ(t, tuple_type(6));
+        EXPECT_TRUE(x(t, 2));
+        EXPECT_EQ(t, tuple_type(1));
+        EXPECT_TRUE(x(t, 3));
+        EXPECT_EQ(t, tuple_type(2));
+        EXPECT_TRUE(x(t, 4));
         EXPECT_EQ(t, tuple_type(4));
     }
     {

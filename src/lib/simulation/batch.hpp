@@ -161,6 +161,22 @@ auto arithmetic(T min, T max, T step, T def) {
     }, 1, (max-min)/step + defextra);
 }
 
+/**
+ * @brief Functor generating an arithmetic sequence (inclusive) with a default range and extra range.
+ *
+ * Only the range `defmin...defmax` is used when other defaulted parameters are set to extra values.
+ * The range `min...max` is used only with core values from other defaulted parameters.
+ * The two ranges are assumed not to overlap.
+ */
+template <typename S, typename T>
+auto arithmetic(T min, T max, T step, T defmin, T defmax) {
+    size_t core_size = (defmax-defmin)/step + 1;
+    return details::make_generator<S, T>([=](auto& t, size_t i){
+        common::get<S>(t) = i < core_size ? defmin + i*step : min + (i-core_size) * step;
+        return true;
+    }, core_size, (max-min)/step + 1);
+}
+
 //! @brief Functor generating a geometric sequence of values (inclusive range).
 template <typename S, typename T>
 auto geometric(T min, T max, T step) {
@@ -190,6 +206,26 @@ auto geometric(T min, T max, T step, T def) {
         common::get<S>(t) = v[i];
         return true;
     }, 1, v.size() - 1);
+}
+
+/**
+ * @brief Functor generating an geometric sequence (inclusive) with a default range and extra range.
+ *
+ * Only the range `defmin...defmax` is used when other defaulted parameters are set to extra values.
+ * The range `min...max` is used only with core values from other defaulted parameters.
+ * The two ranges are assumed not to overlap.
+ */
+template <typename S, typename T>
+auto geometric(T min, T max, T step, T defmin, T defmax) {
+    std::vector<T> v = {defmin};
+    while (v.back() * step <= defmax) v.push_back(v.back() * step);
+    size_t core_size = v.size();
+    v.push_back(min);
+    while (v.back() * step <= max) v.push_back(v.back() * step);
+    return details::make_generator<S, T>([=](auto& t, size_t i){
+        common::get<S>(t) = v[i];
+        return true;
+    }, core_size, v.size() - core_size);
 }
 
 /**

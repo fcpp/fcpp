@@ -228,7 +228,13 @@ real_t norm(vec<n> const& x) {
     return sqrt(abs(x));
 }
 
-//! @brief Vector normalisation.
+//! @brief Vector normalisation (moving).
+template <size_t n>
+vec<n> unit(vec<n>&& x) {
+    return x /= norm(x);
+}
+
+//! @brief Vector normalisation (copying).
 template <size_t n>
 vec<n> unit(vec<n> const& x) {
     return x / norm(x);

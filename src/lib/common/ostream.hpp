@@ -410,7 +410,7 @@ namespace fcpp {
     O& operator<<(O& o, field<T> const& x) {
         using const_ref = std::conditional_t<std::is_same<T,bool>::value, T, T const&>;
         o << "{";
-        for (size_t i = 0; i < details::get_ids(x).size(); ++i) {
+        for (size_t i = 0; i < details::get_ids(x).size(); ++i) if (details::get_vals(x)[i+1] != details::get_vals(x)[0]) {
             o << details::get_ids(x)[i] << ":" << common::escape(const_ref(details::get_vals(x)[i+1])) << ", ";
         }
         o << "*:" << common::escape(const_ref(details::get_vals(x)[0])) << "}";
@@ -422,7 +422,7 @@ namespace fcpp {
     std::string to_string(field<T> const& x) {
         using const_ref = std::conditional_t<std::is_same<T,bool>::value, T, T const&>;
         std::string s = "{";
-        for (size_t i = 0; i < details::get_ids(x).size() and i < FCPP_FIELD_DRAW_LIMIT and s.size() < 10*FCPP_FIELD_DRAW_LIMIT; ++i) {
+        for (size_t i = 0; i < details::get_ids(x).size() and i < FCPP_FIELD_DRAW_LIMIT and s.size() < 10*FCPP_FIELD_DRAW_LIMIT; ++i) if (details::get_vals(x)[i+1] != details::get_vals(x)[0]) {
             s += to_string(details::get_ids(x)[i]);
             s.push_back(':');
             s += to_string(common::escape(const_ref(details::get_vals(x)[i+1])));

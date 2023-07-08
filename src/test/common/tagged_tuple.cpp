@@ -6,6 +6,8 @@
 
 #include "lib/common/tagged_tuple.hpp"
 
+#include "test/helper.hpp"
+
 using namespace fcpp;
 
 
@@ -160,4 +162,8 @@ TEST_F(TaggedTupleTest, Print) {
     s.str("");
     t3.print(s, common::assignment_tuple, common::skip_tags<double,tags::main,nasty_type>);
     EXPECT_EQ("", s.str());
+}
+
+TEST_F(TaggedTupleTest, TupleCat) {
+    EXPECT_SAME(common::tagged_tuple_cat<common::tagged_tuple_t<tag,int,gat,bool>, common::tagged_tuple_t<oth,double,hto,char>>, common::tagged_tuple_t<tag,int,gat,bool,oth,double,hto,char>);
 }

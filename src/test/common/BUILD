@@ -125,7 +125,10 @@ cc_test(
         "//lib/common:ostream",
         "//lib/common:serialize",
         "//lib/common:tagged_tuple",
+        "//lib/data:bloom",
         "//lib/data:field",
+        "//lib/data:hyperloglog",
+        "//lib/data:tuple",
         "//lib/data:vec",
         "//lib/internal:flat_ptr",
     ],
@@ -140,6 +143,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:tagged_tuple",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

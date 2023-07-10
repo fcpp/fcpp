@@ -367,6 +367,7 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         m_core_size(g.core_size() * tagged_tuple_sequence<Gs...>::core_size()),
         m_extra_size(m_core_extra_size + m_extra_core_size),
         m_size(m_core_size + m_extra_size),
+        m_offset(0),
         m_generator(std::move(g)) {}
 
     //! @brief Returns the total size of the sequence generated (including filtered out values).
@@ -398,6 +399,12 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         return t;
     }
 
+    //! @brief Reduces the generator to a subsequence.
+    void slice(size_t start, size_t end) {
+        m_offset += start;
+        m_size = end - start;
+    }
+
     /**
      * @brief Function generating and testing presence of an item of the sequence.
      *
@@ -407,6 +414,7 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
      */
     template <typename T>
     bool assign(T& t, size_t i) const {
+        i += m_offset;
         if (i < m_core_size) {
             if (not m_generator(t, i / tagged_tuple_sequence<Gs...>::core_size())) return false;
             return tagged_tuple_sequence<Gs...>::assign(t, i % tagged_tuple_sequence<Gs...>::core_size());
@@ -431,7 +439,9 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
     //! @brief The size of the extra sequence that should be expanded only with core values.
     const size_t m_extra_size;
     //! @brief The total size of the sequence generated (including filtered out values).
-    const size_t m_size;
+    size_t m_size;
+    //! @brief The offset to the first element of the sequence.
+    size_t m_offset;
     //! @brief The first generator.
     const G m_generator;
 };

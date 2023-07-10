@@ -394,9 +394,10 @@ TEST(BatchTest, TupleSequence) {
     v2.emplace_back(3,6);
     v2.emplace_back(3,12);
     EXPECT_EQ(x2, v2);
-    auto x3 = generator_to_vector(make_tagged_tuple_sequence(list<char>(1,7,3), list<double>(2,4), formula<short,int>([](auto const& tup){
+    auto g3 = make_tagged_tuple_sequence(list<char>(1,7,3), list<double>(2,4), formula<short,int>([](auto const& tup){
         return common::get<double>(tup) - common::get<char>(tup);
-    }), stringify<bool>()));
+    }), stringify<bool>());
+    auto x3 = generator_to_vector(g3);
     std::vector<common::tagged_tuple_t<char, int, double, int, short, int, bool, std::string>> v3;
     EXPECT_SAME(decltype(x3), decltype(v3));
     v3.emplace_back(1,2,+1,"char-1_double-2_short-1");
@@ -405,6 +406,12 @@ TEST(BatchTest, TupleSequence) {
     v3.emplace_back(7,4,-3,"char-7_double-4_short--3");
     v3.emplace_back(3,2,-1,"char-3_double-2_short--1");
     v3.emplace_back(3,4,+1,"char-3_double-4_short-1");
+    EXPECT_EQ(x3, v3);
+    g3.slice(2,4);
+    x3 = generator_to_vector(g3);
+    v3 = {};
+    v3.emplace_back(7,2,-5,"char-7_double-2_short--5");
+    v3.emplace_back(7,4,-3,"char-7_double-4_short--3");
     EXPECT_EQ(x3, v3);
     auto x4 = generator_to_vector(make_tagged_tuple_sequence(list<char>(1,7,3), list<double>(2,4), formula<short,int>([](auto const& tup){
         return common::get<double>(tup) - common::get<char>(tup);

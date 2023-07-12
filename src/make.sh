@@ -9,6 +9,7 @@ function usage() {
     echo -e "    \033[1mdoc\033[0m:                             builds the documentation before command execution"
     echo -e "    \033[1mgui\033[0m:                             enables the graphical user interface on cmake"
     echo -e "    \033[1mmpi\033[0m:                             enables the message passing interface for running on clusters"
+    echo -e "    \033[1mhosts <path>\033[0m:                    sets the \033[4mrelative\033[0m path to a hostfile for MPI (defaults to hosts.txt)"
     echo -e "    \033[1munix\033[0m:                            overrides the auto-detected cmake platform to unix"
     echo -e "    \033[1mwindows\033[0m:                         overrides the auto-detected cmake platform to windows"
     echo -e "    \033[1mbazel\033[0m:                           sets the build tool to bazel instead of cmake"
@@ -36,7 +37,9 @@ if [ "$1" == "" ]; then
     usage
 fi
 
+hostfile="hosts.txt"
 btype="Debug"
+rtype="STD"
 opts=""
 copts=""
 cmakeopts=""
@@ -303,6 +306,11 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "mpi" ]; then
         shift 1
         opts="$opts -DFCPP_BUILD_MPI=ON"
+        rtype="MPI"
+    elif [ "$1" == "hosts" ]; then
+        shift 1
+        hostfile=$1
+        shift 1
     elif [ "$1" == "windows" ]; then
         shift 1
         platform="MinGW"
@@ -519,7 +527,11 @@ while [ "$1" != "" ]; do
                 mkdir -p bin/output output/raw
                 cd bin
                 echo -e "\033[1;4m$target\033[0m\n"
-                run/$name > ../$file.txt 2> ../$file.err & pid=$!
+                if [ $rtype == "STD" ]; then
+                    run/$name > ../$file.txt 2> ../$file.err & pid=$!
+                else
+                    mpirun --hostfile "../$hostfile"  -np 1 run/$name > ../$file.txt 2> ../$file.err & pid=$!
+                fi
                 cd ..
                 monitor $pid $name $file $raw
             done
@@ -540,7 +552,11 @@ while [ "$1" != "" ]; do
                     quitter
                 fi
                 mkdir -p output/raw
-                $built > $file.txt 2> $file.err & pid=$!
+                if [ $rtype == "STD" ]; then
+                    $built > $file.txt 2> $file.err & pid=$!
+                else
+                    mpirun --hostfile "../$hostfile"  -np 1 $built > $file.txt 2> $file.err & pid=$!
+                fi
                 monitor $pid $name $file $raw
             fi
         fi

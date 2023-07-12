@@ -17,10 +17,13 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <mpi.h>
 
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/option/aggregator.hpp"
+#include "lib/component/logger.hpp"
 
 
 /**
@@ -575,6 +578,78 @@ void run(common::type_sequence<T, Ts...> x, tagged_tuple_sequence<Gs...> const& 
     run(x, common::tags::dynamic_execution{}, v, vs...);
 }
 
+//! @brief Master process that aggregates all the plots
+template <typename P>
+void static master(P* p, int n_procs, int rank) {
+	int size;
+	int max_size = 1024 * 1024 * 1024;
+	char* buf = new char[max_size];
+	MPI_Status status;
+	for (int i = 1; i < n_procs; ++i) {
+        P q;
+		MPI_Recv(buf, max_size, MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
+		MPI_Get_count(&status, MPI_CHAR, &size);
+		common::isstream is({buf, buf+size});
+		is >> q;
+		*p += q;
+	}
+	delete [] buf;
+}
+
+//! @brief Worker process that sends its plot to the master
+template <typename P>
+void static worker(P* p, int rank_master) {
+	common::osstream os;
+	os << *p;
+	std::vector<char>& v = os.data();
+	char* data = v.data();
+	std::size_t size = v.size(); //TODO: size_t -> int
+	assert(size > std::numeric_limits<int>::max());
+	MPI_Send(data, size, MPI_CHAR, rank_master, 0, MPI_COMM_WORLD);
+}
+
+template <typename P>
+void static aggregate_plots(P* p, int n_procs, int rank) {
+	int rank_master = 0;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	if (rank == rank_master)
+		master(p, n_procs, rank);
+	else
+		worker(p, rank_master);
+}
+
+
+//! @brief Running a single MPI component combination (assuming dynamic execution policy).
+template <typename T, typename exec_t, typename... Gs>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
+    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
+    int n_procs, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    std::size_t slice_length = v.size() / n_procs;
+    std::size_t start = slice_length * rank;
+    std::size_t end = (rank == n_procs - 1 && v.size() % n_procs != 0) ? v.size() : start + slice_length;
+    std::cerr << "process " << rank << " v.size() = " << v.size() << " start " << start << " end " << end << std::endl; 
+    v.slice(start, end);   
+    run(x, e, v);
+    if (p != nullptr)
+	    aggregate_plots(p, n_procs, rank);
+}
+
+template <typename T, typename exec_t, typename... Gs>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+splitted_run(T x, exec_t e, int n, int id, tagged_tuple_sequence<Gs...> v) {
+    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
+    std::size_t slice_length = v.size() / n;
+    std::size_t start = slice_length * id;
+    std::size_t end = (id == n - 1 && v.size() % n != 0) ? v.size() : start + slice_length;
+    std::cerr << "section " << id << " v.size() = " << v.size() << " start " << start << " end " << end << std::endl; 
+    v.slice(start, end);   
+    run(x, e, v);
+    
+}
+//! @}
 
 }
 

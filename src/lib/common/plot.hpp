@@ -585,12 +585,19 @@ template <typename C, typename M, typename F, size_t max_size>
 constexpr size_t rows<C,M,F,max_size>::limit_size;
 
 
-//! @brief Filters values for column S according to property F in plotter P.
-template <typename S, typename F, typename P>
+//! @brief Filters values for columns and properties in a plotter.
+template <typename... Ts>
 class filter {
+    //! @brief The type sequence of type parameters.
+    using types = common::type_sequence<Ts...>;
+    //! @brief The plotter type.
+    using plotter_type = typename types::back;
+    //! @brief The tuple of filters.
+    using filter_type = common::tagged_tuple_t<typename types::pop_back>;
+
   public:
     //! @brief The internal build type.
-    using build_type = typename P::build_type;
+    using build_type = typename plotter_type::build_type;
 
     //! @brief Default constructor.
     filter() = default;
@@ -610,8 +617,8 @@ class filter {
     //! @brief Row processing.
     template <typename R>
     filter& operator<<(R const& row) {
-        if (m_filter(common::get<S>(row)))
-            (m_plotter << row);
+        if (check(row, typename filter_type::tags{}))
+            m_plotter << row;
         return *this;
     }
 
@@ -649,10 +656,21 @@ class filter {
     }
 
   private:
+    //! @brief Checks whether the row complies to the filters (empty overload).
+    template <typename R>
+    inline bool check(R const&, common::type_sequence<>) {
+        return true;
+    }
+    //! @brief Checks whether the row complies to the filters (active overload).
+    template <typename R, typename S, typename... Ss>
+    inline bool check(R const& row, common::type_sequence<S, Ss...>) {
+        return common::get<S>(m_filters)(common::get<S>(row)) and check(row, common::type_sequence<Ss...>{});
+    }
+
     //! @brief The plotter.
-    P m_plotter;
+    plotter_type m_plotter;
     //! @brief The callable filter class.
-    F m_filter;
+    filter_type m_filters;
 };
 
 

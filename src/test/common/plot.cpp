@@ -110,6 +110,16 @@ TEST(PlotTest, FilterValue) {
         plot::point& q = pb[0];
         EXPECT_POINT(q, "tag", "tag (mean)", 5.0);
     }
+    {
+        plot::filter<plot::time, filter::above<10>, gat, filter::below<5>, plot::value<tag>> p;
+        p << common::make_tagged_tuple<plot::time,tag,gat>(0.0,  1.0, 1.0);
+        p << common::make_tagged_tuple<plot::time,tag,gat>(5.0,  2.0, 9.0);
+        p << common::make_tagged_tuple<plot::time,tag,gat>(10.0, 4.0, 3.0);
+        p << common::make_tagged_tuple<plot::time,tag,gat>(20.0, 8.0, 6.0);
+        std::array<plot::point, 1> pb = p.build();
+        plot::point& q = pb[0];
+        EXPECT_POINT(q, "tag", "tag (mean)", 4.0);
+    }
 }
 
 TEST(PlotTest, JoinValue) {

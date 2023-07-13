@@ -325,15 +325,8 @@ class tagged_tuple_sequence<> {
         return 1;
     }
 
-    //! @brief Returns the size of the core sequence that has to be expanded with every other value.
-    inline size_t core_size() const {
-        return 1;
-    }
-
-    //! @brief Returns the size of the extra sequence that should be expanded only with core values.
-    inline size_t extra_size() const {
-        return 0;
-    }
+    //! @brief Reduces the generator to a subsequence.
+    inline void slice(size_t start, size_t end, size_t stride = 1) {}
 
     //! @brief Function testing presence of an item of the sequence.
     inline bool count(size_t i) const {
@@ -353,8 +346,19 @@ class tagged_tuple_sequence<> {
      * @return     A boolean telling whether the given index has to be included (true) or skipped (false).
      */
     template <typename T>
-    bool assign(T& t, size_t i) const {
-        return i == 0;
+    inline bool assign(T& t, size_t i) const {
+        return true;
+    }
+
+  protected:
+    //! @brief Returns the size of the core sequence that has to be expanded with every other value.
+    inline size_t core_size() const {
+        return 1;
+    }
+
+    //! @brief Returns the size of the extra sequence that should be expanded only with core values.
+    inline size_t extra_size() const {
+        return 0;
     }
 };
 
@@ -374,6 +378,7 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         m_extra_size(m_core_extra_size + m_extra_core_size),
         m_size(m_core_size + m_extra_size),
         m_offset(0),
+        m_stride(1),
         m_generator(std::move(g)) {}
 
     //! @brief Returns the total size of the sequence generated (including filtered out values).
@@ -381,14 +386,12 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         return m_size;
     }
 
-    //! @brief Returns the size of the core sequence that has to be expanded with every other value.
-    inline size_t core_size() const {
-        return m_core_size;
-    }
-
-    //! @brief Returns the size of the extra sequence that should be expanded only with core values.
-    inline size_t extra_size() const {
-        return m_extra_size;
+    //! @brief Reduces the generator to a subsequence.
+    void slice(size_t start, size_t end, size_t stride = 1) {
+        m_size = m_core_size + m_extra_size;
+        m_offset = start;
+        m_stride = stride;
+        m_size = (end - start + stride - 1) / stride;
     }
 
     //! @brief Function testing presence of an item of the sequence.
@@ -405,12 +408,6 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         return t;
     }
 
-    //! @brief Reduces the generator to a subsequence.
-    void slice(size_t start, size_t end) {
-        m_offset += start;
-        m_size = end - start;
-    }
-
     /**
      * @brief Function generating and testing presence of an item of the sequence.
      *
@@ -420,7 +417,7 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
      */
     template <typename T>
     bool assign(T& t, size_t i) const {
-        i += m_offset;
+        i = m_offset + m_stride * i;
         if (i < m_core_size) {
             if (not m_generator(t, i / tagged_tuple_sequence<Gs...>::core_size())) return false;
             return tagged_tuple_sequence<Gs...>::assign(t, i % tagged_tuple_sequence<Gs...>::core_size());
@@ -433,6 +430,17 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         i -= m_core_extra_size;
         if (not m_generator(t, i / tagged_tuple_sequence<Gs...>::core_size() + m_generator.core_size())) return false;
         return tagged_tuple_sequence<Gs...>::assign(t, i % tagged_tuple_sequence<Gs...>::core_size());
+    }
+
+  protected:
+    //! @brief Returns the size of the core sequence that has to be expanded with every other value.
+    inline size_t core_size() const {
+        return m_core_size;
+    }
+
+    //! @brief Returns the size of the extra sequence that should be expanded only with core values.
+    inline size_t extra_size() const {
+        return m_extra_size;
     }
 
   private:
@@ -448,6 +456,8 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
     size_t m_size;
     //! @brief The offset to the first element of the sequence.
     size_t m_offset;
+    //! @brief The step between consecutive elements of the sequence.
+    size_t m_stride;
     //! @brief The first generator.
     const G m_generator;
 };
@@ -631,11 +641,8 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     int n_procs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    std::size_t slice_length = v.size() / n_procs;
-    std::size_t start = slice_length * rank;
-    std::size_t end = (rank == n_procs - 1 && v.size() % n_procs != 0) ? v.size() : start + slice_length;
-    std::cerr << "process " << rank << " v.size() = " << v.size() << " start " << start << " end " << end << std::endl; 
-    v.slice(start, end);   
+    v.slice(rank, v,size(), n_procs);
+    std::cerr << "process " << rank << " size = " << v.size() << std::endl;
     run(x, e, v);
     if (p != nullptr)
 	    aggregate_plots(p, n_procs, rank);
@@ -643,15 +650,11 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
 
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-splitted_run(T x, exec_t e, int n, int id, tagged_tuple_sequence<Gs...> v) {
+splitted_run(T x, exec_t e, int n_procs, int rank, tagged_tuple_sequence<Gs...> v) {
     auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    std::size_t slice_length = v.size() / n;
-    std::size_t start = slice_length * id;
-    std::size_t end = (id == n - 1 && v.size() % n != 0) ? v.size() : start + slice_length;
-    std::cerr << "section " << id << " v.size() = " << v.size() << " start " << start << " end " << end << std::endl; 
-    v.slice(start, end);   
+    v.slice(rank, v,size(), n_procs);
+    std::cerr << "process " << rank << " size = " << v.size() << std::endl;
     run(x, e, v);
-    
 }
 //! @}
 #endif

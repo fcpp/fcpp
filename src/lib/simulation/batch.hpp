@@ -641,7 +641,7 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     int n_procs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    v.slice(rank, v,size(), n_procs);
+    v.slice(rank, v.size(), n_procs);
     std::cerr << "process " << rank << " size = " << v.size() << std::endl;
     run(x, e, v);
     if (p != nullptr)
@@ -652,7 +652,7 @@ template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 splitted_run(T x, exec_t e, int n_procs, int rank, tagged_tuple_sequence<Gs...> v) {
     auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    v.slice(rank, v,size(), n_procs);
+    v.slice(rank, v.size(), n_procs);
     std::cerr << "process " << rank << " size = " << v.size() << std::endl;
     run(x, e, v);
 }

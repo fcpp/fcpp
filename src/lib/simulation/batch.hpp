@@ -17,7 +17,10 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+
+#ifdef FCPP_MPI
 #include <mpi.h>
+#endif
 
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
@@ -578,6 +581,7 @@ void run(common::type_sequence<T, Ts...> x, tagged_tuple_sequence<Gs...> const& 
     run(x, common::tags::dynamic_execution{}, v, vs...);
 }
 
+#ifdef FCPP_MPI
 //! @brief Master process that aggregates all the plots
 template <typename P>
 void static master(P* p, int n_procs, int rank) {
@@ -650,6 +654,8 @@ splitted_run(T x, exec_t e, int n, int id, tagged_tuple_sequence<Gs...> v) {
     
 }
 //! @}
+#endif
+
 
 }
 

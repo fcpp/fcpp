@@ -415,7 +415,7 @@ TEST(BatchTest, TupleSequence) {
     EXPECT_EQ(x3, v3);
     auto x4 = generator_to_vector(make_tagged_tuple_sequence(list<char>(1,7,3), list<double>(2,4), formula<short,int>([](auto const& tup){
         return common::get<double>(tup) - common::get<char>(tup);
-    }), filter([](auto const& tup){
+    }), batch::filter([](auto const& tup){
         return common::get<short>(tup) < 0;
     }), stringify<bool>()));
     std::vector<common::tagged_tuple_t<char, int, double, int, short, int, bool, std::string>> v4;
@@ -426,7 +426,7 @@ TEST(BatchTest, TupleSequence) {
     EXPECT_EQ(x4, v4);
     auto x5 = generator_to_vector(make_tagged_tuple_sequence(list<char>(1,7,3), list<double>(2,4), formula<short,int>([](auto const& tup){
         return common::get<double>(tup) - common::get<char>(tup);
-    }), filter([](auto const& tup){
+    }), batch::filter([](auto const& tup){
         return common::get<short>(tup) < 0;
     }), stringify<bool>(), constant<void,long>('a', 7)));
     std::vector<common::tagged_tuple_t<char, int, double, int, short, int, bool, std::string, void, char, long, int>> v5;

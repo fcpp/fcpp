@@ -618,7 +618,10 @@ void static worker(P* p, int rank_master) {
 	std::vector<char>& v = os.data();
 	char* data = v.data();
 	std::size_t size = v.size(); //TODO: size_t -> int
-	assert(size > std::numeric_limits<int>::max());
+	if (size > std::numeric_limits<int>::max()) {
+		std::cerr << "MPI error: size of send to big, size of send: " << size << " limit: " << std::numeric_limits<int>::max() << std::endl;
+		exit(1);
+	}
 	MPI_Send(data, size, MPI_CHAR, rank_master, 0, MPI_COMM_WORLD);
 }
 

@@ -15,6 +15,7 @@ struct temps {};
 struct tag {};
 struct gat {};
 struct oth_but {};
+struct but_oth {};
 
 
 #define EXPECT_POINT(q, u, s, v)    \
@@ -238,6 +239,23 @@ TEST(PlotTest, SplitJoinFilterSplitJoinValue) {
     plot::file f("experiment", pb);
     ss << f;
     EXPECT_EQ(ss.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 2;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0\", \"oth but = 0\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5), (2, 0)}, {(0, 0), (1, 5), (2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0\", \"oth but = 0\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10), (5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10\", \"oth but = 10\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5), (2, 10)}, {(0, 10), (1, 5), (2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10\", \"oth but = 10\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5), (10, 0)}}));\n\n\nshipout(\"experiment\");\n");
+}
+
+using multisplitjoinfiltersplitjoinvalue = plot::split<common::type_sequence<oth_but, but_oth>, joinfiltersplitjoinvalue, std::ratio<10>>;
+
+TEST(PlotTest, MultiSplitJoinFilterSplitJoinValue) {
+    multisplitjoinfiltersplitjoinvalue p1, p2;
+    p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but, but_oth>(0, 10, 0, -2, 19);
+    p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but, but_oth>(1, 5,  5, +1, 24);
+    p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but, but_oth>(2, 0, 10, +4, 31);
+    p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but, but_oth>(2, 10, 0, +6, 26);
+    p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but, but_oth>(1, 5,  5, +9, 20);
+    p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>, oth_but, but_oth>(0, 0, 10, +13,23);
+    p1 += p2;
+    std::array<plot::page, 1> pb = p1.build();
+    std::stringstream ss;
+    ss << pb[0];
+    EXPECT_EQ(ss.str(), "plot.ROWS = 4;\nplot.COLS = 2;\n\nplot.put(plot.plot(name+\"-timtemp-obut0both20\", \"oth but = 0, but oth = 20\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 10), (1, 5)}, {(0, 0), (1, 5)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0both20\", \"oth but = 0, but oth = 20\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut0both30\", \"oth but = 0, but oth = 30\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(2, 0)}, {(2, 10)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut0both30\", \"oth but = 0, but oth = 30\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(0, 10)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10both20\", \"oth but = 10, but oth = 20\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(0, 0), (1, 5)}, {(0, 10), (1, 5)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10both20\", \"oth but = 10, but oth = 20\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(5, 5)}}));\n\nplot.put(plot.plot(name+\"-timtemp-obut10both30\", \"oth but = 10, but oth = 30\", \"time\", \"temp\", new string[] {\"tag (mean)\", \"gat (mean)\"}, new pair[][] {{(2, 10)}, {(2, 0)}}));\n\nplot.put(plot.plot(name+\"-ttagtemp-obut10both30\", \"oth but = 10, but oth = 30\", \"temp<tag>\", \"temp\", new string[] {\"gat (mean)\"}, new pair[][] {{(10, 0)}}));\n\n");
 }
 
 using joinsplitjoinfiltersplitjoinvalue = plot::join<splitjoinfiltersplitjoinvalue, filtersplitvalue>;

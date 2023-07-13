@@ -1204,8 +1204,6 @@ class split {
 
     static_assert(details::key_type<S>::single or not std::is_same<typename details::inspector<parent_build_type>::type, point>::value, "cannot split points with multiple keys");
 
-    static_assert(details::key_type<S>::single or std::is_same<std::ratio<0>, B>::value, "cannot use bucket size with multiple keys");
-
     //! @brief The type used for splitting keys.
     using key_type = typename details::key_type<S>::type;
 
@@ -1236,7 +1234,7 @@ class split {
     template <typename R>
     split& operator<<(R const& row) {
         static_assert(common::type_intersect<typename R::tags, typename key_type::tags>::size == key_type::tags::size, "splitting key not in plot row");
-        key_type k = approx_impl(row, B{});
+        key_type k = approx_impl(row, B{}, typename key_type::tags{});
         P* p;
         {
             common::lock_guard<true> l(m_mutex);
@@ -1295,19 +1293,27 @@ class split {
     }
 
   private:
+    //! @brief Approximates a single value according to a given scale.
+    template <intmax_t num, intmax_t den, typename T>
+    T& approx_impl(T& x) const {
+        intmax_t n = x * den / num + 0.5;
+        return x = double(n*num)/den;
+    }
+
     //! @brief No approximations without buckets.
-    template <typename R>
-    key_type approx_impl(R const& row, std::ratio<0>) const {
+    template <typename R, typename T>
+    key_type approx_impl(R const& row, std::ratio<0>, T) const {
         return row;
     }
-    //! @brief Approximating the key to the closest bucket multiple.
-    template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>>
-    key_type approx_impl(R const& row, std::ratio<num,den>) const {
+
+    //! @brief Approximating the keys to their closest bucket multiple.
+    template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>, typename... Ss>
+    key_type approx_impl(R const& row, std::ratio<num,den>, common::type_sequence<Ss...>) const {
         key_type k = row;
-        intmax_t n = std::get<0>(k) * den / num + 0.5;
-        std::get<0>(k) = double(n*num)/den;
+        common::details::ignore(approx_impl<num,den>(common::get<Ss>(k))...);
         return k;
     }
+
     //! @brief Single plot building.
     void build_impl(std::array<plot, 1>& res, std::map<key_type, parent_build_type>& m) const {
         res[0].xname = details::format_type(common::details::strip_namespaces(common::type_name<S>()));

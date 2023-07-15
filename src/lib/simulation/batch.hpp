@@ -391,7 +391,7 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         m_size = m_core_size + m_extra_size;
         m_offset = start;
         m_stride = stride;
-        m_size = (end - start + stride - 1) / stride;
+        m_size = (std::min(end, m_size) - start + stride - 1) / stride;
     }
 
     //! @brief Function testing presence of an item of the sequence.
@@ -649,6 +649,48 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     run(x, e, v);
     if (p != nullptr)
 	    aggregate_plots(p, n_procs, rank);
+}
+
+//! @brief Running a single MPI component combination (assuming dynamic execution policy).
+template <typename T, typename exec_t, typename... Gs>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_sequence<Gs...> v) {
+    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
+    int n_procs, rank;
+    int maxi = (v.size() + de.size/2) / de.size;
+    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    std::thread manager;
+    if (rank == 0) manager = std::thread([=](){
+        int idx = 0, end = 0;
+        int pi[n_procs];
+        MPI_Request reqs[n_procs];
+        for (int i=0; i<n_procs; ++i) {
+            pi[i] = i;
+            MPI_Isend(pi + i, 1, MPI_INT, i, 0, MPI_COMM_WORLD, reqs + i);
+        }
+        while (end < n_procs) {
+            for (int i=0; i<n_procs; ++i) if (pi[i] < maxi) {
+                int flag;
+                MPI_Test(reqs[i], &flag, MPI_STATUS_IGNORE);
+                if (flag) {
+                    if (idx >= maxi) ++end;
+                    pi[i] = idx++;
+                    MPI_Isend(pi + i, 1, MPI_INT, i, 0, MPI_COMM_WORLD, reqs + i);
+                }
+            }
+        }
+    });
+    while (true) {
+        int idx;
+        MPI_Recv(&idx, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        if (idx >= maxi) break;
+        v.slice(idx, -1, maxi);
+        run(x, e, v);
+    }
+    if (rank == 0) manager.join();
+    if (p != nullptr)
+        aggregate_plots(p, n_procs, rank);
 }
 
 template <typename T, typename exec_t, typename... Gs>

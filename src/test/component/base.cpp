@@ -94,8 +94,7 @@ struct stuffer {
             using P::net::net;
 
             void fail() {
-                int* x = nullptr;
-                *x = 10;
+                assert(false);
             }
         };
     };

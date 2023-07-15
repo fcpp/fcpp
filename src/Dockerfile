@@ -1,5 +1,5 @@
 FROM ubuntu:19.10
-MAINTAINER giorgio.audrito@gmail.com
+LABEL maintainer="giorgio.audrito@gmail.com"
 
 # Install needed libraries
 ARG DEBIAN_FRONTEND=noninteractive

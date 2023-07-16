@@ -303,14 +303,14 @@ auto filter(F&& f) {
 
 
 /**
- * @brief Class generating a sequence of tagged tuples.
+ * @brief Class generating a sequence of tagged tuples from generators.
  *
  * @tparam Gs The sequence of generator types for individual tags in the tuples, to be combined together.
  */
 template <typename... Gs>
 class tagged_tuple_sequence;
 
-//! @brief Class generating a sequence of tagged tuples (empty overload).
+//! @brief Class generating a sequence of tagged tuples from generators (empty overload).
 template <>
 class tagged_tuple_sequence<> {
   public:
@@ -362,7 +362,7 @@ class tagged_tuple_sequence<> {
     }
 };
 
-//! @brief Class generating a sequence of tagged tuples (recursive overload).
+//! @brief Class generating a sequence of tagged tuples from generators (recursive overload).
 template <typename G, typename... Gs>
 class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
   public:
@@ -469,6 +469,133 @@ inline auto make_tagged_tuple_sequence(Gs&&... gs) {
 }
 
 
+/**
+ * @brief Class concatenating multiple tagged tuple sequences.
+ *
+ * All sequences are assumed to have the same value type (modulo permutation).
+ *
+ * @tparam Ss The tagged tuple sequences.
+ */
+template <typename... Ss>
+class tagged_tuple_sequences;
+
+//! @brief Class concatenating multiple tagged tuple sequences (empty overload).
+template <>
+class tagged_tuple_sequences<> {
+  public:
+    //! @brief The tuple type that the class generates.
+    using value_type = common::tagged_tuple_t<>;
+
+    //! @brief Constructor setting up individual generators.
+    tagged_tuple_sequences() {}
+
+    //! @brief Returns the total size of the sequence generated (including filtered out values).
+    inline size_t size() const {
+        return 0;
+    }
+
+    //! @brief Reduces the generator to a subsequence.
+    inline void slice(size_t start, size_t end, size_t stride = 1) {}
+
+    //! @brief Function testing presence of an item of the sequence.
+    inline bool count(size_t i) const {
+        return false;
+    }
+
+    //! @brief Function generating an item of the sequence.
+    inline value_type operator[](size_t) const {
+        return {};
+    }
+
+    /**
+     * @brief Function generating and testing presence of an item of the sequence.
+     *
+     * @param[out] t The tuple in which to store the item generated.
+     * @param[in]  i The index of the item to be generated.
+     * @return     A boolean telling whether the given index has to be included (true) or skipped (false).
+     */
+    template <typename T>
+    inline bool assign(T& t, size_t i) const {
+        return true;
+    }
+};
+
+//! @brief Class concatenating multiple tagged tuple sequences (recursive overload).
+template <typename S, typename... Ss>
+class tagged_tuple_sequences<S, Ss...> : public tagged_tuple_sequences<Ss...> {
+  public:
+    //! @brief The tuple type that the class generates.
+    using value_type = typename S::value_type;
+
+    //! @brief Constructor setting up individual generators.
+    tagged_tuple_sequences(S const& s, Ss const&... ss) :
+        tagged_tuple_sequences<Ss...>(ss...),
+        m_total_size(s.size() + tagged_tuple_sequences<Ss...>::size()),
+        m_size(m_total_size),
+        m_offset(0),
+        m_stride(1),
+        m_sequence(s) {}
+
+    //! @brief Returns the total size of the sequence generated (including filtered out values).
+    inline size_t size() const {
+        return m_size;
+    }
+
+    //! @brief Reduces the generator to a subsequence.
+    void slice(size_t start, size_t end, size_t stride = 1) {
+        m_offset = start;
+        m_stride = stride;
+        m_size = (std::min(end, m_total_size) - start + stride - 1) / stride;
+    }
+
+    //! @brief Function testing presence of an item of the sequence.
+    bool count(size_t i) const {
+        if (i >= m_size) return false;
+        value_type t;
+        return assign(t, i);
+    }
+
+    //! @brief Function generating an item of the sequence.
+    value_type operator[](size_t i) const {
+        value_type t;
+        assign(t, i);
+        return t;
+    }
+
+    /**
+     * @brief Function generating and testing presence of an item of the sequence.
+     *
+     * @param[out] t The tuple in which to store the item generated.
+     * @param[in]  i The index of the item to be generated.
+     * @return     A boolean telling whether the given index has to be included (true) or skipped (false).
+     */
+    template <typename T>
+    inline bool assign(T& t, size_t i) const {
+        i = m_offset + m_stride * i;
+        if (i < m_sequence.size()) return m_sequence.assign(t, i);
+        return tagged_tuple_sequences<Ss...>::assign(t, i - m_sequence.size());
+    }
+
+  private:
+    //! @brief The total size of the sequence generated (including filtered out values).
+    const size_t m_total_size;
+    //! @brief The size of the reduced sequence after slicing.
+    size_t m_size;
+    //! @brief The offset to the first element of the sequence.
+    size_t m_offset;
+    //! @brief The step between consecutive elements of the sequence.
+    size_t m_stride;
+    //! @brief The first sequence.
+    const S m_sequence;
+};
+
+//! @brief Produces a concatenation of multiple tagged tuple sequences.
+template <typename... Ss>
+inline auto make_tagged_tuple_sequences(Ss const&... ss) {
+    return tagged_tuple_sequences<Ss...>(ss...);
+}
+
+
 //! @brief Tag identifying alternative template options for a network type (see \ref option_combine).
 template <typename... Ts>
 struct options {};
@@ -548,21 +675,21 @@ template <typename T, typename exec_t, typename... Gs, typename... Ss>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 run(T, exec_t e, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
     using init_tuple = typename tagged_tuple_sequence<Gs...>::value_type;
-    std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::flush;
+    auto seq = make_tagged_tuple_sequences(v, vs...);
+    std::cerr << common::type_name<T>() << ": running " << seq.size() << " simulations..." << std::flush;
     size_t p = 0;
-    common::parallel_for(e, v.size(), [&](size_t i, size_t t){
-        if (t == 0 and i*100/v.size() > p) {
-            p = i*100/v.size();
+    common::parallel_for(e, seq.size(), [&](size_t i, size_t t){
+        if (t == 0 and i*100/seq.size() > p) {
+            p = i*100/seq.size();
             std::cerr << p << "%..." << std::flush;
         }
         init_tuple tup;
-        if (v.assign(tup, i)) {
+        if (seq.assign(tup, i)) {
             typename T::net network{tup};
             network.run();
         }
     });
     std::cerr << "done." << std::endl;
-    run(T{}, e, vs...);
 }
 
 //!  @brief Does not run a series of experiments (no network types, with execution policy)

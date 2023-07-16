@@ -449,6 +449,31 @@ TEST(BatchTest, TupleSequence) {
     EXPECT_EQ(x5, v5);
 }
 
+TEST(BatchTest, TupleSequences) {
+    using namespace batch;
+    auto g1 = make_tagged_tuple_sequence(list<char>(1,7,3), list<double>(2,4), formula<short,int>([](auto const& tup){
+        return common::get<double>(tup) - common::get<char>(tup);
+    }), stringify<bool>());
+    auto g2 = make_tagged_tuple_sequence(list<char>(1,7,3), list<double>(2,4), formula<short,int>([](auto const& tup){
+        return common::get<double>(tup) - common::get<char>(tup);
+    }), batch::filter([](auto const& tup){
+        return common::get<short>(tup) < 0;
+    }), stringify<bool>());
+    auto gtot = make_tagged_tuple_sequences(g1, g2);
+    auto x = generator_to_vector(gtot);
+    std::vector<common::tagged_tuple_t<char, int, double, int, short, int, bool, std::string>> v;
+    v.emplace_back(1,2,+1,"char-1_double-2_short-1");
+    v.emplace_back(1,4,+3,"char-1_double-4_short-3");
+    v.emplace_back(7,2,-5,"char-7_double-2_short--5");
+    v.emplace_back(7,4,-3,"char-7_double-4_short--3");
+    v.emplace_back(3,2,-1,"char-3_double-2_short--1");
+    v.emplace_back(3,4,+1,"char-3_double-4_short-1");
+    v.emplace_back(1,2,+1,"char-1_double-2_short-1");
+    v.emplace_back(1,4,+3,"char-1_double-4_short-3");
+    v.emplace_back(3,4,+1,"char-3_double-4_short-1");
+    EXPECT_EQ(x, v);
+}
+
 TEST(BatchTest, Run) {
     std::vector<std::string> w;
     v = {};
@@ -465,15 +490,15 @@ TEST(BatchTest, Run) {
     w.push_back("(char => 5; double => 7)");
     w.push_back("(char => 8; double => 2)");
     w.push_back("(char => 8; double => 7)");
-    w.push_back("(double => 3; char => 1)");
-    w.push_back("(double => 3; char => 2)");
-    w.push_back("(double => 3; char => 4)");
-    w.push_back("(double => 0; char => 1)");
-    w.push_back("(double => 0; char => 2)");
-    w.push_back("(double => 0; char => 4)");
-    w.push_back("(double => 6; char => 1)");
-    w.push_back("(double => 6; char => 2)");
-    w.push_back("(double => 6; char => 4)");
+    w.push_back("(char => 1; double => 3)");
+    w.push_back("(char => 2; double => 3)");
+    w.push_back("(char => 4; double => 3)");
+    w.push_back("(char => 1; double => 0)");
+    w.push_back("(char => 2; double => 0)");
+    w.push_back("(char => 4; double => 0)");
+    w.push_back("(char => 1; double => 6)");
+    w.push_back("(char => 2; double => 6)");
+    w.push_back("(char => 4; double => 6)");
     EXPECT_EQ(v, w);
     v = {};
     batch::run(combomock{}, common::tags::parallel_execution{17}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5,8), batch::list<double>(2,7)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0,6), batch::list<char>(1,2,4)));

@@ -728,7 +728,7 @@ void static master(P* p, int n_procs, int rank) {
 	MPI_Status status;
 	for (int i = 1; i < n_procs; ++i) {
         P q;
-		MPI_Recv(buf, max_size, MPI_CHAR, i, 0, MPI_COMM_WORLD, &status);
+		MPI_Recv(buf, max_size, MPI_CHAR, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
 		MPI_Get_count(&status, MPI_CHAR, &size);
 		common::isstream is({buf, buf+size});
 		is >> q;
@@ -749,7 +749,7 @@ void static worker(P* p, int rank_master) {
 		std::cerr << "MPI error: size of send to big, size of send: " << size << " limit: " << std::numeric_limits<int>::max() << std::endl;
 		exit(1);
 	}
-	MPI_Send(data, size, MPI_CHAR, rank_master, 0, MPI_COMM_WORLD);
+	MPI_Send(data, size, MPI_CHAR, rank_master, 1, MPI_COMM_WORLD);
 }
 
 template <typename P>
@@ -791,29 +791,30 @@ mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_
     if (rank == 0) manager = std::thread([=](){
         int idx = 0, end = 0;
         int pi[n_procs];
-        MPI_Request reqs[n_procs];
-        for (int i=0; i<n_procs; ++i) {
+        for (int i=0; i<n_procs; ++i)
             pi[i] = i;
-            MPI_Isend(pi + i, 1, MPI_INT, i, 0, MPI_COMM_WORLD, reqs + i);
-        }
+        MPI_Status status;
+        int res;
         while (end < n_procs) {
-            for (int i=0; i<n_procs; ++i) if (pi[i] < maxi) {
-                int flag;
-                MPI_Test(reqs[i], &flag, MPI_STATUS_IGNORE);
-                if (flag) {
-                    if (idx >= maxi) ++end;
-                    pi[i] = idx++;
-                    MPI_Isend(pi + i, 1, MPI_INT, i, 0, MPI_COMM_WORLD, reqs + i);
-                }
-            }
+                if (idx >= maxi) ++end;     
+                MPI_Recv(&res, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+                int source = status.MPI_SOURCE;
+                //std::cerr << "msg received from " << source << std::endl;
+                pi[source] = idx++;         
+                MPI_Send(pi + source, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
+                //std::cerr << "msg sent to " << source << std::endl;
         }
     });
+    int idx = rank;
+    std::size_t i = 0;
     while (true) {
-        int idx;
-        MPI_Recv(&idx, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        if (i > 0)
+            MPI_Recv(&idx, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         if (idx >= maxi) break;
         v.slice(idx, -1, maxi);
         run(x, e, v);
+        MPI_Send(&idx, 0, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        ++i;
     }
     if (rank == 0) manager.join();
     if (p != nullptr)

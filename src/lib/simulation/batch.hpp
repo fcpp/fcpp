@@ -784,21 +784,23 @@ common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_temp
 mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_sequence<Gs...> v) {
     constexpr int dynamic_chunks_per_node = 4; // to regulate, but probably not much than this
     // number of simulations per proc that are pre-assigned at start
+    int n_procs, rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int start = dynamic_chunks_per_node * de.size * n_procs;
     start = max(de.size, (v.size() - start + n_procs/2) / n_procs);
     auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    int n_procs, rank;
     int maxi = (v.size() - start*n_procs + de.size/2) / de.size;
-    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     std::thread manager;
     if (rank == 0) manager = std::thread([=](){
-        int buf, pi[n_procs];
+        int buf;
+        int pi[n_procs];
         MPI_Request req;
         MPI_Status status;
         for (int idx = 0; idx < maxi + n_procs; ++idx) {
             MPI_Irecv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &req);
-            while (int s=1; ; s=min(s*2, 64)) {
+            for (int s=1; ; s=std::min(s*2, 64)) {
                 int flag;
                 MPI_Test(&req, &flag, &status);
                 if (flag) break;
@@ -813,6 +815,7 @@ mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_
     });
     v.slice(rank, start*n_procs, n_procs);
     run(x, e, v);
+    int idx;
     while (true) {
         MPI_Send(&idx, 0, MPI_INT, 0, 0, MPI_COMM_WORLD);
         MPI_Recv(&idx, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);

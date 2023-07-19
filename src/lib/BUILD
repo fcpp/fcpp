@@ -88,6 +88,7 @@ cc_library(
         "//lib/data:color",
         "//lib/data:field",
         "//lib/data:hyperloglog",
+        "//lib/data:ordered",
         "//lib/data:shape",
         "//lib/data:tuple",
         "//lib/data:vec",

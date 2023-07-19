@@ -43,6 +43,15 @@ cc_library(
 )
 
 cc_library(
+    name = "ordered",
+    hdrs = ["ordered.hpp"],
+    srcs = ["ordered.cpp"],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'shape',
     hdrs = ['shape.hpp'],
     srcs = ['shape.cpp'],

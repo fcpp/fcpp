@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -15,9 +15,8 @@
 
 using namespace fcpp;
 
-
 template <typename T>
-std::pair<T,T> rebuild(T y, T z) {
+void rebuilder(T& y, T&z) {
     T const& x{y};
     common::osstream os, osx;
     os << y;
@@ -25,7 +24,25 @@ std::pair<T,T> rebuild(T y, T z) {
     EXPECT_EQ((std::vector<char>)os, (std::vector<char>)osx);
     common::isstream is(os);
     is >> z;
-    return {y, z};
+}
+
+template <typename T>
+std::tuple<T,T,int,int,int> rebuild(T y, T z, bool h) {
+    int h1 = 0, h2 = 1, h3 = 0;
+    rebuilder(y, z);
+    return {y, z, h1, h2, h3};
+}
+
+template <typename T>
+std::tuple<T,T,int,int,int> rebuild(T y, T z) {
+    common::hstream hs;
+    int h1 = int(hs << y);
+    hs = {};
+    int h2 = int(hs << z);
+    rebuilder(y, z);
+    hs = {};
+    int h3 = int(hs << z);
+    return {y, z, h1, h2, h3};
 }
 
 size_t rebuild_size(size_t y) {
@@ -37,10 +54,12 @@ size_t rebuild_size(size_t y) {
     return z;
 }
 
-#define SERIALIZE_CHECK(x, null) {          \
-            auto result = rebuild(x, null); \
-            EXPECT_EQ(x, get<0>(result));   \
-            EXPECT_EQ(x, get<1>(result));   \
+#define SERIALIZE_CHECK(x, ...) {                       \
+            auto result = rebuild(x, __VA_ARGS__);      \
+            EXPECT_EQ(x, get<0>(result));               \
+            EXPECT_EQ(x, get<1>(result));               \
+            EXPECT_EQ(get<2>(result), get<4>(result));  \
+            EXPECT_NE(get<2>(result), get<3>(result));  \
         }
 
 
@@ -80,26 +99,6 @@ TEST(SerializeTest, Indexed) {
     SERIALIZE_CHECK(z, {});
 }
 
-namespace std {
-
-//! @brief STD tuple hasher.
-template <>
-struct hash<tuple<int,bool>> {
-    size_t operator()(tuple<int,bool> const& k) const {
-        return (get<0>(k) << 1) + get<1>(k);
-    }
-};
-
-//! @brief FCPP tuple hasher.
-template <>
-struct hash<fcpp::tuple<int,bool>> {
-    size_t operator()(fcpp::tuple<int,bool> const& k) const {
-        return (fcpp::get<0>(k) << 1) + fcpp::get<1>(k);
-    }
-};
-
-}
-
 TEST(SerializeTest, Iterable) {
     EXPECT_EQ(15ULL,     rebuild_size(15));
     EXPECT_EQ(3058ULL,   rebuild_size(3058));
@@ -110,20 +109,20 @@ TEST(SerializeTest, Iterable) {
     std::set<int> s = {1, 2, 4, 8};
     SERIALIZE_CHECK(s, {});
     std::unordered_set<trace_t> t = {1, 2, 4, 8};
-    SERIALIZE_CHECK(t, {});
+    SERIALIZE_CHECK(t, {}, false);
     std::map<trace_t,double> m = {{4, 2}, {42, 2.4}};
     SERIALIZE_CHECK(m, {});
     std::unordered_map<int,double> n = {{4, 2}, {42, 2.4}};
-    SERIALIZE_CHECK(n, {});
+    SERIALIZE_CHECK(n, {}, false);
     std::tuple<std::unordered_map<int, std::pair<std::vector<char>, short>>, double> y = {
         {{2, {{}, 1}}, {3, {{2,3,4}, 2}}}, 4.2
     };
-    SERIALIZE_CHECK(y, {});
-    std::unordered_map<std::tuple<int,bool>, int> u;
+    SERIALIZE_CHECK(y, {}, false);
+    std::unordered_map<std::tuple<int,bool>, int, common::hash<std::tuple<int,bool>>> u;
     u[std::make_tuple(4,false)] = 2;
-    SERIALIZE_CHECK(u, {});
+    SERIALIZE_CHECK(u, {}, false);
     std::string str = "thestring";
-    SERIALIZE_CHECK(u, {});
+    SERIALIZE_CHECK(str, {});
 }
 
 TEST(SerializeTest, FCPP) {
@@ -148,7 +147,7 @@ TEST(SerializeTest, FCPP) {
     m.insert(2, 'z');
     m.insert(3, 'x');
     m.insert(4, 4242);
-    SERIALIZE_CHECK(m, {});
+    SERIALIZE_CHECK(m, {}, false);
     internal::flat_ptr<int, true> p{42};
     SERIALIZE_CHECK(p, {});
     internal::flat_ptr<int, false> q{42};
@@ -158,10 +157,10 @@ TEST(SerializeTest, FCPP) {
     e->insert(10);
     e->insert(1, 4.2);
     e->insert(3, details::make_field<bool>({2, 4}, {false, true, true}));
-    SERIALIZE_CHECK(e, {});
-    std::unordered_map<tuple<int,bool>, int> u;
+    SERIALIZE_CHECK(e, {}, false);
+    std::unordered_map<tuple<int,bool>, int, common::hash<tuple<int,bool>>> u;
     u[make_tuple(4,false)] = 2;
-    SERIALIZE_CHECK(u, {});
+    SERIALIZE_CHECK(u, {}, false);
 }
 
 TEST(SerializeTest, Error) {

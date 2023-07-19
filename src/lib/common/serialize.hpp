@@ -242,14 +242,20 @@ class hstream {
 };
 
 
+//! @brief Generic hashing function based on `hstream`.
+template <typename I, typename T>
+inline I hash_to(T const& x) {
+    hstream hs;
+    hs << x;
+    return I(hs);
+}
+
 //! @brief Generic hasher class based on `hstream`, that can be used with standard containers.
 template <typename T>
 struct hash {
     //! @brief Reduces a
-    size_t operator()(T const& x) const {
-        hstream hs;
-        hs << x;
-        return size_t(hs);
+    inline size_t operator()(T const& x) const {
+        return hash_to<size_t>(x);
     }
 };
 

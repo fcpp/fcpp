@@ -1,4 +1,4 @@
-// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file calculus.hpp
@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "lib/common/serialize.hpp"
 #include "lib/internal/context.hpp"
 #include "lib/internal/trace.hpp"
 #include "lib/internal/twin.hpp"
@@ -665,7 +666,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
     resmap_t rm;
     // run process for every gathered key
     for (K const& k : ky) {
-        internal::trace_key trace_process(node.stack_trace, k);
+        internal::trace_key trace_process(node.stack_trace, common::hash_to<trace_t>(k));
         bool b;
         tie(rm[k], b) = process(k, xs...);
         // if true status, propagate key to neighbours
@@ -698,7 +699,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
     // run process for every gathered key
     for (K const& k : ky)
         if (kn.count(k) == 0) {
-            internal::trace_key trace_process(node.stack_trace, k);
+            internal::trace_key trace_process(node.stack_trace, common::hash_to<trace_t>(k));
             std::decay_t<decltype(details::get_export(node))> ne;
             swap(details::get_export(node), ne);
             R r;

@@ -663,6 +663,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
     keyset_t ky(key_set.begin(), key_set.end()), km;
     for (size_t i = 1; i < details::get_vals(fk).size(); ++i)
         ky.insert(details::get_vals(fk)[i].begin(), details::get_vals(fk)[i].end());
+    internal::trace_call trace_caller(node.stack_trace, call_point);
     resmap_t rm;
     // run process for every gathered key
     for (K const& k : ky) {
@@ -694,6 +695,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
             else
                 ky.insert(k.first);
         }
+    internal::trace_call trace_caller(node.stack_trace, call_point);
     keymap_t km;
     resmap_t rm;
     // run process for every gathered key

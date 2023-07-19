@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 
+#include "lib/data/color.hpp"
 #include "lib/option/distribution.hpp"
 #include "test/helper.hpp"
 
@@ -72,6 +73,16 @@ TEST(DistributionTest, Constant) {
     EXPECT_DOUBLE_EQ(5.2, d);
     d = ddouble(rnd, nothing);
     EXPECT_DOUBLE_EQ(5.2, d);
+    color c;
+    distribution::constant_n<color, TEAL> dcolor(rnd, nothing);
+    c = dcolor(rnd, nothing);
+    EXPECT_EQ(c, color(TEAL));
+    distribution::constant_n<color, TEAL, 1, meantag> dcol1(rnd, nothing);
+    c = dcol1(rnd, nothing);
+    EXPECT_EQ(c, color(TEAL));
+    distribution::constant_n<color, TEAL, 1, meantag> dcol2(rnd, common::make_tagged_tuple<meantag>(TAN));
+    c = dcol2(rnd, nothing);
+    EXPECT_EQ(c, color(TAN));
 }
 
 TEST(DistributionTest, Variable) {

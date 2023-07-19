@@ -144,19 +144,22 @@ namespace details {
         return dist(g, t);
     }
 
+    template <typename T, typename I>
+    using if_literal = std::conditional_t<std::is_literal_type<T>::value, T, I>;
+
     template <typename T>
-    constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<1>) {
-        return (T)num;
+    constexpr auto maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<1>) {
+        return if_literal<T, intmax_t>(num);
     }
 
     template <typename T>
-    constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<0>) {
-        return (T)(num * std::numeric_limits<long double>::infinity());
+    constexpr auto maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<0>) {
+        return if_literal<T, long double>(num * std::numeric_limits<long double>::infinity());
     }
 
     template <typename T, intmax_t den, typename = std::enable_if_t<(den > 1)>>
-    constexpr T maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<den>) {
-        return (T)(num / (long double)den);
+    constexpr auto maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<den>) {
+        return if_literal<T, long double>(num / (long double)den);
     }
 }
 //! @endcond
@@ -221,7 +224,10 @@ struct constant_n {
 
     //! @brief Constructor.
     template <typename G, typename S, typename T>
-    constant_n(G&&, common::tagged_tuple<S,T> const& t) : val(common::get_or<val_tag>(t, def)) {}
+    constant_n(G&&, common::tagged_tuple<S,T> const& t) {
+        constexpr auto def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
+        val = type(common::get_or<val_tag>(t, def));
+    }
 
     //! @brief Generator function.
     template <typename G, typename T>
@@ -230,9 +236,6 @@ struct constant_n {
     }
 
   private:
-    //! @brief The default result.
-    static constexpr type def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
-
     //! @brief The constant value.
     type val;
 };
@@ -250,12 +253,9 @@ struct constant_n<R, num, den, void> {
     //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&&, T&&) {
-        return def;
+        constexpr auto def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
+        return type(def);
     }
-
-  private:
-    //! @brief The default result.
-    static constexpr type def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
 };
 //! @endcond
 /**

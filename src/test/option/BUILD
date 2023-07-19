@@ -28,6 +28,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/option:distribution",
+        "//lib/data:color",
         "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

@@ -26,7 +26,11 @@ namespace component {
 
 //! @brief Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data.
+    //! @brief Declaration tag associating to a sequence of tags and types for storing global persistent data.
+    template <typename... Ts>
+    struct net_store {};
+
+    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data in nodes.
     template <typename... Ts>
     struct node_store {};
 
@@ -40,11 +44,15 @@ namespace tags {
  * @brief Component modelling persistent data.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::node_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
+ * - \ref tags::net_store defines a sequence of tags and types for storing global persistent data (defaults to the empty sequence).
+ * - \ref tags::node_store defines a sequence of tags and types for storing persistent data in nodes (defaults to the empty sequence).
  */
 template <typename... Ts>
 struct storage {
-    //! @brief Sequence of tags and types for storing persistent data.
+    //! @brief Sequence of tags and types for storing global persistent data.
+    using net_store_type = common::storage_list<common::option_types<tags::net_store, Ts...>>;
+
+    //! @brief Sequence of tags and types for storing persistent data in nodes.
     using node_store_type = common::storage_list<common::option_types<tags::node_store, Ts...>>;
 
     /**
@@ -94,7 +102,7 @@ struct storage {
             }
 
             //! @cond INTERNAL
-            #define MISSING_TYPE_MESSAGE "unsupported tag access (add A to storage tag list)"
+            #define MISSING_TYPE_MESSAGE "unsupported tag access (add A to node storage tag list)"
             //! @endcond
 
             /**
@@ -192,7 +200,128 @@ struct storage {
         };
 
         //! @brief The global part of the component.
-        using net = typename P::net;
+        class net : public P::net {
+          public: // visible by node objects and the main program
+            //! @brief Tuple type of the contents.
+            using net_tuple_type = common::tagged_tuple_t<net_store_type>;
+
+          private: // implementation details
+            //! @brief Checks whether a type is supported by the storage.
+            template <typename A>
+            constexpr static bool type_supported = net_tuple_type::tags::template count<std::remove_reference_t<A>> != 0;
+
+          public: // visible by node objects and the main program
+            //! @brief Constructor from a tagged tuple.
+            template <typename S, typename T>
+            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_storage(t) {}
+
+            //! @brief Access to stored data as tagged tuple.
+            net_tuple_type& storage_tuple() {
+                return m_storage;
+            }
+
+            //! @brief Const access to stored data as tagged tuple.
+            net_tuple_type const& storage_tuple() const {
+                return m_storage;
+            }
+
+            //! @cond INTERNAL
+            #define MISSING_TYPE_MESSAGE "unsupported tag access (add A to net storage tag list)"
+            //! @endcond
+
+            /**
+             * @brief Write access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto& storage() {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+            }
+
+            /**
+             * @brief Const access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& storage() const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+            }
+
+            /**
+             * @brief Write access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto& storage(T) {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+            }
+
+            /**
+             * @brief Const access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& storage(T) const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+            }
+
+            #undef MISSING_TYPE_MESSAGE
+
+          private: // implementation details
+            //! @brief Wildcard struct allowing arbitrary conversions to suppress as many error messages as possible.
+            struct wildcard {
+                //! @brief Generic constructor.
+                template <typename T>
+                wildcard(T&&) {}
+                //! @brief Generic assignment.
+                template <typename T>
+                wildcard& operator=(T&&) {
+                    return *this;
+                }
+                //! @brief Generic conversion.
+                template <typename T>
+                operator T() const {
+                    return *((std::decay_t<T>*)42);
+                }
+            };
+
+            //! @brief Access to the data corresponding to an existing tag.
+            template <typename T>
+            inline auto& get_impl(common::bool_pack<true>) {
+                return common::get<T>(m_storage);
+            }
+
+            //! @brief Const access to the data corresponding to an existing tag.
+            template <typename T>
+            inline auto const& get_impl(common::bool_pack<true>) const {
+                return common::get<T>(m_storage);
+            }
+
+            //! @brief Access to the data corresponding to a non-existent tag.
+            template <typename T>
+            inline auto& get_impl(common::bool_pack<false>) {
+                assert(false);
+                return *((wildcard*)42);
+            }
+
+            //! @brief Const access to the data corresponding to a non-existent tag.
+            template <typename T>
+            inline auto const& get_impl(common::bool_pack<false>) const {
+                assert(false);
+                return *((wildcard*)42);
+            }
+
+            //! @brief The data storage.
+            net_tuple_type m_storage;
+        };
     };
 };
 

@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -28,7 +28,7 @@ struct exposer {
 
 using combo1 = component::combine_spec<
     exposer,
-    component::storage<tuple_store<tag,bool,gat,int>>,
+    component::storage<node_store<tag,bool,gat,int>>,
     component::base<>
 >;
 

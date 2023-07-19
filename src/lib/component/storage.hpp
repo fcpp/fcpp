@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file storage.hpp
@@ -28,7 +28,11 @@ namespace component {
 namespace tags {
     //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data.
     template <typename... Ts>
-    struct tuple_store {};
+    struct node_store {};
+
+    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data (legacy deprecated name).
+    template <typename... Ts>
+    using tuple_store = node_store<Ts...>;
 }
 
 
@@ -36,12 +40,12 @@ namespace tags {
  * @brief Component modelling persistent data.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
+ * - \ref tags::node_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
  */
 template <typename... Ts>
 struct storage {
     //! @brief Sequence of tags and types for storing persistent data.
-    using tuple_store_type = common::storage_list<common::option_types<tags::tuple_store, Ts...>>;
+    using node_store_type = common::storage_list<common::option_types<tags::node_store, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -62,12 +66,12 @@ struct storage {
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<tuple_store_type>;
+            using node_tuple_type = common::tagged_tuple_t<node_store_type>;
 
           private: // implementation details
             //! @brief Checks whether a type is supported by the storage.
             template <typename A>
-            constexpr static bool type_supported = tuple_type::tags::template count<std::remove_reference_t<A>> != 0;
+            constexpr static bool type_supported = node_tuple_type::tags::template count<std::remove_reference_t<A>> != 0;
 
           public: // visible by net objects and the main program
             /**
@@ -80,12 +84,12 @@ struct storage {
             node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_storage(t) {}
 
             //! @brief Access to stored data as tagged tuple.
-            tuple_type& storage_tuple() {
+            node_tuple_type& storage_tuple() {
                 return m_storage;
             }
 
             //! @brief Const access to stored data as tagged tuple.
-            tuple_type const& storage_tuple() const {
+            node_tuple_type const& storage_tuple() const {
                 return m_storage;
             }
 
@@ -184,7 +188,7 @@ struct storage {
             }
 
             //! @brief The data storage.
-            tuple_type m_storage;
+            node_tuple_type m_storage;
         };
 
         //! @brief The global part of the component.

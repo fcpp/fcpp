@@ -799,13 +799,7 @@ mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_
         MPI_Request req;
         MPI_Status status;
         for (int idx = 0; idx < maxi + n_procs; ++idx) {
-            MPI_Irecv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &req);
-            for (int s=1; ; s=std::min(s*2, 64)) {
-                int flag;
-                MPI_Test(&req, &flag, &status);
-                if (flag) break;
-                std::this_thread::sleep_for(std::chrono::milliseconds(s));
-            }
+            MPI_Recv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
             int source = status.MPI_SOURCE;
             //std::cerr << "msg received from " << source << std::endl;
             pi[source] = idx;

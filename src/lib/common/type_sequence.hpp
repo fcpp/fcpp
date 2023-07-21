@@ -8,6 +8,7 @@
 #ifndef FCPP_COMMON_TYPE_SEQUENCE_H_
 #define FCPP_COMMON_TYPE_SEQUENCE_H_
 
+#include <cstddef>
 #include <type_traits>
 
 

@@ -293,15 +293,15 @@ struct type_sequence<T, Ts...> {
     using push_back = type_sequence<T, Ts..., Ss...>;
 
     //! @brief Set intersection with other sequence.
-    template<typename... Ss>
+    template <typename... Ss>
     using intersect = type_intersect<type_sequence<T, Ts...>, type_sequence<Ss...>>;
 
     //! @brief Set union with other sequence.
-    template<typename... Ss>
+    template <typename... Ss>
     using unite = type_unite<type_sequence<T, Ts...>, type_sequence<Ss...>>;
 
     //! @brief Set difference with other sequence.
-    template<typename... Ss>
+    template <typename... Ss>
     using subtract = type_subtract<type_sequence<T, Ts...>, type_sequence<Ss...>>;
 
     //! @brief Extract the types that are repeated more than once.
@@ -338,15 +338,15 @@ struct type_sequence<> {
     using push_back = type_sequence<Ss...>;
 
     //! @brief Set intersection with other sequence.
-    template<typename... Ss>
+    template <typename... Ss>
     using intersect = type_sequence<>;
 
     //! @brief Set union with other sequence.
-    template<typename... Ss>
+    template <typename... Ss>
     using unite = type_sequence<Ss...>;
 
     //! @brief Set difference with other sequence.
-    template<typename... Ss>
+    template <typename... Ss>
     using subtract = type_sequence<>;
 
     //! @brief Extract the types that are repeated more than once.

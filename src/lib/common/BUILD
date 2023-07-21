@@ -30,6 +30,15 @@ cc_library(
 )
 
 cc_library(
+    name = 'number_sequence',
+    hdrs = ['number_sequence.hpp'],
+    srcs = ['number_sequence.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'option',
     hdrs = ['option.hpp'],
     srcs = ['option.cpp'],
@@ -125,6 +134,7 @@ cc_library(
     hdrs = ['traits.hpp'],
     srcs = ['traits.cpp'],
     deps = [
+        "//lib/common:number_sequence",
         "//lib/common:type_sequence",
     ],
     visibility = [

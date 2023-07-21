@@ -36,6 +36,19 @@ cc_test(
 )
 
 cc_test(
+    name = "number_sequence",
+    srcs = ["number_sequence.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:number_sequence",
+        "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "option",
     srcs = ["option.cpp"],
     deps = [

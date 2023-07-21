@@ -121,6 +121,7 @@ set(
     lib/common/algorithm.cpp
     lib/common/multitype_map.cpp
     lib/common/mutex.cpp
+    lib/common/number_sequence.cpp
     lib/common/ostream.cpp
     lib/common/plot.cpp
     lib/common/profiler.cpp
@@ -286,6 +287,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/common/algorithm.cpp)
         fcpp_test(test/common/multitype_map.cpp)
         fcpp_test(test/common/mutex.cpp)
+        fcpp_test(test/common/number_sequence.cpp)
         fcpp_test(test/common/option.cpp)
         fcpp_test(test/common/ostream.cpp)
         fcpp_test(test/common/plot.cpp)

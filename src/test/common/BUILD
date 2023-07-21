@@ -162,3 +162,16 @@ cc_test(
     args = ['--gtest_color=yes'],
     timeout = 'short',
 )
+
+cc_test(
+    name = "type_sequence",
+    srcs = ["type_sequence.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:type_sequence",
+        "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)

@@ -124,6 +124,18 @@ cc_library(
     name = 'traits',
     hdrs = ['traits.hpp'],
     srcs = ['traits.cpp'],
+    deps = [
+        "//lib/common:type_sequence",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'type_sequence',
+    hdrs = ['type_sequence.hpp'],
+    srcs = ['type_sequence.cpp'],
     visibility = [
         '//visibility:public',
     ],

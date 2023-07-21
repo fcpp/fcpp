@@ -303,7 +303,7 @@ struct logger {
             void update() {
                 if (m_schedule.next() < P::net::next()) {
                     PROFILE_COUNT("logger");
-                    data_puller(common::bool_pack<not value_push>(), *this);
+                    data_puller(common::number_sequence<not value_push>(), *this);
                     row_update(a_tags{}, f_tags{});
                     print_output(l_tags{});
                     *m_stream << std::endl;
@@ -370,13 +370,13 @@ struct logger {
 
             //! @brief Accesses a tuple (effective overload).
             template <typename U, typename S, typename T>
-            inline auto const& smart_getter(S&, T const& t, common::bool_pack<true>) {
+            inline auto const& smart_getter(S&, T const& t, common::number_sequence<true>) {
                 return common::get<U>(t);
             }
 
             //! @brief Accesses a tuple (pretender overload).
             template <typename U, typename S, typename T>
-            inline auto smart_getter(S&, T const&, common::bool_pack<false>) {
+            inline auto smart_getter(S&, T const&, common::number_sequence<false>) {
                 using A = typename S::template tag_type<U>::type;
                 return *((A*)42);
             }
@@ -388,7 +388,7 @@ struct logger {
             //! @brief Erases data from the aggregators.
             template <typename S, typename T, typename U, typename... Us>
             inline void aggregator_erase_impl(S& a, T const& t, common::type_sequence<U, Us...>) {
-                common::get<U>(a).erase(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                common::get<U>(a).erase(smart_getter<U>(a, t, common::number_sequence<T::tags::template count<U> != 0>{}));
                 aggregator_erase_impl(a, t, common::type_sequence<Us...>{});
             }
 
@@ -400,7 +400,7 @@ struct logger {
             template <typename S, typename T, typename U, typename... Us>
             inline void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<U, Us...>) {
                 static_assert(T::tags::template count<U> != 0, "unsupported tag in aggregators (add U to storage tag list)");
-                common::get<U>(a).insert(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                common::get<U>(a).insert(smart_getter<U>(a, t, common::number_sequence<T::tags::template count<U> != 0>{}));
                 aggregator_insert_impl(a, t, common::type_sequence<Us...>{});
             }
 
@@ -434,7 +434,7 @@ struct logger {
 
             //! @brief Collects data actively from nodes if `identifier` is available.
             template <typename N>
-            inline void data_puller(common::bool_pack<true>, N& n) {
+            inline void data_puller(common::number_sequence<true>, N& n) {
                 if (parallel == false or m_threads == 1) {
                     for (auto it = n.node_begin(); it != n.node_end(); ++it)
                         aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), a_tags());
@@ -452,7 +452,7 @@ struct logger {
 
             //! @brief Does nothing otherwise.
             template <typename N>
-            inline void data_puller(common::bool_pack<false>, N&) {}
+            inline void data_puller(common::number_sequence<false>, N&) {}
 
             //! @brief Updates row data.
             template <typename... Us, typename... Ss>

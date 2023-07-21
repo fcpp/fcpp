@@ -25,33 +25,6 @@ namespace common {
 
 
 /**
- * @name boolean operators
- *
- * Constexpr computing boolean combinations of their arguments.
- */
-//! @{
-//! @brief Helper class holding arbitrary boolean template parameters.
-template <bool...> struct bool_pack {};
-
-//! @brief Checks if every argument is `true`.
-template <bool... v>
-constexpr bool all_true = std::is_same<bool_pack<true, v...>, bool_pack<v..., true>>::value;
-
-//! @brief Checks if every argument is `false`.
-template <bool... v>
-constexpr bool all_false = std::is_same<bool_pack<false, v...>, bool_pack<v..., false>>::value;
-
-//! @brief Checks if some argument is `true`.
-template <bool... v>
-constexpr bool some_true = not all_false<v...>;
-
-//! @brief Checks if some argument is `false`.
-template <bool... v>
-constexpr bool some_false = not all_true<v...>;
-//! @}
-
-
-/**
  * @name number_sequence
  *
  * Helper empty class encapsulating a sequence of numbers.

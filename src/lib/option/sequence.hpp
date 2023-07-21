@@ -204,7 +204,7 @@ using multiple_i = multiple<distribution::constant_i<size_t, n_tag>, distributio
  */
 template <typename... Ds>
 class list {
-    static_assert(common::all_true<std::is_same<typename Ds::type, times_t>::value...>, "the distributions Ds must generate a times_t value");
+    static_assert(common::number_all_true<std::is_same<typename Ds::type, times_t>::value...>, "the distributions Ds must generate a times_t value");
 
   public:
     //! @brief The type of results generated.
@@ -378,7 +378,7 @@ namespace details {
  */
 template <typename... Ss>
 class merge {
-    static_assert(common::all_true<std::is_same<typename Ss::type, times_t>::value...>, "the generators Ss must generate a times_t value");
+    static_assert(common::number_all_true<std::is_same<typename Ss::type, times_t>::value...>, "the generators Ss must generate a times_t value");
 
   public:
     //! @brief The type of results generated.

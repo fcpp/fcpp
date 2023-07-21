@@ -144,7 +144,7 @@ constexpr bool has_template<T, T<A...>> = true;
 
 //! @brief Recurse on tuple-like type arguments.
 template <template<class...> class T, template<class...> class U, class... A>
-constexpr bool has_template<T, U<A...>> = some_true<has_template<T, A>...>;
+constexpr bool has_template<T, U<A...>> = number_some_true<has_template<T, A>...>;
 
 //! @brief Recurse on array-like type arguments.
 template <template<class...> class T, template<class,size_t> class U, class A, size_t N>

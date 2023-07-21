@@ -212,7 +212,7 @@ struct graph_connector {
             template <typename S, typename T>
             inline void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
-                receive_size(common::bool_pack<message_size>{}, d, m);
+                receive_size(common::number_sequence<message_size>{}, d, m);
             }
 
           private: // implementation details
@@ -221,10 +221,10 @@ struct graph_connector {
 
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
-            void receive_size(common::bool_pack<false>, device_t, common::tagged_tuple<S,T> const&) {}
+            void receive_size(common::number_sequence<false>, device_t, common::tagged_tuple<S,T> const&) {}
             //! @brief Stores size of received message.
             template <typename S, typename T>
-            void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
+            void receive_size(common::number_sequence<true>, device_t d, common::tagged_tuple<S,T> const& m) {
                 common::osstream os;
                 os << m;
                 fcpp::details::self(m_nbr_msg_size.front(), d) = os.size();

@@ -113,7 +113,7 @@ struct storage {
             template <typename T>
             auto& storage() {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             /**
@@ -124,7 +124,7 @@ struct storage {
             template <typename T>
             auto const& storage() const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             /**
@@ -135,7 +135,7 @@ struct storage {
             template <typename T>
             auto& storage(T) {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             /**
@@ -146,7 +146,7 @@ struct storage {
             template <typename T>
             auto const& storage(T) const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             #undef MISSING_TYPE_MESSAGE
@@ -171,26 +171,26 @@ struct storage {
 
             //! @brief Access to the data corresponding to an existing tag.
             template <typename T>
-            inline auto& get_impl(common::bool_pack<true>) {
+            inline auto& get_impl(common::number_sequence<true>) {
                 return common::get<T>(m_storage);
             }
 
             //! @brief Const access to the data corresponding to an existing tag.
             template <typename T>
-            inline auto const& get_impl(common::bool_pack<true>) const {
+            inline auto const& get_impl(common::number_sequence<true>) const {
                 return common::get<T>(m_storage);
             }
 
             //! @brief Access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline auto& get_impl(common::bool_pack<false>) {
+            inline auto& get_impl(common::number_sequence<false>) {
                 assert(false);
                 return *((wildcard*)42);
             }
 
             //! @brief Const access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline auto const& get_impl(common::bool_pack<false>) const {
+            inline auto const& get_impl(common::number_sequence<false>) const {
                 assert(false);
                 return *((wildcard*)42);
             }
@@ -237,7 +237,7 @@ struct storage {
             template <typename T>
             auto& storage() {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             /**
@@ -248,7 +248,7 @@ struct storage {
             template <typename T>
             auto const& storage() const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             /**
@@ -259,7 +259,7 @@ struct storage {
             template <typename T>
             auto& storage(T) {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             /**
@@ -270,7 +270,7 @@ struct storage {
             template <typename T>
             auto const& storage(T) const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return get_impl<T>(common::number_sequence<type_supported<T>>{});
             }
 
             #undef MISSING_TYPE_MESSAGE
@@ -295,26 +295,26 @@ struct storage {
 
             //! @brief Access to the data corresponding to an existing tag.
             template <typename T>
-            inline auto& get_impl(common::bool_pack<true>) {
+            inline auto& get_impl(common::number_sequence<true>) {
                 return common::get<T>(m_storage);
             }
 
             //! @brief Const access to the data corresponding to an existing tag.
             template <typename T>
-            inline auto const& get_impl(common::bool_pack<true>) const {
+            inline auto const& get_impl(common::number_sequence<true>) const {
                 return common::get<T>(m_storage);
             }
 
             //! @brief Access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline auto& get_impl(common::bool_pack<false>) {
+            inline auto& get_impl(common::number_sequence<false>) {
                 assert(false);
                 return *((wildcard*)42);
             }
 
             //! @brief Const access to the data corresponding to a non-existent tag.
             template <typename T>
-            inline auto const& get_impl(common::bool_pack<false>) const {
+            inline auto const& get_impl(common::number_sequence<false>) const {
                 assert(false);
                 return *((wildcard*)42);
             }

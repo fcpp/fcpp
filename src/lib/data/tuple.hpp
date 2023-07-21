@@ -41,15 +41,15 @@ class tuple {
     //! @brief Move constructor.
     tuple(tuple&&) = default;
     //! @brief Implicit conversion copy constructor.
-    template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
+    template <typename... Us, typename = std::enable_if_t<common::number_all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(tuple<Us...> const& t) : m_tuple(t.m_tuple) {}
     //! @brief Implicit conversion move constructor.
-    template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
+    template <typename... Us, typename = std::enable_if_t<common::number_all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(tuple<Us...>&& t) : m_tuple(std::move(t.m_tuple)) {}
     //! @brief Initialization copy constructor.
     tuple(Ts const&... xs) : m_tuple(xs...) {}
     //! @brief Initialization convert constructor.
-    template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
+    template <typename... Us, typename = std::enable_if_t<common::number_all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(Us&&... xs) : m_tuple(std::forward<Us>(xs)...) {}
     //! @}
 

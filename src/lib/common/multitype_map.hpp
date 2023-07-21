@@ -97,14 +97,14 @@ class multitype_map {
     //! @brief Inserts value at corresponding key.
     template<typename A>
     void insert(T key, A const& value) {
-        get_map<A>(bool_pack<type_supported<A>>{})[key] = value;
+        get_map<A>(number_sequence<type_supported<A>>{})[key] = value;
         static_assert(type_supported<A>, MISSING_TYPE_MESSAGE);
     }
 
     //! @brief Inserts value at corresponding key by moving.
     template<typename A, typename = std::enable_if_t<not std::is_reference<A>::value>>
     void insert(T key, A&& value) {
-        get_map<A>(bool_pack<type_supported<A>>{})[key] = std::move(value);
+        get_map<A>(number_sequence<type_supported<A>>{})[key] = std::move(value);
         static_assert(type_supported<A>, MISSING_TYPE_MESSAGE);
     }
 
@@ -124,7 +124,7 @@ class multitype_map {
     //! @brief Deletes value at corresponding key.
     template<typename A>
     void erase(T key) {
-        get_map<A>(bool_pack<type_supported<A>>{}).erase(key);
+        get_map<A>(number_sequence<type_supported<A>>{}).erase(key);
     }
 
     //! @brief Deletes void value at corresponding key.
@@ -135,19 +135,19 @@ class multitype_map {
     //! @brief Immutable reference to the value of a certain type at a given key.
     template<typename A>
     A const& at(T key) const {
-        return get_map<A>(bool_pack<type_supported<A>>{}).at(key);
+        return get_map<A>(number_sequence<type_supported<A>>{}).at(key);
     }
 
     //! @brief Mutable reference to the value of a certain type at a given key.
     template<typename A>
     A& at(T key) {
-        return get_map<A>(bool_pack<type_supported<A>>{}).at(key);
+        return get_map<A>(number_sequence<type_supported<A>>{}).at(key);
     }
 
     //! @brief Whether the key is present in the value map or not for a certain type.
     template<typename A>
     bool count(T key) const {
-        return get_map<A>(bool_pack<type_supported<A>>{}).count(key);
+        return get_map<A>(number_sequence<type_supported<A>>{}).count(key);
     }
 
     //! @brief Whether the key is present in the value map or not for the void type.
@@ -176,19 +176,19 @@ class multitype_map {
   private:
     //! @brief Access to the map corresponding to a type.
     template <typename A>
-    std::unordered_map<T, std::remove_reference_t<A>>& get_map(bool_pack<true>) {
+    std::unordered_map<T, std::remove_reference_t<A>>& get_map(number_sequence<true>) {
         return get<std::remove_reference_t<A>>(m_data);
     }
 
     //! @brief Const access to the map corresponding to a type.
     template <typename A>
-    std::unordered_map<T, std::remove_reference_t<A>> const& get_map(bool_pack<true>) const {
+    std::unordered_map<T, std::remove_reference_t<A>> const& get_map(number_sequence<true>) const {
         return get<std::remove_reference_t<A>>(m_data);
     }
 
     //! @brief Access to a map corresponding to a missing type.
     template <typename A>
-    std::unordered_map<T, std::remove_reference_t<A>>& get_map(bool_pack<false>) const {
+    std::unordered_map<T, std::remove_reference_t<A>>& get_map(number_sequence<false>) const {
         assert(false);
         return *((std::unordered_map<T, std::remove_reference_t<A>>*)42);
     }

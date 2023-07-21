@@ -779,7 +779,7 @@ struct displayer {
                 m_nbr_uids.erase(std::unique(m_nbr_uids.begin(), m_nbr_uids.end()), m_nbr_uids.end());
                 m_prev_nbr_uids = std::move(m_nbr_uids);
                 m_nbr_uids.clear();
-                maybe_set_tail_color(P::node::storage_tuple(), common::bool_pack<std::is_same<tail_color_tag, void>::value>{});
+                maybe_set_tail_color(P::node::storage_tuple(), common::number_sequence<std::is_same<tail_color_tag, void>::value>{});
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
@@ -848,11 +848,11 @@ struct displayer {
 
             //! @brief Does not set the tail color, if there are no tails.
             template <typename T>
-            inline void maybe_set_tail_color(T const&, common::bool_pack<true>) {}
+            inline void maybe_set_tail_color(T const&, common::number_sequence<true>) {}
 
             //! @brief Sets the tail color, if there are tails.
             template <typename T>
-            inline void maybe_set_tail_color(T const& t, common::bool_pack<false>) {
+            inline void maybe_set_tail_color(T const& t, common::number_sequence<false>) {
                 m_tail_color = common::get<tail_color_tag>(t);
             }
 

@@ -885,7 +885,7 @@ class value {
     //! @brief Plot building for internal use.
     build_type build() const {
         point p;
-        std::string t = tag_name(common::bool_pack<details::has_name_method<S>::value>{}); // tag name
+        std::string t = tag_name(common::number_sequence<details::has_name_method<S>::value>{}); // tag name
         size_t pos = t.find("<");
         if (pos != std::string::npos) {
             p.unit = common::details::strip_namespaces(t.substr(0, pos));
@@ -903,7 +903,7 @@ class value {
         details::format_type(p.unit);
         details::format_type(p.source);
         std::string ar = A::name(); // row aggregator
-        std::string ad = aggregator_name(common::bool_pack<details::has_name_method<S>::value>{}); // device aggregator
+        std::string ad = aggregator_name(common::number_sequence<details::has_name_method<S>::value>{}); // device aggregator
         p.source += " (" + ad + ar + ")";
         auto r = m_aggregator.template result<S>();
         p.value = std::get<0>(r);
@@ -914,20 +914,20 @@ class value {
 
   private:
     //! @brief Device aggregator name (if present).
-    std::string aggregator_name(common::bool_pack<true>) const {
+    std::string aggregator_name(common::number_sequence<true>) const {
         return S::name() + "-";
     }
     //! @brief Device aggregator name (if absent).
-    std::string aggregator_name(common::bool_pack<false>) const {
+    std::string aggregator_name(common::number_sequence<false>) const {
         return "";
     }
 
     //! @brief Tag name (if aggregator present).
-    std::string tag_name(common::bool_pack<true>) const {
+    std::string tag_name(common::number_sequence<true>) const {
         return common::type_name<typename S::tag>();
     }
     //! @brief Tag name (if aggregator absent).
-    std::string tag_name(common::bool_pack<false>) const {
+    std::string tag_name(common::number_sequence<false>) const {
         return common::type_name<S>();
     }
 

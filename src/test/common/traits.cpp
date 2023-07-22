@@ -342,3 +342,10 @@ TEST(TraitsTest, IsOStream) {
     b = common::is_ostream<custom_stream_type>::value;
     EXPECT_TRUE(b);
 }
+
+void wildcard_test() {
+    using namespace common;
+    int& x = declare_reference<int>();
+    wildcard y = "foo";
+    x = y;
+}

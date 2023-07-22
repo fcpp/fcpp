@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <sstream>
 
@@ -27,13 +27,15 @@ namespace tags {
     }
 }
 
+using test_type = common::tagged_tuple_t<tag, int, gat, bool>;
+
 
 class TaggedTupleTest : public ::testing::Test {
   protected:
     virtual void SetUp() {
     }
 
-    common::tagged_tuple_t<tag, int, gat, bool> t{2, true};
+    test_type t{2, true};
 };
 
 
@@ -70,6 +72,22 @@ TEST_F(TaggedTupleTest, Get) {
     EXPECT_EQ(true, b);
     b = common::get_or<oth>(t, false);
     EXPECT_EQ(false, b);
+    b = common::get_or_wildcard<gat>(t);
+    EXPECT_EQ(true, b);
+    common::get_or_wildcard<gat>(t) = false;
+    b = common::get_or_wildcard<gat>(test_type(t));
+    EXPECT_EQ(false, b);
+    b = common::get_or_wildcard<gat>((test_type const&)t);
+    EXPECT_EQ(false, b);
+    common::get_or_wildcard<gat>(t) = true;
+}
+
+void get_or_wildcard_test() {
+    bool b;
+    test_type t;
+    b = common::get_or_wildcard<oth>(t);
+    common::get_or_wildcard<oth>(test_type(t)) = "baz";
+    b = common::get_or_wildcard<oth>((test_type const&)t);
 }
 
 TEST_F(TaggedTupleTest, Call) {

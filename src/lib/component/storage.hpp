@@ -113,7 +113,7 @@ struct storage {
             template <typename T>
             auto& storage() {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -124,7 +124,7 @@ struct storage {
             template <typename T>
             auto const& storage() const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -135,7 +135,7 @@ struct storage {
             template <typename T>
             auto& storage(T) {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -146,36 +146,12 @@ struct storage {
             template <typename T>
             auto const& storage(T) const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
-            //! @brief Access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto& get_impl(common::number_sequence<true>) {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Const access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto const& get_impl(common::number_sequence<true>) const {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto& get_impl(common::number_sequence<false>) {
-                return common::declare_reference<common::wildcard>();
-            }
-
-            //! @brief Const access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto const& get_impl(common::number_sequence<false>) const {
-                return common::declare_reference<common::wildcard>();
-            }
-
             //! @brief The data storage.
             node_tuple_type m_storage;
         };
@@ -218,7 +194,7 @@ struct storage {
             template <typename T>
             auto& storage() {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -229,7 +205,7 @@ struct storage {
             template <typename T>
             auto const& storage() const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -240,7 +216,7 @@ struct storage {
             template <typename T>
             auto& storage(T) {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -251,36 +227,12 @@ struct storage {
             template <typename T>
             auto const& storage(T) const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::number_sequence<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
-            //! @brief Access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto& get_impl(common::number_sequence<true>) {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Const access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto const& get_impl(common::number_sequence<true>) const {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto& get_impl(common::number_sequence<false>) {
-                return common::declare_reference<common::wildcard>();
-            }
-
-            //! @brief Const access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto const& get_impl(common::number_sequence<false>) const {
-                return common::declare_reference<common::wildcard>();
-            }
-
             //! @brief The data storage.
             net_tuple_type m_storage;
         };

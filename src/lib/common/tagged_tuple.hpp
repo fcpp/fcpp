@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file tagged_tuple.hpp
@@ -131,6 +131,46 @@ auto&& get_or(tagged_tuple<Ss, Ts> const& t, T&& def) {
 template <typename S, typename Ss, typename Ts, typename T>
 auto&& get_or(tagged_tuple<Ss, Ts>&& t, T&& def) {
     return details::get_or(std::move(t), std::forward<T>(def), typename Ss::template intersect<S>());
+}
+//! @}
+
+
+//! @cond INTERNAL
+namespace details {
+    template <typename S>
+    wildcard& get_or_wildcard(S&&, type_sequence<>) {
+        return declare_reference<wildcard>();
+    }
+    template <typename S, typename U>
+    auto&& get_or_wildcard(S&& t, type_sequence<U>) {
+        return get<U>(std::forward<S>(t));
+    }
+}
+//! @endcond
+
+
+/**
+ * @name get_or_wildcard
+ *
+ * Function getting elements of a tagged tuple by tag if present.
+ * If not present, a reference to a wildcard struct is returned to suppress compiler error messages.
+ * @param S The tag to be extracted.
+ */
+//! @{
+//! @brief Write access.
+template <typename S, typename Ss, typename Ts>
+auto& get_or_wildcard(tagged_tuple<Ss, Ts>& t) {
+    return details::get_or_wildcard(t, typename Ss::template intersect<S>());
+}
+//! @brief Move access.
+template <typename S, typename Ss, typename Ts>
+auto&& get_or_wildcard(tagged_tuple<Ss, Ts>&& t) {
+    return details::get_or_wildcard(std::move(t), typename Ss::template intersect<S>());
+}
+//! @brief Const access.
+template <typename S, typename Ss, typename Ts>
+auto const& get_or_wildcard(tagged_tuple<Ss, Ts> const& t) {
+    return details::get_or_wildcard(t, typename Ss::template intersect<S>());
 }
 //! @}
 

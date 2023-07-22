@@ -43,6 +43,49 @@ namespace fcpp {
 namespace common {
 
 
+// GENERAL METAPROGRAMMING SUPPORT
+
+
+/**
+ *  @brief Helper function ignoring its arguments.
+ *
+ *  Useful to allow parameter pack expansion of arbitrary expressions. Sample usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * common::ignore_args((<expr>,0)...);
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+template <typename... Ts>
+inline void ignore_args(Ts&&...) {}
+
+/**
+ *  @brief Helper function returning its argument.
+ *
+ *  Useful to allow parameter pack expansion of an expression that does not depend
+ *  on a type parameter pack, according to the pack. Sample usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * f(common::type_pack_wrapper<Ts>(<expr>)...);
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+template <typename, typename U>
+inline U&& type_pack_wrapper(U&& x) {
+    return std::forward<U>(x);
+}
+
+/**
+ *  @brief Helper function returning its argument.
+ *
+ *  Useful to allow parameter pack expansion of an expression that does not depend
+ *  on a integer parameter pack, according to the pack. Sample usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * f(common::type_pack_wrapper<xs>(<expr>)...);
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+template <intmax_t, typename U>
+inline U&& number_pack_wrapper(U&& x) {
+    return std::forward<U>(x);
+}
+
+
 // TYPE PREDICATES
 
 /**

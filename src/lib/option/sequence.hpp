@@ -358,20 +358,6 @@ using periodic_i = periodic<
 //! @}
 
 
-//! @cond INTERNAL
-namespace details {
-    template <typename T, typename U>
-    U&& arg_expander(U&& x) {
-        return std::forward<U>(x);
-    }
-
-    // Helper function ignoring its arguments.
-    template <class... Ts>
-    void ignore(Ts const&...) {}
-}
-//! @endcond
-
-
 /**
  * @brief Merges multiple sequences in a single one.
  * @tparam Ss Generators of event sequences.
@@ -389,7 +375,7 @@ class merge {
 
     //! @brief Tagged tuple constructor.
     template <typename G, typename S, typename T>
-    merge(G&& g, common::tagged_tuple<S,T> const& tup) : m_generators{{details::arg_expander<Ss>(g),tup}...} {
+    merge(G&& g, common::tagged_tuple<S,T> const& tup) : m_generators{{common::type_pack_wrapper<Ss>(g),tup}...} {
         fill_queue(std::make_index_sequence<size>{});
     }
 
@@ -429,7 +415,7 @@ class merge {
     //! @brief Initially fills up the queue.
     template <size_t... is>
     inline void fill_queue(std::index_sequence<is...>) {
-        details::ignore((m_queue.emplace(std::get<is>(m_generators).next(), is),0)...);
+        common::ignore_args((m_queue.emplace(std::get<is>(m_generators).next(), is),0)...);
     }
 
     //! @brief Steps over a given sub-sequence.

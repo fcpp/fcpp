@@ -306,10 +306,6 @@ namespace details {
     }
     //! @}
 
-    //! @brief Empty function ignoring its arguments, for allowing pack expansion.
-    template <typename... Ts>
-    void ignore_args(Ts...) {}
-
     //! @brief Macros defining every operator on a tuple_wrapper pointwise on the referenced tuple.
     //! @{
     #define _DEF_UOP(op)                                                        \
@@ -329,7 +325,7 @@ namespace details {
     template <typename T, typename U, size_t... is>                             \
     auto operator op##=(tuple_wrapper<T, std::index_sequence<is...>> x,         \
                         tuple_wrapper<U, std::index_sequence<is...>> y) {       \
-        ignore_args((get<is>(x.tuple()) op##= get<is>(y.tuple()))...);          \
+        common::ignore_args((get<is>(x.tuple()) op##= get<is>(y.tuple()))...);  \
         return x.tuple();                                                       \
     }
 

@@ -407,7 +407,7 @@ struct logger {
             //! @brief Inserts an aggregator data into the aggregators.
             template <typename S, typename T, typename... Us>
             void aggregator_add_impl(S& a,  T const& t, common::type_sequence<Us...>) {
-                common::details::ignore((common::get<Us>(a) += common::get<Us>(t))...);
+                common::ignore_args((common::get<Us>(a) += common::get<Us>(t))...);
             }
 
             //! @brief Returns the `randomizer` generator if available.
@@ -458,8 +458,8 @@ struct logger {
             template <typename... Us, typename... Ss>
             inline void row_update(common::type_sequence<Us...>, common::type_sequence<Ss...>) {
                 common::get<plot::time>(m_row) = m_schedule.next();
-                common::details::ignore((m_row = common::get<Us>(m_aggregators).template result<Us>())...);
-                common::details::ignore((common::get<Ss>(m_row) = common::get<Ss>(m_functors)(get_generator(has_randomizer<P>{}, *this), m_row))...);
+                common::ignore_args((m_row = common::get<Us>(m_aggregators).template result<Us>())...);
+                common::ignore_args((common::get<Ss>(m_row) = common::get<Ss>(m_functors)(get_generator(has_randomizer<P>{}, *this), m_row))...);
             }
 
             //! @brief Plots data if a plotter is given.

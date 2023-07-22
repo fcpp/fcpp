@@ -988,25 +988,25 @@ class combine : public Ts... {
 
     //! @brief Combines aggregated values.
     combine& operator+=(combine const& o) {
-        common::details::ignore(Ts::operator+=(o)...);
+        common::ignore_args(Ts::operator+=(o)...);
         return *this;
     }
 
     //! @brief Erases a value from the aggregation set.
     void erase(type value) {
-        common::details::ignore((Ts::erase(value),0)...);
+        common::ignore_args((Ts::erase(value),0)...);
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(type value) {
-        common::details::ignore((Ts::insert(value),0)...);
+        common::ignore_args((Ts::insert(value),0)...);
     }
 
     //! @brief The results of aggregation.
     template <typename U>
     result_type<U> result() const {
         result_type<U> r;
-        common::details::ignore((r = Ts::template result<U>())...);
+        common::ignore_args((r = Ts::template result<U>())...);
         return r;
     }
 

@@ -489,12 +489,12 @@ namespace details {
     //! @brief align of tuples.
     template <typename... A, size_t... is>
     tuple<A...>& align(tuple<A...>& x, std::vector<device_t> const& s, std::index_sequence<is...>) {
-        ignore_args(align(get<is>(x), s)...);
+        common::ignore_args(align(get<is>(x), s)...);
         return x;
     }
     template <typename... A, size_t... is>
     tuple<A...> align(tuple<A...>&& x, std::vector<device_t> const& s, std::index_sequence<is...>) {
-        ignore_args(align(get<is>(x), s)...);
+        common::ignore_args(align(get<is>(x), s)...);
         return x;
     }
     template <typename... A, size_t... is>
@@ -823,7 +823,7 @@ namespace details {
         //! @brief Inserts a value into the field before the current element (with index sequence).
         template <typename... Us, size_t... is>
         field_iterator& emplace(device_t i, tuple<Us...>&& v, std::index_sequence<is...>) {
-            ignore_args(get<is>(m_its).emplace(i, std::move(get<is>(v)))...);
+            common::ignore_args(get<is>(m_its).emplace(i, std::move(get<is>(v)))...);
             m_id = i;
             return *this;
         }
@@ -884,7 +884,7 @@ namespace details {
     //! @brief Indexed structures case.
     template <typename A, size_t i, size_t... is>
     A& align_inplace(A& x, std::vector<device_t>&& s, std::index_sequence<i, is...>) {
-        ignore_args(align_inplace(get<is>(x), std::vector<device_t>{s})...);
+        common::ignore_args(align_inplace(get<is>(x), std::vector<device_t>{s})...);
         align_inplace(get<i>(x), std::move(s));
         return x;
     }

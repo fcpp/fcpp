@@ -772,7 +772,7 @@ class join {
     //! @brief Forwarding rows to plotters.
     template <typename R, size_t... is>
     void input_impl(R const& row, std::index_sequence<is...>) {
-        common::details::ignore((std::get<is>(m_plotters) << row)...);
+        common::ignore_args((std::get<is>(m_plotters) << row)...);
     }
 
     //! @brief Stop joining plotter builds.
@@ -791,7 +791,7 @@ class join {
     //! @brief Merges all sub-plots.
     template <size_t... is>
     inline void sum_impl(join const& o, std::index_sequence<is...>) {
-        common::details::ignore((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
+        common::ignore_args((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
     }
 
     //! @brief The plotters.

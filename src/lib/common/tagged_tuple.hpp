@@ -184,10 +184,6 @@ tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>> make_tagged_tuple(Ts...
 
 //! @cond INTERNAL
 namespace details {
-    // Helper function ignoring its arguments.
-    template <class... Ts>
-    void ignore(Ts const&...) {}
-
     template <class... Ts>
     std::tuple<Ts...> capture_as_tuple(Ts&&... xs) {
         return {xs...};
@@ -202,7 +198,7 @@ namespace details {
     // Assignment of elements of type Us.
     template <class T, class S, class... Us>
     T& tt_assign(T& t, S&& s, type_sequence<Us...>) {
-        ignore((get<Us>(t) = get<Us>(std::forward<S>(s)))...);
+        ignore_args((get<Us>(t) = get<Us>(std::forward<S>(s)))...);
         return t;
     }
 

@@ -864,6 +864,49 @@ inline T const& escape(T const& x) {
 //! @}
 
 
+// COMPILER ERROR HANDLING
+
+
+/**
+ * @brief Returns a reference to a given type.
+ *
+ * Useful paired with `static_assert`, to suppress as many spurious error messages as possible.
+ * Produces runtime errors if actually used.
+ */
+template <typename T>
+T& declare_reference() {
+    assert(false);
+    return *((std::decay_t<T>*)42);
+}
+
+/**
+ * @brief Wildcard struct allowing arbitrary conversions.
+ *
+ * Useful paired with `static_assert`, to suppress as many spurious error messages as possible.
+ * Produces runtime errors if actually used.
+ */
+struct wildcard {
+    //! @brief Generic constructor.
+    template <typename T>
+    wildcard(T&&) {
+        assert(false);
+    }
+
+    //! @brief Generic assignment.
+    template <typename T>
+    wildcard& operator=(T&&) {
+        assert(false);
+        return *this;
+    }
+
+    //! @brief Generic conversion.
+    template <typename T>
+    operator T() const {
+        return declare_reference<T>();
+    }
+};
+
+
 } // namespace common
 
 

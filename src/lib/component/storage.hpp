@@ -152,23 +152,6 @@ struct storage {
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
-            //! @brief Wildcard struct allowing arbitrary conversions to suppress as many error messages as possible.
-            struct wildcard {
-                //! @brief Generic constructor.
-                template <typename T>
-                wildcard(T&&) {}
-                //! @brief Generic assignment.
-                template <typename T>
-                wildcard& operator=(T&&) {
-                    return *this;
-                }
-                //! @brief Generic conversion.
-                template <typename T>
-                operator T() const {
-                    return *((std::decay_t<T>*)42);
-                }
-            };
-
             //! @brief Access to the data corresponding to an existing tag.
             template <typename T>
             inline auto& get_impl(common::number_sequence<true>) {
@@ -184,15 +167,13 @@ struct storage {
             //! @brief Access to the data corresponding to a non-existent tag.
             template <typename T>
             inline auto& get_impl(common::number_sequence<false>) {
-                assert(false);
-                return *((wildcard*)42);
+                return common::declare_reference<common::wildcard>();
             }
 
             //! @brief Const access to the data corresponding to a non-existent tag.
             template <typename T>
             inline auto const& get_impl(common::number_sequence<false>) const {
-                assert(false);
-                return *((wildcard*)42);
+                return common::declare_reference<common::wildcard>();
             }
 
             //! @brief The data storage.
@@ -276,23 +257,6 @@ struct storage {
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
-            //! @brief Wildcard struct allowing arbitrary conversions to suppress as many error messages as possible.
-            struct wildcard {
-                //! @brief Generic constructor.
-                template <typename T>
-                wildcard(T&&) {}
-                //! @brief Generic assignment.
-                template <typename T>
-                wildcard& operator=(T&&) {
-                    return *this;
-                }
-                //! @brief Generic conversion.
-                template <typename T>
-                operator T() const {
-                    return *((std::decay_t<T>*)42);
-                }
-            };
-
             //! @brief Access to the data corresponding to an existing tag.
             template <typename T>
             inline auto& get_impl(common::number_sequence<true>) {
@@ -308,15 +272,13 @@ struct storage {
             //! @brief Access to the data corresponding to a non-existent tag.
             template <typename T>
             inline auto& get_impl(common::number_sequence<false>) {
-                assert(false);
-                return *((wildcard*)42);
+                return common::declare_reference<common::wildcard>();
             }
 
             //! @brief Const access to the data corresponding to a non-existent tag.
             template <typename T>
             inline auto const& get_impl(common::number_sequence<false>) const {
-                assert(false);
-                return *((wildcard*)42);
+                return common::declare_reference<common::wildcard>();
             }
 
             //! @brief The data storage.

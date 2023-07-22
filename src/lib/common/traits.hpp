@@ -868,6 +868,15 @@ inline T const& escape(T const& x) {
 
 
 /**
+ *  @brief Struct wrapping a false value.
+ *
+ *  Useful to deprecate templated function, in order to produce compile errors with
+ *  `static_assert` whenever they are instantiated.
+ */
+template <typename... T>
+struct always_false : public std::false_type {};
+
+/**
  * @brief Returns a reference to a given type.
  *
  * Useful paired with `static_assert`, to suppress as many spurious error messages as possible.

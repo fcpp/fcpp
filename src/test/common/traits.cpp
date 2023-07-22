@@ -343,9 +343,15 @@ TEST(TraitsTest, IsOStream) {
     EXPECT_TRUE(b);
 }
 
+// no errors until the function is called
 void wildcard_test() {
     using namespace common;
     int& x = declare_reference<int>();
     wildcard y = "foo";
     x = y;
+}
+
+template <typename T>
+void deprecated(T) {
+    static_assert(common::always_false<T>::value, "this is not a compiler error until the function is instantiated");
 }

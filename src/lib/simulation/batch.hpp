@@ -35,12 +35,6 @@ namespace batch {
 
 //! @cond INTERNAL
 namespace details {
-    //! @brief Struct wrapping a false value.
-    template <typename... T>
-    struct always_false {
-        static constexpr bool value = false;
-    };
-
     //! @brief Class wrapping a generating function with output type and size information.
     template <typename F, typename... Ts>
     class generator {
@@ -103,7 +97,7 @@ auto constant(Ts const&... xs) {
 //! @brief Functor generating a sequence of given values of type `char const*`. [DEPRECATED]
 template <typename S, typename... Ts>
 auto literals(char const* s, Ts const&... xs) {
-    static_assert(details::always_false<S>::value, "the batch::literals function has been deprecated and should not be used, use batch::list instead");
+    static_assert(common::always_false<S>::value, "the batch::literals function has been deprecated and should not be used, use batch::list instead");
     return details::make_generator<S, std::string>([=](auto&, size_t){
         return false;
     }, 0, 0);

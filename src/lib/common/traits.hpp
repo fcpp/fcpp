@@ -43,6 +43,8 @@ namespace fcpp {
 namespace common {
 
 
+// TYPE PREDICATES
+
 /**
  * @name is_sized_template
  *
@@ -149,6 +151,40 @@ constexpr bool has_template<T, U<A...>> = number_some_true<has_template<T, A>...
 //! @brief Recurse on array-like type arguments.
 template <template<class...> class T, template<class,size_t> class U, class A, size_t N>
 constexpr bool has_template<T, U<A, N>> = has_template<T, A>;
+//! @}
+
+//! @brief Enables if type is instance of a class template.
+template <template<class...> class T, class A, class B = void>
+using if_template = std::enable_if_t<has_template<T, A>, B>;
+
+//! @brief Enables if type is not instance of a class template.
+template <template<class...> class T, class A, class B = void>
+using ifn_template = std::enable_if_t<not has_template<T, A>, B>;
+
+
+/**
+ * @brief Declares that the type @tparam T is usable as an output stream.
+ *
+ * Enabled by default for all subtypes of std::ostream.
+ */
+template <typename T>
+struct is_ostream : public std::is_base_of<std::ostream, T> {};
+
+//! @brief Corresponds to T only if A is an output stream according to \ref fcpp::common::is_ostream.
+template <typename A, typename T = void>
+using if_ostream = std::enable_if_t<fcpp::common::is_ostream<A>::value, T>;
+
+//! @brief Corresponds to T only if A is not an output stream according to \ref fcpp::common::is_ostream.
+template <typename A, typename T = void>
+using ifn_ostream = std::enable_if_t<not fcpp::common::is_ostream<A>::value, T>;
+
+
+//! @brief Enables template resolution if a callable class @tparam G complies to a given signature @tparam F.
+template <typename G, typename F, typename T = void>
+using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value, T>;
+
+
+// TYPE TRANSFORMATIONS
 
 
 //! @cond INTERNAL
@@ -170,13 +206,50 @@ namespace details {
     struct partial_decay<T&&> {
         using type = std::remove_const_t<T>;
     };
-    //! @}
+
+    //! @brief general case.
+    template <typename T>
+    struct type_unwrap;
+
+    //! @brief defined case.
+    template <typename T>
+    struct type_unwrap<void(type_sequence<T>)> {
+        using type = T;
+    };
+
+    //! @brief Applies templates to arguments modelled as type sequences (base case).
+    template <typename S, template<class...> class... T>
+    struct apply_templates {
+        using type = S;
+    };
+
+    //! @brief Applies templates to arguments modelled as type sequences (recursive form).
+    template <typename... Ss, template<class...> class T, template<class...> class... Ts>
+    struct apply_templates<type_sequence<Ss...>, T, Ts...> {
+        using type = T<typename apply_templates<Ss, Ts...>::type...>;
+    };
 }
 //! @endcond
+
 
 //! @brief The type that should be returned by a function forwarding an argument of type T.
 template <typename T>
 using partial_decay = typename details::partial_decay<T>::type;
+
+
+//! @brief Allows passing a type with commas as macro argument.
+template <typename T>
+using type_unwrap = typename details::type_unwrap<T>::type;
+
+
+/**
+ * @brief Instantiates (possibly nested) templates with types wrapped in (possibly nested) type sequences.
+ *
+ * @tparam S The arguments as (possibly nested) type sequence.
+ * @tparam Ts Sequence of templates, to be applied in nested levels.
+ */
+template <typename S, template<class...> class... Ts>
+using apply_templates = typename details::apply_templates<S,Ts...>::type;
 
 
 //! @cond INTERNAL
@@ -351,28 +424,7 @@ template <class A>
 using template_args = typename details::template_args<A>::type;
 
 
-//! @brief Enables template resolution if a callable class @tparam G complies to a given signature @tparam F.
-template <typename G, typename F, typename T = void>
-using if_signature = std::enable_if_t<std::is_convertible<G,std::function<F>>::value, T>;
-
-
-//! @cond INTERNAL
-namespace details {
-    //! @brief general case.
-    template <typename T>
-    struct type_unwrap;
-
-    //! @brief defined case.
-    template <typename T>
-    struct type_unwrap<void(type_sequence<T>)> {
-        using type = T;
-    };
-}
-//! @endcond
-
-//! @brief Allows passing a type with commas as macro argument.
-template <typename T>
-using type_unwrap = typename details::type_unwrap<T>::type;
+// GENERIC OPTION PASSING
 
 
 //! @cond INTERNAL
@@ -538,18 +590,6 @@ namespace details {
     //! @brief Extracts a multitype option (something else in first place).
     template <template<class...> class T, typename S, typename... Ss>
     struct option_multitypes<T, S, Ss...> : public option_multitypes<T, type_sequence_decay<S>, Ss...> {};
-
-    //! @brief Applies templates to arguments modelled as type sequences (base case).
-    template <typename S, template<class...> class... T>
-    struct apply_templates {
-        using type = S;
-    };
-
-    //! @brief Applies templates to arguments modelled as type sequences (recursive form).
-    template <typename... Ss, template<class...> class T, template<class...> class... Ts>
-    struct apply_templates<type_sequence<Ss...>, T, Ts...> {
-        using type = T<typename apply_templates<Ss, Ts...>::type...>;
-    };
 }
 //! @endcond
 
@@ -620,16 +660,6 @@ using option_types = typename details::option_types<T, Ss...>::type;
  */
 template <template<class...> class T, typename... Ss>
 using option_multitypes = typename details::option_multitypes<T, Ss...>::type;
-
-
-/**
- * @brief Instantiates (possibly nested) templates with types wrapped in (possibly nested) type sequences.
- *
- * @tparam S The arguments as (possibly nested) type sequence.
- * @tparam Ts Sequence of templates, to be applied in nested levels.
- */
-template <typename S, template<class...> class... Ts>
-using apply_templates = typename details::apply_templates<S,Ts...>::type;
 
 
 //! @cond INTERNAL
@@ -704,6 +734,9 @@ namespace details {
 //! @brief Merges storage lists and types into a single type sequence.
 template <typename... Ts>
 using storage_list = typename details::storage_list<details::type_sequence_if_possible<Ts>...>::type;
+
+
+// TYPE REPRESENTATION
 
 
 //! @cond INTERNAL
@@ -829,18 +862,6 @@ inline T const& escape(T const& x) {
     return x;
 }
 //! @}
-
-/**
- * @brief Declares that the type @tparam T is usable as an output stream.
- *
- * Enabled by default for all subtypes of std::ostream.
- */
-template <typename T>
-struct is_ostream : public std::is_base_of<std::ostream, T> {};
-
-//! @brief Corresponds to T only if A is an output stream according to fcpp::common::is_ostream.
-template <typename A, typename T = void>
-using if_ostream = std::enable_if_t<fcpp::common::is_ostream<A>::value, T>;
 
 
 } // namespace common

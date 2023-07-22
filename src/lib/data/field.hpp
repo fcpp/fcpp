@@ -37,10 +37,10 @@ template <typename T> class field;
 //! @{
 //! @brief Corresponds to T only if A is a local type.
 template <typename A, typename T = void>
-using if_local = std::enable_if_t<not common::has_template<field, A>, T>;
+using if_local = common::ifn_template<field, A, T>;
 //! @brief Corresponds to T only if A is a field type.
 template <typename A, typename T = void>
-using if_field = std::enable_if_t<common::has_template<field, A>, T>;
+using if_field = common::if_template<field, A, T>;
 //! @brief Type returned upon field collapsing.
 template <typename A>
 using to_local = common::extract_template<field, A>;

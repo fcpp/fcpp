@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <cstdio>
 #include <sstream>
@@ -143,6 +143,7 @@ MULTI_TEST(LoggerTest, Push, O, 1) {
             device2.round_end(3);
             network.update();
             EXPECT_EQ(5.5f, network.next());
+            EXPECT_EQ((network.template aggregator<aggregator::mean<gat,true>>()), 3.0);
         }
         network.run();
     }
@@ -215,6 +216,7 @@ MULTI_TEST(LoggerTest, Pull, O, 2) {
         }
         network.update();
         EXPECT_EQ(5.5f, network.next());
+        EXPECT_EQ((network.template aggregator<aggregator::mean<gat,true>>()), 3.0);
         network.node_erase(1);
         network.node_erase(2);
         network.node_erase(0);

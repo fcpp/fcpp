@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file logger.hpp
@@ -262,6 +262,12 @@ struct logger {
             //! @brief Type for the aggregation rows (fed to plotters).
             using row_type = common::tagged_tuple_cat<log_type, extra_info_type>;
 
+          private: // implementation details
+            //! @brief Checks whether a type is in the aggregator data.
+            template <typename A>
+            constexpr static bool type_supported = row_type::tags::template count<std::remove_reference_t<A>> != 0;
+
+          public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
@@ -312,6 +318,39 @@ struct logger {
                     if (not value_push) m_aggregators = aggregators_type{};
                 } else P::net::update();
             }
+
+            //! @brief Access to aggregator data as tagged tuple.
+            row_type const& aggregator_tuple() const {
+                return m_row;
+            }
+
+            //! @cond INTERNAL
+            #define MISSING_TYPE_MESSAGE "access to non-existent aggregator data A"
+            //! @endcond
+
+            /**
+             * @brief Access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& aggregator() const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return common::get_or_wildcard<T>(m_row);
+            }
+
+            /**
+             * @brief Access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& aggregator(T) const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return common::get_or_wildcard<T>(m_row);
+            }
+
+            #undef MISSING_TYPE_MESSAGE
 
             //! @brief Erases data from the aggregators.
             template <typename S, typename T>

@@ -132,7 +132,7 @@ TEST(PlotTest, JoinValue) {
 }
 
 TEST(PlotTest, Values) {
-    EXPECT_SAME(plot::values<common::type_sequence<tag, gat>, common::type_sequence<>>, plot::values<common::type_sequence<tag, gat>, common::type_sequence<aggregator::mean<double>>>);
+    EXPECT_SAME(plot::values<common::type_sequence<tag, gat>, common::type_sequence<>>, plot::values<common::type_sequence<tag, gat>, common::type_sequence<aggregator::only_finite<aggregator::mean<double>>>>);
     EXPECT_SAME(plot::values<common::type_sequence<tag, gat>, common::type_sequence<aggregator::mean<double>, aggregator::count<int>>>::build_type, std::array<plot::point, 4>);
     using aggr_t = common::type_sequence<
         tag,        aggregator::count<int>,
@@ -142,7 +142,7 @@ TEST(PlotTest, Values) {
         temp<gat>,  aggregator::count<int>
     >;
     plot::values<aggr_t, common::type_sequence<>, gat, plot::unit<temp>, aggregator::count<int>> p;
-    p << common::make_tagged_tuple<plot::time,aggregator::distinct<gat, true>, aggregator::mean<gat, true>, aggregator::deviation<gat, true>, aggregator::mean<temp<tag>, true>, aggregator::count<temp<gat>>, aggregator::count<tag>, gat>(0,1,2,3,4,5,6,7);
+    p << common::make_tagged_tuple<plot::time,aggregator::distinct<gat>, aggregator::mean<gat>, aggregator::deviation<gat>, aggregator::mean<temp<tag>>, aggregator::count<temp<gat>>, aggregator::count<tag>, gat>(0,1,2,3,4,5,6,7);
     std::array<plot::point, 7> pb = p.build();
     EXPECT_POINT(pb[0], "gat",  "gat (distinct-mean)", 1.0);
     EXPECT_POINT(pb[1], "gat",  "gat (mean-mean)",     2.0);

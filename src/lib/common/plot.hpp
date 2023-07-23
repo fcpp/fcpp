@@ -841,7 +841,7 @@ namespace details {
 //! @endcond
 
 //! @brief Maintains a value for the column S aggregated with A.
-template <typename S, typename A = aggregator::mean<double>>
+template <typename S, typename A = aggregator::only_finite<aggregator::mean<double>>>
 class value {
   public:
     //! @brief The internal build type.
@@ -1022,7 +1022,7 @@ namespace details {
     };
     //! @brief Maintains values for multiple explicit columns and no aggregators (defaults to `mean<double>`).
     template <typename S, template<class...> class A>
-    struct values<S, A<>> : public values<S, A<aggregator::mean<double>>> {};
+    struct values<S, A<>> : public values<S, A<aggregator::only_finite<aggregator::mean<double>>>> {};
     //! @brief Maintains values for multiple explicit columns and multiple aggregators.
     template <typename S, template<class...> class A, typename A1, typename... As>
     struct values<S, A<A1, As...>> : public joiner<typename values<S, A<A1>>::type, typename values<S, A<As>>::type...> {};

@@ -64,7 +64,7 @@ using combo1 = component::combine_spec<
         value_push<true>,
         log_schedule<seq_per>,
         aggregators<gat,aggregator::mean<double>>,
-        log_functors<tag, functor::add<aggregator::mean<gat,true>, plot::time>>
+        log_functors<tag, functor::add<aggregator::mean<gat>, plot::time>>
     >,
     component::storage<tuple_store<tag,bool,gat,int>>,
     component::base<parallel<(O & 1) == 1>>
@@ -143,7 +143,7 @@ MULTI_TEST(LoggerTest, Push, O, 1) {
             device2.round_end(3);
             network.update();
             EXPECT_EQ(5.5f, network.next());
-            EXPECT_EQ((network.template aggregator<aggregator::mean<gat,true>>()), 3.0);
+            EXPECT_EQ((network.template aggregator<aggregator::mean<gat>>()), 3.0);
         }
         network.run();
     }
@@ -216,7 +216,7 @@ MULTI_TEST(LoggerTest, Pull, O, 2) {
         }
         network.update();
         EXPECT_EQ(5.5f, network.next());
-        EXPECT_EQ((network.template aggregator<aggregator::mean<gat,true>>()), 3.0);
+        EXPECT_EQ((network.template aggregator<aggregator::mean<gat>>()), 3.0);
         network.node_erase(1);
         network.node_erase(2);
         network.node_erase(0);

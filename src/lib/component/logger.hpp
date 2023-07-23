@@ -417,7 +417,7 @@ struct logger {
             template <typename U, typename S, typename T>
             inline auto smart_getter(S&, T const&, common::number_sequence<false>) {
                 using A = typename S::template tag_type<U>::type;
-                return *((A*)42);
+                return common::declare_reference<A>();
             }
 
             //! @brief Erases data from the aggregators (empty overload).

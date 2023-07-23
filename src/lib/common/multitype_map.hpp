@@ -190,7 +190,7 @@ class multitype_map {
     template <typename A>
     std::unordered_map<T, std::remove_reference_t<A>>& get_map(number_sequence<false>) const {
         assert(false);
-        return *((std::unordered_map<T, std::remove_reference_t<A>>*)42);
+        return common::declare_reference<std::unordered_map<T, std::remove_reference_t<A>>>();
     }
 
     //! @brief Compares unordered maps, even in case `decltype(U == U)` is not implicitly convertible to bool.

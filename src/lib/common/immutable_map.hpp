@@ -2,7 +2,7 @@
 
 /**
  * @file immutable_map.hpp
- * @brief Implementation of the `immutable_map<K, T, A>` class template providing a fast immutable map interface based on sorted vectors.
+ * @brief Implementation of the `immutable_map<K, T, A>` class template providing an immutable map interface based on sorted vectors.
  */
 
 #ifndef FCPP_COMMON_IMMUTABLE_MAP_H_
@@ -24,7 +24,7 @@ namespace common {
 
 
 /**
- * @brief Class providing a fast immutable map interface based on sorted vectors.
+ * @brief Class providing an immutable map interface based on sorted vectors.
  *
  * @param K Key type.
  * @param T Mapped type.

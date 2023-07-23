@@ -928,7 +928,7 @@ struct always_false : public std::false_type {};
 template <typename T>
 T& declare_reference() {
     assert(false);
-    return *((std::decay_t<T>*)42);
+    return *reinterpret_cast<std::decay_t<T>*>(42);
 }
 
 /**

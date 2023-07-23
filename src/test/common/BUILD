@@ -11,6 +11,18 @@ cc_test(
 )
 
 cc_test(
+    name = "immutable_map",
+    srcs = ["immutable_map.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:immutable_map",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "multitype_map",
     srcs = ["multitype_map.cpp"],
     deps = [

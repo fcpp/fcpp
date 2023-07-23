@@ -8,6 +8,15 @@ cc_library(
 )
 
 cc_library(
+    name = 'immutable_map',
+    hdrs = ['immutable_map.hpp'],
+    srcs = ['immutable_map.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'multitype_map',
     hdrs = ['multitype_map.hpp'],
     srcs = ['multitype_map.cpp'],

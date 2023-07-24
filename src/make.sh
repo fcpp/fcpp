@@ -530,7 +530,7 @@ while [ "$1" != "" ]; do
                 if [ $rtype == "STD" ]; then
                     run/$name > ../$file.txt 2> ../$file.err & pid=$!
                 else
-                    mpiexec --bind-to none --hostfile "../$hostfile"  -N 1 run/$name > ../$file.txt 2> ../$file.err & pid=$!
+                    mpiexec -N 1 --hostfile "../$hostfile" --bind-to none --mca btl_openib_allow_ib 1 run/$name > ../$file.txt 2> ../$file.err & pid=$!
                 fi
                 cd ..
                 monitor $pid $name $file $raw
@@ -555,7 +555,7 @@ while [ "$1" != "" ]; do
                 if [ $rtype == "STD" ]; then
                     $built > $file.txt 2> $file.err & pid=$!
                 else
-                    mpirun --hostfile "../$hostfile"  -np 1 $built > $file.txt 2> $file.err & pid=$!
+                    mpiexec -N 1 --hostfile "../$hostfile" --bind-to none --mca btl_openib_allow_ib 1 $built > $file.txt 2> $file.err & pid=$!
                 fi
                 monitor $pid $name $file $raw
             fi

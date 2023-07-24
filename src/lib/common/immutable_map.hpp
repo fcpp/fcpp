@@ -8,6 +8,8 @@
 #ifndef FCPP_COMMON_IMMUTABLE_MAP_H_
 #define FCPP_COMMON_IMMUTABLE_MAP_H_
 
+#include <cassert>
+#include <algorithm>
 #include <vector>
 
 

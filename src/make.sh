@@ -306,6 +306,8 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "mpi" ]; then
         shift 1
         opts="$opts -DFCPP_BUILD_MPI=ON"
+        copts="$copts --copt=-pthread"
+        cmakeopts="$cmakeopts -pthread"
         rtype="MPI"
     elif [ "$1" == "hosts" ]; then
         shift 1

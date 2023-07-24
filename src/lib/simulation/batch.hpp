@@ -743,6 +743,7 @@ void static worker(P* p, int rank_master) {
 		exit(1);
 	}
 	MPI_Send(data, size, MPI_CHAR, rank_master, 1, MPI_COMM_WORLD);
+    *p = P{};
 }
 
 template <typename P>

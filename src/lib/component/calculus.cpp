@@ -1,4 +1,4 @@
-// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "lib/component/calculus.hpp"
 

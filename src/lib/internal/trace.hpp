@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file trace.hpp
@@ -80,25 +80,6 @@ struct trace_reset;
 struct trace_call;
 struct trace_key;
 struct trace_cycle;
-
-//! @brief Reduce a size_t hash to k_hash_len bits.
-namespace details {
-#if SIZE_MAX <= 4294967295 && FCPP_TRACE <= 32
-    inline trace_t hash_reducer(uint32_t x) {
-        x = ((x >> 16) ^ x) * 0x45d9f3b;
-        x = ((x >> 16) ^ x) * 0x45d9f3b;
-        x = (x >> 16) ^ x;
-        return x & k_hash_mod;
-    }
-#else
-inline trace_t hash_reducer(uint64_t x) {
-        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9L;
-        x = (x ^ (x >> 27)) * 0x94d049bb133111ebL;
-        x = x ^ (x >> 31);
-        return x & k_hash_mod;
-    }
-#endif
-}
 //! @endcond
 
 
@@ -154,11 +135,11 @@ class trace {
         m_stack.push_back(x);
     }
 
-    //! @brief Adds a custom key to the stack trace updating the hash.
-    template <typename T>
-    inline void push_key(T const& x) {
-        std::hash<T> hasher;
-        push(details::hash_reducer(hasher(x)));
+    //! @brief Adds a custom hashed key to the stack trace updating the hash.
+    inline void push_key(trace_t x) {
+        x &= k_hash_mod;
+        m_stack_hash = (m_stack_hash * k_hash_factor + x) & k_hash_mod;
+        m_stack.push_back(x);
     }
 
     //! @brief Remove the last function call from the stack trace updating the hash.
@@ -231,8 +212,7 @@ struct trace_call {
  */
 struct trace_key {
     //! @brief Constructor (adds element to trace).
-    template <typename T>
-    trace_key(trace& t, T const& x) : m_trace{t} {
+    trace_key(trace& t, trace_t x) : m_trace{t} {
         m_trace.push_key(x);
     }
     //! @brief Destructor (removes element from trace).

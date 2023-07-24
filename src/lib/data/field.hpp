@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file field.hpp
@@ -243,7 +243,8 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     }
 
     //! @brief Serialises the content to a given output stream.
-    common::osstream& serialize(common::osstream& s) const {
+    template <typename S>
+    S& serialize(S& s) const {
         s.write((device_t)m_ids.size());
         for (size_t i = 0; i < m_ids.size(); ++i)
             s << m_ids[i];
@@ -258,7 +259,8 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     }
 
     //! @brief Serialises vals to an output stream if `T` is not `bool`.
-    void serialize_vals(common::osstream& s, std::false_type) const {
+    template <typename S>
+    void serialize_vals(S& s, std::false_type) const {
         for (size_t i = 0; i < m_vals.size(); ++i) s << m_vals[i];
     }
 
@@ -272,7 +274,8 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     }
 
     //! @brief Serialises vals to an output stream if `T` is `bool`.
-    void serialize_vals(common::osstream& s, std::true_type) const {
+    template <typename S>
+    void serialize_vals(S& s, std::true_type) const {
         char c = 0;
         for (size_t i = 0; i < m_vals.size(); ++i) {
             c += m_vals[i] << (i%8);

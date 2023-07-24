@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file serialize.hpp
@@ -144,6 +144,135 @@ using osstream = sstream<true>;
 //! @}
 
 
+/**
+ * @brief Stream-like object for hashing data into an integer type `I`.
+ *
+ * Can hash any type <b>except</b> for unordered containers.
+ */
+class hstream {
+  public:
+    //! @brief Default constructor.
+    hstream() : m_hash(0xeaa5dab21fc5f67aULL) {};
+
+    //! @brief Conversion to raw data.
+    template <typename I, typename = std::enable_if_t<std::is_integral<I>::value>>
+    explicit operator I() const {
+        return reducer(std::integer_sequence<size_t, sizeof(I)>{});
+    }
+
+    //! @brief Writes a trivial type from the stream. Hash taken from: https://github.com/ztanml/fast-hash
+    template <typename T, typename = std::enable_if_t<std::is_trivially_copyable<T>::value>>
+    hstream& write(T const& x, size_t l = sizeof(T)) {
+        constexpr uint64_t m = 0x880355f21e6d1965ULL;
+        uint64_t const* p64 = (uint64_t const*)(&x);
+        uint64_t const* end = p64 + (l / 8);
+        uint8_t const* p8;
+        m_hash ^= l * m;
+        uint64_t v;
+        while (p64 != end) {
+            v  = *p64++;
+            m_hash ^= mix(v);
+            m_hash *= m;
+        }
+        p8 = (uint8_t const*)p64;
+        v = 0;
+        switch (l & 7) {
+        case 7: v ^= (uint64_t)p8[6] << 48;
+        case 6: v ^= (uint64_t)p8[5] << 40;
+        case 5: v ^= (uint64_t)p8[4] << 32;
+        case 4: v ^= (uint64_t)p8[3] << 24;
+        case 3: v ^= (uint64_t)p8[2] << 16;
+        case 2: v ^= (uint64_t)p8[1] << 8;
+        case 1: v ^= (uint64_t)p8[0];
+            m_hash ^= mix(v);
+            m_hash *= m;
+        }
+        mix(m_hash);
+        return *this;
+    }
+
+    //! @brief The size of the raw data written so far.
+    static constexpr size_t size() {
+        return 8;
+    }
+
+    //! @brief Access to the raw data.
+    uint64_t& data() {
+        return m_hash;
+    }
+
+    //! @brief Const access to the raw data.
+    uint64_t const& data() const {
+        return m_hash;
+    }
+
+  private:
+    //! @brief Compression function for Merkle-Damgard construction.
+    inline uint64_t& mix(uint64_t& x) const {
+        x ^= x >> 23;
+        x *= 0x2127599bf4325c37ULL;
+        x ^= x >> 47;
+        return x;
+    }
+
+    //! @brief Reduces to a 8-bytes hash.
+    inline uint64_t reducer(std::integer_sequence<size_t, 8>) const {
+        return m_hash;
+    }
+
+    //! @brief Reduces to a 4-bytes hash.
+    inline uint32_t reducer(std::integer_sequence<size_t, 4>) const {
+        return m_hash - (m_hash >> 32);
+    }
+
+    //! @brief Reduces to a 2-bytes hash.
+    inline uint16_t reducer(std::integer_sequence<size_t, 2>) const {
+        uint32_t x = reducer(std::integer_sequence<size_t, 4>{});
+        return x - (x >> 16);
+    }
+
+    //! @brief Reduces to a 1-byte hash.
+    inline uint8_t reducer(std::integer_sequence<size_t, 1>) const {
+        uint32_t x = reducer(std::integer_sequence<size_t, 2>{});
+        return x - (x >> 8);
+    }
+
+    //! @brief The raw data.
+    uint64_t m_hash;
+};
+
+
+//! @brief Generic hashing function based on `hstream`.
+template <typename I, typename T>
+inline I hash_to(T const& x) {
+    hstream hs;
+    hs << x;
+    return I(hs);
+}
+
+//! @brief Generic hasher class based on `hstream`, that can be used with standard containers.
+template <typename T>
+struct hash {
+    //! @brief Reduces a
+    inline size_t operator()(T const& x) const {
+        return hash_to<size_t>(x);
+    }
+};
+
+
+//! @brief Checks whether a type is a FCPP stream (default overload).
+template <typename S>
+struct is_stream : public std::false_type {};
+
+//! @brief Checks whether a type is a FCPP stream (serialising stream overload).
+template <bool io>
+struct is_stream<sstream<io>> : public std::true_type {};
+
+//! @brief Checks whether a type is a FCPP stream (hashing stream overload).
+template <>
+struct is_stream<hstream> : public std::true_type {};
+
+
 //! @cond INTERNAL
 namespace details {
     template<typename C>
@@ -154,18 +283,25 @@ namespace details {
     struct has_serialize_trivial;
 }
 
-template <bool io, typename T>
-std::enable_if_t<details::has_serialize_method<T>::value, sstream<io>&>
-inline operator&(sstream<io>& is, T& x);
-template <bool io, typename T>
-inline std::enable_if_t<details::has_serialize_function<T>::value, sstream<io>&>
-operator&(sstream<io>& is, T& x);
+template <typename S, typename T>
+std::enable_if_t<details::has_serialize_method<T>::value and is_stream<S>::value, S&>
+inline operator&(S& is, T& x);
+
+template <typename S, typename T>
+std::enable_if_t<details::has_serialize_function<T>::value and is_stream<S>::value, S&>
+inline operator&(S& is, T& x);
+
 template <typename T>
 std::enable_if_t<details::has_serialize_trivial<T>::value, isstream&>
 inline operator&(isstream& is, T& x);
+
 template <typename T>
 std::enable_if_t<details::has_serialize_trivial<T>::value, osstream&>
 inline operator&(osstream& os, T& x);
+
+template <typename T>
+std::enable_if_t<details::has_serialize_trivial<T>::value, hstream&>
+inline operator&(hstream& hs, T& x);
 
 namespace details {
     //! @brief Serialization of indexed classes.
@@ -181,19 +317,13 @@ namespace details {
         return indexed_serialize(s, x, std::index_sequence<is...>{});
     }
 
-    template <typename T, size_t i, size_t... is>
-    osstream& indexed_serialize(osstream& s, T const& x, std::index_sequence<i, is...>) {
-        s << std::get<i>(x);
-        return indexed_serialize(s, x, std::index_sequence<is...>{});
-    }
-
     template <typename S, typename... Ts>
     S& serialize(S& s, std::tuple<Ts...>& x) {
         return indexed_serialize(s, x, std::make_index_sequence<sizeof...(Ts)>{});
     }
 
-    template <typename... Ts>
-    osstream& serialize(osstream& s, std::tuple<Ts...> const& x) {
+    template <typename S, typename... Ts>
+    S& serialize(S& s, std::tuple<Ts...> const& x) {
         return indexed_serialize(s, x, std::make_index_sequence<sizeof...(Ts)>{});
     }
 
@@ -202,8 +332,8 @@ namespace details {
         return indexed_serialize(s, x, std::make_index_sequence<n>{});
     }
 
-    template <typename T, size_t n>
-    osstream& serialize(osstream& s, std::array<T, n> const& x) {
+    template <typename S, typename T, size_t n>
+    S& serialize(S& s, std::array<T, n> const& x) {
         return indexed_serialize(s, x, std::make_index_sequence<n>{});
     }
 
@@ -212,8 +342,8 @@ namespace details {
         return indexed_serialize(s, x, std::make_index_sequence<2>{});
     }
 
-    template <typename T, typename U>
-    osstream& serialize(osstream& s, std::pair<T, U> const& x) {
+    template <typename S, typename T, typename U>
+    S& serialize(S& s, std::pair<T, U> const& x) {
         return indexed_serialize(s, x, std::make_index_sequence<2>{});
     }
     //! @}
@@ -229,7 +359,8 @@ namespace details {
             if (x < 128) break;
         }
     }
-    inline void size_variable_write(osstream& s, size_t v) {
+    template <typename S>
+    inline void size_variable_write(S& s, size_t v) {
         do {
             uint8_t x = (v & 127) + 128 * (v >= 128);
             s.write(x);
@@ -244,8 +375,8 @@ namespace details {
 
     //! @brief Serialization of iterable classes.
     //! @{
-    template <typename T, typename S>
-    isstream& iterable_serialize(isstream& s, T& x, wrapper<S>) {
+    template <typename T, typename S, typename U = wrapper<void>>
+    isstream& iterable_serialize(isstream& s, T& x, wrapper<S>, U = {}) {
         size_t size = 0;
         size_variable_read(s, size);
         x.clear();
@@ -257,9 +388,16 @@ namespace details {
         return s;
     }
 
-    template <typename T, typename S>
-    osstream& iterable_serialize(osstream& s, T& x, S) {
+    template <typename T, typename S, typename U = wrapper<void>>
+    osstream& iterable_serialize(osstream& s, T& x, S, U = {}) {
         size_variable_write(s, x.size());
+        for (auto& i : x) s & i;
+        return s;
+    }
+
+    template <typename T, typename S>
+    hstream& iterable_serialize(hstream& s, T& x, S, wrapper<void> = {}) {
+        s.write(x.size());
         for (auto& i : x) s & i;
         return s;
     }
@@ -274,73 +412,73 @@ namespace details {
         return iterable_serialize(s, x, wrapper<char>{});
     }
 
-    template <typename S, typename K>
-    S& serialize(S& s, std::multiset<K>& x) {
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::multiset<K,Ts...>& x) {
         return iterable_serialize(s, x, wrapper<K>{});
     }
 
-    template <typename K>
-    osstream& serialize(osstream& s, std::multiset<K> const& x) {
+    template <typename K, typename... Ts>
+    S& serialize(S& s, std::multiset<K,Ts...> const& x) {
         return iterable_serialize(s, x, wrapper<K>{});
     }
 
-    template <typename S, typename K>
-    S& serialize(S& s, std::set<K>& x) {
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::set<K,Ts...>& x) {
         return iterable_serialize(s, x, wrapper<K>{});
     }
 
-    template <typename K>
-    osstream& serialize(osstream& s, std::set<K> const& x) {
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::set<K,Ts...> const& x) {
         return iterable_serialize(s, x, wrapper<K>{});
     }
 
-    template <typename S, typename K, typename V>
-    S& serialize(S& s, std::map<K, V>& x) {
+    template <typename S, typename K, typename V, typename... Ts>
+    S& serialize(S& s, std::map<K, V, Ts...>& x) {
         return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
     }
 
-    template <typename K, typename V>
-    osstream& serialize(osstream& s, std::map<K, V> const& x) {
+    template <typename S, typename K, typename V, typename... Ts>
+    S& serialize(S& s, std::map<K, V, Ts...> const& x) {
         return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
     }
 
-    template <typename S, typename K>
-    S& serialize(S& s, std::unordered_multiset<K>& x) {
-        return iterable_serialize(s, x, wrapper<K>{});
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::unordered_multiset<K, Ts...>& x) {
+        return iterable_serialize(s, x, wrapper<K>{}, wrapper<char>{});
     }
 
-    template <typename K>
-    osstream& serialize(osstream& s, std::unordered_multiset<K> const& x) {
-        return iterable_serialize(s, x, wrapper<K>{});
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::unordered_multiset<K, Ts...> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{}, wrapper<char>{});
     }
 
-    template <typename S, typename K>
-    S& serialize(S& s, std::unordered_set<K>& x) {
-        return iterable_serialize(s, x, wrapper<K>{});
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::unordered_set<K, Ts...>& x) {
+        return iterable_serialize(s, x, wrapper<K>{}, wrapper<char>{});
     }
 
-    template <typename K>
-    osstream& serialize(osstream& s, std::unordered_set<K> const& x) {
-        return iterable_serialize(s, x, wrapper<K>{});
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::unordered_set<K, Ts...> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{}, wrapper<char>{});
     }
 
-    template <typename S, typename K, typename V>
-    S& serialize(S& s, std::unordered_map<K, V>& x) {
-        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
+    template <typename S, typename K, typename V, typename... Ts>
+    S& serialize(S& s, std::unordered_map<K, V, Ts...>& x) {
+        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{}, wrapper<char>{});
     }
 
-    template <typename K, typename V>
-    osstream& serialize(osstream& s, std::unordered_map<K, V> const& x) {
-        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
+    template <typename S, typename K, typename V, typename... Ts>
+    S& serialize(S& s, std::unordered_map<K, V, Ts...> const& x) {
+        return iterable_serialize(s, x, wrapper<std::pair<K,V>>{}, wrapper<char>{});
     }
 
-    template <typename S, typename T>
-    S& serialize(S& s, std::vector<T>& x) {
+    template <typename S, typename T, typename... Ts>
+    S& serialize(S& s, std::vector<T, Ts...>& x) {
         return iterable_serialize(s, x, wrapper<T>{});
     }
 
-    template <typename T>
-    osstream& serialize(osstream& s, std::vector<T> const& x) {
+    template <typename S, typename T, typename... Ts>
+    S& serialize(S& s, std::vector<T, Ts...> const& x) {
         return iterable_serialize(s, x, wrapper<T>{});
     }
     //! @}
@@ -402,16 +540,16 @@ namespace details {
 
 
 //! @brief Serialisation from/to user classes.
-template <bool io, typename T>
-std::enable_if_t<details::has_serialize_method<T>::value, sstream<io>&>
-inline operator&(sstream<io>& is, T& x) {
+template <typename S, typename T>
+std::enable_if_t<details::has_serialize_method<T>::value and is_stream<S>::value, S&>
+inline operator&(S& is, T& x) {
     return x.serialize(is);
 }
 
 //! @brief Serialisation from/to standard containers.
-template <bool io, typename T>
-inline std::enable_if_t<details::has_serialize_function<T>::value, sstream<io>&>
-operator&(sstream<io>& is, T& x) {
+template <typename S, typename T>
+std::enable_if_t<details::has_serialize_function<T>::value and is_stream<S>::value, S&>
+inline operator&(S& is, T& x) {
     return details::serialize(is, x);
 }
 
@@ -429,6 +567,13 @@ inline operator&(osstream& os, T& x) {
     return os.write(x);
 }
 
+//! @brief Hashing trivial types.
+template <typename T>
+std::enable_if_t<details::has_serialize_trivial<T>::value, hstream&>
+inline operator&(hstream& hs, T& x) {
+    return hs.write(x);
+}
+
 
 //! @brief Serialisation from an input stream.
 template <typename T>
@@ -440,6 +585,13 @@ inline isstream& operator>>(isstream& is, T& x) {
 //! @brief Serialisation to an output stream.
 template <typename T>
 inline osstream& operator<<(osstream& os, T const& x) {
+    return os & ((T&)x);
+}
+
+
+//! @brief Serialisation to an hashing stream.
+template <typename T>
+inline hstream& operator<<(hstream& os, T const& x) {
     return os & ((T&)x);
 }
 

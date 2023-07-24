@@ -508,7 +508,7 @@ namespace details {
 /**
  * @brief Component representing the simulation status graphically.
  *
- * Requires a \ref identifier , \ref positioner, \ref storage and \ref timer parent component.
+ * Requires a \ref identifier , \ref simulated_positioner "positioner", \ref storage and \ref timer parent component.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::shape_tag defines a storage tag regulating the shape of nodes (defaults to none).
@@ -661,10 +661,12 @@ struct displayer {
      */
     template <typename F, typename P>
     struct component : public P {
+        //! @cond INTERNAL
         REQUIRE_COMPONENT(displayer,identifier);
         REQUIRE_COMPONENT(displayer,positioner);
         REQUIRE_COMPONENT(displayer,storage);
         REQUIRE_COMPONENT(displayer,timer);
+        //! @endcond
 
         //! @brief The local part of the component.
         class node : public P::node {

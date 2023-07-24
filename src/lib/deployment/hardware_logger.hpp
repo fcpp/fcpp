@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file hardware_logger.hpp
@@ -42,7 +42,7 @@ namespace component {
 namespace tags {
     //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data.
     template <typename... Ts>
-    struct tuple_store;
+    struct node_store;
 }
 
 
@@ -55,7 +55,7 @@ namespace tags {
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
  * - \ref tags::ostream_type defines the output stream type to be used (defaults to `std::ostream`).
- * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
+ * - \ref tags::node_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
  * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
  *
  * <b>Node initialisation tags:</b>
@@ -83,7 +83,7 @@ struct hardware_logger {
     using clock_t = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
 
     //! @brief Sequence of tags and types for storing persistent data.
-    using tuple_store_type = common::storage_list<common::option_types<tags::tuple_store, Ts...>>;
+    using node_store_type = common::storage_list<common::option_types<tags::node_store, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -105,13 +105,13 @@ struct hardware_logger {
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<tuple_store_type>;
+            using node_tuple_type = common::tagged_tuple_t<node_store_type>;
 
             //! @brief Type for the result of an aggregation.
-            using row_type = common::tagged_tuple_cat<common::tagged_tuple_t<plot::time, times_t>, tuple_type, extra_info_type>;
+            using row_type = common::tagged_tuple_cat<common::tagged_tuple_t<plot::time, times_t>, node_tuple_type, extra_info_type>;
 
             //! @brief Sequence of tags to be printed.
-            using tag_type = typename tuple_type::tags;
+            using tag_type = typename node_tuple_type::tags;
 
             /**
              * @brief Main constructor.

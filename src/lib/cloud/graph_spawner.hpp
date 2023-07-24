@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_spawner.hpp
@@ -76,7 +76,7 @@ struct graph_spawner {
     //! @brief Type sequence of node attributes parameters, defaulting to tuple store parameters without node attributes.
     using attributes_type = std::conditional_t<
         std::is_same<attributes_tag_type, common::type_sequence<>>::value,
-        common::storage_list<common::option_types<tags::tuple_store, Ts...>>,
+        common::storage_list<common::option_types<tags::node_store, Ts...>>,
         attributes_tag_type>;
     //! @brief Tagged tuple of node attributes.
     using attributes_tuple_type = common::tagged_tuple_t<attributes_type>;

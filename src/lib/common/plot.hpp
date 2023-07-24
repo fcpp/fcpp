@@ -945,11 +945,13 @@ class value {
     //! @brief Copy assignment.
     value& operator=(value const& o) {
         m_aggregator = o.m_aggregator;
+        return *this;
     }
 
     //! @brief Move assignment.
     value& operator=(value&& o) {
         m_aggregator = o.m_aggregator;
+        return *this;
     }
 
     //! @brief Plot merging.
@@ -1241,11 +1243,13 @@ class split {
     //! @brief Copy assignment.
     split& operator=(split const& o) {
         m_plotters = o.m_plotters;
+        return *this;
     }
 
     //! @brief Move assignment.
     split& operator=(split&& o) {
         m_plotters = o.m_plotters;
+        return *this;
     }
 
     //! @brief Row processing.

@@ -1332,7 +1332,7 @@ class split {
     template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>, typename... Ss>
     key_type approx_impl(R const& row, std::ratio<num,den>, common::type_sequence<Ss...>) const {
         key_type k = row;
-        common::details::ignore(approx_impl<num,den>(common::get<Ss>(k))...);
+        common::ignore_args(approx_impl<num,den>(common::get<Ss>(k))...);
         return k;
     }
 

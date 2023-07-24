@@ -25,7 +25,6 @@
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/tagged_tuple.hpp"
-#include "lib/option/aggregator.hpp"
 #include "lib/component/logger.hpp"
 
 

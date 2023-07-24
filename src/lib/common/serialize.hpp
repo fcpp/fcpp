@@ -417,7 +417,7 @@ namespace details {
         return iterable_serialize(s, x, wrapper<K>{});
     }
 
-    template <typename K, typename... Ts>
+    template <typename S, typename K, typename... Ts>
     S& serialize(S& s, std::multiset<K,Ts...> const& x) {
         return iterable_serialize(s, x, wrapper<K>{});
     }

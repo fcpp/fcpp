@@ -117,7 +117,7 @@ TEST(SerializeTest, Iterable) {
     std::set<int> s = {1, 2, 4, 8};
     SERIALIZE_CHECK(s, {});
     std::unordered_multiset<trace_t> mt = {1, 2, 4, 8};
-    SERIALIZE_CHECK(mt, {});
+    SERIALIZE_CHECK(mt, {}, false);
     std::unordered_set<trace_t> t = {1, 2, 4, 8};
     SERIALIZE_CHECK(t, {}, false);
     std::map<trace_t,double> m = {{4, 2}, {42, 2.4}};
@@ -183,7 +183,7 @@ TEST(SerializeTest, Aggregators) {
     distinct.insert(4);
     distinct.insert(2);
     distinct.insert(4);
-    SERIALIZE_CHECK(distinct, {});
+    SERIALIZE_CHECK(distinct, {}, false);
     aggregator::list<int> list;
     list.insert(4);
     list.insert(2);
@@ -194,7 +194,7 @@ TEST(SerializeTest, Aggregators) {
     sum.insert(2);
     sum.insert(4);
     SERIALIZE_CHECK(sum, {});
-    aggregator::mean<double> mean;
+    aggregator::only_finite<aggregator::mean<double>> mean;
     mean.insert(4);
     mean.insert(2);
     mean.insert(4);
@@ -224,12 +224,12 @@ TEST(SerializeTest, Aggregators) {
     max.insert(2);
     max.insert(4);
     SERIALIZE_CHECK(max, {});
-    aggregator::quantile<double,true,false,50> quantilefalse;
+    aggregator::quantile<double,false,50> quantilefalse;
     quantilefalse.insert(4);
     quantilefalse.insert(2);
     quantilefalse.insert(4);
-    SERIALIZE_CHECK(quantilefalse, {});
-    aggregator::quantile<double,false,true,50> quantiletrue;
+    SERIALIZE_CHECK(quantilefalse, {}, false);
+    aggregator::quantile<double,true,50> quantiletrue;
     quantiletrue.insert(4);
     quantiletrue.insert(2);
     quantiletrue.insert(4);
@@ -245,7 +245,7 @@ TEST(SerializeTest, Plots) {
     plot::none none;
     none << common::make_tagged_tuple<tag,gat>(4,2);
     none << common::make_tagged_tuple<tag,gat>(2,4);
-    SERIALIZE_CHECK(none, {});
+    SERIALIZE_CHECK(none, {}, false);
     plot::value<tag> value;
     value << common::make_tagged_tuple<tag,gat>(4,2);
     value << common::make_tagged_tuple<tag,gat>(2,4);

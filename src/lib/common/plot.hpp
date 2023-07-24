@@ -850,7 +850,7 @@ class join {
     //! @brief Forwarding rows to plotters.
     template <typename R, size_t... is>
     void input_impl(R const& row, std::index_sequence<is...>) {
-        common::details::ignore((std::get<is>(m_plotters) << row)...);
+        common::ignore_args((std::get<is>(m_plotters) << row)...);
     }
 
     //! @brief Stop joining plotter builds.
@@ -869,7 +869,7 @@ class join {
     //! @brief Merges all sub-plots.
     template <size_t... is>
     inline void sum_impl(join const& o, std::index_sequence<is...>) {
-        common::details::ignore((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
+        common::ignore_args((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
     }
 
     //! @brief The plotters.
@@ -919,7 +919,7 @@ namespace details {
 //! @endcond
 
 //! @brief Maintains a value for the column S aggregated with A.
-template <typename S, typename A = aggregator::mean<double>>
+template <typename S, typename A = aggregator::only_finite<aggregator::mean<double>>>
 class value {
   public:
     //! @brief The internal build type.
@@ -973,7 +973,7 @@ class value {
     //! @brief Plot building for internal use.
     build_type build() const {
         point p;
-        std::string t = tag_name(common::bool_pack<details::has_name_method<S>::value>{}); // tag name
+        std::string t = tag_name(common::number_sequence<details::has_name_method<S>::value>{}); // tag name
         size_t pos = t.find("<");
         if (pos != std::string::npos) {
             p.unit = common::details::strip_namespaces(t.substr(0, pos));
@@ -991,7 +991,7 @@ class value {
         details::format_type(p.unit);
         details::format_type(p.source);
         std::string ar = A::name(); // row aggregator
-        std::string ad = aggregator_name(common::bool_pack<details::has_name_method<S>::value>{}); // device aggregator
+        std::string ad = aggregator_name(common::number_sequence<details::has_name_method<S>::value>{}); // device aggregator
         p.source += " (" + ad + ar + ")";
         auto r = m_aggregator.template result<S>();
         p.value = std::get<0>(r);
@@ -1014,20 +1014,20 @@ class value {
 
   private:
     //! @brief Device aggregator name (if present).
-    std::string aggregator_name(common::bool_pack<true>) const {
+    std::string aggregator_name(common::number_sequence<true>) const {
         return S::name() + "-";
     }
     //! @brief Device aggregator name (if absent).
-    std::string aggregator_name(common::bool_pack<false>) const {
+    std::string aggregator_name(common::number_sequence<false>) const {
         return "";
     }
 
     //! @brief Tag name (if aggregator present).
-    std::string tag_name(common::bool_pack<true>) const {
+    std::string tag_name(common::number_sequence<true>) const {
         return common::type_name<typename S::tag>();
     }
     //! @brief Tag name (if aggregator absent).
-    std::string tag_name(common::bool_pack<false>) const {
+    std::string tag_name(common::number_sequence<false>) const {
         return common::type_name<S>();
     }
 
@@ -1122,7 +1122,7 @@ namespace details {
     };
     //! @brief Maintains values for multiple explicit columns and no aggregators (defaults to `mean<double>`).
     template <typename S, template<class...> class A>
-    struct values<S, A<>> : public values<S, A<aggregator::mean<double>>> {};
+    struct values<S, A<>> : public values<S, A<aggregator::only_finite<aggregator::mean<double>>>> {};
     //! @brief Maintains values for multiple explicit columns and multiple aggregators.
     template <typename S, template<class...> class A, typename A1, typename... As>
     struct values<S, A<A1, As...>> : public joiner<typename values<S, A<A1>>::type, typename values<S, A<As>>::type...> {};

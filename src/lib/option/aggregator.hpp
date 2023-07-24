@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file aggregator.hpp
@@ -145,8 +145,10 @@ class count {
 
 
 //! @brief Aggregates values by counting how many distinct values are present.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class distinct {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::distinct should be removed");
+
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -156,7 +158,7 @@ class distinct {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<distinct<U, only_finite>, size_t>;
+    using result_type = common::tagged_tuple_t<distinct<U, deprecated>, size_t>;
 
     //! @brief Default constructor.
     distinct() = default;
@@ -325,8 +327,9 @@ class list {
 
 
 //! @brief Aggregates values by summing them.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class sum {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::sum should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -336,7 +339,7 @@ class sum {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<sum<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<sum<U, deprecated>, T>;
 
     //! @brief Default constructor.
     sum() = default;
@@ -349,15 +352,12 @@ class sum {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_sum -= value;
+        m_sum -= value;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-        }
+        m_sum += value;
     }
 
     //! @brief The results of aggregation.
@@ -411,8 +411,9 @@ class sum {
 
 
 //! @brief Aggregates values by averaging.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class mean {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::mean should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -422,7 +423,7 @@ class mean {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<mean<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<mean<U, deprecated>, T>;
 
     //! @brief Default constructor.
     mean() = default;
@@ -436,18 +437,14 @@ class mean {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= value;
-            m_count--;
-        }
+        m_sum -= value;
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-            m_count++;
-        }
+        m_sum += value;
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -502,8 +499,9 @@ class mean {
 
 
 //! @brief Aggregates values by n-th moment.
-template <typename T, char n, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, char n, int deprecated = 2>
 class moment {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::moment should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -513,7 +511,7 @@ class moment {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<moment<U, n, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<moment<U, n, deprecated>, T>;
 
     //! @brief Default constructor.
     moment() = default;
@@ -527,18 +525,14 @@ class moment {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= pow(value, n);
-            m_count--;
-        }
+        m_sum -= pow(value, n);
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += pow(value, n);
-            m_count++;
-        }
+        m_sum += pow(value, n);
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -593,8 +587,9 @@ class moment {
 
 
 //! @brief Aggregates values by standard deviation.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class deviation {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::deviation should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -604,7 +599,7 @@ class deviation {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<deviation<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<deviation<U, deprecated>, T>;
 
     //! @brief Default constructor.
     deviation() = default;
@@ -619,20 +614,16 @@ class deviation {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= value;
-            m_sqsum -= value*value;
-            m_count--;
-        }
+        m_sum -= value;
+        m_sqsum -= value*value;
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-            m_sqsum += value*value;
-            m_count++;
-        }
+        m_sum += value;
+        m_sqsum += value*value;
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -692,15 +683,16 @@ class deviation {
 
 
 //! @brief Aggregates values by mean and standard deviation.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class stats {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::stats should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The type of values aggregated.
     using type = T;
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<mean<U, only_finite>, T, deviation<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<mean<U, deprecated>, T, deviation<U, deprecated>, T>;
 
     //! @brief Default constructor.
     stats() = default;
@@ -715,20 +707,16 @@ class stats {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= value;
-            m_sqsum -= value*value;
-            m_count--;
-        }
+        m_sum -= value;
+        m_sqsum -= value*value;
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-            m_sqsum += value*value;
-            m_count++;
-        }
+        m_sum += value;
+        m_sqsum += value*value;
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -796,8 +784,9 @@ class stats {
  * @{
  */
 //! @brief Aggregates values by taking the minimum (insert-only).
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class min {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::min should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -807,7 +796,7 @@ class min {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<min<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<min<U, deprecated>, T>;
 
     //! @brief Default constructor.
     min() = default;
@@ -825,9 +814,7 @@ class min {
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_min = std::min(m_min, value);
-        }
+        m_min = std::min(m_min, value);
     }
 
     //! @brief The results of aggregation.
@@ -880,9 +867,10 @@ class min {
 };
 
 
-//! @brief Aggregates values by taking the minimum (insert-only).
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+//! @brief Aggregates values by taking the maximum (insert-only).
+template <typename T, int deprecated = 2>
 class max {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::max should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -892,7 +880,7 @@ class max {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<max<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<max<U, deprecated>, T>;
 
     //! @brief Default constructor.
     max() = default;
@@ -910,9 +898,7 @@ class max {
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_max = std::max(m_max, value);
-        }
+        m_max = std::max(m_max, value);
     }
 
     //! @brief The results of aggregation.
@@ -978,7 +964,7 @@ class max {
  * @param insert_only Whether erase should be supported or not.
  * @param qs The required quantiles.
  */
-template <typename T, bool only_finite, bool insert_only, char... qs>
+template <typename T, bool insert_only, char... qs>
 class quantile;
 
 //! @cond INTERNAL
@@ -991,8 +977,8 @@ namespace details {
     }
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
-    template <typename U, typename T, bool only_finite, bool insert_only, char... qs>
-    using quantile_result_type = common::tagged_tuple<common::type_sequence<quantile<U, only_finite, insert_only, qs>...>, common::type_sequence<std::enable_if_t<qs==qs, T>...>>;
+    template <typename U, typename T, bool insert_only, char... qs>
+    using quantile_result_type = common::tagged_tuple<common::type_sequence<quantile<U, insert_only, qs>...>, common::type_sequence<std::enable_if_t<qs==qs, T>...>>;
 
     //! @brief The results of aggregation for quantile.
     template <typename T, size_t n>
@@ -1016,8 +1002,8 @@ namespace details {
     }
 
     //! @brief The results of aggregation for quantile as tuple.
-    template <typename U, typename T, bool only_finite, bool insert_only, char... qs, size_t... is>
-    quantile_result_type<U, T, only_finite, insert_only, qs...> quantiles_tuple(quantile<T, only_finite, insert_only, qs...> const&, std::vector<T>& ev, std::array<char,sizeof...(qs)> const& quantiles, std::index_sequence<is...>) {
+    template <typename U, typename T, bool insert_only, char... qs, size_t... is>
+    quantile_result_type<U, T, insert_only, qs...> quantiles_tuple(quantile<T, insert_only, qs...> const&, std::vector<T>& ev, std::array<char,sizeof...(qs)> const& quantiles, std::index_sequence<is...>) {
         std::array<T,sizeof...(qs)> r = details::quantiles(ev, quantiles);
         return {r[is]...};
     }
@@ -1036,8 +1022,8 @@ namespace details {
 //! @endcond
 
 //! @brief Implementation supporting erase.
-template <typename T, bool only_finite, char... qs>
-class quantile<T, only_finite, false, qs...> {
+template <typename T, char... qs>
+class quantile<T, false, qs...> {
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -1047,7 +1033,7 @@ class quantile<T, only_finite, false, qs...> {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = details::quantile_result_type<U, T, only_finite, false, qs...>;
+    using result_type = details::quantile_result_type<U, T, false, qs...>;
 
     //! @brief Default constructor.
     quantile() = default;
@@ -1060,14 +1046,12 @@ class quantile<T, only_finite, false, qs...> {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_values.erase(m_values.find(value));
+        m_values.erase(m_values.find(value));
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_values.insert(value);
+        m_values.insert(value);
     }
 
     //! @brief The results of aggregation.
@@ -1124,8 +1108,8 @@ class quantile<T, only_finite, false, qs...> {
 };
 
 //! @brief Implementation not supporting erase.
-template <typename T, bool only_finite, char... qs>
-class quantile<T, only_finite, true, qs...> {
+template <typename T, char... qs>
+class quantile<T, true, qs...> {
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -1135,7 +1119,7 @@ class quantile<T, only_finite, true, qs...> {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = details::quantile_result_type<U, T, only_finite, true, qs...>;
+    using result_type = details::quantile_result_type<U, T, true, qs...>;
 
     //! @brief Default constructor.
     quantile() = default;
@@ -1153,8 +1137,7 @@ class quantile<T, only_finite, true, qs...> {
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_values.push_back(value);
+        m_values.push_back(value);
     }
 
     //! @brief The results of aggregation.
@@ -1211,23 +1194,23 @@ class quantile<T, only_finite, true, qs...> {
 
 
 //! @brief Aggregates values by maintaining their minimum.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using minimum = quantile<T,only_finite,insert_only,0>;
+template <typename T, bool insert_only = false>
+using minimum = quantile<T,insert_only,0>;
 
 
 //! @brief Aggregates values by maintaining their median.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using median = quantile<T,only_finite,insert_only,50>;
+template <typename T, bool insert_only = false>
+using median = quantile<T,insert_only,50>;
 
 
 //! @brief Aggregates values by maintaining their maximum.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using maximum = quantile<T,only_finite,insert_only,100>;
+template <typename T, bool insert_only = false>
+using maximum = quantile<T,insert_only,100>;
 
 
 //! @brief Aggregates values by maintaining their minimum, 25% quartile, median, 75% quartile and maximum.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using quartile = quantile<T,only_finite,insert_only,0,25,50,75,100>;
+template <typename T, bool insert_only = false>
+using quartile = quantile<T,insert_only,0,25,50,75,100>;
 //! @}
 
 
@@ -1252,25 +1235,25 @@ class combine : public Ts... {
 
     //! @brief Combines aggregated values.
     combine& operator+=(combine const& o) {
-        common::details::ignore(Ts::operator+=(o)...);
+        common::ignore_args(Ts::operator+=(o)...);
         return *this;
     }
 
     //! @brief Erases a value from the aggregation set.
     void erase(type value) {
-        common::details::ignore((Ts::erase(value),0)...);
+        common::ignore_args((Ts::erase(value),0)...);
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(type value) {
-        common::details::ignore((Ts::insert(value),0)...);
+        common::ignore_args((Ts::insert(value),0)...);
     }
 
     //! @brief The results of aggregation.
     template <typename U>
     result_type<U> result() const {
         result_type<U> r;
-        common::details::ignore((r = Ts::template result<U>())...);
+        common::ignore_args((r = Ts::template result<U>())...);
         return r;
     }
 
@@ -1381,6 +1364,29 @@ class container : public A {
     //! @brief Inserts a new value to be aggregated.
     void insert(T const& values) {
         for (auto const& value: values) A::insert(value);
+    }
+};
+
+
+/**
+ * @brief Filters only finite values before feeding them to another aggregator.
+ *
+ * @param A The value aggregator type.
+ */
+template <typename A>
+class only_finite : public A {
+    //! @brief The type of values aggregated.
+    using T = typename A::type;
+
+  public:
+    //! @brief Erases a value from the aggregation set.
+    inline void erase(T const& value) {
+        if (std::isfinite(value)) A::erase(value);
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    inline void insert(T const& value) {
+        if (std::isfinite(value)) A::insert(value);
     }
 };
 

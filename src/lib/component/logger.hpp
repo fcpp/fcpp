@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file logger.hpp
@@ -262,6 +262,12 @@ struct logger {
             //! @brief Type for the aggregation rows (fed to plotters).
             using row_type = common::tagged_tuple_cat<log_type, extra_info_type>;
 
+          private: // implementation details
+            //! @brief Checks whether a type is in the aggregator data.
+            template <typename A>
+            constexpr static bool type_supported = row_type::tags::template count<std::remove_reference_t<A>> != 0;
+
+          public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
@@ -303,7 +309,7 @@ struct logger {
             void update() {
                 if (m_schedule.next() < P::net::next()) {
                     PROFILE_COUNT("logger");
-                    data_puller(common::bool_pack<not value_push>(), *this);
+                    data_puller(common::number_sequence<not value_push>(), *this);
                     row_update(a_tags{}, f_tags{});
                     print_output(l_tags{});
                     *m_stream << std::endl;
@@ -312,6 +318,39 @@ struct logger {
                     if (not value_push) m_aggregators = aggregators_type{};
                 } else P::net::update();
             }
+
+            //! @brief Access to aggregator data as tagged tuple.
+            row_type const& aggregator_tuple() const {
+                return m_row;
+            }
+
+            //! @cond INTERNAL
+            #define MISSING_TYPE_MESSAGE "access to non-existent aggregator data A"
+            //! @endcond
+
+            /**
+             * @brief Access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& aggregator() const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return common::get_or_wildcard<T>(m_row);
+            }
+
+            /**
+             * @brief Access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& aggregator(T) const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return common::get_or_wildcard<T>(m_row);
+            }
+
+            #undef MISSING_TYPE_MESSAGE
 
             //! @brief Erases data from the aggregators.
             template <typename S, typename T>
@@ -370,15 +409,15 @@ struct logger {
 
             //! @brief Accesses a tuple (effective overload).
             template <typename U, typename S, typename T>
-            inline auto const& smart_getter(S&, T const& t, common::bool_pack<true>) {
+            inline auto const& smart_getter(S&, T const& t, common::number_sequence<true>) {
                 return common::get<U>(t);
             }
 
             //! @brief Accesses a tuple (pretender overload).
             template <typename U, typename S, typename T>
-            inline auto smart_getter(S&, T const&, common::bool_pack<false>) {
+            inline auto smart_getter(S&, T const&, common::number_sequence<false>) {
                 using A = typename S::template tag_type<U>::type;
-                return *((A*)42);
+                return common::declare_reference<A>();
             }
 
             //! @brief Erases data from the aggregators (empty overload).
@@ -388,7 +427,7 @@ struct logger {
             //! @brief Erases data from the aggregators.
             template <typename S, typename T, typename U, typename... Us>
             inline void aggregator_erase_impl(S& a, T const& t, common::type_sequence<U, Us...>) {
-                common::get<U>(a).erase(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                common::get<U>(a).erase(smart_getter<U>(a, t, common::number_sequence<T::tags::template count<U> != 0>{}));
                 aggregator_erase_impl(a, t, common::type_sequence<Us...>{});
             }
 
@@ -400,14 +439,14 @@ struct logger {
             template <typename S, typename T, typename U, typename... Us>
             inline void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<U, Us...>) {
                 static_assert(T::tags::template count<U> != 0, "unsupported tag in aggregators (add U to storage tag list)");
-                common::get<U>(a).insert(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                common::get<U>(a).insert(smart_getter<U>(a, t, common::number_sequence<T::tags::template count<U> != 0>{}));
                 aggregator_insert_impl(a, t, common::type_sequence<Us...>{});
             }
 
             //! @brief Inserts an aggregator data into the aggregators.
             template <typename S, typename T, typename... Us>
             void aggregator_add_impl(S& a,  T const& t, common::type_sequence<Us...>) {
-                common::details::ignore((common::get<Us>(a) += common::get<Us>(t))...);
+                common::ignore_args((common::get<Us>(a) += common::get<Us>(t))...);
             }
 
             //! @brief Returns the `randomizer` generator if available.
@@ -434,7 +473,7 @@ struct logger {
 
             //! @brief Collects data actively from nodes if `identifier` is available.
             template <typename N>
-            inline void data_puller(common::bool_pack<true>, N& n) {
+            inline void data_puller(common::number_sequence<true>, N& n) {
                 if (parallel == false or m_threads == 1) {
                     for (auto it = n.node_begin(); it != n.node_end(); ++it)
                         aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), a_tags());
@@ -452,14 +491,14 @@ struct logger {
 
             //! @brief Does nothing otherwise.
             template <typename N>
-            inline void data_puller(common::bool_pack<false>, N&) {}
+            inline void data_puller(common::number_sequence<false>, N&) {}
 
             //! @brief Updates row data.
             template <typename... Us, typename... Ss>
             inline void row_update(common::type_sequence<Us...>, common::type_sequence<Ss...>) {
                 common::get<plot::time>(m_row) = m_schedule.next();
-                common::details::ignore((m_row = common::get<Us>(m_aggregators).template result<Us>())...);
-                common::details::ignore((common::get<Ss>(m_row) = common::get<Ss>(m_functors)(get_generator(has_randomizer<P>{}, *this), m_row))...);
+                common::ignore_args((m_row = common::get<Us>(m_aggregators).template result<Us>())...);
+                common::ignore_args((common::get<Ss>(m_row) = common::get<Ss>(m_functors)(get_generator(has_randomizer<P>{}, *this), m_row))...);
             }
 
             //! @brief Plots data if a plotter is given.

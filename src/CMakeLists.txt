@@ -123,8 +123,10 @@ set(
     lib/cloud/graph_spawner.cpp
     lib/common.cpp
     lib/common/algorithm.cpp
+    lib/common/immutable_map.cpp
     lib/common/multitype_map.cpp
     lib/common/mutex.cpp
+    lib/common/number_sequence.cpp
     lib/common/ostream.cpp
     lib/common/plot.cpp
     lib/common/profiler.cpp
@@ -133,6 +135,7 @@ set(
     lib/common/serialize.cpp
     lib/common/tagged_tuple.cpp
     lib/common/traits.cpp
+    lib/common/type_sequence.cpp
     lib/component.cpp
     lib/component/base.cpp
     lib/component/calculus.cpp
@@ -304,8 +307,10 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/cloud/graph_connector.cpp)
         fcpp_test(test/cloud/graph_spawner.cpp)
         fcpp_test(test/common/algorithm.cpp)
+        fcpp_test(test/common/immutable_map.cpp)
         fcpp_test(test/common/multitype_map.cpp)
         fcpp_test(test/common/mutex.cpp)
+        fcpp_test(test/common/number_sequence.cpp)
         fcpp_test(test/common/option.cpp)
         fcpp_test(test/common/ostream.cpp)
         fcpp_test(test/common/plot.cpp)
@@ -315,6 +320,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/common/serialize.cpp)
         fcpp_test(test/common/tagged_tuple.cpp)
         fcpp_test(test/common/traits.cpp)
+        fcpp_test(test/common/type_sequence.cpp)
         fcpp_test(test/component/base.cpp)
         fcpp_test(test/component/calculus.cpp)
         fcpp_test(test/component/identifier.cpp)

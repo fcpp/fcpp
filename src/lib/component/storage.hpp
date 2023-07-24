@@ -113,7 +113,7 @@ struct storage {
             template <typename T>
             auto& storage() {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -124,7 +124,7 @@ struct storage {
             template <typename T>
             auto const& storage() const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -135,7 +135,7 @@ struct storage {
             template <typename T>
             auto& storage(T) {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -146,55 +146,12 @@ struct storage {
             template <typename T>
             auto const& storage(T) const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
-            //! @brief Wildcard struct allowing arbitrary conversions to suppress as many error messages as possible.
-            struct wildcard {
-                //! @brief Generic constructor.
-                template <typename T>
-                wildcard(T&&) {}
-                //! @brief Generic assignment.
-                template <typename T>
-                wildcard& operator=(T&&) {
-                    return *this;
-                }
-                //! @brief Generic conversion.
-                template <typename T>
-                operator T() const {
-                    return *((std::decay_t<T>*)42);
-                }
-            };
-
-            //! @brief Access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto& get_impl(common::bool_pack<true>) {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Const access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto const& get_impl(common::bool_pack<true>) const {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto& get_impl(common::bool_pack<false>) {
-                assert(false);
-                return *((wildcard*)42);
-            }
-
-            //! @brief Const access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto const& get_impl(common::bool_pack<false>) const {
-                assert(false);
-                return *((wildcard*)42);
-            }
-
             //! @brief The data storage.
             node_tuple_type m_storage;
         };
@@ -237,7 +194,7 @@ struct storage {
             template <typename T>
             auto& storage() {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -248,7 +205,7 @@ struct storage {
             template <typename T>
             auto const& storage() const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -259,7 +216,7 @@ struct storage {
             template <typename T>
             auto& storage(T) {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             /**
@@ -270,55 +227,12 @@ struct storage {
             template <typename T>
             auto const& storage(T) const {
                 static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
-                return get_impl<T>(common::bool_pack<type_supported<T>>{});
+                return common::get_or_wildcard<T>(m_storage);
             }
 
             #undef MISSING_TYPE_MESSAGE
 
           private: // implementation details
-            //! @brief Wildcard struct allowing arbitrary conversions to suppress as many error messages as possible.
-            struct wildcard {
-                //! @brief Generic constructor.
-                template <typename T>
-                wildcard(T&&) {}
-                //! @brief Generic assignment.
-                template <typename T>
-                wildcard& operator=(T&&) {
-                    return *this;
-                }
-                //! @brief Generic conversion.
-                template <typename T>
-                operator T() const {
-                    return *((std::decay_t<T>*)42);
-                }
-            };
-
-            //! @brief Access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto& get_impl(common::bool_pack<true>) {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Const access to the data corresponding to an existing tag.
-            template <typename T>
-            inline auto const& get_impl(common::bool_pack<true>) const {
-                return common::get<T>(m_storage);
-            }
-
-            //! @brief Access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto& get_impl(common::bool_pack<false>) {
-                assert(false);
-                return *((wildcard*)42);
-            }
-
-            //! @brief Const access to the data corresponding to a non-existent tag.
-            template <typename T>
-            inline auto const& get_impl(common::bool_pack<false>) const {
-                assert(false);
-                return *((wildcard*)42);
-            }
-
             //! @brief The data storage.
             net_tuple_type m_storage;
         };

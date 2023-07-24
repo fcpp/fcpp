@@ -74,11 +74,11 @@ struct retain {
 
     //! @brief Constructor.
     template <typename S, typename T>
-    retain(common::tagged_tuple<S,T> const& t) : m_period(set_period(t, common::bool_pack<has_tag>{})) {}
+    retain(common::tagged_tuple<S,T> const& t) : m_period(set_period(t, common::number_sequence<has_tag>{})) {}
 
     //! @brief Default threshold.
     result_type build() const {
-        return get_period(common::bool_pack<has_tag>{});
+        return get_period(common::number_sequence<has_tag>{});
     }
 
     //! @brief Measures an incoming message.
@@ -96,23 +96,23 @@ struct retain {
   private:
     //! @brief Initialises the period from tagged tuple values (empty overload).
     template <typename S, typename T>
-    inline static common::option<result_type, has_tag> set_period(common::tagged_tuple<S,T> const& t, common::bool_pack<false>) {
+    inline static common::option<result_type, has_tag> set_period(common::tagged_tuple<S,T> const& t, common::number_sequence<false>) {
         return {};
     }
 
     //! @brief Initialises the period from tagged tuple values (active overload).
     template <typename S, typename T>
-    inline static result_type set_period(common::tagged_tuple<S,T> const& t, common::bool_pack<true>) {
+    inline static result_type set_period(common::tagged_tuple<S,T> const& t, common::number_sequence<true>) {
         return common::get<period_tag>(t);
     }
 
     //! @brief Reads the period from template parameters.
-    inline result_type get_period(common::bool_pack<false>) const {
+    inline result_type get_period(common::number_sequence<false>) const {
         return period / result_type(scale);
     }
 
     //! @brief Reads the period from class data.
-    inline result_type get_period(common::bool_pack<true>) const {
+    inline result_type get_period(common::number_sequence<true>) const {
         return m_period;
     }
 

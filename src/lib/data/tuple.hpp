@@ -41,15 +41,15 @@ class tuple {
     //! @brief Move constructor.
     tuple(tuple&&) = default;
     //! @brief Implicit conversion copy constructor.
-    template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
+    template <typename... Us, typename = std::enable_if_t<common::number_all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(tuple<Us...> const& t) : m_tuple(t.m_tuple) {}
     //! @brief Implicit conversion move constructor.
-    template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
+    template <typename... Us, typename = std::enable_if_t<common::number_all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(tuple<Us...>&& t) : m_tuple(std::move(t.m_tuple)) {}
     //! @brief Initialization copy constructor.
     tuple(Ts const&... xs) : m_tuple(xs...) {}
     //! @brief Initialization convert constructor.
-    template <typename... Us, typename = std::enable_if_t<common::all_true<std::is_convertible<Us,Ts>::value...>>>
+    template <typename... Us, typename = std::enable_if_t<common::number_all_true<std::is_convertible<Us,Ts>::value...>>>
     tuple(Us&&... xs) : m_tuple(std::forward<Us>(xs)...) {}
     //! @}
 
@@ -306,10 +306,6 @@ namespace details {
     }
     //! @}
 
-    //! @brief Empty function ignoring its arguments, for allowing pack expansion.
-    template <typename... Ts>
-    void ignore_args(Ts...) {}
-
     //! @brief Macros defining every operator on a tuple_wrapper pointwise on the referenced tuple.
     //! @{
     #define _DEF_UOP(op)                                                        \
@@ -329,7 +325,7 @@ namespace details {
     template <typename T, typename U, size_t... is>                             \
     auto operator op##=(tuple_wrapper<T, std::index_sequence<is...>> x,         \
                         tuple_wrapper<U, std::index_sequence<is...>> y) {       \
-        ignore_args((get<is>(x.tuple()) op##= get<is>(y.tuple()))...);          \
+        common::ignore_args((get<is>(x.tuple()) op##= get<is>(y.tuple()))...);  \
         return x.tuple();                                                       \
     }
 

@@ -37,10 +37,10 @@ template <typename T> class field;
 //! @{
 //! @brief Corresponds to T only if A is a local type.
 template <typename A, typename T = void>
-using if_local = std::enable_if_t<not common::has_template<field, A>, T>;
+using if_local = common::ifn_template<field, A, T>;
 //! @brief Corresponds to T only if A is a field type.
 template <typename A, typename T = void>
-using if_field = std::enable_if_t<common::has_template<field, A>, T>;
+using if_field = common::if_template<field, A, T>;
 //! @brief Type returned upon field collapsing.
 template <typename A>
 using to_local = common::extract_template<field, A>;
@@ -489,12 +489,12 @@ namespace details {
     //! @brief align of tuples.
     template <typename... A, size_t... is>
     tuple<A...>& align(tuple<A...>& x, std::vector<device_t> const& s, std::index_sequence<is...>) {
-        ignore_args(align(get<is>(x), s)...);
+        common::ignore_args(align(get<is>(x), s)...);
         return x;
     }
     template <typename... A, size_t... is>
     tuple<A...> align(tuple<A...>&& x, std::vector<device_t> const& s, std::index_sequence<is...>) {
-        ignore_args(align(get<is>(x), s)...);
+        common::ignore_args(align(get<is>(x), s)...);
         return x;
     }
     template <typename... A, size_t... is>
@@ -823,7 +823,7 @@ namespace details {
         //! @brief Inserts a value into the field before the current element (with index sequence).
         template <typename... Us, size_t... is>
         field_iterator& emplace(device_t i, tuple<Us...>&& v, std::index_sequence<is...>) {
-            ignore_args(get<is>(m_its).emplace(i, std::move(get<is>(v)))...);
+            common::ignore_args(get<is>(m_its).emplace(i, std::move(get<is>(v)))...);
             m_id = i;
             return *this;
         }
@@ -884,7 +884,7 @@ namespace details {
     //! @brief Indexed structures case.
     template <typename A, size_t i, size_t... is>
     A& align_inplace(A& x, std::vector<device_t>&& s, std::index_sequence<i, is...>) {
-        ignore_args(align_inplace(get<is>(x), std::vector<device_t>{s})...);
+        common::ignore_args(align_inplace(get<is>(x), std::vector<device_t>{s})...);
         align_inplace(get<i>(x), std::move(s));
         return x;
     }

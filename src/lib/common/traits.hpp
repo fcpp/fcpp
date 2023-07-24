@@ -20,6 +20,7 @@
     #endif
 #endif
 
+#include <cassert>
 #include <functional>
 #include <memory>
 #include <ostream>

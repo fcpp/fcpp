@@ -122,6 +122,10 @@ struct point {
     double devdn;
     //! @brief The default value used when the deviation is not available.
     static constexpr double no_dev = -std::numeric_limits<double>::infinity();
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        return true;
+    }
 };
 
 //! @brief Printing a single point.
@@ -150,11 +154,16 @@ struct plot {
     std::vector<double> xvals;
     //! @brief Values of y coordinates with labels.
     std::vector<std::pair<std::string, std::vector<std::tuple<double,double,double>>>> yvals;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        return xvals.empty();
+    }
 };
 
 //! @brief Printing a single plot.
 template <typename O>
 O& operator<<(O& o, plot const& p) {
+    if (p.empty()) return o;
     o << "plot.put(plot.plot(name+\"-" << details::shorten(p.xname) << details::shorten(p.yname) << (p.title.size() ? "-" : "") << details::multi_shorten(p.title) << "\", \"" << p.title << "\", \"" << p.xname << "\", \"" << p.yname << "\", new string[] {";
     bool first = true;
     for (auto const& y : p.yvals) {
@@ -232,11 +241,17 @@ struct page {
     size_t cols;
     //! @brief Plot list.
     std::vector<plot> plots;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        for (auto const& p : plots) if (not p.empty()) return false;
+        return true;
+    }
 };
 
 //! @brief Printing a single page.
 template <typename O>
 O& operator<<(O& o, page const& p) {
+    if (p.empty()) return o;
     if (p.title.size()) o << "// " << p.title << "\n\n";
     o << "plot.ROWS = " << p.rows << ";\n";
     o << "plot.COLS = " << p.cols << ";\n\n";
@@ -269,11 +284,17 @@ struct file {
     std::vector<page> pages;
     //! @brief Custom plot options.
     option_type options;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        for (auto const& p : pages) if (not p.empty()) return false;
+        return true;
+    }
 };
 
 //! @brief Printing a file.
 template <typename O>
 O& operator<<(O& o, file const& f) {
+    if (f.empty()) return o;
     o << "// " << f.title << "\n";
     o << "string name = \"" << f.title << "\";\n\n";
     o << "import \"plot.asy\" as plot;\n";

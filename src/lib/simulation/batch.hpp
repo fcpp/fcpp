@@ -761,6 +761,13 @@ void static aggregate_plots(P* p, int n_procs, int rank) {
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
+    int provided, initialized, rank;
+    MPI_Initialized(&initialized);
+    if (not initialized) {
+        MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+        assert(provided == MPI_THREAD_MULTIPLE);
+    }
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
     int n_procs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
@@ -770,6 +777,7 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     run(x, e, v);
     if (p != nullptr)
 	    aggregate_plots(p, n_procs, rank);
+    if (not initialized) MPI_Finalize();
 }
 
 //! @brief Running a single MPI component combination (assuming dynamic execution policy).

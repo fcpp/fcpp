@@ -712,81 +712,64 @@ void run(common::type_sequence<T, Ts...> x, tagged_tuple_sequence<Gs...> const& 
 }
 
 #ifdef FCPP_MPI
-//! @brief Master process that aggregates all the plots
 template <typename P>
-void static master(P* p, int n_procs, int rank) {
-	int size;
-	int max_size = 1024 * 1024 * 1024;
-	char* buf = new char[max_size];
-	MPI_Status status;
-	for (int i = 1; i < n_procs; ++i) {
-        P q;
-		MPI_Recv(buf, max_size, MPI_CHAR, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-		MPI_Get_count(&status, MPI_CHAR, &size);
-		common::isstream is({buf, buf+size});
-		is >> q;
-		*p += q;
-	}
-	delete [] buf;
-}
-
-//! @brief Worker process that sends its plot to the master
-template <typename P>
-void static worker(P* p, int rank_master) {
-	common::osstream os;
-	os << *p;
-	std::vector<char>& v = os.data();
-	char* data = v.data();
-	std::size_t size = v.size(); //TODO: size_t -> int
-	if (size > std::numeric_limits<int>::max()) {
-		std::cerr << "MPI error: size of send to big, size of send: " << size << " limit: " << std::numeric_limits<int>::max() << std::endl;
-		exit(1);
-	}
-	MPI_Send(data, size, MPI_CHAR, rank_master, 1, MPI_COMM_WORLD);
-    *p = P{};
-}
-
-template <typename P>
-void static aggregate_plots(P* p, int n_procs, int rank) {
+void aggregate_plots(P& p, int n_procs, int rank) {
 	int rank_master = 0;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	if (rank == rank_master)
-		master(p, n_procs, rank);
-	else
-		worker(p, rank_master);
+    if (rank == rank_master) {
+        int size;
+        int max_size = 128 * 1024 * 1024;
+        char* buf = new char[max_size];
+        MPI_Status status;
+        for (int i = 1; i < n_procs; ++i) {
+            P q;
+            MPI_Recv(buf, max_size, MPI_CHAR, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
+            MPI_Get_count(&status, MPI_CHAR, &size);
+            common::isstream is({buf, buf+size});
+            is >> q;
+            p += q;
+        }
+        delete [] buf;
+    } else {
+        common::osstream os;
+        os << p;
+        MPI_Send(os.data().data(), os.data().size(), MPI_CHAR, rank_master, 1, MPI_COMM_WORLD);
+        p = P{};
+    }
 }
 
-
-//! @brief Running a single MPI component combination (assuming dynamic execution policy).
+//! @brief Running a single MPI component combination (static splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
-    int provided, initialized, rank;
+    int provided, initialized, rank, n_procs;
     MPI_Initialized(&initialized);
     if (not initialized) {
-        MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+        MPI_Init_thread(NULL, NULL, MPI_THREAD_FUNNELED, &provided);
         assert(provided == MPI_THREAD_MULTIPLE);
     }
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    int n_procs, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
     v.slice(rank, v.size(), n_procs);
-    std::cerr << "process " << rank << " size = " << v.size() << std::endl;
     run(x, e, v);
     if (p != nullptr)
-	    aggregate_plots(p, n_procs, rank);
+	    aggregate_plots(*p, n_procs, rank);
     if (not initialized) MPI_Finalize();
 }
 
-//! @brief Running a single MPI component combination (assuming dynamic execution policy).
+//! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_sequence<Gs...> v) {
     constexpr int dynamic_chunks_per_node = 4; // to regulate, but probably not much than this
     // number of simulations per proc that are pre-assigned at start
-    int n_procs, rank;
+    int provided, initialized, rank, n_procs;
+    MPI_Initialized(&initialized);
+    if (not initialized) {
+        MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+        assert(provided == MPI_THREAD_MULTIPLE);
+    }
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int start = dynamic_chunks_per_node * de.size * n_procs;
@@ -803,10 +786,8 @@ mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_
         for (int idx = 0; idx < maxi + n_procs; ++idx) {
             MPI_Recv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
             int source = status.MPI_SOURCE;
-            //std::cerr << "msg received from " << source << std::endl;
             pi[source] = idx;
             MPI_Send(pi + source, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
-            //std::cerr << "msg sent to " << source << std::endl;
         }
     });
     v.slice(rank, start*n_procs, n_procs);
@@ -821,16 +802,8 @@ mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_
     }
     if (rank == 0) manager.join();
     if (p != nullptr)
-        aggregate_plots(p, n_procs, rank);
-}
-
-template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-splitted_run(T x, exec_t e, int n_procs, int rank, tagged_tuple_sequence<Gs...> v) {
-    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    v.slice(rank, v.size(), n_procs);
-    std::cerr << "process " << rank << " size = " << v.size() << std::endl;
-    run(x, e, v);
+        aggregate_plots(*p, n_procs, rank);
+    if (not initialized) MPI_Finalize();
 }
 //! @}
 #endif

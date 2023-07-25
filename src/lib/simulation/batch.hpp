@@ -761,7 +761,7 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_sequence<Gs...> v) {
+mpi_dynamic_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     constexpr int dynamic_chunks_per_node = 4; // to regulate, but probably not much than this
     // number of simulations per proc that are pre-assigned at start
     int provided, initialized, rank, n_procs;
@@ -806,6 +806,13 @@ mpi_dynamic_run(T x, common::tags::dynamic_execution de, exec_t e, tagged_tuple_
     if (not initialized) MPI_Finalize();
 }
 //! @}
+#else
+template <typename T, typename exec_t, typename... Gs>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {}
+template <typename T, typename exec_t, typename... Gs>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_dynamic_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {}
 #endif
 
 

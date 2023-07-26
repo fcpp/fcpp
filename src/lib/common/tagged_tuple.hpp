@@ -258,29 +258,6 @@ namespace details {
         static constexpr char const* val_tag = "; ";
     };
 
-    //! @brief Strips the namespaces from a non-templated type.
-    inline std::string strip_namespaces_type(std::string s) {
-        size_t pos = s.rfind("::");
-        if (pos == std::string::npos) return s;
-        return s.substr(pos+2);
-    }
-
-    //! @brief Removes the namespaces from a type representation.
-    inline std::string strip_namespaces(std::string s) {
-        size_t tstart = s.find("<");
-        if (tstart == std::string::npos) return strip_namespaces_type(s);
-        std::string q = strip_namespaces_type(s.substr(0,tstart+1));
-        size_t tend = s.rfind(">");
-        size_t tcomma = tstart;
-        while (tcomma < tend) {
-            size_t next = std::min(s.find(",", tcomma+1), tend);
-            q += strip_namespaces(s.substr(tcomma+1, next-tcomma));
-            tcomma = next;
-        }
-        q += s.substr(tend+1);
-        return q;
-    }
-
     //! @brief Escapes a boolean value for underscore tuple printing.
     inline std::string tt_val_print(bool x, tags::underscore_tuple) {
         return escape(x);

@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/common/plot.hpp"
+#include "lib/option/filter.hpp"
 #include "test/helper.hpp"
 
 using namespace fcpp;
@@ -23,33 +24,6 @@ struct but_oth {};
         EXPECT_EQ(q.source, s);     \
         EXPECT_DOUBLE_EQ(q.value, v);
 
-
-TEST(PlotTest, Filters) {
-    {
-        filter::within<10, 20> f;
-        EXPECT_EQ(f(05), false);
-        EXPECT_EQ(f(15), true);
-        EXPECT_EQ(f(25), false);
-    }
-    {
-        filter::neg<filter::within<10, 20>> f;
-        EXPECT_EQ(f(05), true);
-        EXPECT_EQ(f(15), false);
-        EXPECT_EQ(f(25), true);
-    }
-    {
-        filter::vee<filter::below<10>, filter::above<20>> f;
-        EXPECT_EQ(f(05), true);
-        EXPECT_EQ(f(15), false);
-        EXPECT_EQ(f(25), true);
-    }
-    {
-        filter::neg<filter::wedge<filter::above<10>, filter::below<20>>> f;
-        EXPECT_EQ(f(05), true);
-        EXPECT_EQ(f(15), false);
-        EXPECT_EQ(f(25), true);
-    }
-}
 
 TEST(PlotTest, Value) {
     {

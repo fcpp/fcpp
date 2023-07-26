@@ -177,6 +177,7 @@ set(
     lib/option/aggregator.cpp
     lib/option/connect.cpp
     lib/option/distribution.cpp
+    lib/option/filter.cpp
     lib/option/functor.cpp
     lib/option/metric.cpp
     lib/option/sequence.cpp
@@ -356,6 +357,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/option/aggregator.cpp)
         fcpp_test(test/option/connect.cpp)
         fcpp_test(test/option/distribution.cpp)
+        fcpp_test(test/option/filter.cpp)
         fcpp_test(test/option/functor.cpp)
         fcpp_test(test/option/metric.cpp)
         fcpp_test(test/option/sequence.cpp)

@@ -165,7 +165,7 @@ struct hardware_logger {
             }
             template <typename U, typename... Us>
             void print_headers(common::type_sequence<U,Us...>) const {
-                *m_stream << common::details::strip_namespaces(common::type_name<U>()) << " ";
+                *m_stream << common::strip_namespaces(common::type_name<U>()) << " ";
                 print_headers(common::type_sequence<Us...>{});
             }
 

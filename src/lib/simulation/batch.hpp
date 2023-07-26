@@ -714,8 +714,7 @@ void run(common::type_sequence<T, Ts...> x, tagged_tuple_sequence<Gs...> const& 
 #ifdef FCPP_MPI
 template <typename P>
 void aggregate_plots(P& p, int n_procs, int rank) {
-	int rank_master = 0;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	constexpr int rank_master = 0;
     if (rank == rank_master) {
         int size;
         int max_size = 128 * 1024 * 1024;
@@ -746,7 +745,7 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     MPI_Initialized(&initialized);
     if (not initialized) {
         MPI_Init_thread(NULL, NULL, MPI_THREAD_FUNNELED, &provided);
-        assert(provided == MPI_THREAD_MULTIPLE);
+        assert(provided == MPI_THREAD_FUNNELED);
     }
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -761,8 +760,7 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
-    constexpr int dynamic_chunks_per_node = 4; // to regulate, but probably not much than this
+mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v) {
     // number of simulations per proc that are pre-assigned at start
     int provided, initialized, rank, n_procs;
     MPI_Initialized(&initialized);
@@ -772,10 +770,10 @@ mpi_dynamic_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     }
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int start = dynamic_chunks_per_node * de.size * n_procs;
-    start = max(de.size, (v.size() - start + n_procs/2) / n_procs);
+    int start = dynamic_chunks * chunk_size * n_procs;
+    start = max(chunk_size, (v.size() - start + n_procs/2) / n_procs);
     auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    int maxi = (v.size() - start*n_procs + de.size/2) / de.size;
+    int maxi = (v.size() - start*n_procs + chunk_size/2) / chunk_size;
 
     std::thread manager;
     if (rank == 0) manager = std::thread([=](){
@@ -806,13 +804,40 @@ mpi_dynamic_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     if (not initialized) MPI_Finalize();
 }
 //! @}
+//! @brief Forces MPI processes to wait for each other.
+inline void mpi_barrier() {
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+//! @brief Closes MPI communication.
+inline void mpi_finalize() {
+    MPI_Finalize();
+}
+//! @brief Initialises MPI communication.
+void mpi_init(int& rank, int& n_procs) {
+    int provided;
+    // TODO: we should avoid MPI_THREAD_MULTIPLE and use MPI_THREAD_SERIALIZED instead
+    MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
+    assert(provided == MPI_THREAD_MULTIPLE);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
+}
 #else
 template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {}
+inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
+    run(x, e, v);
+}
 template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {}
+inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v) {
+    run(x, e, v);
+}
+inline void mpi_barrier() {}
+inline void mpi_finalize() {}
+inline void mpi_init(int& rank, int& n_procs) {
+    rank = 0;
+    n_procs = 1;
+}
 #endif
 
 

@@ -9,6 +9,7 @@
 #define FCPP_OPTION_FILTER_H_
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 
 

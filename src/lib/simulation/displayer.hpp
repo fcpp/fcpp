@@ -365,7 +365,7 @@ class info_window {
     inline void init_storage_values(std::vector<std::string>&, common::type_sequence<>) {}
     template <typename S, typename... Ss>
     inline void init_storage_values(std::vector<std::string>& v, common::type_sequence<S, Ss...>) {
-        v.push_back(common::details::strip_namespaces(common::type_name<S>()));
+        v.push_back(common::strip_namespaces(common::type_name<S>()));
         init_storage_values(v, common::type_sequence<Ss...>{});
     }
 

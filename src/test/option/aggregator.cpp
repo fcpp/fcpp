@@ -5,6 +5,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/option/aggregator.hpp"
+#include "test/helper.hpp"
 
 using namespace fcpp;
 
@@ -452,6 +453,7 @@ TEST(AggregatorTest, Quantile) {
         using tag_33 = res_t::tags::get<0>;
         using tag_66 = res_t::tags::get<1>;
         using tag_00 = res_t::tags::get<2>;
+        EXPECT_SAME(tag_00, aggregator::quantile<tag, false, 100>);
         std::stringstream ss;
         aggr_t v;
         v.header(ss, "tag");
@@ -480,6 +482,7 @@ TEST(AggregatorTest, Quantile) {
         using tag_33 = res_t::tags::get<0>;
         using tag_66 = res_t::tags::get<1>;
         using tag_00 = res_t::tags::get<2>;
+        EXPECT_SAME(tag_00, aggregator::only_finite<aggregator::quantile<tag, true, 100>>);
         std::stringstream ss;
         aggr_t v;
         v.header(ss, "tag");

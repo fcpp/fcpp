@@ -30,64 +30,6 @@
  */
 namespace fcpp {
 
-//! @brief Namespace for filtering functions.
-namespace filter {
-    //! @brief Filters values within `L/den` and `U/den` (included).
-    template <intmax_t L, intmax_t U, intmax_t den = 1>
-    struct within {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            v *= den;
-            if (L > std::numeric_limits<intmax_t>::min() and L > v) return false;
-            if (U < std::numeric_limits<intmax_t>::max() and U < v) return false;
-            return true;
-        }
-    };
-
-    //! @brief Filters values above `L/den` (included).
-    template <intmax_t L, intmax_t den = 1>
-    using above = within<L, std::numeric_limits<intmax_t>::max(), den>;
-
-    //! @brief Filters values below `U/den` (included).
-    template <intmax_t U, intmax_t den = 1>
-    using below = within<std::numeric_limits<intmax_t>::min(), U, den>;
-
-    //! @brief Filters values equal to `V/den`.
-    template <intmax_t V, intmax_t den = 1>
-    using equal = within<V, V, den>;
-
-    //! @brief Negate a filter.
-    template <typename F>
-    struct neg : F {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            return not F::operator()(v);
-        }
-    };
-
-    //! @brief Joins filters (or).
-    template <typename F, typename G>
-    struct vee : F, G {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            return F::operator()(v) or G::operator()(v);
-        }
-    };
-
-    //! @brief Disjoins filters (and).
-    template <typename F, typename G>
-    struct wedge : F, G {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            return F::operator()(v) and G::operator()(v);
-        }
-    };
-}
-
 
 //! @brief Namespace for plot building tools.
 namespace plot {
@@ -538,7 +480,7 @@ class rows {
     void print_headers(O&, common::type_sequence<>) const {}
     template <typename O, typename U, typename... Us>
     void print_headers(O& o, common::type_sequence<U,Us...>) const {
-        o << common::details::strip_namespaces(common::type_name<U>()) << " ";
+        o << common::strip_namespaces(common::type_name<U>()) << " ";
         print_headers(o, common::type_sequence<Us...>{});
     }
 
@@ -888,15 +830,15 @@ class value {
         std::string t = tag_name(common::number_sequence<details::has_name_method<S>::value>{}); // tag name
         size_t pos = t.find("<");
         if (pos != std::string::npos) {
-            p.unit = common::details::strip_namespaces(t.substr(0, pos));
-            p.source = common::details::strip_namespaces(t.substr(pos+1, t.size()-pos-2));
+            p.unit = common::strip_namespaces(t.substr(0, pos));
+            p.source = common::strip_namespaces(t.substr(pos+1, t.size()-pos-2));
         } else {
             pos = t.find("__");
             if (pos != std::string::npos) {
-                p.source = common::details::strip_namespaces(t.substr(0, pos));
+                p.source = common::strip_namespaces(t.substr(0, pos));
                 p.unit = t.substr(pos+2);
             } else {
-                p.source = common::details::strip_namespaces(t);
+                p.source = common::strip_namespaces(t);
                 p.unit = p.source;
             }
         }
@@ -1210,7 +1152,7 @@ class split {
     }
     //! @brief Single plot building.
     void build_impl(std::array<plot, 1>& res, std::map<key_type, parent_build_type>& m) const {
-        res[0].xname = details::format_type(common::details::strip_namespaces(common::type_name<S>()));
+        res[0].xname = details::format_type(common::strip_namespaces(common::type_name<S>()));
         std::set<std::string> units;
         if (m.size()) for (point const& q : m.begin()->second) {
             if (q.unit.size()) units.insert(q.unit);

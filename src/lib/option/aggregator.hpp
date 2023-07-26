@@ -23,6 +23,7 @@
 #include "lib/settings.hpp"
 #include "lib/common/algorithm.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/option/filter.hpp"
 
 
 /**
@@ -1058,26 +1059,64 @@ class container : public A {
 
 
 /**
+ * @brief Filters only values respecting filter F before feeding them to another aggregator.
+ *
+ * @param A The value aggregator type.
+ */
+template <typename F, typename A>
+class filter : public A {
+    //! @brief The type of values aggregated.
+    using T = typename A::type;
+
+    template <typename T>
+    struct remap_tuple;
+
+    template <typename... Ss, typename... Ts>
+    struct remap_tuple<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Ts...>>> {
+        using type = common::tagged_tuple<common::type_sequence<filter<F,Ss>...>, common::type_sequence<Ts...>>;
+    };
+
+  public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = typename remap_tuple<typename A::template result_type<U>>::type;
+
+    //! @brief Default constructor.
+    filter() = default;
+
+    //! @brief Erases a value from the aggregation set.
+    inline void erase(T const& value) {
+        if (m_filter(value)) A::erase(value);
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    inline void insert(T const& value) {
+        if (m_filter(value)) A::insert(value);
+    }
+
+    //! @brief The results of aggregation.
+    template <typename U>
+    result_type<U> result() const {
+        auto t = A::template result<U>();
+        return reinterpret_cast<result_type<U>&>(t);
+    }
+
+  private:
+    //! @brief The callable filter class.
+    F m_filter;
+};
+
+
+/**
  * @brief Filters only finite values before feeding them to another aggregator.
  *
  * @param A The value aggregator type.
  */
 template <typename A>
-class only_finite : public A {
-    //! @brief The type of values aggregated.
-    using T = typename A::type;
-
-  public:
-    //! @brief Erases a value from the aggregation set.
-    inline void erase(T const& value) {
-        if (std::isfinite(value)) A::erase(value);
-    }
-
-    //! @brief Inserts a new value to be aggregated.
-    inline void insert(T const& value) {
-        if (std::isfinite(value)) A::insert(value);
-    }
-};
+using only_finite = filter<fcpp::filter::finite, A>;
 
 
 }

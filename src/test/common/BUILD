@@ -98,6 +98,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:plot",
+        "//lib/option:filter",
         "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

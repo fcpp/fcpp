@@ -388,14 +388,14 @@ struct logger {
             void print_headers(common::type_sequence<>) const {}
             template <typename U, typename... Us>
             void print_headers(common::type_sequence<U,Us...>) const {
-                common::get<U>(m_aggregators).header(*m_stream, common::details::strip_namespaces(common::type_name<U>()));
+                common::get<U>(m_aggregators).header(*m_stream, common::strip_namespaces(common::type_name<U>()));
                 print_headers(common::type_sequence<Us...>());
             }
             //! @brief Prints the functor headers.
             void print_tags(common::type_sequence<>) const {}
             template <typename U, typename... Us>
             void print_tags(common::type_sequence<U,Us...>) const {
-                *m_stream << common::details::strip_namespaces(common::type_name<U>()) << " ";
+                *m_stream << common::strip_namespaces(common::type_name<U>()) << " ";
                 print_tags(common::type_sequence<Us...>{});
             }
 

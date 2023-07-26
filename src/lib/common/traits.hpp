@@ -856,6 +856,21 @@ inline std::string type_name(T&&) {
 }
 
 
+//! @cond INTERNAL
+namespace details {
+    //! @brief Strips the namespaces from a non-templated type.
+    inline std::string strip_namespaces_type(std::string s) {
+        size_t pos = s.rfind("::");
+        if (pos == std::string::npos) return s;
+        return s.substr(pos+2);
+    }
+}
+//! @endcond
+
+//! @brief Removes the namespaces from a type representation.
+std::string strip_namespaces(std::string s);
+
+
 //! @brief Escapes a value for clear printing.
 //! @{
 

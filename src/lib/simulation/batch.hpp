@@ -86,7 +86,7 @@ namespace details {
     inline generator<F, Ts...> make_generator(F&& f, size_t core_size, size_t extra_size) {
         return {std::move(f), core_size, extra_size};
     }
-}
+} // details
 //! @endcond
 
 
@@ -712,30 +712,36 @@ void run(common::type_sequence<T, Ts...> x, tagged_tuple_sequence<Gs...> const& 
 }
 
 #ifdef FCPP_MPI
-template <typename P>
-void aggregate_plots(P& p, int n_procs, int rank) {
-	constexpr int rank_master = 0;
-    if (rank == rank_master) {
-        int size;
-        int max_size = 128 * 1024 * 1024;
-        char* buf = new char[max_size];
-        MPI_Status status;
-        for (int i = 1; i < n_procs; ++i) {
-            P q;
-            MPI_Recv(buf, max_size, MPI_CHAR, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-            MPI_Get_count(&status, MPI_CHAR, &size);
-            common::isstream is({buf, buf+size});
-            is >> q;
-            p += q;
+
+//! @cond INTERNAL
+namespace details {
+    //! @brief Uses MPI to aggregate plots produced on different MPI processes.
+    template <typename P>
+    void aggregate_plots(P& p, int n_procs, int rank) {
+        constexpr int rank_master = 0;
+        if (rank == rank_master) {
+            int size;
+            int max_size = 128 * 1024 * 1024;
+            char* buf = new char[max_size];
+            MPI_Status status;
+            for (int i = 1; i < n_procs; ++i) {
+                P q;
+                MPI_Recv(buf, max_size, MPI_CHAR, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
+                MPI_Get_count(&status, MPI_CHAR, &size);
+                common::isstream is({buf, buf+size});
+                is >> q;
+                p += q;
+            }
+            delete [] buf;
+        } else {
+            common::osstream os;
+            os << p;
+            MPI_Send(os.data().data(), os.data().size(), MPI_CHAR, rank_master, 1, MPI_COMM_WORLD);
+            p = P{};
         }
-        delete [] buf;
-    } else {
-        common::osstream os;
-        os << p;
-        MPI_Send(os.data().data(), os.data().size(), MPI_CHAR, rank_master, 1, MPI_COMM_WORLD);
-        p = P{};
     }
-}
+} // details
+//! @endcond
 
 //! @brief Running a single MPI component combination (static splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
@@ -753,7 +759,7 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     v.slice(rank, v.size(), n_procs);
     run(x, e, v);
     if (p != nullptr)
-	    aggregate_plots(*p, n_procs, rank);
+	    details::aggregate_plots(*p, n_procs, rank);
     if (not initialized) MPI_Finalize();
 }
 
@@ -800,50 +806,42 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
     }
     if (rank == 0) manager.join();
     if (p != nullptr)
-        aggregate_plots(*p, n_procs, rank);
+        details::aggregate_plots(*p, n_procs, rank);
     if (not initialized) MPI_Finalize();
 }
 //! @}
-//! @brief Forces MPI processes to wait for each other.
-inline void mpi_barrier() {
-    MPI_Barrier(MPI_COMM_WORLD);
-}
-//! @brief Closes MPI communication.
-inline void mpi_finalize() {
-    MPI_Finalize();
-}
-//! @brief Initialises MPI communication.
-void mpi_init(int& rank, int& n_procs) {
-    int provided;
-    // TODO: we should avoid MPI_THREAD_MULTIPLE and use MPI_THREAD_SERIALIZED instead
-    MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
-    assert(provided == MPI_THREAD_MULTIPLE);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
-}
+
 #else
+
+//! @brief Running a single MPI component combination (static splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
     run(x, e, v);
 }
+
+//! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v) {
     run(x, e, v);
 }
-inline void mpi_barrier() {}
-inline void mpi_finalize() {}
-inline void mpi_init(int& rank, int& n_procs) {
-    rank = 0;
-    n_procs = 1;
-}
+
 #endif
 
+//! @brief Initialises MPI communication.
+void mpi_init(int& rank, int& n_procs);
 
-}
+//! @brief Forces MPI processes to wait for each other.
+void mpi_barrier();
+
+//! @brief Closes MPI communication.
+void mpi_finalize();
 
 
-}
+} // batch
+
+
+} // fcpp
 
 #endif // FCPP_SIMULATION_BATCH_H_

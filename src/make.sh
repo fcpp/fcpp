@@ -42,6 +42,7 @@ btype="Debug"
 rtype="STD"
 opts=""
 copts=""
+mpiopts=""
 cmakeopts=""
 targets=""
 errored=( )
@@ -306,9 +307,11 @@ while [ "$1" != "" ]; do
     elif [ "$1" == "mpi" ]; then
         shift 1
         opts="$opts -DFCPP_BUILD_MPI=ON"
-        copts="$copts --copt=-pthread"
-        cmakeopts="$cmakeopts -pthread"
         rtype="MPI"
+        while [ "${1:0:1}" == "-" ]; do
+            mpiopts="$mpiopts $1"
+            shift 1
+        done
     elif [ "$1" == "hosts" ]; then
         shift 1
         hostfile=$1
@@ -505,7 +508,7 @@ while [ "$1" != "" ]; do
                 alltargets="$targets"
                 cmake_builderx
             else
-                while [ "$1" != "" ]; do
+                while [ "$1" != "" -a "$1" != "-" ]; do
                     cmake_finderx "$1" target
                     if [ "$targets" == "" ]; then
                         echo -e "\033[1mtarget \"$1\" not found\033[0m"
@@ -514,6 +517,7 @@ while [ "$1" != "" ]; do
                     fi
                     shift 1
                 done
+                shift 1
                 if [ "$alltargets" != "" ]; then
                     cmake_builderx $alltargets
                 fi
@@ -528,11 +532,12 @@ while [ "$1" != "" ]; do
                 raw="bin/output"
                 mkdir -p bin/output output/raw
                 cd bin
-                echo -e "\033[1;4m$target\033[0m\n"
                 if [ $rtype == "STD" ]; then
-                    run/$name > ../$file.txt 2> ../$file.err & pid=$!
+                    echo -e "\033[1;4mrun/$name $@\033[0m\n"
+                    run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
                 else
-                    mpiexec -N 1 --hostfile "../$hostfile" --bind-to none --mca btl_openib_allow_ib 1 run/$name > ../$file.txt 2> ../$file.err & pid=$!
+                    echo -e "\033[1;4mmpiexec --hostfile ../$hostfile $mpiopts run/$name $@\033[0m\n"
+                    mpiexec --hostfile "../$hostfile" $mpiopts run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
                 fi
                 cd ..
                 monitor $pid $name $file $raw
@@ -545,6 +550,7 @@ while [ "$1" != "" ]; do
                 echo -e "\033[1mtarget is not unique\033[0m"
                 echo $targets | tr ' ' '\n' | sed 's|^|//|'
             else
+                shift 1
                 name=`echo $targets | sed 's|.*:||'`
                 file="output/$name"
                 raw="output"
@@ -555,9 +561,11 @@ while [ "$1" != "" ]; do
                 fi
                 mkdir -p output/raw
                 if [ $rtype == "STD" ]; then
+                    echo -e "\033[1;4m$built $@\033[0m\n"
                     $built > $file.txt 2> $file.err & pid=$!
                 else
-                    mpiexec -N 1 --hostfile "../$hostfile" --bind-to none --mca btl_openib_allow_ib 1 $built > $file.txt 2> $file.err & pid=$!
+                    echo -e "\033[1;4mmpiexec --hostfile ../$hostfile $mpiopts $built $@\033[0m\n"
+                    mpiexec --hostfile "../$hostfile" $mpiopts $built $@ > $file.txt 2> $file.err & pid=$!
                 fi
                 monitor $pid $name $file $raw
             fi

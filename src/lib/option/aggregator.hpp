@@ -18,6 +18,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "lib/settings.hpp"
@@ -958,7 +959,7 @@ using quartile = quantile<T,insert_only,0,25,50,75,100>;
  * Supports erase only if supported by every aggregator.
  */
 template <typename... Ts>
-class combine : public Ts... {
+class combine {
   public:
     //! @brief The type of values aggregated.
     using type = typename common::type_sequence<Ts...>::front::type;
@@ -972,25 +973,25 @@ class combine : public Ts... {
 
     //! @brief Combines aggregated values.
     combine& operator+=(combine const& o) {
-        common::ignore_args(Ts::operator+=(o)...);
+        common::ignore_args((std::get<Ts>(m_aggregators)+=o)...);
         return *this;
     }
 
     //! @brief Erases a value from the aggregation set.
     void erase(type value) {
-        common::ignore_args((Ts::erase(value),0)...);
+        common::ignore_args((std::get<Ts>(m_aggregators).erase(value),0)...);
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(type value) {
-        common::ignore_args((Ts::insert(value),0)...);
+        common::ignore_args((std::get<Ts>(m_aggregators).insert(value),0)...);
     }
 
     //! @brief The results of aggregation.
     template <typename U>
     result_type<U> result() const {
         result_type<U> r;
-        common::ignore_args((r = Ts::template result<U>())...);
+        common::ignore_args((r = std::get<Ts>(m_aggregators).template result<U>())...);
         return r;
     }
 
@@ -1017,7 +1018,7 @@ class combine : public Ts... {
     //! @brief Outputs the aggregator description.
     template <typename O, typename S, typename... Ss>
     void header_impl(O& os, std::string& tag, common::type_sequence<S,Ss...>) const {
-        S::header(os, tag);
+        std::get<S>(m_aggregators).header(os, tag);
         header_impl(os, tag, common::type_sequence<Ss...>());
     }
     template <typename O>
@@ -1026,11 +1027,14 @@ class combine : public Ts... {
     //! @brief Printed results of aggregation.
     template <typename O, typename S, typename... Ss>
     void output_impl(O& os, common::type_sequence<S,Ss...>) const {
-        S::output(os);
+        std::get<S>(m_aggregators).output(os);
         output_impl(os, common::type_sequence<Ss...>());
     }
     template <typename O>
     void output_impl(O&, common::type_sequence<>) const {}
+
+    //! @brief The aggregators to be combined.
+    std::tuple<Ts...> m_aggregators;
 };
 
 

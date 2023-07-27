@@ -100,6 +100,12 @@ inline std::string to_string(double x) {
 inline std::string to_string(long double x) {
     return details::real2str<long double>(x);
 }
+template <typename T>
+inline std::string to_string(T* p) {
+    std::stringstream ss;
+    ss << p;
+    return ss.str();
+}
 //! @}
 
 namespace details {

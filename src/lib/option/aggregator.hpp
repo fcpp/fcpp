@@ -973,7 +973,7 @@ class combine {
 
     //! @brief Combines aggregated values.
     combine& operator+=(combine const& o) {
-        common::ignore_args((std::get<Ts>(m_aggregators)+=o)...);
+        common::ignore_args((std::get<Ts>(m_aggregators)+=std::get<Ts>(o.m_aggregators))...);
         return *this;
     }
 

@@ -791,7 +791,7 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
             MPI_Recv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
             int source = status.MPI_SOURCE;
             pi[source] = idx;
-            MPI_Send(pi + source, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
+            MPI_Send(pi + source, 1, MPI_INT, source, 2, MPI_COMM_WORLD);
         }
     });
     v.slice(rank, start*n_procs, n_procs);
@@ -799,7 +799,7 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
     int idx;
     while (true) {
         MPI_Send(&idx, 0, MPI_INT, 0, 0, MPI_COMM_WORLD);
-        MPI_Recv(&idx, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&idx, 1, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         if (idx >= maxi) break;
         v.slice(start*n_procs + idx, -1, maxi);
         run(x, e, v);

@@ -265,6 +265,9 @@ endif(FCPP_BUILD_GL)
 if(FCPP_BUILD_TESTS)
     cmake_minimum_required(VERSION 3.14)
     include(FetchContent)
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+        cmake_policy(SET CMP0135 NEW)
+    endif()
     FetchContent_Declare(
       googletest
       URL https://github.com/google/googletest/archive/f5e592d8ee5ffb1d9af5be7f715ce3576b8bf9c4.zip

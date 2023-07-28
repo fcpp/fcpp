@@ -893,6 +893,12 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
     run(x, e, v);
 }
 
+//! @brief Running a single MPI component combination (dynamic splitting across nodes).
+template <typename T, typename exec_t, typename... Gs>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
+    run(x, e, v);
+}
 #endif
 
 //! @brief Initialises MPI communication.

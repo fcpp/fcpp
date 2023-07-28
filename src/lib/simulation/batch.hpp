@@ -319,9 +319,6 @@ class tagged_tuple_sequence<> {
         return 1;
     }
 
-    //! @brief Reduces the generator to a subsequence.
-    inline void slice(size_t start, size_t end, size_t stride = 1) {}
-
     //! @brief Function testing presence of an item of the sequence.
     inline bool count(size_t i) const {
         return i == 0;
@@ -371,21 +368,11 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         m_core_size(g.core_size() * tagged_tuple_sequence<Gs...>::core_size()),
         m_extra_size(m_core_extra_size + m_extra_core_size),
         m_size(m_core_size + m_extra_size),
-        m_offset(0),
-        m_stride(1),
         m_generator(std::move(g)) {}
 
     //! @brief Returns the total size of the sequence generated (including filtered out values).
     inline size_t size() const {
         return m_size;
-    }
-
-    //! @brief Reduces the generator to a subsequence.
-    void slice(size_t start, size_t end, size_t stride = 1) {
-        m_size = m_core_size + m_extra_size;
-        m_offset = start;
-        m_stride = stride;
-        m_size = (std::min(end, m_size) - start + stride - 1) / stride;
     }
 
     //! @brief Function testing presence of an item of the sequence.
@@ -411,7 +398,6 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
      */
     template <typename T>
     bool assign(T& t, size_t i) const {
-        i = m_offset + m_stride * i;
         if (i < m_core_size) {
             if (not m_generator(t, i / tagged_tuple_sequence<Gs...>::core_size())) return false;
             return tagged_tuple_sequence<Gs...>::assign(t, i % tagged_tuple_sequence<Gs...>::core_size());
@@ -447,11 +433,7 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
     //! @brief The size of the extra sequence that should be expanded only with core values.
     const size_t m_extra_size;
     //! @brief The total size of the sequence generated (including filtered out values).
-    size_t m_size;
-    //! @brief The offset to the first element of the sequence.
-    size_t m_offset;
-    //! @brief The step between consecutive elements of the sequence.
-    size_t m_stride;
+    const size_t m_size;
     //! @brief The first generator.
     const G m_generator;
 };
@@ -740,7 +722,8 @@ namespace details {
 //! @brief Running a single MPI component combination (static splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
+mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> s) {
+    auto v = make_tagged_tuple_sequences(s);
     int provided, initialized, rank, n_procs;
     MPI_Initialized(&initialized);
     if (not initialized) {
@@ -760,7 +743,8 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v) {
+mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s) {
+    auto v = make_tagged_tuple_sequences(s);
     // number of simulations per proc that are pre-assigned at start
     int provided, initialized, rank, n_procs;
     MPI_Initialized(&initialized);

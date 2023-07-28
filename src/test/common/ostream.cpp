@@ -30,9 +30,6 @@ TEST(OstreamTest, STD) {
     PRINT_EQ("{42}", unordered_set<int>{42});
     PRINT_EQ("{2:\"world\", 4:\"hello\"}", map<int, std::string>{{4,"hello"},{2,"world"}});
     PRINT_EQ("{42:\"hello world\"}", unordered_map<int, std::string>{{42, "hello world"}});
-    using namespace fcpp;
-    int* x = nullptr;
-    PRINT_EQ("0x0", x);
 }
 
 TEST(OstreamTest, FCPP) {

@@ -788,6 +788,93 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
         details::aggregate_plots(*p, n_procs, rank);
     if (not initialized) MPI_Finalize();
 }
+
+//! @brief Running a single MPI component combination (dynamic splitting across nodes).
+template <typename T, typename exec_t, typename... Gs>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
+    // initialize generators and get plotter address
+    using init_tuple = typename tagged_tuple_sequence<Gs...>::value_type;
+    auto v = make_tagged_tuple_sequences(s);
+    if (shuffle) v.shuffle(42);
+    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
+
+    // initialize MPI
+    constexpr int rank_master = 0;
+    int provided, initialized, rank, n_procs;
+    MPI_Initialized(&initialized);
+    if (not initialized) {
+        MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
+        assert(provided == MPI_THREAD_SERIALIZED);
+    }
+    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // setup initial chunks
+    int initial_chunk = std::min(e.num, (v.size() + n_procs - 1) / n_procs);
+    initial_chunk = std::max(initial_chunk, (v.size() - n_procs * dynamic_chunks * chunk_size + n_procs/2) / n_procs);
+    int pool_size = std::min(e.num, initial_chunk);
+    int i = rank * initial_chunk;
+    int iend = i + initial_chunk;
+    int rest = n_procs * initial_chunk;
+    int c = 0, reqs = rest < v.size() ? pool_size - 1  : 0;
+
+    // start working threads
+    std::mutex m;
+    std::vector<std::thread> pool;
+    pool.reserve(pool_size);
+    for (int t=0; t<pool_size; ++t)
+        pool.emplace_back([&] () {
+            size_t j;
+            while (true) {
+                m.lock();
+                if (i < iend or i == v.size()) j = i++; // there are things in local queue, grab one
+                else if (rank == rank_master) {         // i am master, grab a whole chunk then one
+                    j = rest + c * chunk_size;
+                    i = j + 1;
+                    iend = j + chunk_size;
+                    ++c;
+                } else { // use MPI to ask for a chunk
+                    if (rest < v.size()) {
+                        MPI_Send(&c, 0, MPI_INT, 0, 0, MPI_COMM_WORLD);
+                        MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    }
+                    j = rest + c * chunk_size;
+                    i = j + 1;
+                    iend = j + chunk_size;
+                }
+                m.unlock();
+                if (j >= v.size()) break;
+                init_tuple tup;
+                if (v.assign(tup, j)) {
+                    typename T::net network{tup};
+                    network.run();
+                }
+            }
+        });
+
+    // start MPI manager thread
+    std::thread manager;
+    if (rank == rank_master) manager = std::thread([&](){
+        MPI_Status status;
+        while (reqs > 0) {
+            MPI_Recv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+            int source = status.MPI_SOURCE;
+            m.lock();
+            MPI_Send(&c, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
+            ++c;
+            m.unlock();
+            if (rest + c * chunk_size >= v.size()) --reqs;
+        }
+    });
+
+    // wait threads to close and finalize
+    for (std::thread& t : pool) t.join();
+    if (rank == 0) manager.join();
+    if (p != nullptr)
+        details::aggregate_plots(*p, n_procs, rank);
+    if (not initialized) MPI_Finalize();
+}
 //! @}
 
 #else

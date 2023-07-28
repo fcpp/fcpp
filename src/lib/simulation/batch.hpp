@@ -722,8 +722,9 @@ namespace details {
 //! @brief Running a single MPI component combination (static splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> s) {
+mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
     auto v = make_tagged_tuple_sequences(s);
+    if (shuffle) v.shuffle(42);
     int provided, initialized, rank, n_procs;
     MPI_Initialized(&initialized);
     if (not initialized) {

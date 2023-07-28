@@ -857,7 +857,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
                     ++c;
                 } else { // use MPI to ask for a chunk
                     if (rest < v.size()) {
-                        MPI_Send(&c, 0, MPI_INT, 0, 0, MPI_COMM_WORLD);
+                        MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
                         MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     }
                     j = rest + c * chunk_size;
@@ -879,7 +879,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     if (rank == rank_master) manager = std::thread([&](){
         MPI_Status status;
         while (reqs > 0) {
-            MPI_Recv(&c, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+            MPI_Recv(&c, 0, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
             int source = status.MPI_SOURCE;
             m.lock();
             MPI_Send(&c, 1, MPI_INT, source, 0, MPI_COMM_WORLD);

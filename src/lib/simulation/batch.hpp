@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -470,68 +471,35 @@ inline auto make_tagged_tuple_sequence(Gs&&... gs) {
  * @tparam Ss The tagged tuple sequences.
  */
 template <typename... Ss>
-class tagged_tuple_sequences;
-
-//! @brief Class concatenating multiple tagged tuple sequences (empty overload).
-template <>
-class tagged_tuple_sequences<> {
+class tagged_tuple_sequences {
   public:
     //! @brief The tuple type that the class generates.
-    using value_type = common::tagged_tuple_t<>;
+    using value_type = typename common::type_sequence<Ss...>::front::value_type;
 
     //! @brief Constructor setting up individual generators.
-    tagged_tuple_sequences() {}
-
-    //! @brief Returns the total size of the sequence generated (including filtered out values).
-    inline size_t size() const {
-        return 0;
-    }
-
-    //! @brief Reduces the generator to a subsequence.
-    inline void slice(size_t start, size_t end, size_t stride = 1) {}
-
-    //! @brief Function testing presence of an item of the sequence.
-    inline bool count(size_t i) const {
-        return false;
-    }
-
-    //! @brief Function generating an item of the sequence.
-    inline value_type operator[](size_t) const {
-        return {};
-    }
-
-    /**
-     * @brief Function generating and testing presence of an item of the sequence.
-     *
-     * @param[out] t The tuple in which to store the item generated.
-     * @param[in]  i The index of the item to be generated.
-     * @return     A boolean telling whether the given index has to be included (true) or skipped (false).
-     */
-    template <typename T>
-    inline bool assign(T& t, size_t i) const {
-        return true;
-    }
-};
-
-//! @brief Class concatenating multiple tagged tuple sequences (recursive overload).
-template <typename S, typename... Ss>
-class tagged_tuple_sequences<S, Ss...> : public tagged_tuple_sequences<Ss...> {
-  public:
-    //! @brief The tuple type that the class generates.
-    using value_type = typename S::value_type;
-
-    //! @brief Constructor setting up individual generators.
-    tagged_tuple_sequences(S const& s, Ss const&... ss) :
-        tagged_tuple_sequences<Ss...>(ss...),
-        m_total_size(s.size() + tagged_tuple_sequences<Ss...>::size()),
-        m_size(m_total_size),
+    tagged_tuple_sequences(Ss const&... ss) :
+        m_shuffle(1),
         m_offset(0),
         m_stride(1),
-        m_sequence(s) {}
+        m_sequences(ss...) {
+        std::array<size_t, sizeof...(Ss)> v = {ss.size()...};
+        m_total_size = 0;
+        for (size_t x : v) m_total_size += x;
+        m_size = m_total_size;
+    }
 
     //! @brief Returns the total size of the sequence generated (including filtered out values).
     inline size_t size() const {
         return m_size;
+    }
+
+    //! @brief Internally shuffles the sequence pseudo-randomly, in order to achieve better statistical balancing.
+    void shuffle(uint_fast32_t seed = 0) {
+        if (m_total_size < 3) return;
+        std::mt19937 gen(seed);
+        std::uniform_int_distribution<> dist(1, m_total_size-1);
+        do m_shuffle = dist(gen);
+        while (gcd(m_shuffle, m_total_size) > 1);
     }
 
     //! @brief Reduces the generator to a subsequence.
@@ -542,14 +510,13 @@ class tagged_tuple_sequences<S, Ss...> : public tagged_tuple_sequences<Ss...> {
     }
 
     //! @brief Function testing presence of an item of the sequence.
-    bool count(size_t i) const {
-        if (i >= m_size) return false;
+    inline bool count(size_t i) const {
         value_type t;
         return assign(t, i);
     }
 
     //! @brief Function generating an item of the sequence.
-    value_type operator[](size_t i) const {
+    inline value_type operator[](size_t i) const {
         value_type t;
         assign(t, i);
         return t;
@@ -563,23 +530,50 @@ class tagged_tuple_sequences<S, Ss...> : public tagged_tuple_sequences<Ss...> {
      * @return     A boolean telling whether the given index has to be included (true) or skipped (false).
      */
     template <typename T>
-    inline bool assign(T& t, size_t i) const {
+    bool assign(T& t, size_t i) const {
         i = m_offset + m_stride * i;
-        if (i < m_sequence.size()) return m_sequence.assign(t, i);
-        return tagged_tuple_sequences<Ss...>::assign(t, i - m_sequence.size());
+        if (i >= m_total_size) return false;
+        i = (i * m_shuffle) % m_total_size;
+        return assign_impl(t, i, std::make_index_sequence<sizeof...(Ss)>{});
     }
 
   private:
+    //! @brief Computes the gcd assuming that x > 0.
+    size_t gcd(size_t x, size_t y) {
+        do {
+            y %= x;
+            if (y == 0) return x;
+            x %= y;
+        } while (x > 0);
+        return y;
+    }
+
+    //! @brief Accesses sequence elements iterating through the tuple of sequences (empty overload).
+    template <typename T>
+    inline bool assign_impl(T& t, size_t i, std::index_sequence<>) const {
+        assert(false);
+        return false;
+    }
+
+    //! @brief Accesses sequence elements iterating through the tuple of sequences (active overload).
+    template <typename T, size_t j, size_t... js>
+    inline bool assign_impl(T& t, size_t i, std::index_sequence<j, js...>) const {
+        if (i < std::get<j>(m_sequences).size()) return std::get<j>(m_sequences).assign(t, i);
+        return assign_impl(t, i - std::get<j>(m_sequences).size(), std::index_sequence<js...>{});
+    }
+
     //! @brief The total size of the sequence generated (including filtered out values).
-    const size_t m_total_size;
+    size_t m_total_size;
     //! @brief The size of the reduced sequence after slicing.
     size_t m_size;
+    //! @brief A factor shuffling the sequence order.
+    size_t m_shuffle;
     //! @brief The offset to the first element of the sequence.
     size_t m_offset;
     //! @brief The step between consecutive elements of the sequence.
     size_t m_stride;
     //! @brief The first sequence.
-    const S m_sequence;
+    const std::tuple<Ss...> m_sequences;
 };
 
 //! @brief Produces a concatenation of multiple tagged tuple sequences.

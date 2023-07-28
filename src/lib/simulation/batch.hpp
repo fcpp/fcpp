@@ -661,6 +661,26 @@ run(T, exec_t e, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
     std::cerr << "done." << std::endl;
 }
 
+template <typename T, typename exec_t, typename... Ss>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+run(T, exec_t e, tagged_tuple_sequences<Ss...> const& seq) {
+    using init_tuple = typename tagged_tuple_sequences<Ss...>::value_type;
+    std::cerr << common::type_name<T>() << ": running " << seq.size() << " simulations..." << std::flush;
+    size_t p = 0;
+    common::parallel_for(e, seq.size(), [&](size_t i, size_t t){
+        if (t == 0 and i*100/seq.size() > p) {
+            p = i*100/seq.size();
+            std::cerr << p << "%..." << std::flush;
+        }
+        init_tuple tup;
+        if (seq.assign(tup, i)) {
+            typename T::net network{tup};
+            network.run();
+        }
+    });
+    std::cerr << "done." << std::endl;
+}
+
 //!  @brief Does not run a series of experiments (no network types, with execution policy)
 template <typename exec_t, typename... Ss>
 common::ifn_class_template<tagged_tuple_sequence, exec_t>
@@ -744,8 +764,9 @@ mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s) {
+mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
     auto v = make_tagged_tuple_sequences(s);
+    if (shuffle) v.shuffle(42);
     // number of simulations per proc that are pre-assigned at start
     int provided, initialized, rank, n_procs;
     MPI_Initialized(&initialized);
@@ -811,7 +832,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // setup initial chunks
-    int initial_chunk = std::min(e.num, (v.size() + n_procs - 1) / n_procs);
+    size_t initial_chunk = std::min(e.num, (v.size() + n_procs - 1) / n_procs);
     initial_chunk = std::max(initial_chunk, (v.size() - n_procs * dynamic_chunks * chunk_size + n_procs/2) / n_procs);
     int pool_size = std::min(e.num, initial_chunk);
     int i = rank * initial_chunk;
@@ -858,7 +879,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     if (rank == rank_master) manager = std::thread([&](){
         MPI_Status status;
         while (reqs > 0) {
-            MPI_Recv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+            MPI_Recv(&c, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
             int source = status.MPI_SOURCE;
             m.lock();
             MPI_Send(&c, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
@@ -882,21 +903,21 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
 //! @brief Running a single MPI component combination (static splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v) {
+mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v, bool shuffle = false) {
     run(x, e, v);
 }
 
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v) {
+mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v, bool shuffle = false) {
     run(x, e, v);
 }
 
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
+mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v, bool shuffle = false) {
     run(x, e, v);
 }
 #endif

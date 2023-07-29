@@ -1041,8 +1041,8 @@ class combine {
 /**
  * @brief Aggregates containers of values through a value aggregator.
  *
- * @param T The container type.
- * @param A The value aggregator type.
+ * @tparam T The container type.
+ * @tparam A The value aggregator type.
  */
 template <typename T, typename A>
 class container : public A {
@@ -1065,7 +1065,7 @@ class container : public A {
 /**
  * @brief Filters only values respecting filter F before feeding them to another aggregator.
  *
- * @param A The value aggregator type.
+ * @tparam A The value aggregator type.
  */
 template <typename F, typename A>
 class filter : public A {
@@ -1128,7 +1128,7 @@ class filter : public A {
 /**
  * @brief Filters only finite values before feeding them to another aggregator.
  *
- * @param A The value aggregator type.
+ * @tparam A The value aggregator type.
  */
 template <typename A>
 using only_finite = filter<fcpp::filter::finite, A>;

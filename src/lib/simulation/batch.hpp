@@ -818,7 +818,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     using init_tuple = typename tagged_tuple_sequence<Gs...>::value_type;
     auto v = make_tagged_tuple_sequences(s);
     if (shuffle) v.shuffle(42);
-    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
+    auto plot = common::get_or<component::tags::plotter>(v[0], nullptr);
 
     // initialize MPI
     constexpr int rank_master = 0;
@@ -835,10 +835,13 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     size_t initial_chunk = std::min(e.num, (v.size() + n_procs - 1) / n_procs);
     initial_chunk = std::max(initial_chunk, (v.size() - n_procs * dynamic_chunks * chunk_size + n_procs/2) / n_procs);
     int pool_size = std::min(e.num, initial_chunk);
-    int i = rank * initial_chunk;
+    int istart = rank * initial_chunk, i = istart;
     int iend = i + initial_chunk;
     int rest = n_procs * initial_chunk;
-    int c = 0, reqs = rest < v.size() ? pool_size - 1  : 0;
+    int c = 0, p = 0, reqs = rest < v.size() ? pool_size - 1  : 0;
+
+    std::string debug = std::to_string(initial_chunk) + " " + std::to_string(pool_size) + " " + std::to_string(i) + " " + std::to_string(iend) + " " + std::to_string(rest) + "\n";
+    std::cerr << debug;
 
     // start working threads
     std::mutex m;
@@ -851,21 +854,29 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
                 m.lock();
                 if (i < iend or i == v.size()) j = i++; // there are things in local queue, grab one
                 else if (rank == rank_master) {         // i am master, grab a whole chunk then one
-                    j = rest + c * chunk_size;
+                    istart = rest + c * chunk_size;
+                    iend = istart + chunk_size;
+                    j = istart;
                     i = j + 1;
-                    iend = j + chunk_size;
                     ++c;
                 } else { // use MPI to ask for a chunk
                     if (rest < v.size()) {
                         MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
                         MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     }
-                    j = rest + c * chunk_size;
+                    istart = rest + c * chunk_size;
+                    iend = istart + chunk_size;
+                    j = istart;
                     i = j + 1;
-                    iend = j + chunk_size;
                 }
                 m.unlock();
                 if (j >= v.size()) break;
+                int q = i < rest ? (i - istart) * n_procs : rest + c * chunk_size - (iend - i) * n_procs;
+                q = q * 100 / v.size();
+                if (rank == rank_master and q > p) {
+                    p = q;
+                    std::cerr << p << "%..." << std::flush;
+                }
                 init_tuple tup;
                 if (v.assign(tup, j)) {
                     typename T::net network{tup};
@@ -892,8 +903,8 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     // wait threads to close and finalize
     for (std::thread& t : pool) t.join();
     if (rank == 0) manager.join();
-    if (p != nullptr)
-        details::aggregate_plots(*p, n_procs, rank);
+    if (plot != nullptr)
+        details::aggregate_plots(*plot, n_procs, rank);
     if (not initialized) MPI_Finalize();
 }
 //! @}

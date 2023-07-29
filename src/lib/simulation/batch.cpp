@@ -17,9 +17,8 @@ namespace batch {
 
 void mpi_init(int& rank, int& n_procs) {
     int provided;
-    // TODO: we should avoid MPI_THREAD_MULTIPLE and use MPI_THREAD_SERIALIZED instead
-    MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
-    assert(provided == MPI_THREAD_MULTIPLE);
+    MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
+    assert(provided == MPI_THREAD_SERIALIZED);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
 }

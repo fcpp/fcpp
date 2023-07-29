@@ -839,9 +839,11 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     int iend = i + initial_chunk;
     int rest = n_procs * initial_chunk;
     int c = 0, p = 0, reqs = rest < v.size() ? pool_size - 1  : 0;
-
-    std::string debug = std::to_string(initial_chunk) + " " + std::to_string(pool_size) + " " + std::to_string(i) + " " + std::to_string(iend) + " " + std::to_string(rest) + "\n";
-    std::cerr << debug;
+    if (rank == rank_master) {
+        std::string debug = std::to_string(initial_chunk) + " " + std::to_string(pool_size) + " " + std::to_string(i) + " " + std::to_string(iend) + " " + std::to_string(rest) + "\n";
+        std::cerr << debug;
+        std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::flush;
+    }
 
     // start working threads
     std::mutex m;

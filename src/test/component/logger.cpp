@@ -298,5 +298,5 @@ MULTI_TEST(LoggerTest, Plot, O, 2) {
     }
     std::stringstream s;
     s << plot::file("experiment", p.build());
-    EXPECT_EQ(s.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-timy-oth42\", \"oth = 42\", \"time\", \"y\", new string[] {\"gat (mean-mean)\", \"tag (count-mean)\"}, new pair[][] {{(1.5, 2), (3.5, 3), (5.5, nan)}, {(1.5, 1), (3.5, 3), (5.5, 0)}}));\n\n\nshipout(\"experiment\");\n");
+    EXPECT_EQ(s.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-timy-oth42\", \"oth = 42\", \"time\", \"y\", new string[] {\"gat (mean-finite_mean)\", \"tag (count-finite_mean)\"}, new pair[][] {{(1.5, 2), (3.5, 3), (5.5, nan)}, {(1.5, 1), (3.5, 3), (5.5, 0)}}));\n\n\nshipout(\"experiment\");\n");
 }

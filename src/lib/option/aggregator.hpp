@@ -1108,6 +1108,17 @@ class filter : public A {
         return reinterpret_cast<result_type<U>&>(t);
     }
 
+    //! @brief The aggregator name.
+    static std::string name() {
+        std::string fs = F::name();
+        std::string as = A::name();
+        std::string s = fs + '_';
+        for (char c : as)
+            if (c == '-') s += '-' + fs + '_';
+            else s.push_back(c);
+        return s;
+    }
+
   private:
     //! @brief The callable filter class.
     F m_filter;

@@ -52,7 +52,7 @@ struct within {
 
     //! @brief Filter representation.
     static std::string name() {
-        return "in_[" + std::to_string(L/double(den)) + ".." + std::to_string(U/double(den)) + "]";
+        return "in [" + std::to_string(L/double(den)) + ".." + std::to_string(U/double(den)) + "]";
     }
 };
 
@@ -61,7 +61,7 @@ template <intmax_t L, intmax_t den = 1>
 struct above : public within<L, std::numeric_limits<intmax_t>::max(), den> {
     //! @brief Filter representation.
     static std::string name() {
-        return "above_" + std::to_string(L/double(den));
+        return "above " + std::to_string(L/double(den));
     }
 };
 
@@ -70,7 +70,7 @@ template <intmax_t U, intmax_t den = 1>
 struct below : public within<std::numeric_limits<intmax_t>::min(), U, den> {
     //! @brief Filter representation.
     static std::string name() {
-        return "below_" + std::to_string(U/double(den));
+        return "below " + std::to_string(U/double(den));
     }
 };
 
@@ -79,7 +79,7 @@ template <intmax_t V, intmax_t den = 1>
 struct equal : public within<V, V, den> {
     //! @brief Filter representation.
     static std::string name() {
-        return "equal_to_" + std::to_string(V/double(den));
+        return "equal to " + std::to_string(V/double(den));
     }
 };
 
@@ -94,7 +94,7 @@ struct neg : F {
 
     //! @brief Filter representation.
     static std::string name() {
-        return "not_" + F::name();
+        return "not " + F::name();
     }
 };
 
@@ -109,7 +109,7 @@ struct vee : F, G {
 
     //! @brief Filter representation.
     static std::string name() {
-        return F::name() + "_or_" + G::name();
+        return F::name() + " or " + G::name();
     }
 };
 
@@ -124,7 +124,7 @@ struct wedge : F, G {
 
     //! @brief Filter representation.
     static std::string name() {
-        return F::name() + "_and_" + G::name();
+        return F::name() + " and " + G::name();
     }
 };
 

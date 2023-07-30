@@ -1112,9 +1112,9 @@ class filter : public A {
     static std::string name() {
         std::string fs = F::name();
         std::string as = A::name();
-        std::string s = fs + '_';
+        std::string s = fs + ' ';
         for (char c : as)
-            if (c == '-') s += '-' + fs + '_';
+            if (c == '-') s += '-' + fs + ' ';
             else s.push_back(c);
         return s;
     }

@@ -875,6 +875,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
                     network.run();
                 }
             }
+            if (rank == rank_master and t == 0) std::cerr << "done." << std::endl;
         });
 
     // start MPI manager thread

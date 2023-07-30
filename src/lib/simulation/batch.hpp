@@ -694,16 +694,9 @@ run(common::type_sequence<T, Ts...>, exec_t e, Ss const&... vs) {
     run(common::type_sequence<Ts...>{}, e, vs...);
 }
 
-//!  @brief Runs a series of experiments (single network type, assuming dynamic execution policy).
+//!  @brief Runs a series of experiments (implicit execution policy).
 template <typename T, typename... Gs, typename... Ss>
-common::ifn_class_template<common::type_sequence, T>
-run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
-    run(x, common::tags::dynamic_execution{}, v, vs...);
-}
-
-//!  @brief Runs a series of experiments (multiple network types, assuming dynamic execution policy).
-template <typename T, typename... Ts, typename... Gs, typename... Ss>
-void run(common::type_sequence<T, Ts...> x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
+void run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
     run(x, common::tags::dynamic_execution{}, v, vs...);
 }
 
@@ -833,28 +826,25 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
 
     // setup initial chunks
     size_t initial_chunk = std::min(e.num, (v.size() + n_procs - 1) / n_procs);
-    initial_chunk = std::max(initial_chunk, (v.size() - n_procs * dynamic_chunks * chunk_size + n_procs/2) / n_procs);
+    initial_chunk = std::max(initial_chunk + dynamic_chunks * chunk_size, (v.size() + n_procs/2) / n_procs) - dynamic_chunks * chunk_size;
     int pool_size = std::min(e.num, initial_chunk);
     int istart = rank * initial_chunk, i = istart;
     int iend = i + initial_chunk;
     int rest = n_procs * initial_chunk;
-    int c = 0, p = 0, reqs = rest < v.size() ? pool_size - 1  : 0;
-    if (rank == rank_master) {
-        std::string debug = std::to_string(initial_chunk) + " " + std::to_string(pool_size) + " " + std::to_string(i) + " " + std::to_string(iend) + " " + std::to_string(rest) + "\n";
-        std::cerr << debug;
+    int c = 0, p = 0, reqs = rest < v.size() ? n_procs - 1  : 0;
+    if (rank == rank_master)
         std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::flush;
-    }
 
     // start working threads
     std::mutex m;
     std::vector<std::thread> pool;
     pool.reserve(pool_size);
     for (int t=0; t<pool_size; ++t)
-        pool.emplace_back([&] () {
+        pool.emplace_back([&,t] () {
             size_t j;
             while (true) {
                 m.lock();
-                if (i < iend or i == v.size()) j = i++; // there are things in local queue, grab one
+                if (i < iend or i >= v.size()) j = i++; // there are things in local queue, grab one
                 else if (rank == rank_master) {         // i am master, grab a whole chunk then one
                     istart = rest + c * chunk_size;
                     iend = istart + chunk_size;
@@ -862,7 +852,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
                     i = j + 1;
                     ++c;
                 } else { // use MPI to ask for a chunk
-                    if (rest < v.size()) {
+                    if (rest + c * chunk_size < v.size()) {
                         MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
                         MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     }
@@ -875,7 +865,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
                 if (j >= v.size()) break;
                 int q = i < rest ? (i - istart) * n_procs : rest + c * chunk_size - (iend - i) * n_procs;
                 q = q * 100 / v.size();
-                if (rank == rank_master and q > p) {
+                if (rank == rank_master and t == 0 and q > p) {
                     p = q;
                     std::cerr << p << "%..." << std::flush;
                 }

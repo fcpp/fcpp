@@ -42,7 +42,7 @@ btype="Debug"
 rtype="STD"
 opts=""
 copts=""
-mpiopts=""
+mpiopts="-N 1"
 cmakeopts=""
 targets=""
 errored=( )
@@ -308,7 +308,7 @@ while [ "$1" != "" ]; do
         shift 1
         opts="$opts -DFCPP_BUILD_MPI=ON"
         rtype="MPI"
-        while [ "${1:0:1}" == "-" ]; do
+        while [ "$1" != "run" -a "$1" != "build" -a "$1" != "hosts" ]; do
             mpiopts="$mpiopts $1"
             shift 1
         done

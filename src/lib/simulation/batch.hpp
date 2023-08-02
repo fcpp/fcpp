@@ -360,6 +360,16 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
     //! @brief The tuple type that the class generates.
     using value_type = common::tagged_tuple_cat<typename G::value_type, typename tagged_tuple_sequence<Gs...>::value_type>;
 
+    //! @brief Constructor setting up the front generator.
+    tagged_tuple_sequence(G&& g, tagged_tuple_sequence<Gs...> const& gs) :
+        tagged_tuple_sequence<Gs...>(gs),
+        m_core_extra_size(g.core_size() * tagged_tuple_sequence<Gs...>::extra_size()),
+        m_extra_core_size(g.extra_size() * tagged_tuple_sequence<Gs...>::core_size()),
+        m_core_size(g.core_size() * tagged_tuple_sequence<Gs...>::core_size()),
+        m_extra_size(m_core_extra_size + m_extra_core_size),
+        m_size(m_core_size + m_extra_size),
+        m_generator(std::move(g)) {}
+
     //! @brief Constructor setting up individual generators.
     tagged_tuple_sequence(G&& g, Gs&&... gs) :
         tagged_tuple_sequence<Gs...>(std::move(gs)...),
@@ -442,6 +452,12 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
 template <typename... Gs>
 inline auto make_tagged_tuple_sequence(Gs&&... gs) {
     return tagged_tuple_sequence<Gs...>(std::move(gs)...);
+}
+
+//! @brief Extends a generator of a sequence of tagged tuples, according to an additional provided generator for an individual tag.
+template <typename G, typename... Gs>
+inline auto extend_tagged_tuple_sequence(G&& g, tagged_tuple_sequence<Gs...> const& gs) {
+    return tagged_tuple_sequence<G, Gs...>(std::move(g), gs);
 }
 
 
@@ -610,6 +626,37 @@ namespace details {
     template <template <class...> class C, typename T>
     using map_template_t = typename map_template<C,T>::type;
     //! @}
+
+    //! @brief TODO
+    template <typename init_tuple>
+    inline void network_run(common::type_sequence<>, size_t idx, init_tuple const& tup) {
+        assert(false);
+    }
+
+    //! @brief TODO
+    template <typename T, typename... Ts, typename init_tuple>
+    inline void network_run(common::type_sequence<T, Ts...>, size_t idx, init_tuple const& tup) {
+        if (idx == 0) {
+            typename T::net network{tup};
+            network.run();
+        } else network_run(common::type_sequence<Ts...>{}, idx-1, tup);
+    }
+
+    //! @brief TODO
+    template <typename T>
+    inline void print_types(common::type_sequence<T>) {
+        std::cerr << common::type_name<T>();
+    }
+
+    //! @brief TODO
+    template <typename T, typename S, typename... Ts>
+    inline void print_types(common::type_sequence<T, S, Ts...>) {
+        std::cerr << common::type_name<T>() << ", ";
+        print_types(common::type_sequence<S, Ts...>{});
+    }
+
+    //! @brief TODO
+    struct type_index_tag {};
 }
 //! @endcond
 
@@ -623,15 +670,6 @@ template <template <class...> class C, typename... Ts>
 using option_combine = details::map_template_t<C, common::type_product<details::option_decay_t<Ts>...>>;
 
 
-//!  @brief Does not run a series of experiments (no execution policy and parameters)
-template <typename T>
-void run(T) {}
-
-//!  @brief Does not run a series of experiments (single network type, with execution policy and no parameters)
-template <typename T, typename exec_t>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-run(T, exec_t e) {}
-
 /**
  *  @brief Runs a series of experiments (single network type, with execution policy and parameters)
  *
@@ -640,12 +678,13 @@ run(T, exec_t e) {}
  * @param v  A tagged tuple sequence, used to initialise the various runs.
  * @param vs Further tagged tuple sequences.
  */
-template <typename T, typename exec_t, typename... Gs, typename... Ss>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-run(T, exec_t e, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
-    using init_tuple = typename tagged_tuple_sequence<Gs...>::value_type;
-    auto seq = make_tagged_tuple_sequences(v, vs...);
-    std::cerr << common::type_name<T>() << ": running " << seq.size() << " simulations..." << std::flush;
+template <typename... Ts, typename exec_t, typename... Ss>
+common::ifn_class_template<tagged_tuple_sequence, exec_t>
+run(common::type_sequence<Ts...> x, exec_t e, Ss const&... vs) {
+    auto seq = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(arithmetic<details::type_index_tag>(0, int(sizeof...(Ts) - 1), 1), vs)...);
+    using init_tuple = typename decltype(seq)::value_type;
+    details::print_types(x);
+    std::cerr << ": running " << seq.size() << " simulations..." << std::flush;
     size_t p = 0;
     common::parallel_for(e, seq.size(), [&](size_t i, size_t t){
         if (t == 0 and i*100/seq.size() > p) {
@@ -653,14 +692,12 @@ run(T, exec_t e, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
             std::cerr << p << "%..." << std::flush;
         }
         init_tuple tup;
-        if (seq.assign(tup, i)) {
-            typename T::net network{tup};
-            network.run();
-        }
+        if (seq.assign(tup, i)) details::network_run(x, common::get<details::type_index_tag>(tup), tup);
     });
     std::cerr << "done." << std::endl;
 }
 
+//TODO: eventually remove
 template <typename T, typename exec_t, typename... Ss>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 run(T, exec_t e, tagged_tuple_sequences<Ss...> const& seq) {
@@ -681,24 +718,22 @@ run(T, exec_t e, tagged_tuple_sequences<Ss...> const& seq) {
     std::cerr << "done." << std::endl;
 }
 
-//!  @brief Does not run a series of experiments (no network types, with execution policy)
-template <typename exec_t, typename... Ss>
-common::ifn_class_template<tagged_tuple_sequence, exec_t>
-run(common::type_sequence<>, exec_t, Ss const&...) {}
-
-//!  @brief Runs a series of experiments (multiple network types, with execution policy)
-template <typename T, typename... Ts, typename exec_t, typename... Ss>
-common::ifn_class_template<tagged_tuple_sequence, exec_t>
-run(common::type_sequence<T, Ts...>, exec_t e, Ss const&... vs) {
-    run(T{}, e, vs...);
-    run(common::type_sequence<Ts...>{}, e, vs...);
+//!  @brief Does not run a series of experiments (single network type, explicit execution policy)
+template <typename T, typename exec_t, typename... Ss>
+inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+run(T, exec_t e, Ss const&... vs) {
+    run(common::type_sequence<T>{}, e, vs...);
 }
 
-//!  @brief Runs a series of experiments (implicit execution policy).
+//!  @brief Runs a series of experiments (implicit execution policy, some parameters).
 template <typename T, typename... Gs, typename... Ss>
-void run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
+inline void run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
     run(x, common::tags::dynamic_execution{}, v, vs...);
 }
+
+//!  @brief Does not run a series of experiments (implicit execution policy, no parameters)
+template <typename T>
+inline void run(T) {}
 
 #ifdef FCPP_MPI
 
@@ -808,8 +843,8 @@ template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
     // initialize generators and get plotter address
-    using init_tuple = typename tagged_tuple_sequence<Gs...>::value_type;
-    auto v = make_tagged_tuple_sequences(s);
+    auto v = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(constant<details::type_index_tag>(0), s));
+    using init_tuple = typename decltype(v)::value_type;
     if (shuffle) v.shuffle(42);
     auto plot = common::get_or<component::tags::plotter>(v[0], nullptr);
 
@@ -825,12 +860,11 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // setup initial chunks
-    size_t initial_chunk = std::min(e.num, (v.size() + n_procs - 1) / n_procs);
-    initial_chunk = std::max(initial_chunk + dynamic_chunks * chunk_size, (v.size() + n_procs/2) / n_procs) - dynamic_chunks * chunk_size;
-    int pool_size = std::min(e.num, initial_chunk);
-    int istart = rank * initial_chunk, i = istart;
-    int iend = i + initial_chunk;
-    int rest = n_procs * initial_chunk;
+    size_t initial_chunk = dynamic_chunks * chunk_size * n_procs;
+    initial_chunk = std::max(v.size(), std::min(v.size(), e.num * n_procs) + initial_chunk) - initial_chunk;
+    int pool_size = std::min(e.num, (initial_chunk + n_procs - 1) / n_procs);
+    int istart = rank, i = istart, istep = n_procs;
+    int rest = initial_chunk, iend = rest;
     int c = 0, p = 0, reqs = rest < v.size() ? n_procs - 1  : 0;
     if (rank == rank_master)
         std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::flush;
@@ -844,36 +878,37 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
             size_t j;
             while (true) {
                 m.lock();
-                if (i < iend or i >= v.size()) j = i++; // there are things in local queue, grab one
-                else if (rank == rank_master) {         // i am master, grab a whole chunk then one
+                if (i < iend or i >= v.size()) {   // there are things in local queue, grab one
+                    j = i;
+                    i = j + istep;
+                } else if (rank == rank_master) {  // i am master, grab a whole chunk then one
+                    istep = 1;
                     istart = rest + c * chunk_size;
                     iend = istart + chunk_size;
                     j = istart;
-                    i = j + 1;
+                    i = j + istep;
                     ++c;
                 } else { // use MPI to ask for a chunk
                     if (rest + c * chunk_size < v.size()) {
                         MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
                         MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     }
+                    istep = 1;
                     istart = rest + c * chunk_size;
                     iend = istart + chunk_size;
                     j = istart;
-                    i = j + 1;
+                    i = j + istep;
                 }
                 m.unlock();
                 if (j >= v.size()) break;
-                int q = i < rest ? (i - istart) * n_procs : rest + c * chunk_size - (iend - i) * n_procs;
+                int q = i < rest ? i : i * n_procs - (2 * istart + chunk_size) * (n_procs - 1) / 2;
                 q = q * 100 / v.size();
                 if (rank == rank_master and t == 0 and q > p) {
                     p = q;
                     std::cerr << p << "%..." << std::flush;
                 }
                 init_tuple tup;
-                if (v.assign(tup, j)) {
-                    typename T::net network{tup};
-                    network.run();
-                }
+                if (v.assign(tup, j)) details::network_run(common::type_sequence<T>{}, common::get<details::type_index_tag>(tup), tup);
             }
             if (rank == rank_master and t == 0) std::cerr << "done." << std::endl;
         });
@@ -900,107 +935,6 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
         details::aggregate_plots(*plot, n_procs, rank);
     if (not initialized) MPI_Finalize();
 }
-
-template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_another_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
-    // initialize generators and get plotter address
-    using init_tuple = typename tagged_tuple_sequence<Gs...>::value_type;
-    auto v = make_tagged_tuple_sequences(s);
-    if (shuffle) v.shuffle(42);
-    auto plot = common::get_or<component::tags::plotter>(v[0], nullptr);
-
-    // initialize MPI
-    constexpr int rank_master = 0;
-    int provided, initialized, rank, n_procs;
-    MPI_Initialized(&initialized);
-    if (not initialized) {
-        MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
-        assert(provided == MPI_THREAD_SERIALIZED);
-    }
-    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    // setup initial chunks
-    size_t initial_chunk = std::min(e.num, (v.size() + n_procs - 1) / n_procs);
-    initial_chunk = std::max(initial_chunk + dynamic_chunks * chunk_size, (v.size() + n_procs/2) / n_procs) - dynamic_chunks * chunk_size;
-    int pool_size = std::min(e.num, initial_chunk);
-    int istart = rank * initial_chunk, i = istart;
-    int iend = i + initial_chunk;
-    int rest = n_procs * initial_chunk;
-    int c = 0, p = 0, reqs = rest < v.size() ? n_procs - 1  : 0;
-    if (rank == rank_master)
-        std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::flush;
-
-    // start working threads
-    std::mutex m;
-    std::vector<std::thread> pool;
-    pool.reserve(pool_size);
-    for (int t=0; t<pool_size; ++t)
-        pool.emplace_back([&,t] () {
-            size_t j;
-            while (true) {
-                m.lock();
-                if (i < iend or i >= v.size()) { // there are things in local queue, grab one
-                    j = i++;
-                    if (i == iend and i < v.size() and rank != rank_master and rest + c * chunk_size < v.size())
-                        MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
-                } else if (rank == rank_master) {         // i am master, grab a whole chunk then one
-                    istart = rest + c * chunk_size;
-                    iend = istart + chunk_size;
-                    j = istart;
-                    i = j + 1;
-                    ++c;
-                } else { // use MPI to ask for a chunk
-                    if (rest + c * chunk_size < v.size())
-                        MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    istart = rest + c * chunk_size;
-                    iend = istart + chunk_size;
-                    j = istart;
-                    i = j + 1;
-                    if (i == iend and i < v.size() and rank != rank_master and rest + c * chunk_size < v.size())
-                        MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
-                }
-                m.unlock();
-                if (j >= v.size()) break;
-                int q = i < rest ? (i - istart) * n_procs : rest + c * chunk_size - (iend - i) * n_procs;
-                q = q * 100 / v.size();
-                if (rank == rank_master and t == 0 and q > p) {
-                    p = q;
-                    std::cerr << p << "%..." << std::flush;
-                }
-                init_tuple tup;
-                if (v.assign(tup, j)) {
-                    typename T::net network{tup};
-                    network.run();
-                }
-            }
-            if (rank == rank_master and t == 0) std::cerr << "done." << std::endl;
-        });
-
-    // start MPI manager thread
-    std::thread manager;
-    if (rank == rank_master) manager = std::thread([&](){
-        MPI_Status status;
-        while (reqs > 0) {
-            MPI_Recv(&c, 0, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
-            int source = status.MPI_SOURCE;
-            m.lock();
-            MPI_Send(&c, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
-            ++c;
-            m.unlock();
-            if (rest + c * chunk_size >= v.size()) --reqs;
-        }
-    });
-
-    // wait threads to close and finalize
-    for (std::thread& t : pool) t.join();
-    if (rank == 0) manager.join();
-    if (plot != nullptr)
-        details::aggregate_plots(*plot, n_procs, rank);
-    if (not initialized) MPI_Finalize();
-}
-//! @}
 
 #else
 
@@ -1022,12 +956,6 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
 template <typename T, typename exec_t, typename... Gs>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v, bool shuffle = false) {
-    run(x, e, v);
-}
-
-template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_another_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
     run(x, e, v);
 }
 

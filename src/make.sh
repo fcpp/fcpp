@@ -331,7 +331,10 @@ while [ "$1" != "" ]; do
         videoreplace=`echo -e "\033[7m&\033[0m"`
         replacing=0
         shift 2
-        if [ "$1" != "" -a `echo $1 | grep "clean\|here\|gcc\|sed\|doc\|build\|test\|run\|all" | wc -l` -eq 0 ]; then
+        if [ "$2" != "" ]; then
+            usage
+        fi
+        if [ "$1" != "" ]; then
             replace="$1"
             if [ "$replace" == "del" ]; then
                 replace=""

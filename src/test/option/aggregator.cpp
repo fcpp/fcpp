@@ -507,7 +507,7 @@ TEST(AggregatorTest, Multi) {
     using aggr_t = aggregator::combine<aggregator::count<int>, aggregator::mean<int>>;
     using res_t = aggr_t::result_type<tag>;
     std::stringstream ss;
-    aggr_t v;
+    aggr_t v, w;
     v.header(ss, "tag");
     EXPECT_EQ("count(tag) mean(tag) ", ss.str());
 
@@ -521,4 +521,5 @@ TEST(AggregatorTest, Multi) {
     EXPECT_EQ(res_t(1,3), v.result<tag>());
     v.erase(6);
     EXPECT_EQ(res_t(0,0), v.result<tag>());
+    v += w;
 }

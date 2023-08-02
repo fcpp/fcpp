@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <string>
 
 
 /**
@@ -30,6 +31,11 @@ struct finite {
     bool operator()(V v) const {
         return std::isfinite(v);
     }
+
+    //! @brief Filter representation.
+    static std::string name() {
+        return "finite";
+    }
 };
 
 //! @brief Filters values within `L/den` and `U/den` (included).
@@ -43,19 +49,39 @@ struct within {
         if (U < std::numeric_limits<intmax_t>::max() and U < v) return false;
         return true;
     }
+
+    //! @brief Filter representation.
+    static std::string name() {
+        return "in [" + std::to_string(L/double(den)) + ".." + std::to_string(U/double(den)) + "]";
+    }
 };
 
 //! @brief Filters values above `L/den` (included).
 template <intmax_t L, intmax_t den = 1>
-using above = within<L, std::numeric_limits<intmax_t>::max(), den>;
+struct above : public within<L, std::numeric_limits<intmax_t>::max(), den> {
+    //! @brief Filter representation.
+    static std::string name() {
+        return "above " + std::to_string(L/double(den));
+    }
+};
 
 //! @brief Filters values below `U/den` (included).
 template <intmax_t U, intmax_t den = 1>
-using below = within<std::numeric_limits<intmax_t>::min(), U, den>;
+struct below : public within<std::numeric_limits<intmax_t>::min(), U, den> {
+    //! @brief Filter representation.
+    static std::string name() {
+        return "below " + std::to_string(U/double(den));
+    }
+};
 
 //! @brief Filters values equal to `V/den`.
 template <intmax_t V, intmax_t den = 1>
-using equal = within<V, V, den>;
+struct equal : public within<V, V, den> {
+    //! @brief Filter representation.
+    static std::string name() {
+        return "equal to " + std::to_string(V/double(den));
+    }
+};
 
 //! @brief Negate a filter.
 template <typename F>
@@ -64,6 +90,11 @@ struct neg : F {
     template <typename V>
     bool operator()(V v) const {
         return not F::operator()(v);
+    }
+
+    //! @brief Filter representation.
+    static std::string name() {
+        return "not " + F::name();
     }
 };
 
@@ -75,6 +106,11 @@ struct vee : F, G {
     bool operator()(V v) const {
         return F::operator()(v) or G::operator()(v);
     }
+
+    //! @brief Filter representation.
+    static std::string name() {
+        return F::name() + " or " + G::name();
+    }
 };
 
 //! @brief Disjoins filters (and).
@@ -84,6 +120,11 @@ struct wedge : F, G {
     template <typename V>
     bool operator()(V v) const {
         return F::operator()(v) and G::operator()(v);
+    }
+
+    //! @brief Filter representation.
+    static std::string name() {
+        return F::name() + " and " + G::name();
     }
 };
 

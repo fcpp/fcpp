@@ -34,11 +34,11 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
     //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data.
     template <typename... Ts>

@@ -22,11 +22,11 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
     //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions.
     template <typename... Ts>

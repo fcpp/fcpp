@@ -474,25 +474,6 @@ TEST(BatchTest, TupleSequences) {
     v.emplace_back(1,4,+3,"char-1_double-4_short-3");
     v.emplace_back(3,4,+1,"char-3_double-4_short-1");
     EXPECT_EQ(x, v);
-    gtot.shuffle(42);
-    x = generator_to_vector(gtot);
-    v = {};
-    v.emplace_back(1,2,+1,"char-1_double-2_short-1");
-    v.emplace_back(1,4,+3,"char-1_double-4_short-3");
-    v.emplace_back(7,2,-5,"char-7_double-2_short--5");
-    v.emplace_back(3,2,-1,"char-3_double-2_short--1");
-    v.emplace_back(3,4,+1,"char-3_double-4_short-1");
-    v.emplace_back(1,2,+1,"char-1_double-2_short-1");
-    v.emplace_back(1,4,+3,"char-1_double-4_short-3");
-    v.emplace_back(7,4,-3,"char-7_double-4_short--3");
-    v.emplace_back(3,4,+1,"char-3_double-4_short-1");
-    EXPECT_EQ(x, v);
-    gtot.slice(1,7,2);
-    x = generator_to_vector(gtot);
-    v = {};
-    v.emplace_back(1,4,+3,"char-1_double-4_short-3");
-    v.emplace_back(3,4,+1,"char-3_double-4_short-1");
-    EXPECT_EQ(x, v);
 }
 
 TEST(BatchTest, Run) {

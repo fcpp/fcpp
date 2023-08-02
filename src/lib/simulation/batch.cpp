@@ -22,11 +22,10 @@ bool mpi_init(int& rank, int& n_procs) {
         int provided;
         MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
         assert(provided == MPI_THREAD_SERIALIZED);
-        return true;
     }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
-    return false;
+    return not initialized;
 }
 
 void mpi_barrier() {

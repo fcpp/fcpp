@@ -361,14 +361,14 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
     using value_type = common::tagged_tuple_cat<typename G::value_type, typename tagged_tuple_sequence<Gs...>::value_type>;
 
     //! @brief Constructor setting up the front generator.
-    tagged_tuple_sequence(G&& g, tagged_tuple_sequence<Gs...> const& gs) :
+    tagged_tuple_sequence(G const& g, tagged_tuple_sequence<Gs...> const& gs) :
         tagged_tuple_sequence<Gs...>(gs),
         m_core_extra_size(g.core_size() * tagged_tuple_sequence<Gs...>::extra_size()),
         m_extra_core_size(g.extra_size() * tagged_tuple_sequence<Gs...>::core_size()),
         m_core_size(g.core_size() * tagged_tuple_sequence<Gs...>::core_size()),
         m_extra_size(m_core_extra_size + m_extra_core_size),
         m_size(m_core_size + m_extra_size),
-        m_generator(std::move(g)) {}
+        m_generator(g) {}
 
     //! @brief Constructor setting up individual generators.
     tagged_tuple_sequence(G&& g, Gs&&... gs) :
@@ -456,8 +456,8 @@ inline auto make_tagged_tuple_sequence(Gs&&... gs) {
 
 //! @brief Extends a generator of a sequence of tagged tuples, according to an additional provided generator for an individual tag.
 template <typename G, typename... Gs>
-inline auto extend_tagged_tuple_sequence(G&& g, tagged_tuple_sequence<Gs...> const& gs) {
-    return tagged_tuple_sequence<G, Gs...>(std::move(g), gs);
+inline auto extend_tagged_tuple_sequence(G const& g, tagged_tuple_sequence<Gs...> const& gs) {
+    return tagged_tuple_sequence<G, Gs...>(g, gs);
 }
 
 

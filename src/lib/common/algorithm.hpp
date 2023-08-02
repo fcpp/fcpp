@@ -95,6 +95,20 @@ namespace tags {
         //! @brief Chunk size.
         size_t size;
     };
+
+    //! @brief Tag for distributed execution policy, assigning tasks dynamically across and within nodes through MPI (with a given number of threads per node, chunk size, static-dynamic percentage, and whether tasks should be shuffled).
+    struct distributed_execution {
+        //! @brief Constructor.
+        distributed_execution(size_t num = std::thread::hardware_concurrency(), size_t size = 1, double dynamic = 1, bool shuffle = false) : num(num), size(size), dynamic(dynamic), shuffle(shuffle) {}
+        //! @brief Parallel threads number.
+        size_t num;
+        //! @brief Size of chunks dynamically assigned to nodes.
+        size_t size;
+        //! @brief Fraction of tasks to be assigned dynamically across nodes.
+        double dynamic;
+        //! @brief Whether tasks should be shuffled.
+        bool shuffle;
+    };
 }
 
 

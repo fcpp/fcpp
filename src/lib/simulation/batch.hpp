@@ -679,7 +679,7 @@ using option_combine = details::map_template_t<C, common::type_product<details::
  * @param vs Further tagged tuple sequences.
  */
 template <typename... Ts, typename exec_t, typename... Ss>
-common::ifn_class_template<tagged_tuple_sequence, exec_t>
+common::ifn_class_template<tagged_tuple_sequence, exec_t, std::enable_if_t<not std::is_same<exec_t, common::tags::distributed_execution>::value>>
 run(common::type_sequence<Ts...> x, exec_t e, Ss const&... vs) {
     auto seq = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(arithmetic<details::type_index_tag>(0, int(sizeof...(Ts) - 1), 1), vs)...);
     using init_tuple = typename decltype(seq)::value_type;
@@ -717,23 +717,6 @@ run(T, exec_t e, tagged_tuple_sequences<Ss...> const& seq) {
     });
     std::cerr << "done." << std::endl;
 }
-
-//!  @brief Does not run a series of experiments (single network type, explicit execution policy)
-template <typename T, typename exec_t, typename... Ss>
-inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-run(T, exec_t e, Ss const&... vs) {
-    run(common::type_sequence<T>{}, e, vs...);
-}
-
-//!  @brief Runs a series of experiments (implicit execution policy, some parameters).
-template <typename T, typename... Gs, typename... Ss>
-inline void run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
-    run(x, common::tags::dynamic_execution{}, v, vs...);
-}
-
-//!  @brief Does not run a series of experiments (implicit execution policy, no parameters)
-template <typename T>
-inline void run(T) {}
 
 #ifdef FCPP_MPI
 
@@ -839,13 +822,12 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
 }
 
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
-template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
+template <typename... Ts, typename... Ss>
+void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, Ss const&... vs) {
     // initialize generators and get plotter address
-    auto v = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(constant<details::type_index_tag>(0), s));
+    auto v = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(arithmetic<details::type_index_tag>(0, int(sizeof...(Ts) - 1), 1), vs)...);
     using init_tuple = typename decltype(v)::value_type;
-    if (shuffle) v.shuffle(42);
+    if (e.shuffle) v.shuffle(42);
     auto plot = common::get_or<component::tags::plotter>(v[0], nullptr);
 
     // initialize MPI
@@ -860,14 +842,15 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // setup initial chunks
-    size_t initial_chunk = dynamic_chunks * chunk_size * n_procs;
-    initial_chunk = std::max(v.size(), std::min(v.size(), e.num * n_procs) + initial_chunk) - initial_chunk;
+    size_t initial_chunk = std::max(size_t((1 - e.dynamic) * v.size()), std::min(v.size(), e.num * n_procs));
     int pool_size = std::min(e.num, (initial_chunk + n_procs - 1) / n_procs);
     int istart = rank, i = istart, istep = n_procs;
     int rest = initial_chunk, iend = rest;
     int c = 0, p = 0, reqs = rest < v.size() ? n_procs - 1  : 0;
-    if (rank == rank_master)
-        std::cerr << common::type_name<T>() << ": running " << v.size() << " simulations..." << std::flush;
+    if (rank == rank_master) {
+        details::print_types(x);
+        std::cerr << ": running " << v.size() << " simulations..." << std::flush;
+    }
 
     // start working threads
     std::mutex m;
@@ -883,32 +866,32 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
                     i = j + istep;
                 } else if (rank == rank_master) {  // i am master, grab a whole chunk then one
                     istep = 1;
-                    istart = rest + c * chunk_size;
-                    iend = istart + chunk_size;
+                    istart = rest + c * e.size;
+                    iend = istart + e.size;
                     j = istart;
                     i = j + istep;
                     ++c;
                 } else { // use MPI to ask for a chunk
-                    if (rest + c * chunk_size < v.size()) {
+                    if (rest + c * e.size < v.size()) {
                         MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
                         MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     }
                     istep = 1;
-                    istart = rest + c * chunk_size;
-                    iend = istart + chunk_size;
+                    istart = rest + c * e.size;
+                    iend = istart + e.size;
                     j = istart;
                     i = j + istep;
                 }
                 m.unlock();
                 if (j >= v.size()) break;
-                int q = i < rest ? i : i * n_procs - (2 * istart + chunk_size) * (n_procs - 1) / 2;
+                int q = i < rest ? i : i * n_procs - (2 * istart + e.size) * (n_procs - 1) / 2;
                 q = q * 100 / v.size();
                 if (rank == rank_master and t == 0 and q > p) {
                     p = q;
                     std::cerr << p << "%..." << std::flush;
                 }
                 init_tuple tup;
-                if (v.assign(tup, j)) details::network_run(common::type_sequence<T>{}, common::get<details::type_index_tag>(tup), tup);
+                if (v.assign(tup, j)) details::network_run(x, common::get<details::type_index_tag>(tup), tup);
             }
             if (rank == rank_master and t == 0) std::cerr << "done." << std::endl;
         });
@@ -924,7 +907,7 @@ mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, 
             MPI_Send(&c, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
             ++c;
             m.unlock();
-            if (rest + c * chunk_size >= v.size()) --reqs;
+            if (rest + c * e.size >= v.size()) --reqs;
         }
     });
 
@@ -953,13 +936,29 @@ mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_
 }
 
 //! @brief Running a single MPI component combination (dynamic splitting across nodes).
-template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_better_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v, bool shuffle = false) {
-    run(x, e, v);
+template <typename... Ts, typename... Ss>
+inline void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, Ss const&... vs) {
+    run(x, vs...);
 }
 
 #endif
+
+//!  @brief Does not run a series of experiments (single network type, explicit execution policy)
+template <typename T, typename exec_t, typename... Ss>
+inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
+run(T, exec_t e, Ss const&... vs) {
+    run(common::type_sequence<T>{}, e, vs...);
+}
+
+//!  @brief Runs a series of experiments (implicit execution policy, some parameters).
+template <typename T, typename... Gs, typename... Ss>
+inline void run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
+    run(x, common::tags::dynamic_execution{}, v, vs...);
+}
+
+//!  @brief Does not run a series of experiments (implicit execution policy, no parameters)
+template <typename T>
+inline void run(T) {}
 
 //! @brief Initialises MPI communication.
 void mpi_init(int& rank, int& n_procs);

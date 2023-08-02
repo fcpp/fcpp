@@ -15,12 +15,18 @@ namespace batch {
 
 #ifdef FCPP_MPI
 
-void mpi_init(int& rank, int& n_procs) {
-    int provided;
-    MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
-    assert(provided == MPI_THREAD_SERIALIZED);
+bool mpi_init(int& rank, int& n_procs) {
+    int initialized;
+    MPI_Initialized(&initialized);
+    if (not initialized) {
+        int provided;
+        MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
+        assert(provided == MPI_THREAD_SERIALIZED);
+        return true;
+    }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
+    return false;
 }
 
 void mpi_barrier() {
@@ -33,9 +39,10 @@ void mpi_finalize() {
 
 #else
 
-void mpi_init(int& rank, int& n_procs) {
+bool mpi_init(int& rank, int& n_procs) {
     rank = 0;
     n_procs = 1;
+    return true;
 }
 
 void mpi_barrier() {}

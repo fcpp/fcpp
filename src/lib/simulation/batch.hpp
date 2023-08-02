@@ -627,13 +627,13 @@ namespace details {
     using map_template_t = typename map_template<C,T>::type;
     //! @}
 
-    //! @brief TODO
+    //! @brief Runs the \ref idx network type in the type sequence argument (empty overload).
     template <typename init_tuple>
     inline void network_run(common::type_sequence<>, size_t idx, init_tuple const& tup) {
         assert(false);
     }
 
-    //! @brief TODO
+    //! @brief Runs the \ref idx network type in the type sequence argument (active overload).
     template <typename T, typename... Ts, typename init_tuple>
     inline void network_run(common::type_sequence<T, Ts...>, size_t idx, init_tuple const& tup) {
         if (idx == 0) {
@@ -642,20 +642,20 @@ namespace details {
         } else network_run(common::type_sequence<Ts...>{}, idx-1, tup);
     }
 
-    //! @brief TODO
+    //! @brief Prints a sequence of network types (base overload).
     template <typename T>
     inline void print_types(common::type_sequence<T>) {
         std::cerr << common::type_name<T>();
     }
 
-    //! @brief TODO
+    //! @brief Prints a sequence of network types (recursive overload).
     template <typename T, typename S, typename... Ts>
     inline void print_types(common::type_sequence<T, S, Ts...>) {
         std::cerr << common::type_name<T>() << ", ";
         print_types(common::type_sequence<S, Ts...>{});
     }
 
-    //! @brief TODO
+    //! @brief A tag for indexing network types to be run.
     struct type_index_tag {};
 }
 //! @endcond
@@ -670,13 +670,22 @@ template <template <class...> class C, typename... Ts>
 using option_combine = details::map_template_t<C, common::type_product<details::option_decay_t<Ts>...>>;
 
 
+//! @brief Initialises MPI communication.
+bool mpi_init(int& rank, int& n_procs);
+
+//! @brief Forces MPI processes to wait for each other.
+void mpi_barrier();
+
+//! @brief Closes MPI communication.
+void mpi_finalize();
+
+
 /**
- *  @brief Runs a series of experiments (single network type, with execution policy and parameters)
+ *  @brief Runs a series of experiments with a non-distributed execution policy.
  *
- * @tparam T The network type to be run.
+ * @param x The network types to be run.
  * @param e An execution policy (see \ref common::tags::sequential_execution "sequential_execution", \ref common::tags::parallel_execution "parallel_execution", \ref common::tags::general_execution "general_execution", \ref common::tags::dynamic_execution "dynamic_execution").
- * @param v  A tagged tuple sequence, used to initialise the various runs.
- * @param vs Further tagged tuple sequences.
+ * @param vs Tagged tuple sequences used to initialise the various runs.
  */
 template <typename... Ts, typename exec_t, typename... Ss>
 common::ifn_class_template<tagged_tuple_sequence, exec_t, std::enable_if_t<not std::is_same<exec_t, common::tags::distributed_execution>::value>>
@@ -693,27 +702,6 @@ run(common::type_sequence<Ts...> x, exec_t e, Ss const&... vs) {
         }
         init_tuple tup;
         if (seq.assign(tup, i)) details::network_run(x, common::get<details::type_index_tag>(tup), tup);
-    });
-    std::cerr << "done." << std::endl;
-}
-
-//TODO: eventually remove
-template <typename T, typename exec_t, typename... Ss>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-run(T, exec_t e, tagged_tuple_sequences<Ss...> const& seq) {
-    using init_tuple = typename tagged_tuple_sequences<Ss...>::value_type;
-    std::cerr << common::type_name<T>() << ": running " << seq.size() << " simulations..." << std::flush;
-    size_t p = 0;
-    common::parallel_for(e, seq.size(), [&](size_t i, size_t t){
-        if (t == 0 and i*100/seq.size() > p) {
-            p = i*100/seq.size();
-            std::cerr << p << "%..." << std::flush;
-        }
-        init_tuple tup;
-        if (seq.assign(tup, i)) {
-            typename T::net network{tup};
-            network.run();
-        }
     });
     std::cerr << "done." << std::endl;
 }
@@ -750,96 +738,25 @@ namespace details {
 } // details
 //! @endcond
 
-//! @brief Running a single MPI component combination (static splitting across nodes).
-template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
-    auto v = make_tagged_tuple_sequences(s);
-    if (shuffle) v.shuffle(42);
-    int provided, initialized, rank, n_procs;
-    MPI_Initialized(&initialized);
-    if (not initialized) {
-        MPI_Init_thread(NULL, NULL, MPI_THREAD_FUNNELED, &provided);
-        assert(provided == MPI_THREAD_FUNNELED);
-    }
-    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    v.slice(rank, v.size(), n_procs);
-    run(x, e, v);
-    if (p != nullptr)
-	    details::aggregate_plots(*p, n_procs, rank);
-    if (not initialized) MPI_Finalize();
-}
-
-//! @brief Running a single MPI component combination (dynamic splitting across nodes).
-template <typename T, typename exec_t, typename... Gs>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> s, bool shuffle = false) {
-    auto v = make_tagged_tuple_sequences(s);
-    if (shuffle) v.shuffle(42);
-    // number of simulations per proc that are pre-assigned at start
-    int provided, initialized, rank, n_procs;
-    MPI_Initialized(&initialized);
-    if (not initialized) {
-        MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
-        assert(provided == MPI_THREAD_MULTIPLE);
-    }
-    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int start = dynamic_chunks * chunk_size * n_procs;
-    start = max(chunk_size, (v.size() - start + n_procs/2) / n_procs);
-    auto p = common::get_or<component::tags::plotter>(v[0], nullptr);
-    int maxi = (v.size() - start*n_procs + chunk_size/2) / chunk_size;
-
-    std::thread manager;
-    if (rank == 0) manager = std::thread([=](){
-        int buf;
-        int pi[n_procs];
-        MPI_Request req;
-        MPI_Status status;
-        for (int idx = 0; idx < maxi + n_procs; ++idx) {
-            MPI_Recv(&buf, 0, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
-            int source = status.MPI_SOURCE;
-            pi[source] = idx;
-            MPI_Send(pi + source, 1, MPI_INT, source, 2, MPI_COMM_WORLD);
-        }
-    });
-    v.slice(rank, start*n_procs, n_procs);
-    run(x, e, v);
-    int idx;
-    while (true) {
-        MPI_Send(&idx, 0, MPI_INT, 0, 0, MPI_COMM_WORLD);
-        MPI_Recv(&idx, 1, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        if (idx >= maxi) break;
-        v.slice(start*n_procs + idx, -1, maxi);
-        run(x, e, v);
-    }
-    if (rank == 0) manager.join();
-    if (p != nullptr)
-        details::aggregate_plots(*p, n_procs, rank);
-    if (not initialized) MPI_Finalize();
-}
-
-//! @brief Running a single MPI component combination (dynamic splitting across nodes).
+/**
+ *  @brief Runs a series of experiments with a distributed execution policy through MPI.
+ *
+ * If FCPP_MPI is not defined, it raises an error with an assert.
+ *
+ * @param x The network types to be run.
+ * @param e An execution policy (see \ref common::tags::distributed_execution "distributed_execution").
+ * @param vs Tagged tuple sequences used to initialise the various runs.
+ */
 template <typename... Ts, typename... Ss>
 void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, Ss const&... vs) {
-    // initialize generators and get plotter address
+    // initialize mpi, generators and plotter address
     auto v = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(arithmetic<details::type_index_tag>(0, int(sizeof...(Ts) - 1), 1), vs)...);
     using init_tuple = typename decltype(v)::value_type;
     if (e.shuffle) v.shuffle(42);
     auto plot = common::get_or<component::tags::plotter>(v[0], nullptr);
-
-    // initialize MPI
     constexpr int rank_master = 0;
-    int provided, initialized, rank, n_procs;
-    MPI_Initialized(&initialized);
-    if (not initialized) {
-        MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
-        assert(provided == MPI_THREAD_SERIALIZED);
-    }
-    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int rank, n_procs;
+    bool initialized = mpi_init(rank, n_procs);
 
     // setup initial chunks
     size_t initial_chunk = std::max(size_t((1 - e.dynamic) * v.size()), std::min(v.size(), e.num * n_procs));
@@ -916,58 +833,53 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
     if (rank == 0) manager.join();
     if (plot != nullptr)
         details::aggregate_plots(*plot, n_procs, rank);
-    if (not initialized) MPI_Finalize();
+    if (initialized) mpi_finalize();
 }
 
 #else
 
-//! @brief Running a single MPI component combination (static splitting across nodes).
-template <typename T, typename exec_t, typename... Gs>
-inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_run(T x, exec_t e, tagged_tuple_sequence<Gs...> v, bool shuffle = false) {
-    run(x, e, v);
-}
-
-//! @brief Running a single MPI component combination (dynamic splitting across nodes).
-template <typename T, typename exec_t, typename... Gs>
-inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-mpi_dynamic_run(T x, size_t chunk_size, size_t dynamic_chunks, exec_t e, tagged_tuple_sequence<Gs...> v, bool shuffle = false) {
-    run(x, e, v);
-}
-
-//! @brief Running a single MPI component combination (dynamic splitting across nodes).
+/**
+ *  @brief Runs a series of experiments with a distributed execution policy through MPI.
+ *
+ * If FCPP_MPI is not defined, it raises an error with an assert.
+ *
+ * @param x The network types to be run.
+ * @param e An execution policy (see \ref common::tags::distributed_execution "distributed_execution").
+ * @param vs Tagged tuple sequences used to initialise the various runs.
+ */
 template <typename... Ts, typename... Ss>
 inline void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, Ss const&... vs) {
-    run(x, vs...);
+    assert(false);
 }
 
 #endif
 
-//!  @brief Does not run a series of experiments (single network type, explicit execution policy)
+//!  @brief Runs a series of experiments (single network type, explicit execution policy)
 template <typename T, typename exec_t, typename... Ss>
 inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
 run(T, exec_t e, Ss const&... vs) {
     run(common::type_sequence<T>{}, e, vs...);
 }
 
-//!  @brief Runs a series of experiments (implicit execution policy, some parameters).
+/**
+ * @brief Runs a series of experiments (implicit execution policy, some parameters).
+ *
+ * If FCPP_MPI is defined, the execution policy is \ref common::tags::distributed_execution "distributed_execution", otherwise is \ref common::tags::dynamic_execution "dynamic_execution".
+ */
 template <typename T, typename... Gs, typename... Ss>
 inline void run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
-    run(x, common::tags::dynamic_execution{}, v, vs...);
+    run(x,
+#ifdef FCPP_MPI
+        common::tags::distributed_execution{},
+#else
+        common::tags::dynamic_execution{},
+#endif
+        v, vs...);
 }
 
 //!  @brief Does not run a series of experiments (implicit execution policy, no parameters)
 template <typename T>
 inline void run(T) {}
-
-//! @brief Initialises MPI communication.
-void mpi_init(int& rank, int& n_procs);
-
-//! @brief Forces MPI processes to wait for each other.
-void mpi_barrier();
-
-//! @brief Closes MPI communication.
-void mpi_finalize();
 
 
 } // batch

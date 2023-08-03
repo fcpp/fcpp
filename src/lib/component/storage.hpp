@@ -170,7 +170,7 @@ struct storage {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_storage(t) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_storage(t) {}
 
             //! @brief Access to stored data as tagged tuple.
             net_tuple_type& storage_tuple() {

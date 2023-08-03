@@ -86,7 +86,7 @@ struct hardware_identifier {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
 
             /**
              * @brief Returns next event to schedule for the net component.

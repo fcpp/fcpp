@@ -260,7 +260,7 @@ struct graph_connector {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {

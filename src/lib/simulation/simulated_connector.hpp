@@ -410,7 +410,7 @@ struct simulated_connector {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {

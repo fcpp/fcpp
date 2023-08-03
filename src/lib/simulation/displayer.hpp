@@ -898,7 +898,7 @@ struct displayer {
         public: // visible by node objects and the main program
           //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S, T> const& t) :
+            explicit net(common::tagged_tuple<S,T> const& t) :
                 P::net{ t },
                 m_threads( common::get_or<tags::threads>(t, FCPP_THREADS) ),
                 m_refresh{ 0 },

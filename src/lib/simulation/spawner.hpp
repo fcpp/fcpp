@@ -94,7 +94,7 @@ struct spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
 
             /**
              * @brief Returns next event to schedule for the net component.

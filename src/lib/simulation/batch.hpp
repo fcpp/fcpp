@@ -378,7 +378,7 @@ class tagged_tuple_sequence<G, Gs...> : public tagged_tuple_sequence<Gs...> {
         m_generator(g) {}
 
     //! @brief Constructor setting up individual generators.
-    tagged_tuple_sequence(G&& g, Gs&&... gs) :
+    explicit tagged_tuple_sequence(G&& g, Gs&&... gs) :
         tagged_tuple_sequence<Gs...>(std::move(gs)...),
         m_core_extra_size(g.core_size() * tagged_tuple_sequence<Gs...>::extra_size()),
         m_extra_core_size(g.extra_size() * tagged_tuple_sequence<Gs...>::core_size()),
@@ -482,7 +482,7 @@ class tagged_tuple_sequences {
     using value_type = typename common::type_sequence<Ss...>::front::value_type;
 
     //! @brief Constructor setting up individual generators.
-    tagged_tuple_sequences(Ss const&... ss) :
+    explicit tagged_tuple_sequences(Ss const&... ss) :
         m_shuffle(1),
         m_offset(0),
         m_stride(1),
@@ -772,7 +772,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
     int pool_size = std::min(e.num, (initial_chunk + n_procs - 1) / n_procs);
     int istart = rank, i = istart, istep = n_procs;
     int rest = initial_chunk, iend = rest;
-    int c = 0, p = 0, reqs = rest < vs.size() ? n_procs - 1  : 0;
+    int c = 0, p = 0;
     if (rank == rank_master) {
         details::print_types(x);
         std::cerr << ": running " << vs.size() << " simulations..." << std::flush;
@@ -825,6 +825,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
     // start MPI manager thread
     std::thread manager;
     if (rank == rank_master) manager = std::thread([&](){
+        int reqs = rest < vs.size() ? n_procs - 1  : 0;
         MPI_Status status;
         while (reqs > 0) {
             MPI_Recv(&c, 0, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);

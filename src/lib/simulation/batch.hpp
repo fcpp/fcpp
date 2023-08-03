@@ -39,6 +39,13 @@ namespace fcpp {
 namespace batch {
 
 
+//! @brief Namespace of tags for batch runs.
+namespace tags {
+    //! @brief A tag for indexing network types to be run.
+    struct type_index {};
+} // tags
+
+
 //! @cond INTERNAL
 namespace details {
     //! @brief Class wrapping a generating function with output type and size information.
@@ -507,6 +514,11 @@ class tagged_tuple_sequences {
         m_size = (std::min(end, m_total_size) - start + stride - 1) / stride;
     }
 
+    //! @brief Returns an empty tuple of the type generated.
+    inline value_type empty_tuple() const {
+        return {};
+    }
+
     //! @brief Function testing presence of an item of the sequence.
     inline bool count(size_t i) const {
         value_type t;
@@ -587,6 +599,10 @@ struct options {};
 
 //! @cond INTERNAL
 namespace details {
+    //! @brief Enables if E is not a tagged tuple sequence or sequences.
+    template <typename E, typename T = void>
+    using ifn_sequence = common::ifn_class_template<tagged_tuple_sequence, E, common::ifn_class_template<tagged_tuple_sequences, E, T>>;
+
     //! @brief Converts a type into a type sequence.
     //! @{
     template <typename T>
@@ -654,9 +670,6 @@ namespace details {
         std::cerr << common::type_name<T>() << ", ";
         print_types(common::type_sequence<S, Ts...>{});
     }
-
-    //! @brief A tag for indexing network types to be run.
-    struct type_index_tag {};
 }
 //! @endcond
 
@@ -688,20 +701,18 @@ void mpi_finalize();
  * @param vs Tagged tuple sequences used to initialise the various runs.
  */
 template <typename... Ts, typename exec_t, typename... Ss>
-common::ifn_class_template<tagged_tuple_sequence, exec_t, std::enable_if_t<not std::is_same<exec_t, common::tags::distributed_execution>::value>>
-run(common::type_sequence<Ts...> x, exec_t e, Ss const&... vs) {
-    auto seq = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(arithmetic<details::type_index_tag>(0, int(sizeof...(Ts) - 1), 1), vs)...);
-    using init_tuple = typename decltype(seq)::value_type;
+common::ifn_among<exec_t, common::tags::distributed_execution, details::ifn_sequence<exec_t>>
+run(common::type_sequence<Ts...> x, exec_t e, tagged_tuple_sequences<Ss...> vs) {
     details::print_types(x);
-    std::cerr << ": running " << seq.size() << " simulations..." << std::flush;
+    std::cerr << ": running " << vs.size() << " simulations..." << std::flush;
     size_t p = 0;
-    common::parallel_for(e, seq.size(), [&](size_t i, size_t t){
-        if (t == 0 and i*100/seq.size() > p) {
-            p = i*100/seq.size();
+    common::parallel_for(e, vs.size(), [&](size_t i, size_t t){
+        if (t == 0 and i*100/vs.size() > p) {
+            p = i*100/vs.size();
             std::cerr << p << "%..." << std::flush;
         }
-        init_tuple tup;
-        if (seq.assign(tup, i)) details::network_run(x, common::get<details::type_index_tag>(tup), tup);
+        auto tup = vs.empty_tuple();
+        if (vs.assign(tup, i)) details::network_run(x, common::get_or<tags::type_index>(tup, 0), tup);
     });
     std::cerr << "done." << std::endl;
 }
@@ -748,25 +759,23 @@ namespace details {
  * @param vs Tagged tuple sequences used to initialise the various runs.
  */
 template <typename... Ts, typename... Ss>
-void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, Ss const&... vs) {
+void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, tagged_tuple_sequences<Ss...> vs) {
     // initialize mpi, generators and plotter address
-    auto v = make_tagged_tuple_sequences(extend_tagged_tuple_sequence(arithmetic<details::type_index_tag>(0, int(sizeof...(Ts) - 1), 1), vs)...);
-    using init_tuple = typename decltype(v)::value_type;
-    if (e.shuffle) v.shuffle(42);
-    auto plot = common::get_or<component::tags::plotter>(v[0], nullptr);
+    if (e.shuffle) vs.shuffle(42);
+    auto plot = common::get_or<component::tags::plotter>(vs[0], nullptr);
     constexpr int rank_master = 0;
     int rank, n_procs;
     bool initialized = mpi_init(rank, n_procs);
 
     // setup initial chunks
-    size_t initial_chunk = std::max(size_t((1 - e.dynamic) * v.size()), std::min(v.size(), e.num * n_procs));
+    size_t initial_chunk = std::max(size_t((1 - e.dynamic) * vs.size()), std::min(vs.size(), e.num * n_procs));
     int pool_size = std::min(e.num, (initial_chunk + n_procs - 1) / n_procs);
     int istart = rank, i = istart, istep = n_procs;
     int rest = initial_chunk, iend = rest;
-    int c = 0, p = 0, reqs = rest < v.size() ? n_procs - 1  : 0;
+    int c = 0, p = 0, reqs = rest < vs.size() ? n_procs - 1  : 0;
     if (rank == rank_master) {
         details::print_types(x);
-        std::cerr << ": running " << v.size() << " simulations..." << std::flush;
+        std::cerr << ": running " << vs.size() << " simulations..." << std::flush;
     }
 
     // start working threads
@@ -778,7 +787,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
             size_t j;
             while (true) {
                 m.lock();
-                if (i < iend or i >= v.size()) {   // there are things in local queue, grab one
+                if (i < iend or i >= vs.size()) {   // there are things in local queue, grab one
                     j = i;
                     i = j + istep;
                 } else if (rank == rank_master) {  // i am master, grab a whole chunk then one
@@ -789,7 +798,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
                     i = j + istep;
                     ++c;
                 } else { // use MPI to ask for a chunk
-                    if (rest + c * e.size < v.size()) {
+                    if (rest + c * e.size < vs.size()) {
                         MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
                         MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                     }
@@ -800,15 +809,15 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
                     i = j + istep;
                 }
                 m.unlock();
-                if (j >= v.size()) break;
+                if (j >= vs.size()) break;
                 int q = i < rest ? i : i * n_procs - (2 * istart + e.size) * (n_procs - 1) / 2;
-                q = q * 100 / v.size();
+                q = q * 100 / vs.size();
                 if (rank == rank_master and t == 0 and q > p) {
                     p = q;
                     std::cerr << p << "%..." << std::flush;
                 }
-                init_tuple tup;
-                if (v.assign(tup, j)) details::network_run(x, common::get<details::type_index_tag>(tup), tup);
+                auto tup = vs.empty_tuple();
+                if (vs.assign(tup, j)) details::network_run(x, common::get_or<tags::type_index>(tup, 0), tup);
             }
             if (rank == rank_master and t == 0) std::cerr << "done." << std::endl;
         });
@@ -824,7 +833,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
             MPI_Send(&c, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
             ++c;
             m.unlock();
-            if (rest + c * e.size >= v.size()) --reqs;
+            if (rest + c * e.size >= vs.size()) --reqs;
         }
     });
 
@@ -848,21 +857,29 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
  * @param vs Tagged tuple sequences used to initialise the various runs.
  */
 template <typename... Ts, typename... Ss>
-inline void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, Ss const&... vs) {
+inline void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, tagged_tuple_sequences<Ss...> vs) {
     assert(false);
 }
 
 #endif
 
+//! @brief Runs a series of experiments (network types, explicit execution policy, sequence parameters).
+template <typename... Ts, typename exec_t, typename... Gs, typename... Ss>
+inline details::ifn_sequence<exec_t>
+run(common::type_sequence<Ts...> x, exec_t e, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
+    run(x, e, make_tagged_tuple_sequences(extend_tagged_tuple_sequence(arithmetic<tags::type_index>(0, int(sizeof...(Ts) - 1), 1), v),
+                                          extend_tagged_tuple_sequence(arithmetic<tags::type_index>(0, int(sizeof...(Ts) - 1), 1), vs)...));
+}
+
 //!  @brief Runs a series of experiments (single network type, explicit execution policy)
 template <typename T, typename exec_t, typename... Ss>
-inline common::ifn_class_template<tagged_tuple_sequence, exec_t, common::ifn_class_template<common::type_sequence, T>>
-run(T, exec_t e, Ss const&... vs) {
-    run(common::type_sequence<T>{}, e, vs...);
+inline details::ifn_sequence<exec_t, common::ifn_class_template<common::type_sequence, T>>
+run(T, exec_t e, Ss&&... vs) {
+    run(common::type_sequence<T>{}, e, std::forward<Ss>(vs)...);
 }
 
 /**
- * @brief Runs a series of experiments (implicit execution policy, some parameters).
+ * @brief Runs a series of experiments (implicit execution policy, sequence parameters).
  *
  * If FCPP_MPI is defined, the execution policy is \ref common::tags::distributed_execution "distributed_execution", otherwise is \ref common::tags::dynamic_execution "dynamic_execution".
  */
@@ -875,6 +892,22 @@ inline void run(T x, tagged_tuple_sequence<Gs...> const& v, Ss const&... vs) {
         common::tags::dynamic_execution{},
 #endif
         v, vs...);
+}
+
+/**
+ * @brief Runs a series of experiments (implicit execution policy, single sequences parameter).
+ *
+ * If FCPP_MPI is defined, the execution policy is \ref common::tags::distributed_execution "distributed_execution", otherwise is \ref common::tags::dynamic_execution "dynamic_execution".
+ */
+template <typename T, typename... Ss>
+inline void run(T x, tagged_tuple_sequences<Ss...> vs) {
+    run(x,
+#ifdef FCPP_MPI
+        common::tags::distributed_execution{},
+#else
+        common::tags::dynamic_execution{},
+#endif
+        vs);
 }
 
 //!  @brief Does not run a series of experiments (implicit execution policy, no parameters)

@@ -138,7 +138,7 @@ function mkdoc() {
         mkdir doc
     fi
     echo -e "\033[4mdoxygen Doxyfile\033[0m" >&2
-    doxygen Doxyfile 2>&1 | grep -v "Generating docs\|\.\.\.\|Searching for" | tee tmpdoc.err | grep -v "is not documented.$" | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|'
+    doxygen Doxyfile 2>&1 >/dev/null | tee tmpdoc.err | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|'
     ndoc=`cat tmpdoc.err | grep "is not documented.$" | wc -l | tr -cd '0-9'`
     nerr=`cat tmpdoc.err | grep '/fcpp/src/lib/' | wc -l | tr -cd '0-9'`
     if [ $ndoc -gt 0 ]; then

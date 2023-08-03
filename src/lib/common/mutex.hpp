@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file mutex.hpp
@@ -440,30 +440,36 @@ template <bool enabled>
 using exclusive_lock = details::generic_locker<enabled, shared_mutex, details::bypassed_lock, std::unique_lock>;
 
 
+//! @brief Function locking multiple mutexes (bypassed version).
 template <typename... Ts>
 inline void lock(mutex<false>&, Ts&...) {}
 
 #ifdef FCPP_DISABLE_THREADS
+//! @brief Function locking multiple mutexes (active version).
 template <typename... Ts>
 inline void lock(mutex<true>&, Ts&...) {}
 #else
+//! @brief Function locking multiple mutexes (active version).
 template <typename... Ts>
 inline void lock(mutex<true>& a, Ts&... ms) {
     std::lock(a, ms...);
 }
 #endif
 
+//! @brief Function trying to lock multiple mutexes (bypassed version).
 template <typename... Ts>
 inline int try_lock(mutex<false>&, Ts&...) {
     return -1;
 }
 
 #ifdef FCPP_DISABLE_THREADS
+//! @brief Function trying to lock multiple mutexes (active version).
 template <typename... Ts>
 inline int try_lock(mutex<true>&, Ts&...) {
     return -1;
 }
 #else
+//! @brief Function trying to lock multiple mutexes (active version).
 template <typename... Ts>
 inline int try_lock(mutex<true>& a, Ts&... ms) {
     return std::try_lock(a, ms...);

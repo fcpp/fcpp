@@ -118,31 +118,38 @@ TEST_F(TaggedTupleTest, Assignment) {
 }
 
 TEST_F(TaggedTupleTest, Types) {
-    std::string ex, res;
-    ex  = typeid(char).name();
-    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_type<gat>).name();
-    EXPECT_EQ(ex, res);
-    ex  = typeid(common::type_sequence<bool,char>).name();
-    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_types<oth,gat>).name();
-    EXPECT_EQ(ex, res);
-    ex  = typeid(common::type_sequence<tag,gat,oth>).name();
-    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tags).name();
-    EXPECT_EQ(ex, res);
-    ex  = typeid(common::type_sequence<int,char,bool>).name();
-    res = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>::types).name();
-    EXPECT_EQ(ex, res);
-    ex  = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool>).name();
-    res = typeid(common::tagged_tuple_t<gat,char,oth,bool>::push_front<tag,int>).name();
-    EXPECT_EQ(ex, res);
-    res = typeid(common::tagged_tuple_t<tag,int,gat,char>::push_back<oth,bool>).name();
-    EXPECT_EQ(ex, res);
-    ex  = typeid(common::tagged_tuple_t<tag,int,gat,char,oth,bool,hto,double>).name();
-    res = typeid(common::tagged_tuple_cat<
-        common::tagged_tuple_t<tag,int>,
-        common::tagged_tuple_t<gat,char,oth,bool>,
-        common::tagged_tuple_t<hto,double>
-    >).name();
-    EXPECT_EQ(ex, res);
+    EXPECT_SAME(
+        char,
+        common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_type<gat>
+    );
+    EXPECT_SAME(
+        common::type_sequence<bool,char>,
+        common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tag_types<oth,gat>
+    );
+    EXPECT_SAME(
+        common::type_sequence<tag,gat,oth>,
+        common::tagged_tuple_t<tag,int,gat,char,oth,bool>::tags
+    );
+    EXPECT_SAME(
+        common::type_sequence<int,char,bool>,
+        common::tagged_tuple_t<tag,int,gat,char,oth,bool>::types
+    );
+    EXPECT_SAME(
+        common::tagged_tuple_t<tag,int,gat,char,oth,bool>,
+        common::tagged_tuple_t<gat,char,oth,bool>::push_front<tag,int>
+    );
+    EXPECT_SAME(
+        common::tagged_tuple_t<tag,int,gat,char,oth,bool>,
+        common::tagged_tuple_t<tag,int,gat,char>::push_back<oth,bool>
+    );
+    EXPECT_SAME(
+        common::tagged_tuple_t<tag,int,gat,char,oth,bool,hto,double>,
+        common::tagged_tuple_cat<
+            common::tagged_tuple_t<tag,int>,
+            common::tagged_tuple_t<gat,char,oth,bool>,
+            common::tagged_tuple_t<hto,double>
+        >
+    );
 }
 
 TEST_F(TaggedTupleTest, Print) {

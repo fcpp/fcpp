@@ -333,6 +333,25 @@ struct custom_stream_type {};
 template <>
 struct common::is_ostream<custom_stream_type> : public std::true_type {};
 
+template <typename T>
+common::if_among<T, char, double, int>
+ifamongtest(T x) {
+    return 4;
+}
+
+template <typename T>
+common::ifn_among<T, char, double, int>
+ifamongtest(T x) {
+    return 2;
+}
+
+TEST(TraitsTest, IfAmong) {
+    EXPECT_EQ(4, ifamongtest('a'));
+    EXPECT_EQ(4, ifamongtest(2.5));
+    EXPECT_EQ(2, ifamongtest(128));
+    EXPECT_EQ(2, ifamongtest("x"));
+}
+
 TEST(TraitsTest, IsOStream) {
     bool b;
     b = common::is_ostream<std::ostream>::value;

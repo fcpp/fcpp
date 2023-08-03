@@ -89,8 +89,8 @@ namespace tags {
 //! @cond INTERNAL
 namespace details {
     //! @brief Makes a stream reference from a `std::string` path.
-    template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(std::string const& s, common::tagged_tuple<S,T> const& t) {
+    template <typename O, typename S, typename T>
+    std::shared_ptr<O> make_stream(std::string const& s, common::tagged_tuple<S,T> const& t) {
         if (s.back() == '/' or s.back() == '\\') {
             std::stringstream ss;
             ss << s;
@@ -99,28 +99,23 @@ namespace details {
                 ss << name << "_";
             t.print(ss, common::underscore_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
             ss << ".txt";
-            return std::shared_ptr<std::ostream>(new std::ofstream(ss.str()));
-        } else return std::shared_ptr<std::ostream>(new std::ofstream(s));
+            return std::shared_ptr<O>(new std::ofstream(ss.str()));
+        } else return std::shared_ptr<O>(new std::ofstream(s));
     }
     //! @brief Makes a stream reference from a `char const*` path.
-    template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(char const* s, common::tagged_tuple<S,T> const& t) {
-        return make_stream(std::string(s), t);
+    template <typename O, typename S, typename T>
+    std::shared_ptr<O> make_stream(char const* s, common::tagged_tuple<S,T> const& t) {
+        return make_stream<O>(std::string(s), t);
     }
     //! @brief Makes a stream reference from a stream pointer.
     template <typename O, typename S, typename T>
     std::shared_ptr<O> make_stream(O* o, common::tagged_tuple<S,T> const&) {
-        return std::shared_ptr<O>(o, [] (void*) {});
+        return {o, [] (void*) {}};
     }
-    //! @brief Makes a reference to a plotter.
-    template <typename T>
-    std::shared_ptr<T> make_plotter(T* o) {
-        return std::shared_ptr<T>(o, [] (void*) {});
-    }
-    //! @brief Makes a reference to a plotter.
-    template <typename T>
-    std::shared_ptr<T> make_plotter(std::nullptr_t) {
-        return std::shared_ptr<T>(new T());
+    //! @brief Makes a stream reference from a null pointer.
+    template <typename O, typename S, typename T>
+    std::shared_ptr<O> make_stream(nullptr_t, common::tagged_tuple<S,T> const&) {
+        return {nullptr, [] (void*) {}};
     }
     //! @brief Computes the row type given a the aggregator and functor tuples (general case).
     template <typename A, typename F>
@@ -270,29 +265,33 @@ struct logger {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
-                std::time_t time = clock_t::to_time_t(clock_t::now());
-                std::string tstr = std::string(ctime(&time));
-                tstr.pop_back();
-                *m_stream << "##########################################################\n";
-                *m_stream << "# FCPP data export started at:  " << tstr << " #\n";
-                *m_stream << "##########################################################\n# ";
-                t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
-                *m_stream << "\n#\n";
-                *m_stream << "# The columns have the following meaning:\n# time ";
-                print_headers(a_tags());
-                print_tags(f_tags());
-                *m_stream << std::endl;
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream<ostream_type>(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(common::get_or<tags::plotter>(t, nullptr), [] (void*) {}), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
+                if (m_stream != nullptr) {
+                    std::time_t time = clock_t::to_time_t(clock_t::now());
+                    std::string tstr = std::string(ctime(&time));
+                    tstr.pop_back();
+                    *m_stream << "##########################################################\n";
+                    *m_stream << "# FCPP data export started at:  " << tstr << " #\n";
+                    *m_stream << "##########################################################\n# ";
+                    t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
+                    *m_stream << "\n#\n";
+                    *m_stream << "# The columns have the following meaning:\n# time ";
+                    print_headers(a_tags());
+                    print_tags(f_tags());
+                    *m_stream << std::endl;
+                }
             }
 
             //! @brief Destructor printing an export end section.
             ~net() {
-                std::time_t time = clock_t::to_time_t(clock_t::now());
-                std::string tstr = std::string(ctime(&time));
-                tstr.pop_back();
-                *m_stream << "##########################################################\n";
-                *m_stream << "# FCPP data export finished at: " << tstr << " #\n";
-                *m_stream << "##########################################################" << std::endl;
+                if (m_stream != nullptr) {
+                    std::time_t time = clock_t::to_time_t(clock_t::now());
+                    std::string tstr = std::string(ctime(&time));
+                    tstr.pop_back();
+                    *m_stream << "##########################################################\n";
+                    *m_stream << "# FCPP data export finished at: " << tstr << " #\n";
+                    *m_stream << "##########################################################" << std::endl;
+                }
                 maybe_clear(has_identifier<P>{}, *this);
             }
 
@@ -311,9 +310,12 @@ struct logger {
                     PROFILE_COUNT("logger");
                     data_puller(common::number_sequence<not value_push>(), *this);
                     row_update(a_tags{}, f_tags{});
-                    print_output(l_tags{});
-                    *m_stream << std::endl;
-                    data_plotter(std::is_same<plot_type, plot::none>{});
+                    if (m_stream != nullptr) {
+                        print_output(l_tags{});
+                        *m_stream << std::endl;
+                    }
+                    if (m_plotter != nullptr)
+                        data_plotter(std::is_same<plot_type, plot::none>{});
                     m_schedule.step(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                     if (not value_push) m_aggregators = aggregators_type{};
                 } else P::net::update();

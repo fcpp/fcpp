@@ -118,6 +118,28 @@ class count {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(count const& o) const {
+        return m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(count const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_count;
+    }
+
   private:
     //! @brief The counter.
     size_t m_count = 0;
@@ -181,6 +203,28 @@ class distinct {
     template <typename O>
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
+    }
+
+    //! @brief Equality operator.
+    bool operator==(distinct const& o) const {
+        return m_counts == o.m_counts;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(distinct const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_counts;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_counts;
     }
 
   private:
@@ -256,6 +300,28 @@ class list {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(list const& o) const {
+        return m_items == o.m_items;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(list const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_items;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_items;
+    }
+
   private:
     //! @brief The list of items (in a per-thread basis).
     std::vector<std::vector<T>> m_items;
@@ -317,6 +383,28 @@ class sum {
     template <typename O>
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
+    }
+
+    //! @brief Equality operator.
+    bool operator==(sum const& o) const {
+        return m_sum == o.m_sum;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(sum const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum;
     }
 
   private:
@@ -384,6 +472,28 @@ class mean {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(mean const& o) const {
+        return m_sum == o.m_sum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(mean const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_count;
+    }
+
   private:
     T m_sum = 0;
     size_t m_count = 0;
@@ -448,6 +558,28 @@ class moment {
     template <typename O>
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
+    }
+
+    //! @brief Equality operator.
+    bool operator==(moment const& o) const {
+        return m_sum == o.m_sum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(moment const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_count;
     }
 
   private:
@@ -523,6 +655,28 @@ class deviation {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(deviation const& o) const {
+        return m_sum == o.m_sum and m_sqsum == o.m_sqsum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(deviation const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_sqsum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_sqsum << m_count;
+    }
+
   private:
     T m_sum = 0;
     T m_sqsum = 0;
@@ -593,6 +747,28 @@ class stats {
     void output(O& os) const {
         auto res = result<void>();
         os << std::get<0>(res) << " " << std::get<1>(res) << " ";
+    }
+
+    //! @brief Equality operator.
+    bool operator==(stats const& o) const {
+        return m_sum == o.m_sum and m_sqsum == o.m_sqsum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(stats const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_sqsum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_sqsum << m_count;
     }
 
   private:
@@ -666,6 +842,28 @@ class min {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(min const& o) const {
+        return m_min == o.m_min;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(min const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_min;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_min;
+    }
+
   private:
     T m_min = std::numeric_limits<T>::has_infinity ? std::numeric_limits<T>::infinity() : std::numeric_limits<T>::max();
 };
@@ -726,6 +924,28 @@ class max {
     template <typename O>
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
+    }
+
+    //! @brief Equality operator.
+    bool operator==(max const& o) const {
+        return m_max == o.m_max;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(max const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_max;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_max;
     }
 
   private:
@@ -862,6 +1082,28 @@ class quantile<T, false, qs...> {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
 
+    //! @brief Equality operator.
+    bool operator==(quantile const& o) const {
+        return m_values == o.m_values;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(quantile const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_values;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_values;
+    }
+
   private:
     std::array<char, sizeof...(qs)> const m_quantiles = {qs...};
     std::unordered_multiset<T> m_values;
@@ -923,6 +1165,28 @@ class quantile<T, true, qs...> {
     template <typename O>
     void output(O& os) const {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
+    }
+
+    //! @brief Equality operator.
+    bool operator==(quantile const& o) const {
+        return m_values == o.m_values;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(quantile const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_values;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_values;
     }
 
   private:
@@ -1005,13 +1269,35 @@ class combine {
     //! @brief Outputs the aggregator description.
     template <typename O>
     void header(O& os, std::string tag) const {
-        header_impl(os, tag, common::type_sequence<Ts...>());
+        header_impl(os, tag, common::type_sequence<Ts...>{});
     }
 
     //! @brief Printed results of aggregation.
     template <typename O>
     void output(O& os) const {
-        output_impl(os, common::type_sequence<Ts...>());
+        output_impl(os, common::type_sequence<Ts...>{});
+    }
+
+    //! @brief Equality operator.
+    bool operator==(combine const& o) const {
+        return m_aggregators == o.m_aggregators;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(combine const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_aggregators;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_aggregators;
     }
 
   private:

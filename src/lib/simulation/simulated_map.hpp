@@ -127,7 +127,7 @@ struct simulated_map {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple <S, T> const& t) : P::net(t) {
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {
 
                 static_assert((S::template intersect<tags::obstacles>::size == 1) <= (area::size == 5 or S::template intersect<tags::area_min, tags::area_max>::size == 2), "no option area defined and no area_min and area_max defined either");
 

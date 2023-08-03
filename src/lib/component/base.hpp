@@ -223,7 +223,7 @@ struct base {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const&) {
+            explicit net(common::tagged_tuple<S,T> const&) {
                 m_realtime_start = clock_t::now();
                 m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den;
                 m_last_update = m_next_update = 0;

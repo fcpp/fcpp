@@ -208,7 +208,7 @@ struct timer {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t) {
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {
                 m_offs = 0;
                 m_fact = common::get_or<tags::realtime_factor>(t, FCPP_REALTIME < INF ? FCPP_REALTIME : 1);
                 m_inv = 1/m_fact;

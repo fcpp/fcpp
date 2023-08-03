@@ -64,6 +64,10 @@ struct point {
     double devdn;
     //! @brief The default value used when the deviation is not available.
     static constexpr double no_dev = -std::numeric_limits<double>::infinity();
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        return true;
+    }
 };
 
 //! @brief Printing a single point.
@@ -92,11 +96,16 @@ struct plot {
     std::vector<double> xvals;
     //! @brief Values of y coordinates with labels.
     std::vector<std::pair<std::string, std::vector<std::tuple<double,double,double>>>> yvals;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        return xvals.empty();
+    }
 };
 
 //! @brief Printing a single plot.
 template <typename O>
 O& operator<<(O& o, plot const& p) {
+    if (p.empty()) return o;
     o << "plot.put(plot.plot(name+\"-" << details::shorten(p.xname) << details::shorten(p.yname) << (p.title.size() ? "-" : "") << details::multi_shorten(p.title) << "\", \"" << p.title << "\", \"" << p.xname << "\", \"" << p.yname << "\", new string[] {";
     bool first = true;
     for (auto const& y : p.yvals) {
@@ -174,11 +183,17 @@ struct page {
     size_t cols;
     //! @brief Plot list.
     std::vector<plot> plots;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        for (auto const& p : plots) if (not p.empty()) return false;
+        return true;
+    }
 };
 
 //! @brief Printing a single page.
 template <typename O>
 O& operator<<(O& o, page const& p) {
+    if (p.empty()) return o;
     if (p.title.size()) o << "// " << p.title << "\n\n";
     o << "plot.ROWS = " << p.rows << ";\n";
     o << "plot.COLS = " << p.cols << ";\n\n";
@@ -211,11 +226,17 @@ struct file {
     std::vector<page> pages;
     //! @brief Custom plot options.
     option_type options;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        for (auto const& p : pages) if (not p.empty()) return false;
+        return true;
+    }
 };
 
 //! @brief Printing a file.
 template <typename O>
 O& operator<<(O& o, file const& f) {
+    if (f.empty()) return o;
     o << "// " << f.title << "\n";
     o << "string name = \"" << f.title << "\";\n\n";
     o << "import \"plot.asy\" as plot;\n";
@@ -257,6 +278,16 @@ class none {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(none const& o) const {
+        return true;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(none const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot merging.
     none& operator+=(none const&) {
         return *this;
@@ -265,6 +296,12 @@ class none {
     //! @brief Plot building for internal use.
     build_type build() const {
         return {};
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) const {
+        return s;
     }
 };
 
@@ -511,12 +548,19 @@ template <typename C, typename M, typename F, size_t max_size>
 constexpr size_t rows<C,M,F,max_size>::limit_size;
 
 
-//! @brief Filters values for column S according to property F in plotter P.
-template <typename S, typename F, typename P>
+//! @brief Filters values for columns and properties in a plotter.
+template <typename... Ts>
 class filter {
+    //! @brief The type sequence of type parameters.
+    using types = common::type_sequence<Ts...>;
+    //! @brief The plotter type.
+    using plotter_type = typename types::back;
+    //! @brief The tuple of filters.
+    using filter_type = common::tagged_tuple_t<typename types::pop_back>;
+
   public:
     //! @brief The internal build type.
-    using build_type = typename P::build_type;
+    using build_type = typename plotter_type::build_type;
 
     //! @brief Default constructor.
     filter() = default;
@@ -536,8 +580,8 @@ class filter {
     //! @brief Row processing.
     template <typename R>
     filter& operator<<(R const& row) {
-        if (m_filter(common::get<S>(row)))
-            (m_plotter << row);
+        if (check(row, typename filter_type::tags{}))
+            m_plotter << row;
         return *this;
     }
 
@@ -547,16 +591,49 @@ class filter {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(filter const& o) const {
+        return m_plotter == o.m_plotter;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(filter const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         return m_plotter.build();
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_plotter;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_plotter;
+    }
+
   private:
+    //! @brief Checks whether the row complies to the filters (empty overload).
+    template <typename R>
+    inline bool check(R const&, common::type_sequence<>) {
+        return true;
+    }
+    //! @brief Checks whether the row complies to the filters (active overload).
+    template <typename R, typename S, typename... Ss>
+    inline bool check(R const& row, common::type_sequence<S, Ss...>) {
+        return common::get<S>(m_filters)(common::get<S>(row)) and check(row, common::type_sequence<Ss...>{});
+    }
+
     //! @brief The plotter.
-    P m_plotter;
+    plotter_type m_plotter;
     //! @brief The callable filter class.
-    F m_filter;
+    filter_type m_filters;
 };
 
 
@@ -703,11 +780,33 @@ class join {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(join const& o) const {
+        return m_plotters == o.m_plotters;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(join const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         build_type res;
         build_impl(res, std::make_index_sequence<sizeof...(Ps)>{});
         return res;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_plotters;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_plotters;
     }
 
   private:
@@ -824,6 +923,16 @@ class value {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(value const& o) const {
+        return m_aggregator == o.m_aggregator;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(value const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         point p;
@@ -852,6 +961,18 @@ class value {
         p.devup = maybe_tuple_get<1>(r);
         p.devdn = maybe_tuple_get<2>(r);
         return {p};
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_aggregator;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_aggregator;
     }
 
   private:
@@ -1066,8 +1187,6 @@ class split {
 
     static_assert(details::key_type<S>::single or not std::is_same<typename details::inspector<parent_build_type>::type, point>::value, "cannot split points with multiple keys");
 
-    static_assert(details::key_type<S>::single or std::is_same<std::ratio<0>, B>::value, "cannot use bucket size with multiple keys");
-
     //! @brief The type used for splitting keys.
     using key_type = typename details::key_type<S>::type;
 
@@ -1100,7 +1219,7 @@ class split {
     template <typename R>
     split& operator<<(R const& row) {
         static_assert(common::type_intersect<typename R::tags, typename key_type::tags>::size == key_type::tags::size, "splitting key not in plot row");
-        key_type k = approx_impl(row, B{});
+        key_type k = approx_impl(row, B{}, typename key_type::tags{});
         P* p;
         {
             common::lock_guard<true> l(m_mutex);
@@ -1126,6 +1245,16 @@ class split {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(split const& o) const {
+        return m_plotters == o.m_plotters;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(split const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         std::map<key_type, parent_build_type> m;
@@ -1136,20 +1265,40 @@ class split {
         return res;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_plotters;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_plotters;
+    }
+
   private:
+    //! @brief Approximates a single value according to a given scale.
+    template <intmax_t num, intmax_t den, typename T>
+    T& approx_impl(T& x) const {
+        intmax_t n = x * den / num + 0.5;
+        return x = double(n*num)/den;
+    }
+
     //! @brief No approximations without buckets.
-    template <typename R>
-    key_type approx_impl(R const& row, std::ratio<0>) const {
+    template <typename R, typename T>
+    key_type approx_impl(R const& row, std::ratio<0>, T) const {
         return row;
     }
-    //! @brief Approximating the key to the closest bucket multiple.
-    template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>>
-    key_type approx_impl(R const& row, std::ratio<num,den>) const {
+
+    //! @brief Approximating the keys to their closest bucket multiple.
+    template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>, typename... Ss>
+    key_type approx_impl(R const& row, std::ratio<num,den>, common::type_sequence<Ss...>) const {
         key_type k = row;
-        intmax_t n = std::get<0>(k) * den / num + 0.5;
-        std::get<0>(k) = double(n*num)/den;
+        common::ignore_args(approx_impl<num,den>(common::get<Ss>(k))...);
         return k;
     }
+
     //! @brief Single plot building.
     void build_impl(std::array<plot, 1>& res, std::map<key_type, parent_build_type>& m) const {
         res[0].xname = details::format_type(common::strip_namespaces(common::type_name<S>()));

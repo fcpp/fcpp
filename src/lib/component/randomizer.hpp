@@ -137,7 +137,7 @@ struct randomizer {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
 
           protected: // visible by net objects only
             //! @brief Gives access to the random number generator.

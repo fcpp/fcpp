@@ -106,7 +106,7 @@ struct graph_spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) :
+            explicit net(common::tagged_tuple<S,T> const& t) :
                 P::net(t),
                 m_start(common::get_or<tags::start>(t, 0)),
                 m_nodesstream(details::make_istream(common::get_or<tags::nodesinput>(t, "index"))),

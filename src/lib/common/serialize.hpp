@@ -13,8 +13,8 @@
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <type_traits>
 
@@ -413,6 +413,16 @@ namespace details {
     }
 
     template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::multiset<K,Ts...>& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
+    }
+
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::multiset<K,Ts...> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{});
+    }
+
+    template <typename S, typename K, typename... Ts>
     S& serialize(S& s, std::set<K,Ts...>& x) {
         return iterable_serialize(s, x, wrapper<K>{});
     }
@@ -430,6 +440,16 @@ namespace details {
     template <typename S, typename K, typename V, typename... Ts>
     S& serialize(S& s, std::map<K, V, Ts...> const& x) {
         return iterable_serialize(s, x, wrapper<std::pair<K,V>>{});
+    }
+
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::unordered_multiset<K, Ts...>& x) {
+        return iterable_serialize(s, x, wrapper<K>{}, wrapper<char>{});
+    }
+
+    template <typename S, typename K, typename... Ts>
+    S& serialize(S& s, std::unordered_multiset<K, Ts...> const& x) {
+        return iterable_serialize(s, x, wrapper<K>{}, wrapper<char>{});
     }
 
     template <typename S, typename K, typename... Ts>

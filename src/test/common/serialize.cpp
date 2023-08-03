@@ -4,6 +4,7 @@
 
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/ostream.hpp"
+#include "lib/common/plot.hpp"
 #include "lib/common/serialize.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/data/bloom.hpp"
@@ -12,8 +13,13 @@
 #include "lib/data/tuple.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/internal/flat_ptr.hpp"
+#include "lib/option/aggregator.hpp"
 
 using namespace fcpp;
+
+struct tag {};
+struct gat {};
+
 
 template <typename T>
 void rebuilder(T& y, T&z) {
@@ -106,8 +112,12 @@ TEST(SerializeTest, Iterable) {
     EXPECT_EQ(7646860119211199969ULL, rebuild_size(7646860119211199969LL));
     std::vector<int> x = {1, 2, 4, 8};
     SERIALIZE_CHECK(x, {});
+    std::multiset<int> ms = {1, 2, 4, 8};
+    SERIALIZE_CHECK(ms, {});
     std::set<int> s = {1, 2, 4, 8};
     SERIALIZE_CHECK(s, {});
+    std::unordered_multiset<trace_t> mt = {1, 2, 4, 8};
+    SERIALIZE_CHECK(mt, {}, false);
     std::unordered_set<trace_t> t = {1, 2, 4, 8};
     SERIALIZE_CHECK(t, {}, false);
     std::map<trace_t,double> m = {{4, 2}, {42, 2.4}};
@@ -161,6 +171,97 @@ TEST(SerializeTest, FCPP) {
     std::unordered_map<tuple<int,bool>, int, common::hash<tuple<int,bool>>> u;
     u[make_tuple(4,false)] = 2;
     SERIALIZE_CHECK(u, {}, false);
+}
+
+TEST(SerializeTest, Aggregators) {
+    aggregator::count<bool> count;
+    count.insert(false);
+    count.insert(true);
+    count.insert(true);
+    SERIALIZE_CHECK(count, {});
+    aggregator::distinct<int> distinct;
+    distinct.insert(4);
+    distinct.insert(2);
+    distinct.insert(4);
+    SERIALIZE_CHECK(distinct, {}, false);
+    aggregator::list<int> list;
+    list.insert(4);
+    list.insert(2);
+    list.insert(4);
+    SERIALIZE_CHECK(list, {});
+    aggregator::sum<int> sum;
+    sum.insert(4);
+    sum.insert(2);
+    sum.insert(4);
+    SERIALIZE_CHECK(sum, {});
+    aggregator::only_finite<aggregator::mean<double>> mean;
+    mean.insert(4);
+    mean.insert(2);
+    mean.insert(4);
+    SERIALIZE_CHECK(mean, {});
+    aggregator::moment<double,3> moment;
+    moment.insert(4);
+    moment.insert(2);
+    moment.insert(4);
+    SERIALIZE_CHECK(moment, {});
+    aggregator::deviation<double> deviation;
+    deviation.insert(4);
+    deviation.insert(2);
+    deviation.insert(4);
+    SERIALIZE_CHECK(deviation, {});
+    aggregator::deviation<double> stats;
+    stats.insert(4);
+    stats.insert(2);
+    stats.insert(4);
+    SERIALIZE_CHECK(stats, {});
+    aggregator::min<int> min;
+    min.insert(4);
+    min.insert(2);
+    min.insert(4);
+    SERIALIZE_CHECK(min, {});
+    aggregator::max<int> max;
+    max.insert(4);
+    max.insert(2);
+    max.insert(4);
+    SERIALIZE_CHECK(max, {});
+    aggregator::quantile<double,false,50> quantilefalse;
+    quantilefalse.insert(4);
+    quantilefalse.insert(2);
+    quantilefalse.insert(4);
+    SERIALIZE_CHECK(quantilefalse, {}, false);
+    aggregator::quantile<double,true,50> quantiletrue;
+    quantiletrue.insert(4);
+    quantiletrue.insert(2);
+    quantiletrue.insert(4);
+    SERIALIZE_CHECK(quantiletrue, {});
+    aggregator::combine<aggregator::min<int>, aggregator::max<int>> combine;
+    combine.insert(4);
+    combine.insert(2);
+    combine.insert(4);
+    SERIALIZE_CHECK(combine, {});
+}
+
+TEST(SerializeTest, Plots) {
+    plot::none none;
+    none << common::make_tagged_tuple<tag,gat>(4,2);
+    none << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(none, {}, false);
+    plot::value<tag> value;
+    value << common::make_tagged_tuple<tag,gat>(4,2);
+    value << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(value, {});
+    plot::filter<gat, filter::above<1>, plot::value<tag>> filter;
+    filter << common::make_tagged_tuple<tag,gat>(4,2);
+    filter << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(filter, {});
+    plot::join<plot::value<tag>, plot::filter<gat, filter::above<1>, plot::none>> join;
+    join << common::make_tagged_tuple<tag,gat>(4,2);
+    join << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(join, {});
+    plot::split<gat, plot::join<plot::value<tag>, plot::filter<gat, filter::above<1>, plot::none>>> split;
+    split << common::make_tagged_tuple<tag,gat>(4,2);
+    split << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(split, {});
 }
 
 TEST(SerializeTest, Error) {

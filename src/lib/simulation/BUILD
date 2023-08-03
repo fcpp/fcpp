@@ -6,6 +6,7 @@ cc_library(
         "//lib/common:algorithm",
         "//lib/common:option",
         "//lib/common:tagged_tuple",
+        "//lib/component:logger",
     ],
     visibility = [
         '//visibility:public',

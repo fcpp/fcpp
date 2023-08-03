@@ -207,6 +207,23 @@ using ifn_template = std::enable_if_t<not has_template<T, A>, B>;
 
 
 /**
+ * @brief Enables if type is within a list of types.
+ *
+ * The last argument is the return type if the function is enabled, and cannot be omitted.
+ */
+template <typename T, typename... Ts>
+using if_among = std::enable_if_t<type_sequence<Ts...>::pop_back::template count<T>, typename type_sequence<Ts...>::back>;
+
+/**
+ * @brief Enables if type is within a list of types.
+ *
+ * The last argument is the return type if the function is enabled, and cannot be omitted.
+ */
+template <typename T, typename... Ts>
+using ifn_among = std::enable_if_t<not type_sequence<Ts...>::pop_back::template count<T>, typename type_sequence<Ts...>::back>;
+
+
+/**
  * @brief Declares that the type @tparam T is usable as an output stream.
  *
  * Enabled by default for all subtypes of std::ostream.

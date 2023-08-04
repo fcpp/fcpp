@@ -501,7 +501,7 @@ class tagged_tuple_sequences {
     //! @brief Internally shuffles the sequence pseudo-randomly, in order to achieve better statistical balancing.
     void shuffle() {
         if (m_total_size < 3) return;
-        for (m_shuffle = std::sqrtf(m_total_size) + 1; not_prime(m_shuffle); ++m_shuffle);
+        for (m_shuffle = std::sqrt(m_total_size) + 1; not_prime(m_shuffle); ++m_shuffle);
     }
 
     //! @brief Reduces the generator to a subsequence.

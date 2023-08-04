@@ -474,6 +474,7 @@ TEST(BatchTest, TupleSequences) {
     v.emplace_back(1,4,+3,"char-1_double-4_short-3");
     v.emplace_back(3,4,+1,"char-3_double-4_short-1");
     EXPECT_EQ(x, v);
+    gtot.shuffle();
 }
 
 TEST(BatchTest, Run) {

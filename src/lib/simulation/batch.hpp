@@ -9,11 +9,11 @@
 #define FCPP_SIMULATION_BATCH_H_
 
 #include <cassert>
+#include <cmath>
 
 #include <algorithm>
 #include <array>
 #include <iostream>
-#include <random>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -499,12 +499,9 @@ class tagged_tuple_sequences {
     }
 
     //! @brief Internally shuffles the sequence pseudo-randomly, in order to achieve better statistical balancing.
-    void shuffle(uint_fast32_t seed = 0) {
+    void shuffle() {
         if (m_total_size < 3) return;
-        std::mt19937 gen(seed);
-        std::uniform_int_distribution<> dist(1, m_total_size-1);
-        do m_shuffle = dist(gen);
-        while (gcd(m_shuffle, m_total_size) > 1);
+        for (m_shuffle = std::sqrtf(m_total_size) + 1; not_prime(m_shuffle); ++m_shuffle);
     }
 
     //! @brief Reduces the generator to a subsequence.
@@ -548,6 +545,14 @@ class tagged_tuple_sequences {
     }
 
   private:
+    //! @brief Computes whether x < 18769 is a composite number.
+    bool not_prime(size_t x) {
+        constexpr uint8_t primes[32] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131};
+        for (size_t i = 0; i < 32 and primes[i] * primes[i] <= x; ++i)
+            if (x % primes[i] == 0) return true;
+        return false;
+    }
+
     //! @brief Computes the gcd assuming that x > 0.
     size_t gcd(size_t x, size_t y) {
         do {
@@ -761,7 +766,7 @@ namespace details {
 template <typename... Ts, typename... Ss>
 void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, tagged_tuple_sequences<Ss...> vs) {
     // initialize mpi, generators and plotter address
-    if (e.shuffle) vs.shuffle(42);
+    if (e.shuffle) vs.shuffle();
     auto plot = common::get_or<component::tags::plotter>(vs[0], nullptr);
     constexpr int rank_master = 0;
     int rank, n_procs;

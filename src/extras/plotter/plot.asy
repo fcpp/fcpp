@@ -5,7 +5,7 @@ pair DIM  = (5,3);   // size of a plot
 pair OFFS = (2,2.5); // spacing between plots
 int  ROWS = 2;       // rows of plots per page
 int  COLS = 3;       // columns of plots per page
-real MAX_CROP = 1.1; // maximum cropping allowed (usually 1.3)
+real MAX_CROP = 1.1; // maximum cropping allowed (usually 1.1)
 real LOG_LIN = 2;    // factor of comparison between linear and logarithmic plots
 real ALPHA = 0.1;    // opacity of deviation areas
 real SIGMA = 1;      // number of standard deviations to show
@@ -165,7 +165,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
                     l = 0;
                 }
     // compare and choose the final plot window
-        logmode = area(lminy, lmaxy) > besta * LOG_LIN;
+        logmode = area(lminy, lmaxy) > (besta + 0.001) * LOG_LIN;
         if (MAX_CROP == 0) {
             bminy = lvaly[0]*0.999;
             bmaxy = lvaly[lvaly.length-1]*1.001;
@@ -316,20 +316,13 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
         string s = logmode ? ("$10^{"+string(rys)+"}$") : format_number(rys, max(ytb, -yta)*yscale);
         label(pic, scale(0.4)*s, (0,ry), align=W);
     }
-    int common_suffix = rfind(names[0], " ");
-    string append_suffix = "";
-    if (common_suffix > 0) {
-        string suffix = substr(names[0], common_suffix);
-        common_suffix = length(names[0]) - common_suffix;
-        for (int i=1; i<names.length; ++i)
-            if (substr(names[i], length(names[i])-common_suffix) != suffix) {
-                common_suffix = 0;
-                break;
-            }
-    }
-    if (common_suffix == 0) {
-        common_suffix = rfind(names[0], "-");
-        append_suffix = ")";
+    string[] suffix_patterns = {" (", "-"};
+    string[] suffix_appends  = {"",   ")"};
+    string append_suffix;
+    int common_suffix = 0;
+    for (int j=0; j<suffix_patterns.length; ++j) {
+        common_suffix = rfind(names[0], suffix_patterns[j]);
+        append_suffix = suffix_appends[j];
         if (common_suffix > 0) {
             string suffix = substr(names[0], common_suffix);
             common_suffix = length(names[0]) - common_suffix;
@@ -339,6 +332,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
                     break;
                 }
         }
+        if (common_suffix > 0) break;
     }
     for (int i=0; i<names.length; ++i) {
         if (common_suffix > 0) {

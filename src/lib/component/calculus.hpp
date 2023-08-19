@@ -652,10 +652,10 @@ inline constexpr status operator^(status x, status y) {
 
 //! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with boolean status corresponding to `status::internal_output` and `status::border_output`).
 template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
-std::enable_if_t<std::is_same<B,bool>::value, std::unordered_map<K, R>>
+std::enable_if_t<std::is_same<B,bool>::value, std::unordered_map<K, R, common::hash<K>>>
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
-    using keyset_t = std::unordered_set<K>;
-    using resmap_t = std::unordered_map<K, R>;
+    using keyset_t = std::unordered_set<K, common::hash<K>>;
+    using resmap_t = std::unordered_map<K, R, common::hash<K>>;
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<keyset_t>(t) == 0);
     field<keyset_t> fk = details::get_context(node).second().nbr(t, keyset_t{}, node.uid);
@@ -679,15 +679,15 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
 
 //! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with full status).
 template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
-std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R>>
+std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R, common::hash<K>>>
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
-    using keymap_t = std::unordered_map<K, B>;
-    using resmap_t = std::unordered_map<K, R>;
+    using keymap_t = std::unordered_map<K, B, common::hash<K>>;
+    using resmap_t = std::unordered_map<K, R, common::hash<K>>;
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<keymap_t>(t) == 0);
     field<keymap_t> fk = details::get_context(node).second().nbr(t, keymap_t{}, node.uid);
     // keys to be propagated and terminated
-    std::unordered_set<K> ky(key_set.begin(), key_set.end()), kn;
+    std::unordered_set<K, common::hash<K>> ky(key_set.begin(), key_set.end()), kn;
     for (size_t i = 1; i < details::get_vals(fk).size(); ++i)
         for (auto const& k : details::get_vals(fk)[i]) {
             if (k.second == status::terminated)
@@ -728,7 +728,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
 
 //! @brief The exports type used by the spawn construct with key type `K` and status type `B`.
 template <typename K, typename B>
-using spawn_t = common::export_list<std::conditional_t<std::is_same<B, bool>::value, std::unordered_set<K>, std::unordered_map<K, B>>>;
+using spawn_t = common::export_list<std::conditional_t<std::is_same<B, bool>::value, std::unordered_set<K, common::hash<K>>, std::unordered_map<K, B, common::hash<K>>>>;
 //! @}
 
 

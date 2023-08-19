@@ -17,10 +17,13 @@ using namespace fcpp;
 using namespace component::tags;
 
 
+struct tag {};
+using tuple_t = common::tagged_tuple_t<tag, int>;
+
 template <int O>
 using combo = component::combine_spec<
     component::calculus<
-        exports<common::export_list<spawn_t<int, bool>, spawn_t<int, status>, field<int>, times_t, int>>,
+        exports<common::export_list<spawn_t<tuple_t, bool>, spawn_t<int, status>, field<int>, times_t, int>>,
         export_pointer<(O & 1) == 1>,
         export_split<(O & 2) == 2>,
         online_drop<(O & 4) == 4>
@@ -67,14 +70,17 @@ int gossip(node_t& node, trace_t call_point, int x) {
 template <typename node_t>
 int spawning(node_t& node, trace_t call_point, bool b) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
+    common::option<tuple_t> kt;
+    if (b) kt.emplace(node.uid);
+    auto mt = spawn(node, 0, [&](tuple_t ti){
+        int i = common::get<tag>(ti);
+        return make_tuple(i, (int)node.uid >= i);
+    }, kt);
+    int c = 0;
+    for (auto const& x  : mt) c += 1 << (common::get<tag>(x.first) * x.second);
     common::option<int> k;
     if (b) k.emplace(node.uid);
-    auto m = spawn(node, 0, [&](int i){
-        return make_tuple(i, (int)node.uid >= i);
-    }, k);
-    int c = 0;
-    for (auto const& x  : m) c += 1 << (x.first * x.second);
-    m = spawn(node, 1, [&](int i, bool, char){
+    auto m = spawn(node, 1, [&](int i, bool, char){
         return make_tuple(i, (int)node.uid >= i ? status::output : status::external);
     }, k, false, 'a');
     if (b) assert(m.size() > 0);

@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file vec.hpp
@@ -30,6 +30,21 @@ template <size_t n>
 struct vec {
     //! @brief The dimensionality of the vectors.
     constexpr static size_t dimension = n;
+
+    //! @brief Default constructor.
+    vec() = default;
+
+    //! @brief Copy constructor.
+    vec(vec<n> const&) = default;
+
+    //! @brief Move constructor.
+    vec(vec<n>&&) = default;
+
+    //! @brief Copy assignment (restricted to lvalues).
+    vec<n>& operator=(vec<n> const&) & = default;
+
+    //! @brief Move assignment (restricted to lvalues).
+    vec<n>& operator=(vec<n>&&) & = default;
 
     //! @brief Pointer to beginning.
     real_t* begin() {

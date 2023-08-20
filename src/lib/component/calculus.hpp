@@ -201,7 +201,7 @@ struct calculus {
             template <typename S, typename T>
             node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_context{}, m_metric{t}, m_hoodsize{common::get_or<tags::hoodsize>(t, std::numeric_limits<device_t>::max())}, m_threshold{common::get_or<tags::threshold>(t, m_metric.build())} {}
 
-            //! @brief Number of neighbours (including self).
+            //! @brief Total number of neighbours (including self and those not aligned).
             size_t size() const {
                 return m_context.second().size(P::node::uid);
             }

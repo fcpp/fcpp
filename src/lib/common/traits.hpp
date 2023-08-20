@@ -47,6 +47,9 @@ namespace common {
 // GENERAL METAPROGRAMMING SUPPORT
 
 
+//! @brief Unit type not holding any data.
+struct unit {};
+
 /**
  *  @brief Helper function ignoring its arguments.
  *
@@ -751,15 +754,15 @@ namespace details {
     template <typename T>
     using type_sequence_if_possible = typename type_sequence_if_possible_impl<T()>::type;
 
-    // General form.
+    //! @brief General form.
     template <typename... Ts>
     struct export_list {
         using type = type_sequence<>;
     };
-    // Type argument.
+    //! @brief Type argument.
     template <typename T, typename... Ts>
     struct export_list<T,Ts...> : public type_unite<common::type_sequence<T>, typename export_list<Ts...>::type> {};
-    // Type sequence argument.
+    //! @brief Type sequence argument.
     template <typename... Ts, typename... Ss>
     struct export_list<type_sequence<Ts...>,Ss...> : public export_list<type_sequence_if_possible<Ts>...,Ss...> {};
 }
@@ -772,21 +775,21 @@ using export_list = typename details::export_list<details::type_sequence_if_poss
 
 //! @cond INTERNAL
 namespace details {
-    // General form.
+    //! @brief General form.
     template <typename... Ts>
     struct storage_list {
         using type = type_sequence<>;
     };
-    // Type argument.
+    //! @brief Type argument.
     template <typename S, typename T, typename... Ts>
     struct storage_list<S,T,Ts...> {
         using tmp = typename storage_list<Ts...>::type;
         using type = std::conditional_t<tmp::template slice<0, -1, 2>::template count<S> == 0, typename tmp::template push_front<S,T>, tmp>;
     };
-    // Single type sequence argument.
+    //! @brief Single type sequence argument.
     template <typename... Ts>
     struct storage_list<type_sequence<Ts...>> : public storage_list<type_sequence_if_possible<Ts>...> {};
-    // Type sequence argument.
+    //! @brief Type sequence argument.
     template <typename... Ts, typename S, typename... Ss>
     struct storage_list<type_sequence<Ts...>,S,Ss...> : public storage_list<type_sequence_if_possible<Ts>...,S,Ss...> {};
 }

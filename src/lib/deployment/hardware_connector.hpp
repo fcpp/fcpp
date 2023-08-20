@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file hardware_connector.hpp
@@ -191,15 +191,15 @@ struct hardware_connector {
                 fcpp::details::self(m_nbr_msg_size, m.device) = m.content.size();
                 common::isstream is(std::move(m.content));
                 typename F::node::message_t mt;
-                #if __cpp_exceptions
+#ifndef FCPP_DISABLE_EXCEPTIONS
                 try {
-                #endif
+#endif
                     is >> mt;
                     if (is.size() == 0)
                         P::node::as_final().receive(m.time, m.device, mt);
-                #if __cpp_exceptions
+#ifndef FCPP_DISABLE_EXCEPTIONS
                 } catch (common::format_error&) {}
-                #endif
+#endif
             }
 
             //! @brief Perceived distances from neighbours.

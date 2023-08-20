@@ -64,10 +64,10 @@ class sstream<false> {
     //! @brief Reads a trivial type from the stream.
     template <typename T, typename = std::enable_if_t<std::is_trivially_copyable<T>::value>>
     sstream& read(T& x, size_t l = sizeof(T)) {
-        #if __cpp_exceptions
+#ifndef FCPP_DISABLE_EXCEPTIONS
         if (m_idx + l > m_data.size())
             throw format_error("format error in deserialisation");
-        #endif
+#endif
         details::copy(&x, m_data.data() + m_idx, l);
         m_idx += l;
         return *this;

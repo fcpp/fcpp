@@ -1351,6 +1351,7 @@ class container : public A {
 /**
  * @brief Filters only values respecting filter F before feeding them to another aggregator.
  *
+ * @tparam F The filter predicate type.
  * @tparam A The value aggregator type.
  */
 template <typename F, typename A>
@@ -1418,6 +1419,70 @@ class filter : public A {
  */
 template <typename A>
 using only_finite = filter<fcpp::filter::finite, A>;
+
+
+/**
+ * @brief Maps a functor to values before feeding them to another aggregator.
+ *
+ * @tparam F The callable class functor type.
+ * @tparam A The value aggregator type.
+ */
+template <typename F, typename A>
+class mapper : public A {
+    //! @brief The type of values aggregated.
+    using T = typename A::type;
+
+    template <typename T>
+    struct remap_tuple;
+
+    template <typename... Ss, typename... Ts>
+    struct remap_tuple<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Ts...>>> {
+        using type = common::tagged_tuple<common::type_sequence<mapper<F,Ss>...>, common::type_sequence<Ts...>>;
+    };
+
+  public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = typename remap_tuple<typename A::template result_type<U>>::type;
+
+    //! @brief Default constructor.
+    mapper() = default;
+
+    //! @brief Erases a value from the aggregation set.
+    inline void erase(T const& value) {
+        A::erase(m_functor(value));
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    inline void insert(T const& value) {
+        A::insert(m_functor(value));
+    }
+
+    //! @brief The results of aggregation.
+    template <typename U>
+    result_type<U> result() const {
+        auto t = A::template result<U>();
+        return reinterpret_cast<result_type<U>&>(t);
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        std::string fs = common::type_name<F>();
+        std::string as = A::name();
+        std::string s = fs + ' ';
+        for (char c : as)
+            if (c == '-') s += '-' + fs + ' ';
+            else s.push_back(c);
+        return s;
+    }
+
+  private:
+    //! @brief The callable filter class.
+    F m_functor;
+};
 
 
 }

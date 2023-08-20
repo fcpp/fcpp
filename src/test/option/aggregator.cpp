@@ -523,3 +523,22 @@ TEST(AggregatorTest, Multi) {
     EXPECT_EQ(res_t(0,0), v.result<tag>());
     v += w;
 }
+
+TEST(AggregatorTest, Mapper) {
+    struct plus10 {
+        int operator()(int x) {
+            return x+10;
+        }
+    };
+    using aggr_t = aggregator::mapper<plus10, aggregator::sum<int>>;
+    using res_t = aggr_t::result_type<tag>;
+    using tag_t = res_t::tags::front;
+    std::stringstream ss;
+    aggr_t v;
+    v.insert(3);
+    EXPECT_EQ(13, common::get<tag_t>(v.result<tag>()));
+    v.insert(6);
+    EXPECT_EQ(29, common::get<tag_t>(v.result<tag>()));
+    v.insert(2);
+    EXPECT_EQ(41, common::get<tag_t>(v.result<tag>()));
+}

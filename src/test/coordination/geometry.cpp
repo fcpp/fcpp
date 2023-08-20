@@ -25,7 +25,23 @@ DECLARE_OPTIONS(options,
     online_drop<(O & 4) == 4>
 );
 
-DECLARE_COMBINE(calc_pos, component::calculus, component::simulated_positioner, component::randomizer);
+template <typename...>
+struct mytimer {
+    template <typename F, typename P>
+    struct component : public P {
+        DECLARE_COMPONENT(timer);
+        struct node : public P::node {
+            using P::node::node;
+            field<times_t> const& nbr_lag() const {
+                return m_nl;
+            }
+            field<times_t> m_nl = field<times_t>(1);
+        };
+        using net  = typename P::net;
+    };
+};
+
+DECLARE_COMBINE(calc_pos, component::calculus, component::simulated_positioner, mytimer, component::randomizer);
 
 template <int O>
 using combo = calc_pos<options<O>>;

@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <cmath>
 
@@ -29,12 +29,27 @@ struct exposer {
     };
 };
 
+struct mytimer {
+    template <typename F, typename P>
+    struct component : public P {
+        DECLARE_COMPONENT(timer);
+        struct node : public P::node {
+            using P::node::node;
+            field<times_t> const& nbr_lag() const {
+                return m_nl;
+            }
+            field<times_t> m_nl = field<times_t>(1);
+        };
+        using net  = typename P::net;
+    };
+};
+
 using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distribution::constant_n<times_t, 1>, distribution::constant_n<times_t, 9>>;
 
 using combo1 = component::combine_spec<
-    exposer,
-    component::scheduler<round_schedule<seq_per>>,
     component::simulated_positioner<dimension<2>>,
+    mytimer,
+    component::scheduler<round_schedule<seq_per>>,
     component::base<>
 >;
 
@@ -121,4 +136,5 @@ TEST(SimulatedPositionerTest, NbrVec) {
     EXPECT_EQ(0, details::self(d1.nbr_dist(), 1));
     EXPECT_EQ(1, details::self(d1.nbr_dist(), 2));
     EXPECT_EQ(1, details::self(d1.nbr_dist(), 3));
+    EXPECT_EQ(d1.nbr_dist_lag(), field<times_t>(1));
 }

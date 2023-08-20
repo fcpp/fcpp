@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file simulated_positioner.hpp
@@ -63,6 +63,8 @@ namespace details {
 /**
  * @brief Component handling physical evolution of a position through time.
  *
+ * Requires a \ref timer parent component.
+ *
  * <b>Declaration tags:</b>
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *
@@ -92,6 +94,7 @@ struct simulated_positioner {
     struct component : public P {
         //! @cond INTERNAL
         DECLARE_COMPONENT(positioner);
+        REQUIRE_COMPONENT(positioner,timer);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -305,6 +308,11 @@ struct simulated_positioner {
                 return m_nbr_dist;
             }
 
+            //! @brief Lags since most recent distance measurements.
+            fcpp::field<times_t> const& nbr_dist_lag() const {
+                return P::node::nbr_lag();
+            }
+
           private: // implementation details
             //! @brief Position at a given time on a given coordinate (viscous general case; relative to round start).
             real_t position(size_t i, real_t dt) const {
@@ -325,6 +333,7 @@ struct simulated_positioner {
                 }
                 return end;
             }
+            //! @brief Searches for a time when the i-th coordinates becomes `y` (overload without an end time).
             times_t binary_search(size_t i, times_t start, real_t y) const {
                 real_t dt = 1;
                 real_t xs = position(i, start);

@@ -441,32 +441,45 @@ field<device_t> nbr_uid(node_t& node, trace_t call_point) {
 
 //! @cond INTERNAL
 namespace details {
-    template <typename A, typename C>
-    struct valid_tuple_return : std::false_type {};
-    template <typename A, typename B, typename C>
-    struct valid_tuple_return<A, tuple<B,C>> : std::is_convertible<C,A> {};
+    template <typename D, typename T>
+    struct result_unpack {
+        using type = std::enable_if_t<std::is_convertible<D, T>::value, common::type_sequence<T, T>>;
+    };
+    template <typename D, typename R, typename A>
+    struct result_unpack<D, tuple<R, A>> {
+        using type = std::conditional_t<
+            std::is_convertible<D, tuple<R, A>>::value,
+            common::type_sequence<tuple<R, A>, tuple<R, A>>,
+            std::enable_if_t<std::is_convertible<D, tuple<R, A>>::value or std::is_convertible<D, A>::value, common::type_sequence<R, A>>
+        >;
+    };
 
-    template <typename A, typename B, typename C, typename = std::enable_if_t<std::is_convertible<C,A>::value>>
-    inline B&& maybe_first(common::type_sequence<A>, tuple<B,C>& t) {
+    template <typename D, typename R, typename A, typename = std::enable_if_t<std::is_convertible<D, A>::value>>
+    inline R&& maybe_first(common::type_sequence<D>, tuple<R,A>& t) {
         return std::move(get<0>(t));
     }
-    template <typename A, typename B, typename C, typename = std::enable_if_t<std::is_convertible<C,A>::value>>
-    inline A&& maybe_second(common::type_sequence<A>, tuple<B,C>& t) {
+    template <typename D, typename R, typename A, typename = std::enable_if_t<std::is_convertible<D, A>::value>>
+    inline A&& maybe_second(common::type_sequence<D>, tuple<R,A>& t) {
         return std::move(get<1>(t));
     }
-    template <typename A, typename C, typename = std::enable_if_t<not valid_tuple_return<A,C>::value>>
-    inline A maybe_first(common::type_sequence<A>, C& x) {
+    template <typename D, typename T, typename = std::enable_if_t<std::is_convertible<D, T>::value>>
+    inline T&& maybe_first(common::type_sequence<D>, T& x) {
         return std::move(x);
     }
-    template <typename A, typename C, typename = std::enable_if_t<not valid_tuple_return<A,C>::value>>
-    inline C& maybe_second(common::type_sequence<A>, C& x) {
-        #define INVALID_RETURN_MESSAGE "\033[1m\033[4minvalid return type (C) for update function in calculus construct (of type A)\033[0m"
-        static_assert(std::is_convertible<C,A>::value, INVALID_RETURN_MESSAGE);
-        #undef INVALID_RETURN_MESSAGE
+    template <typename D, typename T, typename = std::enable_if_t<std::is_convertible<D, T>::value>>
+    inline T& maybe_second(common::type_sequence<D>, T& x) {
         return x;
     }
 }
 //! @endcond
+
+//! @brief The data type returned by an update function call T given default of type D.
+template <typename D, typename T>
+using return_result_type = typename details::result_unpack<std::decay_t<D>, std::decay_t<std::result_of_t<T>>>::type::front;
+
+//! @brief The export type written by an update function call T given default of type D.
+template <typename D, typename T>
+using export_result_type = typename details::result_unpack<std::decay_t<D>, std::decay_t<std::result_of_t<T>>>::type::back;
 
 
 //! @name old-based coordination operators
@@ -475,17 +488,19 @@ namespace details {
  * @brief The previous-round value (defaults to first argument), modified through the second argument.
  *
  * Corresponds to the `rep` construct of the field calculus.
- * The \p op argument may return a `A` or a `tuple<B,A>`. In the latter case,
+ * The \p op argument may return a `A` or a `tuple<R,A>`, where `A` is
+ * compatible with the default type `D`. In the latter case,
  * the first element of the returned pair is returned by the function, while
  * the second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A)>>
-auto old(node_t& node, trace_t call_point, A const& f0, G&& op) {
+template <typename node_t, typename D, typename G>
+return_result_type<D, G(D)> old(node_t& node, trace_t call_point, D const& f0, G&& op) {
+    using A = export_result_type<D, G(D)>;
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).first()->template count<A>(t) == 0);
-    auto f = op(align(node, call_point, details::get_context(node).first().old(t, f0, node.uid)));
-    details::get_export(node).first()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
-    return details::maybe_first(common::type_sequence<A>{}, f);
+    auto f = op(align(node, call_point, details::get_context(node).first().template old<A>(t, f0, node.uid)));
+    details::get_export(node).first()->template insert<A>(t, details::maybe_second(common::type_sequence<D>{}, f));
+    return details::maybe_first(common::type_sequence<D>{}, f);
 }
 /**
  * @brief The previous-round value of the second argument, defaulting to the first argument if no previous value.
@@ -497,12 +512,12 @@ auto old(node_t& node, trace_t call_point, A const& f0, G&& op) {
  * })
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-template <typename node_t, typename A>
-A old(node_t& node, trace_t call_point, A const& f0, A const& f) {
+template <typename node_t, typename D, typename A, typename = std::enable_if_t<std::is_convertible<D, A>::value>>
+A old(node_t& node, trace_t call_point, D const& f0, A const& f) {
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).first()->template count<A>(t) == 0);
-    details::get_export(node).first()->insert(t, f);
-    return align(node, call_point, details::get_context(node).first().old(t, f0, node.uid));
+    details::get_export(node).first()->template insert<A>(t, f);
+    return align(node, call_point, details::get_context(node).first().template old<A>(t, f0, node.uid));
 }
 /**
  * @brief The previous-round value of the argument.
@@ -526,17 +541,19 @@ using old_t = common::export_list<T>;
  * @brief The neighbours' value of the result (defaults to first argument), modified through the second argument.
  *
  * Corresponds to the `share` construct of the field calculus.
- * The \p op argument may return a `A` or a `tuple<B,A>`. In the latter case,
+ * The \p op argument may return a `A` or a `tuple<R,A>`, where `A` is
+ * compatible with the default type `D`. In the latter case,
  * the first element of the returned pair is returned by the function, while
  * the second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A, typename G, typename = std::result_of_t<G(to_field<A>)>>
-auto nbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
+template <typename node_t, typename D, typename G>
+return_result_type<D, G(to_field<D>)> nbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
+    using A = export_result_type<D, G(to_field<D>)>;
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<A>(t) == 0);
-    auto f = op(details::get_context(node).second().nbr(t, f0, node.uid));
-    details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
-    return details::maybe_first(common::type_sequence<A>{}, f);
+    auto f = op(details::get_context(node).second().template nbr<A>(t, f0, node.uid));
+    details::get_export(node).second()->template insert<A>(t, details::maybe_second(common::type_sequence<D>{}, f));
+    return details::maybe_first(common::type_sequence<D>{}, f);
 }
 /**
  * @brief The neighbours' value of the second argument, defaulting to the first argument.
@@ -548,12 +565,12 @@ auto nbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
  * })
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-template <typename node_t, typename A>
-to_field<A> nbr(node_t& node, trace_t call_point, A const& f0, A const& f) {
+template <typename node_t, typename D, typename A, typename = std::enable_if_t<std::is_convertible<D, A>::value>>
+to_field<A> nbr(node_t& node, trace_t call_point, D const& f0, A const& f) {
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<A>(t) == 0);
-    details::get_export(node).second()->insert(t, f);
-    return details::get_context(node).second().nbr(t, f0, node.uid);
+    details::get_export(node).second()->template insert<A>(t, f);
+    return details::get_context(node).second().template nbr<A>(t, f0, node.uid);
 }
 /**
  * @brief The neighbours' value of the argument.
@@ -580,13 +597,14 @@ using nbr_t = common::export_list<T>;
  * the first element of the returned pair is returned by the function, while
  * the second element of the returned pair is written in the exports.
  */
-template <typename node_t, typename A, typename G, typename = std::result_of_t<G(A, to_field<A>)>>
-A oldnbr(node_t& node, trace_t call_point, A const& f0, G&& op) {
+template <typename node_t, typename D, typename G>
+return_result_type<D, G(D, to_field<D>)> oldnbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
+    using A = export_result_type<D, G(D, to_field<D>)>;
     trace_t t = node.stack_trace.hash(call_point);
     assert(details::get_export(node).second()->template count<A>(t) == 0);
-    auto f = op(align(node, call_point, details::get_context(node).second().old(t, f0, node.uid)), details::get_context(node).second().nbr(t, f0, node.uid));
-    details::get_export(node).second()->insert(t, details::maybe_second(common::type_sequence<A>{}, f));
-    return details::maybe_first(common::type_sequence<A>{}, f);
+    auto f = op(align(node, call_point, details::get_context(node).second().template old<A>(t, f0, node.uid)), details::get_context(node).second().template nbr<A>(t, f0, node.uid));
+    details::get_export(node).second()->template insert<A>(t, details::maybe_second(common::type_sequence<D>{}, f));
+    return details::maybe_first(common::type_sequence<D>{}, f);
 }
 
 //! @brief The exports type used by the oldnbr construct with message type `T`.

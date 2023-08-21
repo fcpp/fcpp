@@ -115,20 +115,40 @@ MULTI_TEST(CalculusTest, Size, O, 3) {
     d0.round_end(0);
 }
 
+TEST(CalculusTest, ResultType) {
+    auto rf = [](field<int>){
+        return 2.5;
+    };
+    auto tf = [](field<int>){
+        return tuple<std::string, double>("foo", 2.5);
+    };
+    EXPECT_SAME(return_result_type<int, decltype(rf)(int)>, double);
+    EXPECT_SAME(export_result_type<int, decltype(rf)(int)>, double);
+    EXPECT_SAME(return_result_type<int, decltype(tf)(int)>, std::string);
+    EXPECT_SAME(export_result_type<int, decltype(tf)(int)>, double);
+}
+
 template <typename node_t>
 times_t delayed(node_t& node, trace_t call_point, times_t t) {
     return old(node, call_point, t);
 }
 
 template <typename node_t>
-times_t delayed(node_t& node, trace_t call_point, times_t start, times_t t) {
-    return old(node, call_point, t, start);
+times_t delayed(node_t& node, trace_t call_point, times_t t, int start) {
+    return old(node, call_point, start, t);
 }
 
 template <typename node_t>
 int counter(node_t& node, trace_t call_point) {
     return old(node, call_point, 0, [](int const& o) {
         return o+1;
+    });
+}
+
+template <typename node_t>
+int counter2(node_t& node, trace_t call_point) {
+    return old(node, call_point, 1.0, [](int const& o) {
+        return make_tuple(o, o+1);
     });
 }
 
@@ -172,6 +192,18 @@ MULTI_TEST(CalculusTest, Old, O, 3) {
     d0.round_start(0);
     d = counter(d0, 2);
     EXPECT_EQ(3, d);
+    d = counter2(d0, 3);
+    EXPECT_EQ(1, d);
+    d0.round_end(0);
+    sendto(d0, d0);
+    d0.round_start(0);
+    d = counter2(d0, 3);
+    EXPECT_EQ(2, d);
+    d0.round_end(0);
+    sendto(d0, d0);
+    d0.round_start(0);
+    d = counter2(d0, 3);
+    EXPECT_EQ(3, d);
 }
 
 template <typename node_t>
@@ -179,7 +211,7 @@ int sharing(node_t& node, trace_t call_point, int x) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
     return fold_hood(node, 0, [](int x, int y) {
         return x+y;
-    }, nbr(node, 1, x));
+    }, nbr(node, 1.0, x));
 }
 
 template <typename node_t>
@@ -189,6 +221,17 @@ int gossip(node_t& node, trace_t call_point, int x) {
         return std::max(fold_hood(node, 1, [](int x, int y) {
             return std::max(x,y);
         }, n), x);
+    });
+}
+
+template <typename node_t>
+int gossip2(node_t& node, trace_t call_point, int x) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    return nbr(node, 0, double(x), [&](field<int> n) {
+        int r = fold_hood(node, 1, [](int x, int y) {
+            return std::max(x,y);
+        }, n);
+        return make_tuple(r, std::max(r, x));
     });
 }
 
@@ -225,9 +268,82 @@ MULTI_TEST(CalculusTest, Nbr, O, 3) {
     sendto(d0, d0);
     sendto(d1, d0);
     sendto(d2, d0);
+    sendto(d1, d1);
+    sendto(d2, d2);
     d0.round_start(0);
+    d1.round_start(0);
+    d2.round_start(0);
     d = gossip(d0, 1, 1);
     EXPECT_EQ(4, d);
+    d = gossip(d1, 1, 10);
+    EXPECT_EQ(10, d);
+    d = gossip(d2, 1, 1);
+    EXPECT_EQ(4, d);
+    d = gossip2(d0, 2, 3);
+    EXPECT_EQ(3, d);
+    d = gossip2(d1, 2, 2);
+    EXPECT_EQ(2, d);
+    d = gossip2(d2, 2, 4);
+    EXPECT_EQ(4, d);
+    d0.round_end(0);
+    d1.round_end(0);
+    d2.round_end(0);
+    sendto(d0, d0);
+    sendto(d1, d0);
+    sendto(d2, d0);
+    sendto(d1, d1);
+    sendto(d2, d2);
+    d0.round_start(0);
+    d1.round_start(0);
+    d2.round_start(0);
+    d = gossip2(d0, 2, 1);
+    EXPECT_EQ(4, d);
+    d = gossip2(d1, 2, 10);
+    EXPECT_EQ(2, d);
+    d = gossip2(d2, 2, 1);
+    EXPECT_EQ(4, d);
+}
+
+template <typename node_t>
+int weirdfeedback(node_t& node, trace_t call_point, double r) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    return oldnbr(node, 0, r, [&](field<int> o, field<int> n) {
+        field<int> x = (o + n) / 2;
+        return make_tuple(fold_hood(node, 1, [](int x, int y) {
+            return x + y;
+        }, x), x);
+    });
+}
+
+MULTI_TEST(CalculusTest, OldNbr, O, 3) {
+    typename combo<O>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
+    int d;
+    d0.round_start(0);
+    d1.round_start(0);
+    d2.round_start(0);
+    d = weirdfeedback(d0, 0, 0);
+    EXPECT_EQ(0, d);
+    d = weirdfeedback(d1, 0, 10);
+    EXPECT_EQ(10, d);
+    d = weirdfeedback(d2, 0, 20);
+    EXPECT_EQ(20, d);
+    sendall(d0, d1, d2);
+    d = weirdfeedback(d0, 0, -1000);
+    EXPECT_EQ(15, d);
+    d = weirdfeedback(d1, 0, -1000);
+    EXPECT_EQ(30, d);
+    d = weirdfeedback(d2, 0, -1000);
+    EXPECT_EQ(45, d);
+    sendall(d0, d1, d2);
+    d = weirdfeedback(d0, 0, -1000);
+    EXPECT_EQ(15, d);
+    d = weirdfeedback(d1, 0, -1000);
+    EXPECT_EQ(30, d);
+    d = weirdfeedback(d2, 0, -1000);
+    EXPECT_EQ(45, d);
 }
 
 template <status x>

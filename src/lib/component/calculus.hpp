@@ -178,7 +178,7 @@ struct calculus {
             friend auto& fcpp::details::get_export(node_t& node);
             //! @endcond
 
-          private: // implementation details
+          public: // visible by net objects and the main program
             //! @brief The type of the metric on exports.
             using metric_type = typename retain_type::result_type;
 
@@ -188,7 +188,81 @@ struct calculus {
             //! @brief The type of the exports of the current device.
             using export_type = typename context_type::export_type;
 
-          public: // visible by net objects and the main program
+            //! @brief Helper type providing access to the context for self-messages.
+            template <typename A>
+            struct self_context_type {
+                //! @brief Inserts a value into the exports.
+                inline void insert(A x) {
+                    assert(n.m_export.first()->template count<A>(t) == 0);
+                    n.m_export.first()->template insert<A>(t, std::move(x));
+                }
+
+                //! @brief Accesses old stored values given a default.
+                inline A const& old(A const& def) {
+                    return n.m_context.first().template old<A>(t, def, n.uid);
+                }
+
+              private:
+                //! @brief Private constructor.
+                self_context_type(node& n, trace_t t) : n(n), t(t) {}
+                //! @brief Friendship declaration to allow construction from nodes.
+                friend class node;
+                //! @brief A reference to the node object.
+                node& n;
+                //! @brief The current stack trace hash.
+                trace_t t;
+            };
+
+            //! @brief Helper type providing access to the context for neighbour messages.
+            template <typename A>
+            struct nbr_context_type {
+                //! @brief Inserts a value into the exports.
+                inline void insert(A x) {
+                    assert(n.m_export.second()->template count<A>(t) == 0);
+                    n.m_export.second()->template insert<A>(t, std::move(x));
+                }
+
+                //! @brief Accesses old stored values given a default.
+                inline A const& old(A const& def) {
+                    return n.m_context.second().template old<A>(t, def, n.uid);
+                }
+
+                //! @brief Accesses old stored values given a default.
+                inline to_field<A> nbr(A const& def) {
+                    return n.m_context.second().template nbr<A>(t, def, n.uid);
+                }
+
+              private:
+                //! @brief Private constructor.
+                nbr_context_type(node& n, trace_t t) : n(n), t(t) {}
+                //! @brief Friendship declaration to allow construction from nodes.
+                friend class node;
+                //! @brief A reference to the node object.
+                node& n;
+                //! @brief The current stack trace hash.
+                trace_t t;
+            };
+
+            //! @brief Helper type providing access to the context for neighbour call points.
+            template <>
+            struct nbr_context_type<void> {
+                //! @brief Accesses the list of devices aligned with the call point.
+                inline std::vector<device_t> align() {
+                    n.m_export.second()->insert(t);
+                    return n.m_context.second().align(t, n.uid);
+                }
+
+              private:
+                //! @brief Private constructor.
+                nbr_context_type(node& n, trace_t t) : n(n), t(t) {}
+                //! @brief Friendship declaration to allow construction from nodes.
+                friend class node;
+                //! @brief A reference to the node object.
+                node& n;
+                //! @brief The current stack trace hash.
+                trace_t t;
+            };
+
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<calculus_tag, export_type>;
 
@@ -200,11 +274,6 @@ struct calculus {
              */
             template <typename S, typename T>
             node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_context{}, m_metric{t}, m_hoodsize{common::get_or<tags::hoodsize>(t, std::numeric_limits<device_t>::max())}, m_threshold{common::get_or<tags::threshold>(t, m_metric.build())} {}
-
-            //! @brief Total number of neighbours (including self and those not aligned).
-            size_t size() const {
-                return m_context.second().size(P::node::uid);
-            }
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
@@ -249,6 +318,11 @@ struct calculus {
                 return m;
             }
 
+            //! @brief Total number of neighbours (including self and those not aligned).
+            size_t size() const {
+                return m_context.second().size(P::node::uid);
+            }
+
             //! @brief Identifiers of the neighbours.
             field<device_t> const& nbr_uid() const {
                 return m_nbr_uid;
@@ -262,6 +336,18 @@ struct calculus {
             //! @brief Modifies the threshold for message retain.
             void message_threshold(metric_type t) {
                 m_threshold = t;
+            }
+
+            //! @brief Accesses the context for self-messages.
+            template <typename A>
+            self_context_type<A> self_context(trace_t call_point) {
+                return {*this, stack_trace.hash(call_point)};
+            }
+
+            //! @brief Accesses the context for neighbour messages.
+            template <typename A = void>
+            nbr_context_type<A> nbr_context(trace_t call_point) {
+                return {*this, stack_trace.hash(call_point)};
             }
 
             //! @brief Stack trace maintained during aggregate function execution.
@@ -311,29 +397,26 @@ inline A align(node_t const&, trace_t, A&& x) {
 //! @brief Computes the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
 A align(node_t& node, trace_t call_point, A const& x) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    return details::align(x, details::get_context(node).second().align(t, node.uid));
+    auto ctx = node.template nbr_context<>(call_point);
+    return details::align(x, ctx.align());
 }
 
 //! @brief Computes the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>, typename = std::enable_if_t<not std::is_reference<A>::value>>
 A align(node_t& node, trace_t call_point, A&& x) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    return details::align(std::move(x), details::get_context(node).second().align(t, node.uid));
+    auto ctx = node.template nbr_context<>(call_point);
+    return details::align(std::move(x), ctx.align());
 }
 
 //! @brief Computes in-place the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_local<A>>
-void align_inplace(node_t const&, trace_t, A&) {}
+inline void align_inplace(node_t const&, trace_t, A&) {}
 
 //! @brief Computes in-place the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
 void align_inplace(node_t& node, trace_t call_point, A& x) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    details::align(x, details::get_context(node).second().align(t, node.uid));
+    auto ctx = node.template nbr_context<>(call_point);
+    details::align(x, ctx.align());
 }
 
 //! @brief Accesses the local value of a field.
@@ -387,49 +470,43 @@ to_local<A&&> other(node_t const&, trace_t, A&& x) {
 //! @brief Returns the default value of a field (modifiable, ensuring alignment).
 template <typename node_t, typename A, typename = if_field<A>>
 to_local<A&> mod_other(node_t& node, trace_t call_point, A& x) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    return details::other(details::align_inplace(x, details::get_context(node).second().align(t, node.uid)));
+    auto ctx = node.template nbr_context<>(call_point);
+    return details::other(details::align_inplace(x, ctx.align()));
 }
 
 //! @brief Modifies the local value of a field (ensuring alignment).
 template <typename node_t, typename A, typename B>
 to_field<std::decay_t<A>> mod_other(node_t& node, trace_t call_point, A const& x, B const& y) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    return details::mod_other(x, y, details::get_context(node).second().align(t, node.uid));
+    auto ctx = node.template nbr_context<>(call_point);
+    return details::mod_other(x, y, ctx.align());
 }
 
 //! @brief Reduces a field to a single value by a binary operation.
 template <typename node_t, typename O, typename A>
 auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    return details::fold_hood(op, a, details::get_context(node).second().align(t, node.uid));
+    auto ctx = node.template nbr_context<>(call_point);
+    return details::fold_hood(op, a, ctx.align());
 }
 
 //! @brief Reduces a field to a single value by a binary operation with a given value for self.
 template <typename node_t, typename O, typename A, typename B>
 auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a, B const& b) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    return details::fold_hood(op, a, b, details::get_context(node).second().align(t, node.uid), node.uid);
+    auto ctx = node.template nbr_context<>(call_point);
+    return details::fold_hood(op, a, b, ctx.align(), node.uid);
 }
 
 //! @brief Computes the number of neighbours aligned to the current call point.
 template <typename node_t>
 size_t count_hood(node_t& node, trace_t call_point) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    return details::get_context(node).second().align(t, node.uid).size();
+    auto ctx = node.template nbr_context<>(call_point);
+    return ctx.align().size();
 }
 
 //! @brief Computes the identifiers of neighbours aligned to the current call point.
 template <typename node_t>
 field<device_t> nbr_uid(node_t& node, trace_t call_point) {
-    trace_t t = node.stack_trace.hash(call_point);
-    details::get_export(node).second()->insert(t);
-    std::vector<device_t> ids = details::get_context(node).second().align(t, node.uid);
+    auto ctx = node.template nbr_context<>(call_point);
+    std::vector<device_t> ids = ctx.align();
     std::vector<device_t> vals;
     vals.emplace_back();
     vals.insert(vals.end(), ids.begin(), ids.end());
@@ -496,10 +573,9 @@ using export_result_type = typename details::result_unpack<std::decay_t<D>, std:
 template <typename node_t, typename D, typename G>
 return_result_type<D, G(D)> old(node_t& node, trace_t call_point, D const& f0, G&& op) {
     using A = export_result_type<D, G(D)>;
-    trace_t t = node.stack_trace.hash(call_point);
-    assert(details::get_export(node).first()->template count<A>(t) == 0);
-    auto f = op(align(node, call_point, details::get_context(node).first().template old<A>(t, f0, node.uid)));
-    details::get_export(node).first()->template insert<A>(t, details::maybe_second(common::type_sequence<D>{}, f));
+    auto ctx = node.template self_context<A>(call_point);
+    auto f = op(align(node, call_point, ctx.old(f0)));
+    ctx.insert(details::maybe_second(common::type_sequence<D>{}, f));
     return details::maybe_first(common::type_sequence<D>{}, f);
 }
 /**
@@ -514,10 +590,9 @@ return_result_type<D, G(D)> old(node_t& node, trace_t call_point, D const& f0, G
  */
 template <typename node_t, typename D, typename A, typename = std::enable_if_t<std::is_convertible<D, A>::value>>
 A old(node_t& node, trace_t call_point, D const& f0, A const& f) {
-    trace_t t = node.stack_trace.hash(call_point);
-    assert(details::get_export(node).first()->template count<A>(t) == 0);
-    details::get_export(node).first()->template insert<A>(t, f);
-    return align(node, call_point, details::get_context(node).first().template old<A>(t, f0, node.uid));
+    auto ctx = node.template self_context<A>(call_point);
+    ctx.insert(f);
+    return align(node, call_point, ctx.old(f0));
 }
 /**
  * @brief The previous-round value of the argument.
@@ -549,10 +624,9 @@ using old_t = common::export_list<T>;
 template <typename node_t, typename D, typename G>
 return_result_type<D, G(to_field<D>)> nbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
     using A = export_result_type<D, G(to_field<D>)>;
-    trace_t t = node.stack_trace.hash(call_point);
-    assert(details::get_export(node).second()->template count<A>(t) == 0);
-    auto f = op(details::get_context(node).second().template nbr<A>(t, f0, node.uid));
-    details::get_export(node).second()->template insert<A>(t, details::maybe_second(common::type_sequence<D>{}, f));
+    auto ctx = node.template nbr_context<A>(call_point);
+    auto f = op(ctx.nbr(f0));
+    ctx.insert(details::maybe_second(common::type_sequence<D>{}, f));
     return details::maybe_first(common::type_sequence<D>{}, f);
 }
 /**
@@ -567,10 +641,9 @@ return_result_type<D, G(to_field<D>)> nbr(node_t& node, trace_t call_point, D co
  */
 template <typename node_t, typename D, typename A, typename = std::enable_if_t<std::is_convertible<D, A>::value>>
 to_field<A> nbr(node_t& node, trace_t call_point, D const& f0, A const& f) {
-    trace_t t = node.stack_trace.hash(call_point);
-    assert(details::get_export(node).second()->template count<A>(t) == 0);
-    details::get_export(node).second()->template insert<A>(t, f);
-    return details::get_context(node).second().template nbr<A>(t, f0, node.uid);
+    auto ctx = node.template nbr_context<A>(call_point);
+    ctx.insert(f);
+    return ctx.nbr(f0);
 }
 /**
  * @brief The neighbours' value of the argument.
@@ -600,10 +673,9 @@ using nbr_t = common::export_list<T>;
 template <typename node_t, typename D, typename G>
 return_result_type<D, G(D, to_field<D>)> oldnbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
     using A = export_result_type<D, G(D, to_field<D>)>;
-    trace_t t = node.stack_trace.hash(call_point);
-    assert(details::get_export(node).second()->template count<A>(t) == 0);
-    auto f = op(align(node, call_point, details::get_context(node).second().template old<A>(t, f0, node.uid)), details::get_context(node).second().template nbr<A>(t, f0, node.uid));
-    details::get_export(node).second()->template insert<A>(t, details::maybe_second(common::type_sequence<D>{}, f));
+    auto ctx = node.template nbr_context<A>(call_point);
+    auto f = op(align(node, call_point, ctx.old(f0)), ctx.nbr(f0));
+    ctx.insert(details::maybe_second(common::type_sequence<D>{}, f));
     return details::maybe_first(common::type_sequence<D>{}, f);
 }
 
@@ -685,9 +757,8 @@ std::enable_if_t<std::is_same<B,bool>::value, std::unordered_map<K, R, common::h
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
     using keyset_t = std::unordered_set<K, common::hash<K>>;
     using resmap_t = std::unordered_map<K, R, common::hash<K>>;
-    trace_t t = node.stack_trace.hash(call_point);
-    assert(details::get_export(node).second()->template count<keyset_t>(t) == 0);
-    field<keyset_t> fk = details::get_context(node).second().nbr(t, keyset_t{}, node.uid);
+    auto ctx = node.template nbr_context<keyset_t>(call_point);
+    field<keyset_t> fk = ctx.nbr({});
     // keys to be propagated and terminated
     keyset_t ky(key_set.begin(), key_set.end()), km;
     for (size_t i = 1; i < details::get_vals(fk).size(); ++i)
@@ -702,7 +773,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
         // if true status, propagate key to neighbours
         if (b) km.insert(k);
     }
-    details::get_export(node).second()->insert(t, km);
+    ctx.insert(km);
     return rm;
 }
 
@@ -712,9 +783,8 @@ std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R, common:
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
     using keymap_t = std::unordered_map<K, B, common::hash<K>>;
     using resmap_t = std::unordered_map<K, R, common::hash<K>>;
-    trace_t t = node.stack_trace.hash(call_point);
-    assert(details::get_export(node).second()->template count<keymap_t>(t) == 0);
-    field<keymap_t> fk = details::get_context(node).second().nbr(t, keymap_t{}, node.uid);
+    auto ctx = node.template nbr_context<keymap_t>(call_point);
+    field<keymap_t> fk = ctx.nbr({});
     // keys to be propagated and terminated
     std::unordered_set<K, common::hash<K>> ky(key_set.begin(), key_set.end()), kn;
     for (size_t i = 1; i < details::get_vals(fk).size(); ++i)
@@ -751,7 +821,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
             if (s == status::terminated or s == status::internal)
                 km.emplace(k, s);
         } else km.emplace(k, status::terminated);
-    details::get_export(node).second()->insert(t, km);
+    ctx.insert(km);
     return rm;
 }
 

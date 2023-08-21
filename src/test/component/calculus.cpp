@@ -18,6 +18,7 @@ using namespace component::tags;
 
 
 struct tag {};
+
 using tuple_t = common::tagged_tuple_t<tag, int>;
 
 template <int O>
@@ -30,64 +31,6 @@ using combo = component::combine_spec<
     >,
     component::base<>
 >;
-
-
-template <typename node_t>
-times_t delayed(node_t& node, trace_t call_point, times_t t) {
-    return old(node, call_point, t);
-}
-
-template <typename node_t>
-times_t delayed(node_t& node, trace_t call_point, times_t start, times_t t) {
-    return old(node, call_point, t, start);
-}
-
-template <typename node_t>
-int counter(node_t& node, trace_t call_point) {
-    return old(node, call_point, 0, [](int const& o) {
-        return o+1;
-    });
-}
-
-template <typename node_t>
-int sharing(node_t& node, trace_t call_point, int x) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-    return fold_hood(node, 0, [](int x, int y) {
-        return x+y;
-    }, nbr(node, 1, x));
-}
-
-template <typename node_t>
-int gossip(node_t& node, trace_t call_point, int x) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-    return nbr(node, 0, x, [&](field<int> n) {
-        return std::max(fold_hood(node, 1, [](int x, int y) {
-            return std::max(x,y);
-        }, n), x);
-    });
-}
-
-template <typename node_t>
-int spawning(node_t& node, trace_t call_point, bool b) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-    common::option<tuple_t> kt;
-    if (b) kt.emplace(node.uid);
-    auto mt = spawn(node, 0, [&](tuple_t ti){
-        int i = common::get<tag>(ti);
-        return make_tuple(i, (int)node.uid >= i);
-    }, kt);
-    int c = 0;
-    for (auto const& x  : mt) c += 1 << (common::get<tag>(x.first) * x.second);
-    common::option<int> k;
-    if (b) k.emplace(node.uid);
-    auto m = spawn(node, 1, [&](int i, bool, char){
-        return make_tuple(i, (int)node.uid >= i ? status::output : status::external);
-    }, k, false, 'a');
-    if (b) assert(m.size() > 0);
-    for (auto const& x  : m) c += 1 << (x.first * x.second);
-    return c;
-}
-
 
 template <typename T>
 void sendto(T const& source, T& dest) {
@@ -172,6 +115,23 @@ MULTI_TEST(CalculusTest, Size, O, 3) {
     d0.round_end(0);
 }
 
+template <typename node_t>
+times_t delayed(node_t& node, trace_t call_point, times_t t) {
+    return old(node, call_point, t);
+}
+
+template <typename node_t>
+times_t delayed(node_t& node, trace_t call_point, times_t start, times_t t) {
+    return old(node, call_point, t, start);
+}
+
+template <typename node_t>
+int counter(node_t& node, trace_t call_point) {
+    return old(node, call_point, 0, [](int const& o) {
+        return o+1;
+    });
+}
+
 MULTI_TEST(CalculusTest, Old, O, 3) {
     typename combo<O>::net  network{common::make_tagged_tuple<>()};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
@@ -212,6 +172,24 @@ MULTI_TEST(CalculusTest, Old, O, 3) {
     d0.round_start(0);
     d = counter(d0, 2);
     EXPECT_EQ(3, d);
+}
+
+template <typename node_t>
+int sharing(node_t& node, trace_t call_point, int x) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    return fold_hood(node, 0, [](int x, int y) {
+        return x+y;
+    }, nbr(node, 1, x));
+}
+
+template <typename node_t>
+int gossip(node_t& node, trace_t call_point, int x) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    return nbr(node, 0, x, [&](field<int> n) {
+        return std::max(fold_hood(node, 1, [](int x, int y) {
+            return std::max(x,y);
+        }, n), x);
+    });
 }
 
 MULTI_TEST(CalculusTest, Nbr, O, 3) {
@@ -275,8 +253,28 @@ TEST(CalculusTest, Status) {
     EXPECT_EQ(ss.str(), "border_outputoutputinternal");
 }
 
-TEST(CalculusTest, Spawn) {
-    constexpr size_t O = 0;
+template <typename node_t>
+int spawning(node_t& node, trace_t call_point, bool b) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    common::option<tuple_t> kt;
+    if (b) kt.emplace(node.uid);
+    auto mt = spawn(node, 0, [&](tuple_t ti){
+        int i = common::get<tag>(ti);
+        return make_tuple(i, (int)node.uid >= i);
+    }, kt);
+    int c = 0;
+    for (auto const& x  : mt) c += 1 << (common::get<tag>(x.first) * x.second);
+    common::option<int> k;
+    if (b) k.emplace(node.uid);
+    auto m = spawn(node, 1, [&](int i, bool, char){
+        return make_tuple(i, (int)node.uid >= i ? status::output : status::external);
+    }, k, false, 'a');
+    if (b) assert(m.size() > 0);
+    for (auto const& x  : m) c += 1 << (x.first * x.second);
+    return c;
+}
+
+MULTI_TEST(CalculusTest, Spawn, O, 3) {
     typename combo<O>::net  network{common::make_tagged_tuple<>()};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
     typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
@@ -318,8 +316,7 @@ TEST(CalculusTest, Spawn) {
     EXPECT_EQ(19+19, d);
 }
 
-TEST(CalculusText, NbrUid) {
-    constexpr size_t O = 0;
+MULTI_TEST(CalculusTest, NbrUid, O, 3) {
     typename combo<O>::net  network{common::make_tagged_tuple<>()};
     typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
     typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
@@ -333,4 +330,40 @@ TEST(CalculusText, NbrUid) {
     d0.round_end(0);
     EXPECT_EQ(1, (int)details::self(d0.nbr_uid(), 1));
     EXPECT_EQ(2, (int)details::get_ids(d0.nbr_uid()).size());
+}
+
+template <typename node_t>
+int splitting(node_t& node, trace_t call_point, tuple<int, double> t) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    return split(node, 0, t, [&](){
+        return count_hood(node, 1);
+    });
+}
+
+MULTI_TEST(CalculusTest, Split, O, 3) {
+    typename combo<O>::net  network{common::make_tagged_tuple<>()};
+    typename combo<O>::node d0{network, common::make_tagged_tuple<uid>(0)};
+    typename combo<O>::node d1{network, common::make_tagged_tuple<uid>(1)};
+    typename combo<O>::node d2{network, common::make_tagged_tuple<uid>(2)};
+    int d;
+    d = splitting(d0, 0, {4, 2.0});
+    EXPECT_EQ(1, d);
+    d = splitting(d1, 0, {2, 4.0});
+    EXPECT_EQ(1, d);
+    d = splitting(d2, 0, {4, 2.0});
+    EXPECT_EQ(1, d);
+    sendall(d0, d1, d2);
+    d = splitting(d0, 0, {4, 2.0});
+    EXPECT_EQ(2, d);
+    d = splitting(d1, 0, {2, 4.0});
+    EXPECT_EQ(1, d);
+    d = splitting(d2, 0, {4, 2.0});
+    EXPECT_EQ(2, d);
+    sendall(d0, d1, d2);
+    d = splitting(d0, 0, {4, 2.0});
+    EXPECT_EQ(2, d);
+    d = splitting(d1, 0, {2, 4.0});
+    EXPECT_EQ(1, d);
+    d = splitting(d2, 0, {4, 2.0});
+    EXPECT_EQ(2, d);
 }

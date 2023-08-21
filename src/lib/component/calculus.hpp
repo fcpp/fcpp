@@ -595,6 +595,17 @@ using oldnbr_t = common::export_list<T>;
 //! @}
 
 
+//! @brief Executes code independently in a partition of the network based on the value of a given key.
+template <typename node_t, typename T, typename G>
+auto split(node_t& node, trace_t call_point, T&& key, G&& f) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    internal::trace_key trace_process(node.stack_trace, common::hash_to<trace_t>(std::forward<T>(key)));
+    return f();
+}
+//! @brief The exports type used by the split construct.
+using split_t = common::export_list<>;
+
+
 //! @name aggregate processes operators
 //! @{
 /**

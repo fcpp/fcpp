@@ -114,7 +114,7 @@ namespace details {
     }
     //! @brief Makes a stream reference from a null pointer.
     template <typename O, typename S, typename T>
-    std::shared_ptr<O> make_stream(nullptr_t, common::tagged_tuple<S,T> const&) {
+    std::shared_ptr<O> make_stream(std::nullptr_t, common::tagged_tuple<S,T> const&) {
         return {nullptr, [] (void*) {}};
     }
     //! @brief Computes the row type given a the aggregator and functor tuples (general case).

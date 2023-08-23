@@ -91,11 +91,11 @@ FUN_EXPORT resource_tracking_t = common::export_list<coordination::gossip_max_t<
 //! @brief Records the set of neighbours connected at least 50% of the time.
 FUN void topology_recording(ARGS) { CODE
     node.storage(nbr_list{}).clear();
-    coordination::list_hood(CALL, node.storage(nbr_list{}), nbr_uid(CALL), coordination::nothing);
+    coordination::list_hood(CALL, node.storage(nbr_list{}), coordination::nbr_uid(CALL), coordination::nothing);
 
     using map_t = std::unordered_map<device_t,times_t>;
-    map_t nbr_counters = old(CALL, map_t{}, [&](map_t n){
-        fold_hood(CALL, [&](device_t i, times_t t, coordination::tags::nothing){
+    map_t nbr_counters = coordination::old(CALL, map_t{}, [&](map_t n){
+        coordination::fold_hood(CALL, [&](device_t i, times_t t, coordination::tags::nothing){
             if (t > node.previous_time()) n[i] += 1;
             return coordination::nothing;
         }, node.message_time(), coordination::nothing);
@@ -125,7 +125,7 @@ FUN_EXPORT termination_check_t = common::export_list<coordination::round_since_t
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
 FUN void vulnerability_detection(ARGS, int diameter) { CODE
     tie(node.storage(min_uid{}), node.storage(hop_dist{})) = coordination::diameter_election_distance(CALL, diameter);
-    bool collect_weak = coordination::sp_collection(CALL, node.storage(hop_dist{}), count_hood(CALL) <= 2, false, [](bool x, bool y) {
+    bool collect_weak = coordination::sp_collection(CALL, node.storage(hop_dist{}), coordination::count_hood(CALL) <= 2, false, [](bool x, bool y) {
         return x or y;
     });
     node.storage(some_weak{}) = coordination::broadcast(CALL, node.storage(hop_dist{}), collect_weak);
@@ -138,7 +138,7 @@ FUN_EXPORT vulnerability_detection_t = common::export_list<coordination::diamete
 FUN void contact_tracing(ARGS, times_t window) { CODE
     bool positive = coordination::toggle_filter(CALL, buttonPressed());
     using contact_t = std::unordered_map<device_t, times_t>;
-    contact_t contacts = old(CALL, contact_t{}, [&](contact_t c){
+    contact_t contacts = coordination::old(CALL, contact_t{}, [&](contact_t c){
         // discard old contacts
         for (auto it = c.begin(); it != c.end();) {
           if (node.current_time() - it->second > window)
@@ -146,17 +146,17 @@ FUN void contact_tracing(ARGS, times_t window) { CODE
           else ++it;
         }
         // add new contacts
-        field<device_t> nbr_uids = nbr_uid(CALL);
-        fold_hood(CALL, [&](device_t i, int){
+        field<device_t> nbr_uids = coordination::nbr_uid(CALL);
+        coordination::fold_hood(CALL, [&](device_t i, int){
             c[i] = node.current_time();
             return 0;
         }, nbr_uids, 0);
         return c;
     });
-    node.storage(positives{}) = nbr(CALL, contact_t{}, [&](field<contact_t> np){
+    node.storage(positives{}) = coordination::nbr(CALL, contact_t{}, [&](field<contact_t> np){
         contact_t p{};
         if (positive) p[node.uid] = node.current_time();
-        fold_hood(CALL, [&](contact_t const& cs, int){
+        coordination::fold_hood(CALL, [&](contact_t const& cs, int){
             for (auto c : cs)
                 if (node.current_time() - c.second < window)
                     p[c.first] = max(p[c.first], c.second);

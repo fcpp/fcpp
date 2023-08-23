@@ -54,6 +54,7 @@ cc_test(
         "@gtest//:main",
         "//lib/component:scheduler",
         "//lib/component:storage",
+        "//lib/coordination:basics",
         "//lib/deployment:hardware_identifier",
         "//lib/deployment:persister",
         "//test:fake_os",

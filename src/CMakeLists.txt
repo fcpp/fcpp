@@ -153,6 +153,7 @@ set(
     lib/component/storage.cpp
     lib/component/timer.cpp
     lib/coordination.cpp
+    lib/coordination/basics.cpp
     lib/coordination/collection.cpp
     lib/coordination/election.cpp
     lib/coordination/geometry.cpp
@@ -340,6 +341,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/component/scheduler.cpp)
         fcpp_test(test/component/storage.cpp)
         fcpp_test(test/component/timer.cpp)
+        fcpp_test(test/coordination/basics.cpp)
         fcpp_test(test/coordination/collection.cpp)
         fcpp_test(test/coordination/election.cpp)
         fcpp_test(test/coordination/geometry.cpp)

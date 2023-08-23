@@ -67,6 +67,7 @@ cc_library(
     hdrs = ['coordination.hpp'],
     srcs = ['coordination.cpp'],
     deps = [
+        "//lib/coordination:basics",
         "//lib/coordination:collection",
         "//lib/coordination:election",
         "//lib/coordination:geometry",

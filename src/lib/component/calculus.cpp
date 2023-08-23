@@ -14,7 +14,7 @@ std::string to_string(status s) {
         case status::terminated:
             return "terminated";
 
-        case status::external:
+        case status::external_deprecated:
             return "external";
 
         case status::border:
@@ -26,7 +26,7 @@ std::string to_string(status s) {
         case status::terminated_output:
             return "terminated_output";
 
-        case status::external_output:
+        case status::external_output_deprecated:
             return "external_output";
 
         case status::border_output:

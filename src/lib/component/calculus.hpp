@@ -703,7 +703,7 @@ using split_t = common::export_list<>;
  *
  * The values mean:
  * - Termination is propagated to neighbour nodes in order to ensure the process ends.
- * - An external node is not part of the aggregate process, and its exports cannot be seen by neighbours.
+ * - An external node is not part of the aggregate process, and its exports cannot be seen by neighbours (deprecated).
  * - A border node is part of the process, but does not cause the process to expand to neighbours.
  * - An internal node is part of the process and propagates it to neighbours.
  * - Every status may request to return the output or not to the `spawn` caller.
@@ -711,7 +711,7 @@ using split_t = common::export_list<>;
  * Note that `status::output` is provided as a synonym of `status::internal_output`, and
  * `status::x and status::output` equals `status::x_output`.
  */
-enum class status : char { terminated, external, border, internal, terminated_output, external_output, border_output, internal_output, output };
+enum class status : char { terminated, external_deprecated, border, internal, terminated_output, external_output_deprecated, border_output, internal_output, output };
 
 //! @brief String representation of a status.
 std::string to_string(status);
@@ -777,18 +777,22 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
     return rm;
 }
 
-//! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with full status).
+/**
+ * @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with general status).
+ *
+ * Does not support the "external" status, which is treated equally as "border".
+ * Termination propagates causing devices to get into "border" status.
+ */
 template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
 std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R, common::hash<K>>>
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
     using keymap_t = std::unordered_map<K, B, common::hash<K>>;
     using resmap_t = std::unordered_map<K, R, common::hash<K>>;
     auto ctx = node.template nbr_context<keymap_t>(call_point);
-    field<keymap_t> fk = ctx.nbr({});
     // keys to be propagated and terminated
     std::unordered_set<K, common::hash<K>> ky(key_set.begin(), key_set.end()), kn;
-    for (size_t i = 1; i < details::get_vals(fk).size(); ++i)
-        for (auto const& k : details::get_vals(fk)[i]) {
+    for (auto const& m : details::get_vals(ctx.nbr({})))
+        for (auto const& k : m) {
             if (k.second == status::terminated)
                 kn.insert(k.first);
             else
@@ -801,21 +805,13 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
     for (K const& k : ky)
         if (kn.count(k) == 0) {
             internal::trace_key trace_process(node.stack_trace, common::hash_to<trace_t>(k));
-            std::decay_t<decltype(details::get_export(node))> ne;
-            swap(details::get_export(node), ne);
             R r;
             status s;
             tie(r, s) = process(k, xs...);
-            swap(details::get_export(node), ne);
             // if output status, add result to returned map
             if ((char)s >= 4) {
                 rm.emplace(k, std::move(r));
                 s = s == status::output ? status::internal : static_cast<status>((char)s & char(3));
-            }
-            // if node in process, merge exports
-            if ((char)s >= 2) {
-                details::get_export(node).first()->insert(*ne.first());
-                details::get_export(node).second()->insert(*ne.second());
             }
             // if internal or terminated, propagate key status to neighbours
             if (s == status::terminated or s == status::internal)

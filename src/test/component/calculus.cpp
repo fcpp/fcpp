@@ -383,7 +383,7 @@ int spawning(node_t& node, trace_t call_point, bool b) {
     common::option<int> k;
     if (b) k.emplace(node.uid);
     auto m = spawn(node, 1, [&](int i, bool, char){
-        return make_tuple(i, (int)node.uid >= i ? status::output : status::external);
+        return make_tuple(i, (int)node.uid >= i ? status::output : status::external_deprecated);
     }, k, false, 'a');
     if (b) assert(m.size() > 0);
     for (auto const& x  : m) c += 1 << (x.first * x.second);

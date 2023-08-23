@@ -1,4 +1,4 @@
-// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file persister.hpp
@@ -30,11 +30,11 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to the input/output stream type to be used.
+    //! @brief Declaration tag associating to the input/output stream type to be used (defaults to `std::fstream`).
     template <typename T>
     struct stream_type {};
 
-    //! @brief Node initialisation tag associating to a path for persistence.
+    //! @brief Node initialisation tag associating to a path for persistence (defaults to no persistence).
     struct persistence_path {};
 }
 

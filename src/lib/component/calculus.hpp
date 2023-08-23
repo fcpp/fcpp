@@ -51,34 +51,34 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of types to be used in exports.
+    //! @brief Declaration tag associating to a sequence of types to be used in exports (defaults to the empty sequence).
     template <typename... Ts>
     struct exports {};
 
-    //! @brief Declaration tag associating to a callable class to be executed during rounds.
+    //! @brief Declaration tag associating to a callable class to be executed during rounds (defaults to \ref calculus::null_program).
     template <typename T>
     struct program {};
 
-    //! @brief Declaration tag associating to a metric class regulating the discard of exports.
+    //! @brief Declaration tag associating to a metric class regulating the discard of exports (defaults to \ref metric::once).
     template <typename T>
     struct retain {};
 
-    //! @brief Declaration flag associating to whether exports are wrapped in smart pointers.
+    //! @brief Declaration flag associating to whether exports are wrapped in smart pointers (defaults to \ref FCPP_EXPORT_PTR).
     template <bool b>
     struct export_pointer {};
 
-    //! @brief Declaration flag associating to whether exports for neighbours are split from those for self.
+    //! @brief Declaration flag associating to whether exports for neighbours are split from those for self (defaults to \ref FCPP_EXPORT_NUM `== 2`).
     template <bool b>
     struct export_split {};
 
-    //! @brief Declaration flag associating to whether messages are dropped as they arrive (reduces memory footprint).
+    //! @brief Declaration flag associating to whether messages are dropped as they arrive (reduces memory footprint, defaults to \ref FCPP_ONLINE_DROP).
     template <bool b>
     struct online_drop {};
 
-    //! @brief Node initialisation tag associating to the maximum size for a neighbourhood.
+    //! @brief Node initialisation tag associating to the maximum number of neighbours allowed (defaults to `std::numeric_limits<device_t>::%max()`).
     struct hoodsize {};
 
-    //! @brief Node initialisation tag associating to a threshold regulating discard of old messages.
+    //! @brief Node initialisation tag associating to a `T::result_type` threshold (where `T` is the class specified with \ref tags::retain) regulating discarding of old messages (defaults to the result of `T::build()`).
     struct threshold {};
 }
 
@@ -94,7 +94,7 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::export_pointer defines whether exports are wrapped in smart pointers (defaults to \ref FCPP_EXPORT_PTR).
  * - \ref tags::export_split defines whether exports for neighbours are split from those for self (defaults to \ref FCPP_EXPORT_NUM `== 2`).
- * - \ref tags::online_drop defines whether messages are dropped as they arrive (defaults to \ref FCPP_ONLINE_DROP).
+ * - \ref tags::online_drop defines whether messages are dropped as they arrive (reduces memory footprint, defaults to \ref FCPP_ONLINE_DROP).
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::hoodsize associates to the maximum number of neighbours allowed (defaults to `std::numeric_limits<device_t>::%max()`).

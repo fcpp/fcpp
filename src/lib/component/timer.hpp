@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file timer.hpp
@@ -27,10 +27,10 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Node initialisation tag associating to a starting time of execution.
+    //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start {};
 
-    //! @brief Net initialisation tag associating to a factor to be applied to real time.
+    //! @brief Net initialisation tag associating to a factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
     struct realtime_factor {};
 }
 

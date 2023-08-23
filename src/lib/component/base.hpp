@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file base.hpp
@@ -31,19 +31,19 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel {};
 
-    //! @brief Declaration flag associating to whether running should follow real time.
+    //! @brief Declaration flag associating to whether running should follow real time (defaults to `FCPP_REALTIME < INF`).
     template <bool b>
     struct realtime {};
 
-    //! @brief Declaration tag associating to a clock type
+    //! @brief Declaration tag associating to a clock type (defaults to `std::chrono::high_resolution_clock`).
     template <typename T>
     struct clock_type {};
 
-    //! @brief Node initialisation tag associating to a `device_t` unique identifier.
+    //! @brief Node initialisation tag associating to a `device_t` unique identifier (required).
     struct uid {};
 }
 

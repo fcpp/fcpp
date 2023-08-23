@@ -34,23 +34,23 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a connector class.
+    //! @brief Declaration tag associating to a connector class (defaults to \ref os::async_retry_network "os::async_retry_network<message_push>").
     template <typename T>
     struct connector;
 
-    //! @brief Declaration tag associating to a delay generator for sending messages after rounds.
+    //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
     struct delay;
 
-    //! @brief Declaration flag associating to whether incoming messages are pushed or pulled.
+    //! @brief Declaration flag associating to whether incoming messages are pushed or pulled (defaults to \ref FCPP_MESSAGE_PUSH).
     template <bool b>
     struct message_push;
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Node initialisation tag associating to communication power.
+    //! @brief Node initialisation tag associating to communication power (defaults to `connector_type::data_type{}`).
     struct connection_data;
 }
 

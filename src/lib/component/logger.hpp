@@ -40,48 +40,48 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of storage tags and corresponding aggregator types.
+    //! @brief Declaration tag associating to a sequence of storage tags and corresponding aggregator types (defaults to the empty sequence).
     template <typename... Ts>
     struct aggregators {};
 
-    //! @brief Declaration tag associating to a sequence of storage tags and corresponding functor types.
+    //! @brief Declaration tag associating to a sequence of storage tags and corresponding functor types (defaults to the empty sequence).
     template <typename... Ts>
     struct log_functors {};
 
-    //! @brief Declaration tag associating to a sequence of initialisation tags to be fed to plotters.
+    //! @brief Declaration tag associating to a sequence of initialisation tags to be fed to plotters (defaults to the empty sequence).
     template <typename... Ts>
     struct extra_info {};
 
-    //! @brief Declaration tag associating to a sequence generator type scheduling writing of data.
+    //! @brief Declaration tag associating to a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
     template <typename T>
     struct log_schedule {};
 
-    //! @brief Declaration tag associating to a plot type.
+    //! @brief Declaration tag associating to a plot type (defaults to \ref plot::none).
     template <typename T>
     struct plot_type {};
 
-    //! @brief Declaration tag associating to the output stream type to be used.
+    //! @brief Declaration tag associating to the output stream type to be used (defaults to `std::ostream`).
     template <typename T>
     struct ostream_type {};
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Declaration flag associating to whether new values are pushed to aggregators or pulled when needed.
+    //! @brief Declaration flag associating to whether new values are pushed to aggregators or pulled when needed (defaults to \ref FCPP_VALUE_PUSH).
     template <bool b>
     struct value_push {};
 
-    //! @brief Net initialisation tag associating to the main name of a component composition instance.
+    //! @brief Net initialisation tag associating to the main name of a component composition instance (defaults to the empty string).
     struct name {};
 
-    //! @brief Net initialisation tag associating to an output stream for logging.
+    //! @brief Net initialisation tag associating to an output stream for logging (defaults to `std::cout`).
     struct output {};
 
-    //! @brief Net initialisation tag associating to a pointer to a plotter object.
+    //! @brief Net initialisation tag associating to a pointer to a plotter object (defaults to `nullptr`).
     struct plotter {};
 
-    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    //! @brief Net initialisation tag associating to the number of threads that can be created (defaults to \ref FCPP_THREADS).
     struct threads;
 }
 
@@ -143,6 +143,7 @@ namespace details {
  *
  * <b>Declaration tags:</b>
  * - \ref tags::aggregators defines a sequence of storage tags and corresponding aggregator types (defaults to the empty sequence).
+ * - \ref tags::log_functors defines a sequence of storage tags and corresponding functor types (defaults to the empty sequence).
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).

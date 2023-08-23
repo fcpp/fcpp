@@ -30,17 +30,17 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of tags and types of attributes describing a node in the input.
+    //! @brief Declaration tag associating to the sequence of attributes tags and types describing nodes (defaults to the empty sequence).
     template <typename... Ts>
     struct node_attributes {};
 
-    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes.
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes (default to "index").
     struct nodesinput {};
 
-    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs.
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs (default to "arcs").
     struct arcsinput {};
 
-    //! @brief Net initialisation tag setting a default start for nodes.
+    //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start;
 }
 
@@ -65,7 +65,11 @@ namespace details {
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::node_attributes defines a sequence of attributes tags and and types.
+ * - \ref tags::node_attributes defines the sequence of attributes tags and types describing nodes (defaults to the empty sequence).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::nodesinput defines the name of the file or input stream specifying graph nodes (default to "index").
+ * - \ref tags::arcsinput defines the name of the file or input stream specifying graph arcs (default to "arcs").
  *
  * Nodes generated receive all tags produced by generating distributions, and \ref tags::start associated to the creation time.
  */

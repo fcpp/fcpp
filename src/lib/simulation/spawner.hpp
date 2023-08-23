@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file spawner.hpp
@@ -28,15 +28,15 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions.
+    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
     template <typename... Ts>
     struct init {};
 
-    //! @brief Declaration tag associating to a sequence generator type scheduling spawning of nodes.
+    //! @brief Declaration tag associating to a sequence generator type scheduling spawning of nodes (defaults to \ref sequence::never).
     template <typename T>
     struct spawn_schedule {};
 
-    //! @brief Node initialisation tag associating to a starting time of execution.
+    //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start;
 }
 

@@ -40,7 +40,7 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data.
+    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data in nodes (defaults to the empty sequence).
     template <typename... Ts>
     struct node_store;
 }

@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file identifier.hpp
@@ -110,21 +110,21 @@ namespace details {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Declaration flag associating to whether many events are expected to happen at the same time.
+    //! @brief Declaration flag associating to whether many events are expected to happen at the same time (defaults to \ref FCPP_SYNCHRONISED).
     template <bool b>
     struct synchronised {};
 
-    //! @brief Node initialisation tag associating to the unique identifier of an object.
+    //! @brief Node initialisation tag associating to a `device_t` unique identifier (required).
     struct uid;
 
-    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
+    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
     struct epsilon {};
 
-    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    //! @brief Net initialisation tag associating to the number of threads that can be created (defaults to \ref FCPP_THREADS).
     struct threads {};
 }
 

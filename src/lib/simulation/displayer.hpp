@@ -1,4 +1,4 @@
-// Copyright © 2022 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file displayer.hpp
@@ -48,134 +48,134 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a storage tag regulating the shape of nodes.
+    //! @brief Declaration tag associating to a storage tag regulating the shape of nodes (defaults to none).
     template <typename T>
     struct shape_tag {};
 
-    //! @brief Declaration tag associating to the base shape of nodes.
+    //! @brief Declaration tag associating to the base shape of nodes (defaults to cube).
     template <intmax_t n>
     struct shape_val {};
 
-    //! @brief Declaration tag associating to a storage tag regulating the size of nodes.
+    //! @brief Declaration tag associating to a storage tag regulating the size of nodes (defaults to none).
     template <typename T>
     struct size_tag {};
 
-    //! @brief Declaration tag associating to the base size of nodes.
+    //! @brief Declaration tag associating to the base size of nodes (defaults to 1).
     template <intmax_t num, intmax_t den = 1>
     struct size_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the colors of nodes.
+    //! @brief Declaration tag associating to storage tags regulating the colors of nodes (defaults to none).
     template <typename... Ts>
     struct color_tag {};
 
-    //! @brief Declaration tag associating to the base colors of nodes.
+    //! @brief Declaration tag associating to the base colors of nodes (defaults to white).
     template <intmax_t... cs>
     struct color_val {};
 
-    //! @brief Declaration tag associating to storage tags with the text of the node labels.
+    //! @brief Declaration tag associating to storage tags with the text of the node labels (defaults to no text).
     template <typename T>
     struct label_text_tag {};
 
-    //! @brief Declaration tag associating to storage tags regulating the size of node labels.
+    //! @brief Declaration tag associating to storage tags regulating the size of node labels (defaults to none).
     template <typename T>
     struct label_size_tag {};
 
-    //! @brief Declaration tag associating to the base size of node labels.
+    //! @brief Declaration tag associating to the base size of node labels (defaults to 1).
     template <intmax_t num, intmax_t den = 1>
     struct label_size_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the color of node labels.
+    //! @brief Declaration tag associating to storage tags regulating the color of node labels (defaults to none).
     template <typename T>
     struct label_color_tag {};
 
-    //! @brief Declaration tag associating to the base colors of node labels.
+    //! @brief Declaration tag associating to the base colors of node labels (defaults to black).
     template <intmax_t c>
     struct label_color_val {};
 
-    //! @brief Declaration tag associating to a storage tag regulating the shape of node shadows.
+    //! @brief Declaration tag associating to a storage tag regulating the shape of node shadows (defaults to none).
     template <typename T>
     struct shadow_shape_tag {};
 
-    //! @brief Declaration tag associating to the base shape of node shadows.
+    //! @brief Declaration tag associating to the base shape of node shadows (defaults to the same shape as the node).
     template <intmax_t n>
     struct shadow_shape_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the size of node shadows.
-    template <typename T>
-    struct shadow_size_tag {};
-
-    //! @brief Declaration tag associating to the base size of node shadows.
-    template <intmax_t num, intmax_t den = 1>
-    struct shadow_size_val {};
-
-    //! @brief Declaration tag associating to storage tags regulating the color of node shadows.
+    //! @brief Declaration tag associating to storage tags regulating the color of node shadows (defaults to none).
     template <typename T>
     struct shadow_color_tag {};
 
-    //! @brief Declaration tag associating to the base colors of node shadows.
+    //! @brief Declaration tag associating to the base colors of node shadows (defaults to the same color as the node).
     template <intmax_t c>
     struct shadow_color_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the time duration of past positions creating the node tail.
+    //! @brief Declaration tag associating to storage tags regulating the size of node shadows (defaults to none).
+    template <typename T>
+    struct shadow_size_tag {};
+
+    //! @brief Declaration tag associating to the base size of node shadows (defaults to 0).
+    template <intmax_t num, intmax_t den = 1>
+    struct shadow_size_val {};
+
+    //! @brief Declaration tag associating to storage tags regulating the time duration of past positions creating the node tail (defaults to none).
     template <typename T>
     struct tail_time_tag {};
 
-    //! @brief Declaration tag associating to the time duration of past positions creating the node tail.
+    //! @brief Declaration tag associating to the time duration of past positions creating the node tail (defaults to 0).
     template <intmax_t num, intmax_t den = 1>
     struct tail_time_val {};
 
-    //! @brief Declaration tag associating to the maximum granularity of snapshot points in tails in FPS.
+    //! @brief Declaration tag associating to the maximum granularity of snapshot points in tails in FPS (defaults to \ref FCPP_TAIL_GRANULARITY).
     template <intmax_t num, intmax_t den = 1>
     struct tail_granularity {};
 
-    //! @brief Declaration tag associating to storage tags regulating the color of the node tail.
+    //! @brief Declaration tag associating to storage tags regulating the color of the node tail (defaults to none).
     template <typename T>
     struct tail_color_tag {};
 
-    //! @brief Declaration tag associating to the color of the node tail.
+    //! @brief Declaration tag associating to the base color of the node tail (defaults to black).
     template <intmax_t c>
     struct tail_color_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the width of the node tail.
+    //! @brief Declaration tag associating to storage tags regulating the width of the node tail (defaults to none).
     template <typename T>
     struct tail_width_tag {};
 
-    //! @brief Declaration tag associating to the width of the node tail as fraction of node size.
+    //! @brief Declaration tag associating to the width of the node tail as fraction of node size (defaults to 1).
     template <intmax_t num, intmax_t den = 1>
     struct tail_width_val {};
 
-    //! @brief Declaration tag associating to the colors of the general theme.
+    //! @brief Declaration tag associating to the colors of the general theme (defaults to white/black/cyan).
     template <intmax_t background, intmax_t foreground, intmax_t selection>
     struct color_theme {};
 
-    //! @brief Declaration tag associating to the bounding coordinates of the grid area.
+    //! @brief Declaration tag associating to the bounding coordinates of the grid area (defaults to the minimal area covering initial nodes)
     template <intmax_t xmin, intmax_t ymin, intmax_t xmax, intmax_t ymax, intmax_t den = 1>
     struct area;
 
-    //! @brief Declaration tag associating to the antialiasing factor.
+    //! @brief Declaration tag associating to the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
     template <intmax_t n>
     struct antialias {};
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Net initialisation tag associating to the minimum coordinates of the grid area.
+    //! @brief Net initialisation tag associating to the minimum coordinates of the grid area (defaults to the value in \ref tags::area).
     struct area_min {};
 
-    //! @brief Net initialisation tag associating to the maximum coordinates of the grid area.
+    //! @brief Net initialisation tag associating to the maximum coordinates of the grid area (defaults to the value in \ref tags::area).
     struct area_max {};
 
-    //! @brief Net initialisation tag associating to the main name of a component composition instance.
+    //! @brief Net initialisation tag associating to the main name of a component composition instance (defaults to the empty string).
     struct name;
 
-    //! @brief Net initialisation tag associating to the refresh rate (0 for opportunistic frame refreshing).
+    //! @brief Net initialisation tag associating to the refresh rate (0 for opportunistic frame refreshing, defaults to \ref FCPP_REFRESH_RATE).
     struct refresh_rate {};
 
-    //! @brief Net initialisation tag associating to the texture to be used for the reference plane.
+    //! @brief Net initialisation tag associating to the texture to be used for the reference plane (defaults to none).
     struct texture {};
 
-    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    //! @brief Net initialisation tag associating to the number of threads that can be created (defaults to \ref FCPP_THREADS).
     struct threads;
 }
 
@@ -530,12 +530,12 @@ namespace details {
  * - \ref tags::shadow_size_val defines the base size of node shadows (defaults to 0).
  * - \ref tags::tail_time_tag defines a storage tag regulating the time duration of past positions creating the node tail (defaults to none).
  * - \ref tags::tail_time_val defines the base time duration of past positions creating the node tail (defaults to 0).
- * - \ref tags::tail_granularity defines the maximum granularity of snapshot points in tails in FPS (defaults to FCPP_TAIL_GRANULARITY).
+ * - \ref tags::tail_granularity defines the maximum granularity of snapshot points in tails in FPS (defaults to \ref FCPP_TAIL_GRANULARITY).
  * - \ref tags::tail_color_tag defines a storage tag regulating the color of the node tail (defaults to none).
- * - \ref tags::tail_color_val defines the base color of the node tail (defaults to \ref BLACK).
+ * - \ref tags::tail_color_val defines the base color of the node tail (defaults to black).
  * - \ref tags::tail_width_tag defines a storage tag regulating the width of the node tail (defaults to none).
  * - \ref tags::tail_width_val defines the base width of the node tail as fraction of node size (defaults to 1).
- * - \ref tags::color_theme defines the colors of the general theme (defaults to WHITE/BLACK/CYAN).
+ * - \ref tags::color_theme defines the colors of the general theme (defaults to white/black/cyan).
  * - \ref tags::area defines the bounding coordinates of the grid area (defaults to the minimal area covering initial nodes).
  * - \ref tags::antialias defines the antialiasing factor (defaults to \ref FCPP_ANTIALIAS).
  *
@@ -543,8 +543,9 @@ namespace details {
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  *
  * <b>Net initialisation tags:</b>
- * - \ref tags::area_min associates to the the minimum coordinates of the grid area (defaults to the value in \ref tags::area).
- * - \ref tags::area_max associates to the the maximum coordinates of the grid area (defaults to the value in \ref tags::area).
+ * - \ref tags::area_min associates to the minimum coordinates of the grid area (defaults to the value in \ref tags::area).
+ * - \ref tags::area_max associates to the maximum coordinates of the grid area (defaults to the value in \ref tags::area).
+ * - \ref tags::name associates to the main name of a component composition instance (defaults to the empty string).
  * - \ref tags::refresh_rate associates to the refresh rate (0 for opportunistic frame refreshing, defaults to \ref FCPP_REFRESH_RATE).
  * - \ref tags::texture associates to the texture to be used for the reference plane (defaults to none).
  * - \ref tags::threads associates to the number of threads that can be created (defaults to \ref FCPP_THREADS).

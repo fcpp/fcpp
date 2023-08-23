@@ -41,7 +41,7 @@ namespace batch {
 
 //! @brief Namespace of tags for batch runs.
 namespace tags {
-    //! @brief A tag for indexing network types to be run.
+    //! @brief A tag for indexing network types to be run (defaults to 0).
     struct type_index {};
 } // tags
 

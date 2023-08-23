@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file scheduler.hpp
@@ -27,7 +27,7 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a list of sequence generator type scheduling rounds.
+    //! @brief Declaration tag associating to a list of sequence generator type scheduling rounds (defaults to \ref sequence::never).
     template <typename... Ts>
     struct round_schedule {};
 }

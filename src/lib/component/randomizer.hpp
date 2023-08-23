@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file randomizer.hpp
@@ -28,11 +28,11 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a random number generator type.
+    //! @brief Declaration tag associating to a random number generator type (defaults to `std::mt19937_64`).
     template <typename T>
     struct generator {};
 
-    //! @brief Initialisation tag associating to a random number generator seed.
+    //! @brief Initialisation tag associating to a random number generator seed (defaults to zero at net level and `node.uid` at node level).
     struct seed {};
 }
 

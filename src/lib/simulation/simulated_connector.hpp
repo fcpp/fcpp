@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file simulated_connector.hpp
@@ -36,34 +36,31 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a connector class.
+    //! @brief Declaration tag associating to a connector class (defaults to \ref connect::clique "connect::clique<dimension>").
     template <typename T>
     struct connector {};
 
-    //! @brief Declaration tag associating to a delay generator for sending messages after rounds.
+    //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
     struct delay {};
 
-    //! @brief Declaration tag associating to the dimensionality of the space.
+    //! @brief Declaration tag associating to the dimensionality of the space (defaults to 2).
     template <intmax_t n>
     struct dimension;
 
-    //! @brief Declaration flag associating to whether message sizes should be emulated.
+    //! @brief Declaration flag associating to whether message sizes should be emulated (defaults to false).
     template <bool b>
     struct message_size {};
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Node initialisation tag associating to communication power.
+    //! @brief Node initialisation tag associating to communication power (defaults to `connector_type::data_type{}`).
     struct connection_data {};
 
-    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
+    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
     struct epsilon;
-
-    //! @brief Net initialisation tag associating to communication radius.
-    struct radius {};
 }
 
 

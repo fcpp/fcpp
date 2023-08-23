@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_connector.hpp
@@ -34,27 +34,23 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a connector class.
-    template <typename T>
-    struct connector;
-
-    //! @brief Declaration tag associating to a delay generator for sending messages after rounds.
+    //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
     struct delay;
 
-    //! @brief Declaration flag associating to whether message sizes should be emulated.
+    //! @brief Declaration flag associating to whether message sizes should be emulated (defaults to false).
     template <bool b>
     struct message_size;
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Declaration flag associating to whether the neighbour relation is symmetric.
+    //! @brief Declaration flag associating to whether the neighbour relation is symmetric (defaults to true).
     template <bool b>
     struct symmetric;
 
-    //! @brief Declaration flag associating to whether the topology of the graph is static. For FUTURE use.
+    //! @brief Declaration flag associating to whether the topology of the graph is static (for future use).
     template <bool b>
     struct static_topology;
 }
@@ -72,6 +68,7 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::message_size defines whether message sizes should be emulated (defaults to false).
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
+ * - \ref tags::symmetric defines whether the neighbour relation is symmetric (defaults to true).
  */
 template <class... Ts>
 struct graph_connector {

@@ -29,20 +29,20 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to the dimensionality of the space.
+    //! @brief Declaration tag associating to the dimensionality of the space (defaults to 2).
     template <intmax_t n>
     struct dimension {};
 
-    //! @brief Node initialisation tag associating to a starting position.
+    //! @brief Node initialisation tag associating to a starting position (required).
     struct x {};
 
-    //! @brief Node initialisation tag associating to a starting velocity.
+    //! @brief Node initialisation tag associating to a starting velocity (defaults to the null vector).
     struct v {};
 
-    //! @brief Node initialisation tag associating to a starting acceleration.
+    //! @brief Node initialisation tag associating to a starting acceleration (defaults to the null vector).
     struct a {};
 
-    //! @brief Node initialisation tag associating to a starting friction coefficient.
+    //! @brief Node initialisation tag associating to a starting friction coefficient (defaults to zero).
     struct f {};
 }
 

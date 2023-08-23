@@ -244,8 +244,7 @@ struct calculus {
             };
 
             //! @brief Helper type providing access to the context for neighbour call points.
-            template <>
-            struct nbr_context_type<void> {
+            struct void_context_type {
                 //! @brief Accesses the list of devices aligned with the call point.
                 inline std::vector<device_t> align() {
                     n.m_export.second()->insert(t);
@@ -254,7 +253,7 @@ struct calculus {
 
               private:
                 //! @brief Private constructor.
-                nbr_context_type(node& n, trace_t t) : n(n), t(t) {}
+                void_context_type(node& n, trace_t t) : n(n), t(t) {}
                 //! @brief Friendship declaration to allow construction from nodes.
                 friend class node;
                 //! @brief A reference to the node object.
@@ -345,8 +344,13 @@ struct calculus {
             }
 
             //! @brief Accesses the context for neighbour messages.
-            template <typename A = void>
+            template <typename A>
             nbr_context_type<A> nbr_context(trace_t call_point) {
+                return {*this, stack_trace.hash(call_point)};
+            }
+
+            //! @brief Accesses the context for neighbour call points.
+            void_context_type void_context(trace_t call_point) {
                 return {*this, stack_trace.hash(call_point)};
             }
 
@@ -397,14 +401,14 @@ inline A align(node_t const&, trace_t, A&& x) {
 //! @brief Computes the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
 A align(node_t& node, trace_t call_point, A const& x) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     return details::align(x, ctx.align());
 }
 
 //! @brief Computes the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>, typename = std::enable_if_t<not std::is_reference<A>::value>>
 A align(node_t& node, trace_t call_point, A&& x) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     return details::align(std::move(x), ctx.align());
 }
 
@@ -415,7 +419,7 @@ inline void align_inplace(node_t const&, trace_t, A&) {}
 //! @brief Computes in-place the restriction of a field to the current domain.
 template <typename node_t, typename A, typename = if_field<A>>
 void align_inplace(node_t& node, trace_t call_point, A& x) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     details::align(x, ctx.align());
 }
 
@@ -470,42 +474,42 @@ to_local<A&&> other(node_t const&, trace_t, A&& x) {
 //! @brief Returns the default value of a field (modifiable, ensuring alignment).
 template <typename node_t, typename A, typename = if_field<A>>
 to_local<A&> mod_other(node_t& node, trace_t call_point, A& x) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     return details::other(details::align_inplace(x, ctx.align()));
 }
 
 //! @brief Modifies the local value of a field (ensuring alignment).
 template <typename node_t, typename A, typename B>
 to_field<std::decay_t<A>> mod_other(node_t& node, trace_t call_point, A const& x, B const& y) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     return details::mod_other(x, y, ctx.align());
 }
 
 //! @brief Reduces a field to a single value by a binary operation.
 template <typename node_t, typename O, typename A>
 auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     return details::fold_hood(op, a, ctx.align());
 }
 
 //! @brief Reduces a field to a single value by a binary operation with a given value for self.
 template <typename node_t, typename O, typename A, typename B>
 auto fold_hood(node_t& node, trace_t call_point, O&& op, A const& a, B const& b) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     return details::fold_hood(op, a, b, ctx.align(), node.uid);
 }
 
 //! @brief Computes the number of neighbours aligned to the current call point.
 template <typename node_t>
 size_t count_hood(node_t& node, trace_t call_point) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     return ctx.align().size();
 }
 
 //! @brief Computes the identifiers of neighbours aligned to the current call point.
 template <typename node_t>
 field<device_t> nbr_uid(node_t& node, trace_t call_point) {
-    auto ctx = node.template nbr_context<>(call_point);
+    auto ctx = node.void_context(call_point);
     std::vector<device_t> ids = ctx.align();
     std::vector<device_t> vals;
     vals.emplace_back();

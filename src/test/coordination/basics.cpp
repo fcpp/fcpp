@@ -18,7 +18,7 @@ using tuple_t = common::tagged_tuple_t<tag, int>;
 
 template <int O>
 DECLARE_OPTIONS(options,
-    exports<common::export_list<coordination::spawn_t<tuple_t, bool>, coordination::spawn_t<int, status>, field<int>, times_t, int>>,
+    exports<common::export_list<coordination::spawn_t<tuple_t, bool>, coordination::spawn_t<int, status>, coordination::spawn_t<int, field<bool>>, field<int>, times_t, int>>,
     export_pointer<(O & 1) == 1>,
     export_split<(O & 2) == 2>,
     online_drop<(O & 4) == 4>
@@ -323,10 +323,15 @@ int spawning(node_t& node, trace_t call_point, bool b) {
     common::option<int> k;
     if (b) k.emplace(node.uid);
     auto m = coordination::spawn(node, 1, [&](int i, bool, char){
-        return make_tuple(i, (int)node.uid >= i ? status::output : status::external_deprecated);
+        return make_tuple(i, (int)node.uid >= i ? status::output : status::border);
     }, k, false, 'a');
     if (b) assert(m.size() > 0);
     for (auto const& x  : m) c += 1 << (x.first * x.second);
+    auto mf = coordination::spawn(node, 2, [&](int i, bool, char){
+        return make_tuple(i, node.nbr_uid() >= i);
+    }, k, false, 'a');
+    if (b) assert(mf.size() > 0);
+    for (auto const& x  : mf) c += 1 << (x.first * x.second);
     return c;
 }
 
@@ -344,32 +349,32 @@ MULTI_TEST(BasicsTest, Spawn, O, 3) {
     EXPECT_EQ(0, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, false);
-    EXPECT_EQ(0, d);
+    EXPECT_EQ(0+0+0, d);
     d = spawning(d1, 0, true);
-    EXPECT_EQ(2+2, d);
+    EXPECT_EQ(2+2+2, d);
     d = spawning(d2, 0, false);
-    EXPECT_EQ(0, d);
+    EXPECT_EQ(0+0+0, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, false);
-    EXPECT_EQ(0+2, d);
+    EXPECT_EQ(0+2+0, d);
     d = spawning(d1, 0, false);
-    EXPECT_EQ(2+2, d);
+    EXPECT_EQ(2+2+2, d);
     d = spawning(d2, 0, false);
-    EXPECT_EQ(2+2, d);
+    EXPECT_EQ(2+2+2, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, true);
-    EXPECT_EQ(1+3, d);
+    EXPECT_EQ(1+3+1, d);
     d = spawning(d1, 0, false);
-    EXPECT_EQ(2+2, d);
+    EXPECT_EQ(2+2+2, d);
     d = spawning(d2, 0, true);
-    EXPECT_EQ(18+18, d);
+    EXPECT_EQ(18+18+18, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, false);
-    EXPECT_EQ(1+19, d);
+    EXPECT_EQ(1+19+1, d);
     d = spawning(d1, 0, true);
-    EXPECT_EQ(3+19, d);
+    EXPECT_EQ(3+19+3, d);
     d = spawning(d2, 0, true);
-    EXPECT_EQ(19+19, d);
+    EXPECT_EQ(19+19+19, d);
 }
 
 MULTI_TEST(BasicsTest, NbrUid, O, 3) {

@@ -416,6 +416,42 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
     return rm;
 }
 
+//! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with field<bool> status).
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+std::enable_if_t<std::is_same<B,field<bool>>::value, std::unordered_map<K, R, common::hash<K>>>
+spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
+    using keyset_t = std::unordered_set<K, common::hash<K>>;
+    using resmap_t = std::unordered_map<K, R, common::hash<K>>;
+    auto kctx = node.template nbr_context<keyset_t>(call_point);
+    field<keyset_t> fk = kctx.nbr({});
+    // keys to be propagated and terminated
+    keyset_t ky(key_set.begin(), key_set.end()), km, kstart = ky;
+    for (size_t i = 1; i < fcpp::details::get_vals(fk).size(); ++i)
+        ky.insert(fcpp::details::get_vals(fk)[i].begin(), fcpp::details::get_vals(fk)[i].end());
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    auto any_hood = [](field<bool> const& fb){
+        for (bool b : fcpp::details::get_vals(fb)) if (b) return true;
+        return false;
+    };
+    resmap_t rm;
+    // run process for every gathered key
+    for (K const& k : ky) {
+        trace_t kh = common::hash_to<trace_t>(k);
+        auto fctx = node.template nbr_context<field<bool>>(kh);
+        if (kstart.count(k) == 0 and not any_hood(fctx.nbr(false))) continue;
+        internal::trace_key trace_process(node.stack_trace, kh);
+        field<bool> fb;
+        tie(rm[k], fb) = process(k, xs...);
+        // if status is true for something, propagate key to neighbours
+        if (any_hood(fb)) {
+            km.insert(k);
+            fctx.insert(fb);
+        }
+    }
+    kctx.insert(km);
+    return rm;
+}
+
 /**
  * @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with general status).
  *
@@ -462,7 +498,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
 
 //! @brief The exports type used by the spawn construct with key type `K` and status type `B`.
 template <typename K, typename B>
-using spawn_t = common::export_list<std::conditional_t<std::is_same<B, bool>::value, std::unordered_set<K, common::hash<K>>, std::unordered_map<K, B, common::hash<K>>>>;
+using spawn_t = common::export_list<std::conditional_t<std::is_same<B, field<bool>>::value, common::export_list<std::unordered_set<K, common::hash<K>>, field<bool>>, std::conditional_t<std::is_same<B, bool>::value, std::unordered_set<K, common::hash<K>>, std::unordered_map<K, B, common::hash<K>>>>>;
 
 //! @}
 

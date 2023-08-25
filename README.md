@@ -394,7 +394,7 @@ The variations of spawn differ by the status type `B`, which can be:
 - `field<bool>`: in which case, the neighbouring field dictates to exactly which neighbours the process should expand;
 - `status`: in which case, a status of `terminated` can propagate causing the process to terminate, `border` stops the propagation (as `false`), `internal` allows propagation, and variants ending with `_output` cause the value produced to be inserted in the resulting unordered map.
 
-### Coordination library
+#### Coordination library
 
 Several aggregate function of general utility are available in the FCPP standard coordination library, which is grouped in headers with different scope:
 

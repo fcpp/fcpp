@@ -137,6 +137,9 @@ function mkdoc() {
     if [ ! -d doc ]; then
         mkdir doc
     fi
+    if [ -d extras/docs ]; then
+        extras/docs/doxymake.py lib/{cloud,component,deployment,simulation}/*.hpp > extras/docs/node_net.md
+    fi
     echo -e "\033[4mdoxygen Doxyfile\033[0m" >&2
     doxygen Doxyfile 2>&1 >/dev/null | tee tmpdoc.err | sed 's|^.*/fcpp/src/lib/|- |;s|: warning: |: |' | sed -E 's|:([0-9 ]):|: \1:|;s|:([0-9 ][0-9 ]):|: \1:|;s|:([0-9 ][0-9 ][0-9 ]):|: \1:|;s|:([0-9 ]*):|, line\1:|'
     ndoc=`cat tmpdoc.err | grep "is not documented.$" | wc -l | tr -cd '0-9'`

@@ -217,7 +217,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
                 else if ((y < 0)     ^ (lp.y < 0    )) { lp = p0; lpup = p0up; lpdn = p0dn; }
                 else if ((y > DIM.y) ^ (lp.y > DIM.y)) { lp = p1; lpup = p1up; lpdn = p1dn; }
             }
-            if (0 <= y && y <= DIM.y) {
+            if (!isnan(y) && 0 <= y && y <= DIM.y) {
                 if (!drawing) {
                     pup = (lpup.x,min(lpup.y,DIM.y));
                     pdn = (lpdn.x,max(lpdn.y,0));
@@ -257,7 +257,7 @@ picture plot(real endx = 0, string ppath, string title, string xlabel, string yl
                 else if ((y < 0)     ^ (lp.y < 0    )) lp = p0;
                 else if ((y > DIM.y) ^ (lp.y > DIM.y)) lp = p1;
             }
-            if (0 <= y && y <= DIM.y) {
+            if (!isnan(y) && 0 <= y && y <= DIM.y) {
                 if (!drawing) p = lp;
                 p = p -- (x,y);
                 drawing = true;

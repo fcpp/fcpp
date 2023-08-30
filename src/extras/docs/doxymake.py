@@ -25,7 +25,7 @@ def parse_block(s):
     s = sub('//.*', '', s)
     s = sub('#.*', '', s)
     s = s.replace('\n', '#')
-    s = sub('/\*\*.*\*/', '', s)
+    s = sub('/\*\*.*?\*/', '', s)
     t = ''
     count = 0
     for c in s:

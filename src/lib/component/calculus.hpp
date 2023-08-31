@@ -262,6 +262,31 @@ struct calculus {
                 trace_t t;
             };
 
+            //! @brief Helper type providing export roll-back functionality.
+            struct undo_context_type {
+                //! @brief Saves the exports produced so far.
+                inline void save() {
+                    m_export.first()->insert(*n.m_export.first());
+                    if (export_split) m_export.second()->insert(*n.m_export.second());
+                }
+                //! @brief Destructor resetting exports.
+                ~undo_context_type() {
+                    swap(n.m_export, m_export);
+                }
+
+              private:
+                //! @brief Private constructor saving exports.
+                undo_context_type(node& n) : n(n), m_export() {
+                    swap(n.m_export, m_export);
+                }
+                //! @brief Friendship declaration to allow construction from nodes.
+                friend class node;
+                //! @brief A reference to the node object.
+                node& n;
+                //! @brief The exports saved so far.
+                internal::twin<export_type, not export_split> m_export;
+            };
+
             //! @brief A `tagged_tuple` type used for messages to be exchanged with neighbours.
             using message_t = typename P::node::message_t::template push_back<calculus_tag, export_type>;
 
@@ -352,6 +377,11 @@ struct calculus {
             //! @brief Accesses the context for neighbour call points.
             void_context_type void_context(trace_t call_point) {
                 return {*this, stack_trace.hash(call_point)};
+            }
+
+            //! @brief Accesses the context enabling roll-backs.
+            undo_context_type undo_context() {
+                return {*this};
             }
 
             //! @brief Stack trace maintained during aggregate function execution.

@@ -327,7 +327,12 @@ int spawning(node_t& node, trace_t call_point, bool b) {
     }, k, false, 'a');
     if (b) assert(m.size() > 0);
     for (auto const& x  : m) c += 1 << (x.first * x.second);
-    auto mf = coordination::spawn(node, 2, [&](int i, bool, char){
+    m = coordination::spawn_deprecated(node, 2, [&](int i, bool, char){
+        return make_tuple(i, (int)node.uid >= i ? status::output : status::external_deprecated);
+    }, k, false, 'a');
+    if (b) assert(m.size() > 0);
+    for (auto const& x  : m) c += 1 << (x.first * x.second);
+    auto mf = coordination::spawn(node, 3, [&](int i, bool, char){
         return make_tuple(i, node.nbr_uid() >= i);
     }, k, false, 'a');
     if (b) assert(mf.size() > 0);
@@ -349,32 +354,32 @@ MULTI_TEST(BasicsTest, Spawn, O, 3) {
     EXPECT_EQ(0, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, false);
-    EXPECT_EQ(0+0+0, d);
+    EXPECT_EQ(0+0+0+0, d);
     d = spawning(d1, 0, true);
-    EXPECT_EQ(2+2+2, d);
+    EXPECT_EQ(2+2+2+2, d);
     d = spawning(d2, 0, false);
-    EXPECT_EQ(0+0+0, d);
+    EXPECT_EQ(0+0+0+0, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, false);
-    EXPECT_EQ(0+2+0, d);
+    EXPECT_EQ(0+0+0+2, d);
     d = spawning(d1, 0, false);
-    EXPECT_EQ(2+2+2, d);
+    EXPECT_EQ(2+2+2+2, d);
     d = spawning(d2, 0, false);
-    EXPECT_EQ(2+2+2, d);
+    EXPECT_EQ(2+2+2+2, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, true);
-    EXPECT_EQ(1+3+1, d);
+    EXPECT_EQ(1+1+1+3, d);
     d = spawning(d1, 0, false);
-    EXPECT_EQ(2+2+2, d);
+    EXPECT_EQ(2+2+2+2, d);
     d = spawning(d2, 0, true);
-    EXPECT_EQ(18+18+18, d);
+    EXPECT_EQ(18+18+18+18, d);
     sendall(d0, d1, d2);
     d = spawning(d0, 0, false);
-    EXPECT_EQ(1+19+1, d);
+    EXPECT_EQ(1+1+1+19, d);
     d = spawning(d1, 0, true);
-    EXPECT_EQ(3+19+3, d);
+    EXPECT_EQ(3+3+3+19, d);
     d = spawning(d2, 0, true);
-    EXPECT_EQ(19+19+19, d);
+    EXPECT_EQ(19+19+19+19, d);
 }
 
 MULTI_TEST(BasicsTest, NbrUid, O, 3) {

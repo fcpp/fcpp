@@ -500,6 +500,50 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
 template <typename K, typename B>
 using spawn_t = common::export_list<std::conditional_t<std::is_same<B, field<bool>>::value, common::export_list<std::unordered_set<K, common::hash<K>>, field<bool>>, std::conditional_t<std::is_same<B, bool>::value, std::unordered_set<K, common::hash<K>>, std::unordered_map<K, B, common::hash<K>>>>>;
 
+
+//! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (legacy version with full status).
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R, common::hash<K>>>
+spawn_deprecated(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
+    using keymap_t = std::unordered_map<K, B, common::hash<K>>;
+    using resmap_t = std::unordered_map<K, R, common::hash<K>>;
+    auto ctx = node.template nbr_context<keymap_t>(call_point);
+    field<keymap_t> fk = ctx.nbr({});
+    // keys to be propagated and terminated
+    std::unordered_set<K, common::hash<K>> ky(key_set.begin(), key_set.end()), kn;
+    for (size_t i = 1; i < fcpp::details::get_vals(fk).size(); ++i)
+        for (auto const& k : fcpp::details::get_vals(fk)[i]) {
+            if (k.second == status::terminated)
+                kn.insert(k.first);
+            else
+                ky.insert(k.first);
+        }
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+    keymap_t km;
+    resmap_t rm;
+    // run process for every gathered key
+    for (K const& k : ky)
+        if (kn.count(k) == 0) {
+            internal::trace_key trace_process(node.stack_trace, common::hash_to<trace_t>(k));
+            auto uc = node.undo_context();
+            R r;
+            status s;
+            tie(r, s) = process(k, xs...);
+            // if output status, add result to returned map
+            if ((char)s >= 4) {
+                rm.emplace(k, std::move(r));
+                s = s == status::output ? status::internal : static_cast<status>((char)s & char(3));
+            }
+            // if node in process, merge exports
+            if ((char)s >= 2) uc.save();
+            // if internal or terminated, propagate key status to neighbours
+            if (s == status::terminated or s == status::internal)
+                km.emplace(k, s);
+        } else km.emplace(k, status::terminated);
+    ctx.insert(km);
+    return rm;
+}
+
 //! @}
 
 

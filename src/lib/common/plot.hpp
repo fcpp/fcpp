@@ -635,7 +635,7 @@ class last_rows {
     void print_headers(O&, common::type_sequence<>) const {}
     template <typename O, typename U, typename... Us>
     void print_headers(O& o, common::type_sequence<U,Us...>) const {
-        o << common::details::strip_namespaces(common::type_name<U>()) << " ";
+        o << common::strip_namespaces(common::type_name<U>()) << " ";
         print_headers(o, common::type_sequence<Us...>{});
     }
 

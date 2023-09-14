@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file randomizer.hpp
@@ -22,17 +22,17 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a random number generator type.
+    //! @brief Declaration tag associating to a random number generator type (defaults to `std::mt19937_64`).
     template <typename T>
     struct generator {};
 
-    //! @brief Initialisation tag associating to a random number generator seed.
+    //! @brief Initialisation tag associating to a random number generator seed (defaults to zero at net level and `node.uid` at node level).
     struct seed {};
 }
 
@@ -137,7 +137,7 @@ struct randomizer {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_generator(common::get_or<tags::seed>(t, 0)) {}
 
           protected: // visible by net objects only
             //! @brief Gives access to the random number generator.

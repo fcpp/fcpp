@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <cstdio>
 #include <sstream>
@@ -46,11 +46,11 @@ using combo1 = component::combine_spec<
 TEST(HardwareLoggerTest, MakeStream) {
     common::tagged_tuple_t<name,char const*,uid,int,oth,char,gat,bool> t{"bar",7,'b',false};
     std::shared_ptr<std::ostream> p;
-    p = component::details::make_stream("foo", t);
-    p = component::details::make_stream(std::string("foo"), t);
-    p = component::details::make_stream("foo/", t);
+    p = component::details::make_stream<std::ostream>("foo", t);
+    p = component::details::make_stream<std::ostream>(std::string("foo"), t);
+    p = component::details::make_stream<std::ostream>("foo/", t);
     std::stringstream s;
-    p = component::details::make_stream(&s, t);
+    p = component::details::make_stream<std::ostream>(&s, t);
     *p << "foo";
     EXPECT_EQ("foo", s.str());
     std::remove("foo");
@@ -113,4 +113,25 @@ MULTI_TEST(HardwareLoggerTest, Main, O, 1) {
     EXPECT_EQ("########################################################", line);
     getline(s, line);
     EXPECT_EQ("", line);
+}
+
+MULTI_TEST(HardwareLoggerTest, Nulls, O, 1) {
+    {
+        typename combo1<O>::net network{common::make_tagged_tuple<output,tag,gat,oth>(nullptr,true,42,0.0f)};
+        EXPECT_EQ(1.5f, network.next());
+        network.update();
+        {
+            common::unique_lock<(O & 1) == 1> l;
+            network.node_at(42, l).storage(tag{}) = false;
+        }
+        EXPECT_EQ(3.5f, network.next());
+        network.update();
+        {
+            common::unique_lock<(O & 1) == 1> l;
+            network.node_at(42, l).storage(gat{}) = 10;
+        }
+        EXPECT_EQ(5.5f, network.next());
+        network.run();
+        EXPECT_EQ(TIME_MAX, network.next());
+    }
 }

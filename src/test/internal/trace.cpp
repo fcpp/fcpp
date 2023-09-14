@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #define FCPP_WARNING_TRACE false
 
@@ -19,6 +19,12 @@ struct public_trace : public internal::trace {
 };
 
 public_trace test_trace;
+
+template <typename T>
+size_t dohash(T const& x) {
+    std::hash<T> h;
+    return h(x);
+}
 
 TEST(TraceTest, Hash) {
     EXPECT_EQ((trace_t)0, test_trace.hash(0));
@@ -78,13 +84,13 @@ TEST(TraceTest, TraceKey) {
     std::vector<trace_t> stack;
     stack.push_back(test_trace.hash(0));
     {
-        internal::trace_key _(test_trace, std::string("foo"));
+        internal::trace_key _(test_trace, dohash(std::string("foo")));
         stack.push_back(test_trace.hash(0));
         {
-            internal::trace_key _(test_trace, 120);
+            internal::trace_key _(test_trace, dohash(120));
             stack.push_back(test_trace.hash(0));
             {
-                internal::trace_key _(test_trace, std::string("bar"));
+                internal::trace_key _(test_trace, dohash(std::string("bar")));
             }
             EXPECT_EQ(stack[2], test_trace.hash(0));
         }

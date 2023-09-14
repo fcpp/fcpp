@@ -29,9 +29,9 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
-    //! @brief Namespace of tags to be used for initialising components.
+    // Namespace of tags to be used for initialising components.
     namespace tags {
         //! @brief Net initialisation tag associating to an output stream for logging.
         struct output;
@@ -185,7 +185,7 @@ struct test_net {
     void caller(I const& x, std::index_sequence<is...>, O& y, std::index_sequence<os...>) {
         for (int i = 0; i < N; ++i) {
             auto z = m_func(d(i), std::get<is>(x)[i]...);
-            common::details::ignore((std::get<os+offset>(y)[i] = std::get<os>(z))...);
+            common::ignore_args((std::get<os+offset>(y)[i] = std::get<os>(z))...);
         }
     }
 

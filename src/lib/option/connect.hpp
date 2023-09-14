@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file connect.hpp
@@ -21,21 +21,21 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Net initialisation tag associating to communication radius.
-    struct radius;
+    //! @brief Net initialisation tag associating to communication radius (required for \ref connect::fixed and \ref connect::powered).
+    struct radius {};
 
-    //! @brief Net initialisation tag associating to 50%-likely communication radius.
-    struct half_radius;
+    //! @brief Net initialisation tag associating to 50%-likely communication radius (required for \ref connect::radial).
+    struct half_radius {};
 
-    //! @brief Node initialisation tag associating to a network rank.
+    //! @brief Node initialisation tag associating to a network rank (required for \ref connect::hierarchical).
     struct network_rank {};
 
-    //! @brief Node initialisation tag associating to the ratio to full power.
+    //! @brief Node initialisation tag associating to the ratio to full power (required for \ref connect::powered).
     struct power_ratio {};
 }
 

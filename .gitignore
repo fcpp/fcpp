@@ -8,3 +8,4 @@ output/
 .DS_Store
 bazel-*
 _bazel_*
+node_net.md

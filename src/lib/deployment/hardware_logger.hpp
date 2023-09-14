@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file hardware_logger.hpp
@@ -34,15 +34,15 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data.
+    //! @brief Declaration tag associating to a sequence of tags and types for storing persistent data in nodes (defaults to the empty sequence).
     template <typename... Ts>
-    struct tuple_store;
+    struct node_store;
 }
 
 
@@ -55,7 +55,7 @@ namespace tags {
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
  * - \ref tags::ostream_type defines the output stream type to be used (defaults to `std::ostream`).
- * - \ref tags::tuple_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
+ * - \ref tags::node_store defines a sequence of tags and types for storing persistent data (defaults to the empty sequence).
  * - \ref tags::clock_type defines a clock type (defaults to `std::chrono::system_clock`)
  *
  * <b>Node initialisation tags:</b>
@@ -83,7 +83,7 @@ struct hardware_logger {
     using clock_t = common::option_type<tags::clock_type, std::chrono::system_clock, Ts ...>;
 
     //! @brief Sequence of tags and types for storing persistent data.
-    using tuple_store_type = common::storage_list<common::option_types<tags::tuple_store, Ts...>>;
+    using node_store_type = common::storage_list<common::option_types<tags::node_store, Ts...>>;
 
     /**
      * @brief The actual component.
@@ -105,13 +105,13 @@ struct hardware_logger {
         class node : public P::node {
           public: // visible by net objects and the main program
             //! @brief Tuple type of the contents.
-            using tuple_type = common::tagged_tuple_t<tuple_store_type>;
+            using node_tuple_type = common::tagged_tuple_t<node_store_type>;
 
             //! @brief Type for the result of an aggregation.
-            using row_type = common::tagged_tuple_cat<common::tagged_tuple_t<plot::time, times_t>, tuple_type, extra_info_type>;
+            using row_type = common::tagged_tuple_cat<common::tagged_tuple_t<plot::time, times_t>, node_tuple_type, extra_info_type>;
 
             //! @brief Sequence of tags to be printed.
-            using tag_type = typename tuple_type::tags;
+            using tag_type = typename node_tuple_type::tags;
 
             /**
              * @brief Main constructor.
@@ -120,42 +120,51 @@ struct hardware_logger {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_extra_info(t) {
-                std::time_t time = clock_t::to_time_t(clock_t::now());
-                std::string tstr = std::string(ctime(&time));
-                tstr.pop_back();
-                *m_stream << "########################################################\n";
-                *m_stream << "# FCPP execution started at:  " << tstr << " #\n";
-                *m_stream << "########################################################\n# ";
-                t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
-                *m_stream << "\n#\n";
-                *m_stream << "# The columns have the following meaning:\n# time ";
-                print_headers(tag_type{});
-                *m_stream << "0 ";
-                print_output(tag_type{});
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_stream(details::make_stream<ostream_type>(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(common::get_or<tags::plotter>(t, nullptr), [] (void*) {}), m_extra_info(t) {
+                if (m_stream != nullptr) {
+                    std::time_t time = clock_t::to_time_t(clock_t::now());
+                    std::string tstr = std::string(ctime(&time));
+                    tstr.pop_back();
+                    *m_stream << "########################################################\n";
+                    *m_stream << "# FCPP execution started at:  " << tstr << " #\n";
+                    *m_stream << "########################################################\n# ";
+                    t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
+                    *m_stream << "\n#\n";
+                    *m_stream << "# The columns have the following meaning:\n# time ";
+                    print_headers(tag_type{});
+                    *m_stream << "0 ";
+                    print_output(tag_type{});
+                }
             }
 
             //! @brief Destructor printing an export end section.
             ~node() {
-                std::time_t time = clock_t::to_time_t(clock_t::now());
-                std::string tstr = std::string(ctime(&time));
-                tstr.pop_back();
-                *m_stream << "########################################################\n";
-                *m_stream << "# FCPP execution finished at: " << tstr << " #\n";
-                *m_stream << "########################################################" << std::endl;
+                if (m_stream != nullptr) {
+                    std::time_t time = clock_t::to_time_t(clock_t::now());
+                    std::string tstr = std::string(ctime(&time));
+                    tstr.pop_back();
+                    *m_stream << "########################################################\n";
+                    *m_stream << "# FCPP execution finished at: " << tstr << " #\n";
+                    *m_stream << "########################################################" << std::endl;
+                }
             }
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
-                *m_stream << t << " " << std::flush;
+                if (m_stream != nullptr) {
+                    *m_stream << t << " " << std::flush;
+                }
                 P::node::round_start(t);
             }
 
             //! @brief Performs computations at round end with current time `t`.
             void round_end(times_t t) {
                 P::node::round_end(t);
-                print_output(tag_type{});
-                data_plotter(std::is_same<plot_type, plot::none>{}, t);
+                if (m_stream != nullptr) {
+                    print_output(tag_type{});
+                }
+                if (m_plotter != nullptr)
+                    data_plotter(std::is_same<plot_type, plot::none>{}, t);
             }
 
           private: // implementation details
@@ -165,7 +174,7 @@ struct hardware_logger {
             }
             template <typename U, typename... Us>
             void print_headers(common::type_sequence<U,Us...>) const {
-                *m_stream << common::details::strip_namespaces(common::type_name<U>()) << " ";
+                *m_stream << common::strip_namespaces(common::type_name<U>()) << " ";
                 print_headers(common::type_sequence<Us...>{});
             }
 

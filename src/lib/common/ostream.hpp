@@ -100,13 +100,19 @@ inline std::string to_string(double x) {
 inline std::string to_string(long double x) {
     return details::real2str<long double>(x);
 }
+template <typename T>
+inline std::string to_string(T* p) {
+    std::stringstream ss;
+    ss << p;
+    return ss.str();
+}
 //! @}
 
 namespace details {
     //! @brief Enables a template resolution if T has a to_string function.
     template <typename... Ts>
     using if_stringable = std::enable_if_t<
-        fcpp::common::all_true<
+        fcpp::common::number_all_true<
             std::is_same<std::decay_t<decltype(to_string(common::escape(std::declval<Ts>())))>, std::string>::value...
         >
     >;

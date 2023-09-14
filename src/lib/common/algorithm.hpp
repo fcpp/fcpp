@@ -71,13 +71,13 @@ namespace tags {
     //! @brief Tag for sequential execution policy.
     struct sequential_execution {
         //! @brief Constructor.
-        sequential_execution(size_t = 1) {}
+        explicit sequential_execution(size_t = 1) {}
     };
 
     //! @brief Tag for parallel execution policy (with a given number of threads).
     struct parallel_execution {
         //! @brief Constructor.
-        parallel_execution(size_t n = std::thread::hardware_concurrency()) : num(n) {}
+        explicit parallel_execution(size_t n = std::thread::hardware_concurrency()) : num(n) {}
         //! @brief Parallel threads number.
         size_t num;
     };
@@ -89,11 +89,25 @@ namespace tags {
     //! @brief Tag for parallel execution policy, assigning tasks dynamically (with a given number of threads and chunk size).
     struct dynamic_execution {
         //! @brief Constructor.
-        dynamic_execution(size_t n = std::thread::hardware_concurrency(), size_t s = 1) : num(n), size(s) {}
+        explicit dynamic_execution(size_t n = std::thread::hardware_concurrency(), size_t s = 1) : num(n), size(s) {}
         //! @brief Parallel threads number.
         size_t num;
         //! @brief Chunk size.
         size_t size;
+    };
+
+    //! @brief Tag for distributed execution policy, assigning tasks dynamically across and within nodes through MPI (with a given number of threads per node, chunk size, static-dynamic percentage, and whether tasks should be shuffled).
+    struct distributed_execution {
+        //! @brief Constructor.
+        explicit distributed_execution(size_t num = std::thread::hardware_concurrency(), size_t size = 1, double dynamic = 1, bool shuffle = false) : num(num), size(size), dynamic(dynamic), shuffle(shuffle) {}
+        //! @brief Parallel threads number.
+        size_t num;
+        //! @brief Size of chunks dynamically assigned to nodes.
+        size_t size;
+        //! @brief Fraction of tasks to be assigned dynamically across nodes.
+        double dynamic;
+        //! @brief Whether tasks should be shuffled.
+        bool shuffle;
     };
 }
 

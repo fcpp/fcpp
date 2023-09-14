@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file hardware_identifier.hpp
@@ -21,20 +21,20 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Node initialisation tag associating to a starting time of execution.
+    //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start;
 
-    //! @brief Node initialisation tag associating to the unique identifier of an object.
+    //! @brief Node initialisation tag associating to a `device_t` unique identifier (required).
     struct uid;
 }
 
@@ -86,7 +86,7 @@ struct hardware_identifier {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_node(P::net::as_final(), push_start_uid(t)) {}
 
             /**
              * @brief Returns next event to schedule for the net component.

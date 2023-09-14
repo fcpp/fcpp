@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file tagged_tuple.hpp
@@ -135,6 +135,46 @@ auto&& get_or(tagged_tuple<Ss, Ts>&& t, T&& def) {
 //! @}
 
 
+//! @cond INTERNAL
+namespace details {
+    template <typename S>
+    wildcard& get_or_wildcard(S&&, type_sequence<>) {
+        return declare_reference<wildcard>();
+    }
+    template <typename S, typename U>
+    auto&& get_or_wildcard(S&& t, type_sequence<U>) {
+        return get<U>(std::forward<S>(t));
+    }
+}
+//! @endcond
+
+
+/**
+ * @name get_or_wildcard
+ *
+ * Function getting elements of a tagged tuple by tag if present.
+ * If not present, a reference to a wildcard struct is returned to suppress compiler error messages.
+ * @param S The tag to be extracted.
+ */
+//! @{
+//! @brief Write access.
+template <typename S, typename Ss, typename Ts>
+auto& get_or_wildcard(tagged_tuple<Ss, Ts>& t) {
+    return details::get_or_wildcard(t, typename Ss::template intersect<S>());
+}
+//! @brief Move access.
+template <typename S, typename Ss, typename Ts>
+auto&& get_or_wildcard(tagged_tuple<Ss, Ts>&& t) {
+    return details::get_or_wildcard(std::move(t), typename Ss::template intersect<S>());
+}
+//! @brief Const access.
+template <typename S, typename Ss, typename Ts>
+auto const& get_or_wildcard(tagged_tuple<Ss, Ts> const& t) {
+    return details::get_or_wildcard(t, typename Ss::template intersect<S>());
+}
+//! @}
+
+
 //! @brief Utility function for creating tagged tuples.
 template <typename... Ss, typename... Ts>
 tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>> make_tagged_tuple(Ts... vs) {
@@ -144,10 +184,6 @@ tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>> make_tagged_tuple(Ts...
 
 //! @cond INTERNAL
 namespace details {
-    // Helper function ignoring its arguments.
-    template <class... Ts>
-    void ignore(Ts const&...) {}
-
     template <class... Ts>
     std::tuple<Ts...> capture_as_tuple(Ts&&... xs) {
         return {xs...};
@@ -162,7 +198,7 @@ namespace details {
     // Assignment of elements of type Us.
     template <class T, class S, class... Us>
     T& tt_assign(T& t, S&& s, type_sequence<Us...>) {
-        ignore((get<Us>(t) = get<Us>(std::forward<S>(s)))...);
+        ignore_args((get<Us>(t) = get<Us>(std::forward<S>(s)))...);
         return t;
     }
 
@@ -221,29 +257,6 @@ namespace details {
         //! @brief Separator between tuple values and the following tags.
         static constexpr char const* val_tag = "; ";
     };
-
-    //! @brief Strips the namespaces from a non-templated type.
-    inline std::string strip_namespaces_type(std::string s) {
-        size_t pos = s.rfind("::");
-        if (pos == std::string::npos) return s;
-        return s.substr(pos+2);
-    }
-
-    //! @brief Removes the namespaces from a type representation.
-    inline std::string strip_namespaces(std::string s) {
-        size_t tstart = s.find("<");
-        if (tstart == std::string::npos) return strip_namespaces_type(s);
-        std::string q = strip_namespaces_type(s.substr(0,tstart+1));
-        size_t tend = s.rfind(">");
-        size_t tcomma = tstart;
-        while (tcomma < tend) {
-            size_t next = std::min(s.find(",", tcomma+1), tend);
-            q += strip_namespaces(s.substr(tcomma+1, next-tcomma));
-            tcomma = next;
-        }
-        q += s.substr(tend+1);
-        return q;
-    }
 
     //! @brief Escapes a boolean value for underscore tuple printing.
     inline std::string tt_val_print(bool x, tags::underscore_tuple) {

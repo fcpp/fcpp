@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file spawner.hpp
@@ -22,21 +22,21 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions.
+    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
     template <typename... Ts>
     struct init {};
 
-    //! @brief Declaration tag associating to a sequence generator type scheduling spawning of nodes.
+    //! @brief Declaration tag associating to a sequence generator type scheduling spawning of nodes (defaults to \ref sequence::never).
     template <typename T>
     struct spawn_schedule {};
 
-    //! @brief Node initialisation tag associating to a starting time of execution.
+    //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start;
 }
 
@@ -94,7 +94,7 @@ struct spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_distributions(build_distributions_tuple(t, inert_type{})) {}
 
             /**
              * @brief Returns next event to schedule for the net component.

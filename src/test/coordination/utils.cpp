@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -75,7 +75,7 @@ MULTI_TEST(UtilsTest, IsInf, O, 3) {
     test_net<combo<O>, std::tuple<bool>(real_t)> n{
         [&](auto& node, real_t value){
             return std::make_tuple(
-                coordination::max_hood(node, 0, isinf(nbr(node, 0, value)))
+                coordination::max_hood(node, 0, isinf(coordination::nbr(node, 0, value)))
             );
         }
     };
@@ -91,7 +91,7 @@ MULTI_TEST(UtilsTest, SumHood, O, 3) {
     test_net<combo<O>, std::tuple<int>(int)> n{
         [&](auto& node, int value){
             return std::make_tuple(
-                coordination::sum_hood(node, 0, nbr(node, 0, value))
+                coordination::sum_hood(node, 0, coordination::nbr(node, 0, value))
             );
         }
     };
@@ -107,7 +107,7 @@ MULTI_TEST(UtilsTest, MeanHood, O, 3) {
     test_net<combo<O>, std::tuple<real_t>(real_t)> n{
         [&](auto& node, real_t value){
             return std::make_tuple(
-                coordination::mean_hood(node, 0, nbr(node, 0, value))
+                coordination::mean_hood(node, 0, coordination::nbr(node, 0, value))
             );
         }
     };
@@ -123,10 +123,10 @@ MULTI_TEST(UtilsTest, ListHood, O, 3) {
     test_net<combo<O>, std::tuple<real_t,real_t>(real_t)> n{
         [&](auto& node, real_t value){
             std::vector<real_t> v;
-            v = coordination::list_hood(node, 0, std::vector<real_t>(), nbr(node, 0, value), coordination::nothing);
+            v = coordination::list_hood(node, 0, std::vector<real_t>(), coordination::nbr(node, 0, value), coordination::nothing);
             real_t r = 0;
             for (real_t x : v) r += x;
-            v = coordination::list_hood(node, 0, std::vector<real_t>(), nbr(node, 1, value));
+            v = coordination::list_hood(node, 0, std::vector<real_t>(), coordination::nbr(node, 1, value));
             real_t s = 0;
             for (real_t x : v) s += x;
             return std::make_tuple(r, s);

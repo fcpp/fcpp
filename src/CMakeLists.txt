@@ -23,6 +23,13 @@ macro(fcpp_setup)
         # -march=native is not supported by arm64
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
     endif()
+    if(FCPP_DISABLE_THREADS)
+        set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -DFCPP_DISABLE_THREADS")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DFCPP_DISABLE_THREADS")
+    else(FCPP_DISABLE_THREADS)
+        set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -pthread")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread")
+    endif(FCPP_DISABLE_THREADS)
     if(WIN32)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Os")
         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -32,6 +39,9 @@ macro(fcpp_setup)
             set(CMAKE_DISABLE_FIND_PACKAGE_BrotliDec True)
         endif(FCPP_BUILD_GL)
     endif(WIN32)
+	if(FCPP_BUILD_MPI)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFCPP_MPI")
+    endif(FCPP_BUILD_MPI)
     if(FCPP_BUILD_TESTS)
         file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/test)
     endif(FCPP_BUILD_TESTS)
@@ -43,7 +53,6 @@ function(fcpp_target target_executable enable_gui)
     add_executable(${target_name} ${target_executable})
     target_link_libraries(${target_name} PRIVATE fcpp)
     target_include_directories(${target_name} PRIVATE .)
-    set_target_properties(${target_name} PROPERTIES PREFIX "run/")
     if(${enable_gui} STREQUAL ON)
         if(FCPP_BUILD_GL)
             fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} textures)
@@ -51,6 +60,7 @@ function(fcpp_target target_executable enable_gui)
         endif()
     endif()
     fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
+    set_target_properties(${target_name} PROPERTIES PREFIX "run/")
 endfunction()
 
 function(fcpp_header target_executable enable_gui)
@@ -108,6 +118,7 @@ project(
     DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
 option(FCPP_BUILD_GL        "Build OpenGL features."          OFF)
+option(FCPP_BUILD_MPI       "Build MPI features."             OFF)
 option(FCPP_BUILD_TESTS     "Build Google Tests features."    OFF)
 option(FCPP_INTERNAL_TESTS  "Build internal tests for FCPP."  ON)
 fcpp_setup()
@@ -119,8 +130,10 @@ set(
     lib/cloud/graph_spawner.cpp
     lib/common.cpp
     lib/common/algorithm.cpp
+    lib/common/immutable_map.cpp
     lib/common/multitype_map.cpp
     lib/common/mutex.cpp
+    lib/common/number_sequence.cpp
     lib/common/ostream.cpp
     lib/common/plot.cpp
     lib/common/profiler.cpp
@@ -129,6 +142,7 @@ set(
     lib/common/serialize.cpp
     lib/common/tagged_tuple.cpp
     lib/common/traits.cpp
+    lib/common/type_sequence.cpp
     lib/component.cpp
     lib/component/base.cpp
     lib/component/calculus.cpp
@@ -139,6 +153,7 @@ set(
     lib/component/storage.cpp
     lib/component/timer.cpp
     lib/coordination.cpp
+    lib/coordination/basics.cpp
     lib/coordination/collection.cpp
     lib/coordination/election.cpp
     lib/coordination/geometry.cpp
@@ -150,6 +165,7 @@ set(
     lib/data/color.cpp
     lib/data/field.cpp
     lib/data/hyperloglog.cpp
+    lib/data/ordered.cpp
     lib/data/shape.cpp
     lib/data/tuple.cpp
     lib/data/vec.cpp
@@ -169,6 +185,7 @@ set(
     lib/option/aggregator.cpp
     lib/option/connect.cpp
     lib/option/distribution.cpp
+    lib/option/filter.cpp
     lib/option/functor.cpp
     lib/option/metric.cpp
     lib/option/sequence.cpp
@@ -211,10 +228,27 @@ add_library(
         ./external/stb_image/stb_image.cpp
 )
 target_include_directories(stb_image PUBLIC ./external/stb_image)
-target_link_libraries(
+if(FCPP_BUILD_MPI)
+    find_package(MPI REQUIRED)
+    target_link_libraries(
         fcpp PUBLIC
         stb_image
-)
+        ${MPI_LIBRARIES}
+    )
+    target_include_directories(fcpp PUBLIC ${MPI_INCLUDE_PATH})
+    if(MPI_COMPILE_FLAGS)
+        set_target_properties(fcpp PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+    endif()
+    if(MPI_LINK_FLAGS)
+        set_target_properties(fcpp PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
+    endif()
+else()
+    target_link_libraries(
+        fcpp PUBLIC
+        stb_image
+    )
+endif(FCPP_BUILD_MPI)
+set_target_properties(${target_name} PROPERTIES PREFIX "run/")
 if(UNIX)
     target_compile_options(stb_image PUBLIC -fPIC)
 endif(UNIX)
@@ -260,6 +294,9 @@ endif(FCPP_BUILD_GL)
 if(FCPP_BUILD_TESTS)
     cmake_minimum_required(VERSION 3.14)
     include(FetchContent)
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+        cmake_policy(SET CMP0135 NEW)
+    endif()
     FetchContent_Declare(
       googletest
       URL https://github.com/google/googletest/archive/f5e592d8ee5ffb1d9af5be7f715ce3576b8bf9c4.zip
@@ -282,8 +319,10 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/cloud/graph_connector.cpp)
         fcpp_test(test/cloud/graph_spawner.cpp)
         fcpp_test(test/common/algorithm.cpp)
+        fcpp_test(test/common/immutable_map.cpp)
         fcpp_test(test/common/multitype_map.cpp)
         fcpp_test(test/common/mutex.cpp)
+        fcpp_test(test/common/number_sequence.cpp)
         fcpp_test(test/common/option.cpp)
         fcpp_test(test/common/ostream.cpp)
         fcpp_test(test/common/plot.cpp)
@@ -293,6 +332,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/common/serialize.cpp)
         fcpp_test(test/common/tagged_tuple.cpp)
         fcpp_test(test/common/traits.cpp)
+        fcpp_test(test/common/type_sequence.cpp)
         fcpp_test(test/component/base.cpp)
         fcpp_test(test/component/calculus.cpp)
         fcpp_test(test/component/identifier.cpp)
@@ -301,6 +341,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/component/scheduler.cpp)
         fcpp_test(test/component/storage.cpp)
         fcpp_test(test/component/timer.cpp)
+        fcpp_test(test/coordination/basics.cpp)
         fcpp_test(test/coordination/collection.cpp)
         fcpp_test(test/coordination/election.cpp)
         fcpp_test(test/coordination/geometry.cpp)
@@ -311,6 +352,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/data/color.cpp)
         fcpp_test(test/data/field.cpp)
         fcpp_test(test/data/hyperloglog.cpp)
+        fcpp_test(test/data/ordered.cpp)
         fcpp_test(test/data/tuple.cpp)
         fcpp_test(test/data/vec.cpp)
         fcpp_test(test/deployment/hardware_connector.cpp)
@@ -327,6 +369,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/option/aggregator.cpp)
         fcpp_test(test/option/connect.cpp)
         fcpp_test(test/option/distribution.cpp)
+        fcpp_test(test/option/filter.cpp)
         fcpp_test(test/option/functor.cpp)
         fcpp_test(test/option/metric.cpp)
         fcpp_test(test/option/sequence.cpp)

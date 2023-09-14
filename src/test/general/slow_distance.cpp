@@ -16,9 +16,25 @@ using namespace coordination::tags;
 using namespace component::tags;
 
 
+struct mytimer {
+    template <typename F, typename P>
+    struct component : public P {
+        DECLARE_COMPONENT(timer);
+        struct node : public P::node {
+            using P::node::node;
+            field<times_t> const& nbr_lag() const {
+                return m_nl;
+            }
+            field<times_t> m_nl = field<times_t>(1);
+        };
+        using net  = typename P::net;
+    };
+};
+
 template <int O>
 using combo = component::combine_spec<
     component::simulated_positioner<>,
+    mytimer,
     component::storage<tuple_store<idealdist, real_t, fastdist, real_t, slowdist, real_t, fasterr, real_t, slowerr, real_t>>,
     component::identifier<parallel<(O & 8) == 8>, synchronised<(O & 16) == 16>>,
     component::calculus<

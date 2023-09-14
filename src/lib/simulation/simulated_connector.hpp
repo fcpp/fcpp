@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file simulated_connector.hpp
@@ -30,40 +30,37 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a connector class.
+    //! @brief Declaration tag associating to a connector class (defaults to \ref connect::clique "connect::clique<dimension>").
     template <typename T>
     struct connector {};
 
-    //! @brief Declaration tag associating to a delay generator for sending messages after rounds.
+    //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
     struct delay {};
 
-    //! @brief Declaration tag associating to the dimensionality of the space.
+    //! @brief Declaration tag associating to the dimensionality of the space (defaults to 2).
     template <intmax_t n>
     struct dimension;
 
-    //! @brief Declaration flag associating to whether message sizes should be emulated.
+    //! @brief Declaration flag associating to whether message sizes should be emulated (defaults to false).
     template <bool b>
     struct message_size {};
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Node initialisation tag associating to communication power.
+    //! @brief Node initialisation tag associating to communication power (defaults to `connector_type::data_type{}`).
     struct connection_data {};
 
-    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
+    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
     struct epsilon;
-
-    //! @brief Net initialisation tag associating to communication radius.
-    struct radius {};
 }
 
 
@@ -263,7 +260,7 @@ struct simulated_connector {
              * Returns a `field<size_t> const&` if `message_size` is true, otherwise it returns a `size_t` equal to zero.
              */
             auto nbr_msg_size() const {
-                return get_nbr_msg_size(common::bool_pack<message_size>{});
+                return get_nbr_msg_size(common::number_sequence<message_size>{});
             }
 
             /**
@@ -311,7 +308,7 @@ struct simulated_connector {
             void round_start(times_t t) {
                 m_send = t + m_delay(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 P::node::round_start(t);
-                maybe_align_inplace_m_nbr_msg_size(common::bool_pack<has_calculus<P>::value and message_size>{});
+                maybe_align_inplace_m_nbr_msg_size(common::number_sequence<has_calculus<P>::value and message_size>{});
             }
 
             //! @brief Performs computations at round end with current time `t`.
@@ -326,32 +323,32 @@ struct simulated_connector {
             template <typename S, typename T>
             inline void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
-                receive_size(common::bool_pack<message_size>{}, d, m);
+                receive_size(common::number_sequence<message_size>{}, d, m);
             }
 
           private: // implementation details
             //! @brief Sizes of messages received from neighbours (disabled).
-            constexpr static size_t get_nbr_msg_size(common::bool_pack<false>) {
+            constexpr static size_t get_nbr_msg_size(common::number_sequence<false>) {
                 return 0;
             }
             //! @brief Sizes of messages received from neighbours (enabled).
-            field<size_t> const& get_nbr_msg_size(common::bool_pack<true>) const {
+            field<size_t> const& get_nbr_msg_size(common::number_sequence<true>) const {
                 return m_nbr_msg_size.front();
             }
 
             //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids (disabled).
-            void maybe_align_inplace_m_nbr_msg_size(common::bool_pack<false>) {}
+            void maybe_align_inplace_m_nbr_msg_size(common::number_sequence<false>) {}
             //! @brief Changes the domain of m_nbr_msg_size to match the domain of the neightbours ids (enabled).
-            void maybe_align_inplace_m_nbr_msg_size(common::bool_pack<true>) {
+            void maybe_align_inplace_m_nbr_msg_size(common::number_sequence<true>) {
                 align_inplace(m_nbr_msg_size.front(), std::vector<device_t>(fcpp::details::get_ids(P::node::nbr_uid())));
             }
 
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
-            void receive_size(common::bool_pack<false>, device_t, common::tagged_tuple<S,T> const&) {}
+            void receive_size(common::number_sequence<false>, device_t, common::tagged_tuple<S,T> const&) {}
             //! @brief Stores size of received message (enabled).
             template <typename S, typename T>
-            void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
+            void receive_size(common::number_sequence<true>, device_t d, common::tagged_tuple<S,T> const& m) {
                 common::osstream os;
                 os << m;
                 fcpp::details::self(m_nbr_msg_size.front(), d) = os.size();
@@ -410,7 +407,7 @@ struct simulated_connector {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_connector(get_generator(has_randomizer<P>{}, *this),t) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {

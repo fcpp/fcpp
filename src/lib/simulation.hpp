@@ -24,7 +24,7 @@
  */
 namespace fcpp {
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 /**

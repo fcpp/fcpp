@@ -327,8 +327,7 @@ MULTI_TEST(CollectionTest, LISTidem, O, 3) {
 }
 
 MULTI_TEST(CollectionTest, LISTidemGraph, O, 3) {
-    using topo_type = std::vector<std::vector<int>>;
-    std::vector<real_t> distance {0,1,5,7}; 
+    std::vector<real_t> distance {0,1,5,7};
 
     test_net<combo1<0>, std::tuple<real_t>(int, int), 4> n{
         {{0,1,2},{0,1,3},{0,2,3},{1,2,3}}, 
@@ -405,8 +404,7 @@ MULTI_TEST(CollectionTest, LISTarith, O, 3) {
 }
 
 MULTI_TEST(CollectionTest, LISTarithGraph, O, 3) {
-    using topo_type = std::vector<std::vector<int>>;
-    std::vector<real_t> distance {0,1,5,7}; 
+    std::vector<real_t> distance {0,1,5,7};
 
     test_net<combo1<0>, std::tuple<real_t>(int, int), 4> n{
         {{0,1,2},{0,1,3},{0,2,3},{1,2,3}}, 
@@ -443,7 +441,6 @@ MULTI_TEST(CollectionTest, LISTarithGraph, O, 3) {
 }
 
 MULTI_TEST(CollectionTest, LISTarithSevenGraph, O, 3) {
-    using topo_type = std::vector<std::vector<int>>;
     std::vector<real_t> distance {0,1,3,5,7,8,10,13,15}; 
 
     test_net<combo2<0>, std::tuple<real_t>(int, int), 9> n{

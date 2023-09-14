@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <cstdio>
 #include <sstream>
@@ -64,7 +64,7 @@ using combo1 = component::combine_spec<
         value_push<true>,
         log_schedule<seq_per>,
         aggregators<gat,aggregator::mean<double>>,
-        log_functors<tag, functor::add<aggregator::mean<gat,true>, plot::time>>
+        log_functors<tag, functor::add<aggregator::mean<gat>, plot::time>>
     >,
     component::storage<tuple_store<tag,bool,gat,int>>,
     component::base<parallel<(O & 1) == 1>>
@@ -110,11 +110,11 @@ using combo3 = component::combine_spec<
 TEST(LoggerTest, MakeStream) {
     common::tagged_tuple_t<name,char const*,uid,int,oth,char,gat,bool> t{"bar",7,'b',false};
     std::shared_ptr<std::ostream> p;
-    p = component::details::make_stream("foo", t);
-    p = component::details::make_stream(std::string("foo"), t);
-    p = component::details::make_stream("foo/", t);
+    p = component::details::make_stream<std::ostream>("foo", t);
+    p = component::details::make_stream<std::ostream>(std::string("foo"), t);
+    p = component::details::make_stream<std::ostream>("foo/", t);
     std::stringstream s;
-    p = component::details::make_stream(&s, t);
+    p = component::details::make_stream<std::ostream>(&s, t);
     *p << "foo";
     EXPECT_EQ("foo", s.str());
     std::remove("foo");
@@ -143,6 +143,7 @@ MULTI_TEST(LoggerTest, Push, O, 1) {
             device2.round_end(3);
             network.update();
             EXPECT_EQ(5.5f, network.next());
+            EXPECT_EQ((network.template aggregator<aggregator::mean<gat>>()), 3.0);
         }
         network.run();
     }
@@ -215,6 +216,7 @@ MULTI_TEST(LoggerTest, Pull, O, 2) {
         }
         network.update();
         EXPECT_EQ(5.5f, network.next());
+        EXPECT_EQ((network.template aggregator<aggregator::mean<gat>>()), 3.0);
         network.node_erase(1);
         network.node_erase(2);
         network.node_erase(0);
@@ -296,5 +298,43 @@ MULTI_TEST(LoggerTest, Plot, O, 2) {
     }
     std::stringstream s;
     s << plot::file("experiment", p.build());
-    EXPECT_EQ(s.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-timy-oth42\", \"oth = 42\", \"time\", \"y\", new string[] {\"gat (mean-mean)\", \"tag (count-mean)\"}, new pair[][] {{(1.5, 2), (3.5, 3), (5.5, nan)}, {(1.5, 1), (3.5, 3), (5.5, 0)}}));\n\n\nshipout(\"experiment\");\n");
+    EXPECT_EQ(s.str(), "// experiment\nstring name = \"experiment\";\n\nimport \"plot.asy\" as plot;\nunitsize(1cm);\n\nplot.ROWS = 1;\nplot.COLS = 1;\n\nplot.put(plot.plot(name+\"-timy-oth42\", \"oth = 42\", \"time\", \"y\", new string[] {\"gat (mean-finite mean)\", \"tag (count-finite mean)\"}, new pair[][] {{(1.5, 2), (3.5, 3), (5.5, nan)}, {(1.5, 1), (3.5, 3), (5.5, 0)}}));\n\n\nshipout(\"experiment\");\n");
+}
+
+MULTI_TEST(LoggerTest, Nulls, O, 2) {
+    typename combo3<O>::net network{common::make_tagged_tuple<output,devtag,name,fakeid,oth>(nullptr, 0, "foo", false, 42)};
+    network.node_emplace(common::make_tagged_tuple<oth,gat>('b',5));
+    network.node_emplace(common::make_tagged_tuple<tag>(true));
+    network.node_emplace(common::make_tagged_tuple<gat>(1));
+    EXPECT_EQ(1.5f, network.next());
+    network.update();
+    EXPECT_EQ(3.5f, network.next());
+    {
+        common::unique_lock<(O & 1) == 1> l;
+        auto& n = network.node_at(0, l);
+        n.round_start(2);
+        n.storage(tag{}) = true;
+        n.round_end(2);
+    }
+    {
+        common::unique_lock<(O & 1) == 1> l;
+        auto& n = network.node_at(2, l);
+        n.round_start(2.5f);
+        n.storage(tag{}) = true;
+        n.storage(gat{}) = 3;
+        n.round_end(2.5f);
+    }
+    {
+        common::unique_lock<(O & 1) == 1> l;
+        auto& n = network.node_at(1, l);
+        n.round_start(3);
+        n.storage(gat{}) = 1;
+        n.round_end(3);
+    }
+    network.update();
+    EXPECT_EQ(5.5f, network.next());
+    network.node_erase(1);
+    network.node_erase(2);
+    network.node_erase(0);
+    network.run();
 }

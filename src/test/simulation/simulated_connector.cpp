@@ -32,14 +32,30 @@ struct exposer {
     };
 };
 
+struct mytimer {
+    template <typename F, typename P>
+    struct component : public P {
+        DECLARE_COMPONENT(timer);
+        struct node : public P::node {
+            using P::node::node;
+            field<times_t> const& nbr_lag() const {
+                return m_nl;
+            }
+            field<times_t> m_nl = field<times_t>(1);
+        };
+        using net  = typename P::net;
+    };
+};
+
 using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distribution::constant_n<times_t, 1>, distribution::constant_n<times_t, 9>>;
 
 template <int O>
 using combo = component::combine_spec<
     exposer,
     component::simulated_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, connector<connect::fixed<1>>, delay<distribution::constant_n<times_t, 1, 4>>>,
-    component::scheduler<round_schedule<seq_per>>,
     component::simulated_positioner<>,
+    mytimer,
+    component::scheduler<round_schedule<seq_per>>,
     component::base<parallel<(O & 1) == 1>>
 >;
 

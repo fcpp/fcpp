@@ -8,6 +8,7 @@
 
 #include "lib/component/scheduler.hpp"
 #include "lib/component/storage.hpp"
+#include "lib/coordination/basics.hpp"
 #include "lib/deployment/hardware_identifier.hpp"
 #include "lib/deployment/persister.hpp"
 
@@ -35,7 +36,7 @@ struct main {
     template <typename node_t>
     void operator()(node_t& node, times_t) {
         node.storage(gat{}) += 1;
-        node.storage(oth{}) = old(node, 0, 0, [](int const& o) {
+        node.storage(oth{}) = coordination::old(node, 0, 0, [](int const& o) {
             return o+1;
         });
     }

@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_spawner.hpp
@@ -24,27 +24,27 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of tags and types of attributes describing a node in the input.
+    //! @brief Declaration tag associating to the sequence of attributes tags and types describing nodes (defaults to the empty sequence).
     template <typename... Ts>
     struct node_attributes {};
 
-    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions.
+    //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
     template <typename... Ts>
     struct init;
 
-    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes.
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes (default to "index").
     struct nodesinput {};
 
-    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs.
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs (default to "arcs").
     struct arcsinput {};
 
-    //! @brief Net initialisation tag setting a default start for nodes.
+    //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start;
 }
 
@@ -69,7 +69,11 @@ namespace details {
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::node_attributes defines a sequence of attributes tags and and types.
+ * - \ref tags::node_attributes defines the sequence of attributes tags and types describing nodes (defaults to the empty sequence).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::nodesinput defines the name of the file or input stream specifying graph nodes (default to "index").
+ * - \ref tags::arcsinput defines the name of the file or input stream specifying graph arcs (default to "arcs").
  *
  * Nodes generated receive all tags produced by generating distributions, and \ref tags::start associated to the creation time.
  */
@@ -81,7 +85,7 @@ struct graph_spawner {
     //! @brief Type sequence of node attributes parameters, defaulting to tuple store parameters without node attributes.
     using attributes_type = std::conditional_t<
         std::is_same<attributes_tag_type, common::type_sequence<>>::value,
-        common::storage_list<common::option_types<tags::tuple_store, Ts...>>,
+        common::storage_list<common::option_types<tags::node_store, Ts...>>,
         attributes_tag_type>;
     //! @brief Tagged tuple of node attributes.
     using attributes_tuple_type = common::tagged_tuple_t<attributes_type>;
@@ -117,7 +121,7 @@ struct graph_spawner {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t) {
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {
                 read_nodes(
                     details::make_istream(common::get_or<tags::nodesinput>(t, "nodes")),
                     build_distributions(t, typename init_tuple_type::tags(), typename init_tuple_type::types()),

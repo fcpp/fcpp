@@ -1,10 +1,11 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <sstream>
 
 #include "gtest/gtest.h"
 
 #include "lib/option/aggregator.hpp"
+#include "test/helper.hpp"
 
 using namespace fcpp;
 
@@ -99,7 +100,7 @@ TEST(AggregatorTest, Sum) {
         EXPECT_EQ(3, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::sum<double>;
+        using aggr_t = aggregator::only_finite<aggregator::sum<double>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -109,7 +110,7 @@ TEST(AggregatorTest, Sum) {
         EXPECT_EQ(0.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::sum<double, false>;
+        using aggr_t = aggregator::sum<double>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -140,7 +141,7 @@ TEST(AggregatorTest, Mean) {
         EXPECT_EQ(6, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::mean<double>;
+        using aggr_t = aggregator::only_finite<aggregator::mean<double>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -151,7 +152,7 @@ TEST(AggregatorTest, Mean) {
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::mean<double,false>;
+        using aggr_t = aggregator::mean<double>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -182,7 +183,7 @@ TEST(AggregatorTest, Moment) {
         EXPECT_EQ(6, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::moment<double,2>;
+        using aggr_t = aggregator::only_finite<aggregator::moment<double,2>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -193,7 +194,7 @@ TEST(AggregatorTest, Moment) {
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::moment<double,2,false>;
+        using aggr_t = aggregator::moment<double,2>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -224,7 +225,7 @@ TEST(AggregatorTest, Dev) {
         EXPECT_EQ(0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::deviation<double>;
+        using aggr_t = aggregator::only_finite<aggregator::deviation<double>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -235,7 +236,7 @@ TEST(AggregatorTest, Dev) {
         EXPECT_EQ(0.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::deviation<double,false>;
+        using aggr_t = aggregator::deviation<double>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -265,7 +266,7 @@ TEST(AggregatorTest, Stats) {
         EXPECT_EQ(res_t(6,0), v.result<tag>());
     }
     {
-        using aggr_t = aggregator::stats<double>;
+        using aggr_t = aggregator::only_finite<aggregator::stats<double>>;
         using res_t = aggr_t::result_type<tag>;
         aggr_t v;
         v.insert(INF);
@@ -275,7 +276,7 @@ TEST(AggregatorTest, Stats) {
         EXPECT_EQ(res_t(1.0, 0.0), v.result<tag>());
     }
     {
-        using aggr_t = aggregator::stats<double,false>;
+        using aggr_t = aggregator::stats<double>;
         aggr_t v;
         v.insert(INF);
         double m = std::get<0>(v.result<tag>());
@@ -303,7 +304,7 @@ TEST(AggregatorTest, Min) {
         EXPECT_EQ(2, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::min<double>;
+        using aggr_t = aggregator::only_finite<aggregator::min<double>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -314,7 +315,7 @@ TEST(AggregatorTest, Min) {
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::min<double,false>;
+        using aggr_t = aggregator::min<double>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -341,7 +342,7 @@ TEST(AggregatorTest, Max) {
         EXPECT_EQ(6, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::max<double>;
+        using aggr_t = aggregator::only_finite<aggregator::max<double>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -352,7 +353,7 @@ TEST(AggregatorTest, Max) {
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::max<double,false>;
+        using aggr_t = aggregator::max<double>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -383,7 +384,7 @@ TEST(AggregatorTest, Minimum) {
         EXPECT_EQ(6, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::minimum<double>;
+        using aggr_t = aggregator::only_finite<aggregator::minimum<double>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -394,7 +395,7 @@ TEST(AggregatorTest, Minimum) {
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::minimum<double,false>;
+        using aggr_t = aggregator::minimum<double>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -425,7 +426,7 @@ TEST(AggregatorTest, Maximum) {
         EXPECT_EQ(2, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::maximum<double>;
+        using aggr_t = aggregator::only_finite<aggregator::maximum<double>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -436,7 +437,7 @@ TEST(AggregatorTest, Maximum) {
         EXPECT_EQ(1.0, common::get<tag_t>(v.result<tag>()));
     }
     {
-        using aggr_t = aggregator::maximum<double,false>;
+        using aggr_t = aggregator::maximum<double>;
         using res_t = aggr_t::result_type<tag>;
         using tag_t = res_t::tags::front;
         aggr_t v;
@@ -447,11 +448,12 @@ TEST(AggregatorTest, Maximum) {
 
 TEST(AggregatorTest, Quantile) {
     {
-        using aggr_t = aggregator::quantile<double, false, false, 33, 66, 100>;
+        using aggr_t = aggregator::quantile<double, false, 33, 66, 100>;
         using res_t = aggr_t::result_type<tag>;
         using tag_33 = res_t::tags::get<0>;
         using tag_66 = res_t::tags::get<1>;
         using tag_00 = res_t::tags::get<2>;
+        EXPECT_SAME(tag_00, aggregator::quantile<tag, false, 100>);
         std::stringstream ss;
         aggr_t v;
         v.header(ss, "tag");
@@ -475,11 +477,12 @@ TEST(AggregatorTest, Quantile) {
         EXPECT_NEAR(7.660, common::get<tag_66>(v.result<tag>()), 0.001);
     }
     {
-        using aggr_t = aggregator::quantile<double, true, true, 33, 66, 100>;
+        using aggr_t = aggregator::only_finite<aggregator::quantile<double, true, 33, 66, 100>>;
         using res_t = aggr_t::result_type<tag>;
         using tag_33 = res_t::tags::get<0>;
         using tag_66 = res_t::tags::get<1>;
         using tag_00 = res_t::tags::get<2>;
+        EXPECT_SAME(tag_00, aggregator::only_finite<aggregator::quantile<tag, true, 100>>);
         std::stringstream ss;
         aggr_t v;
         v.header(ss, "tag");
@@ -504,7 +507,7 @@ TEST(AggregatorTest, Multi) {
     using aggr_t = aggregator::combine<aggregator::count<int>, aggregator::mean<int>>;
     using res_t = aggr_t::result_type<tag>;
     std::stringstream ss;
-    aggr_t v;
+    aggr_t v, w;
     v.header(ss, "tag");
     EXPECT_EQ("count(tag) mean(tag) ", ss.str());
 
@@ -518,4 +521,24 @@ TEST(AggregatorTest, Multi) {
     EXPECT_EQ(res_t(1,3), v.result<tag>());
     v.erase(6);
     EXPECT_EQ(res_t(0,0), v.result<tag>());
+    v += w;
+}
+
+TEST(AggregatorTest, Mapper) {
+    struct plus10 {
+        int operator()(int x) {
+            return x+10;
+        }
+    };
+    using aggr_t = aggregator::mapper<plus10, aggregator::sum<int>>;
+    using res_t = aggr_t::result_type<tag>;
+    using tag_t = res_t::tags::front;
+    std::stringstream ss;
+    aggr_t v;
+    v.insert(3);
+    EXPECT_EQ(13, common::get<tag_t>(v.result<tag>()));
+    v.insert(6);
+    EXPECT_EQ(29, common::get<tag_t>(v.result<tag>()));
+    v.insert(2);
+    EXPECT_EQ(41, common::get<tag_t>(v.result<tag>()));
 }

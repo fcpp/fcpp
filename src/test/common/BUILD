@@ -11,6 +11,18 @@ cc_test(
 )
 
 cc_test(
+    name = "immutable_map",
+    srcs = ["immutable_map.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:immutable_map",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
     name = "multitype_map",
     srcs = ["multitype_map.cpp"],
     deps = [
@@ -29,6 +41,19 @@ cc_test(
         "@gtest//:main",
         "//lib/common:algorithm",
         "//lib/common:mutex",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
+    name = "number_sequence",
+    srcs = ["number_sequence.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:number_sequence",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -73,6 +98,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:plot",
+        "//lib/option:filter",
         "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
@@ -123,11 +149,16 @@ cc_test(
         "@gtest//:main",
         "//lib/common:multitype_map",
         "//lib/common:ostream",
+        "//lib/common:plot",
         "//lib/common:serialize",
         "//lib/common:tagged_tuple",
+        "//lib/data:bloom",
         "//lib/data:field",
+        "//lib/data:hyperloglog",
+        "//lib/data:tuple",
         "//lib/data:vec",
         "//lib/internal:flat_ptr",
+        "//lib/option:aggregator",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -140,6 +171,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:tagged_tuple",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -152,6 +184,19 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/common:traits",
+        "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
+    name = "type_sequence",
+    srcs = ["type_sequence.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/common:type_sequence",
         "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

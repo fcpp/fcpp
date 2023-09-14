@@ -1,9 +1,10 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
 #include "lib/common/multitype_map.hpp"
 #include "lib/common/ostream.hpp"
+#include "lib/common/plot.hpp"
 #include "lib/common/serialize.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/data/bloom.hpp"
@@ -12,12 +13,16 @@
 #include "lib/data/tuple.hpp"
 #include "lib/data/vec.hpp"
 #include "lib/internal/flat_ptr.hpp"
+#include "lib/option/aggregator.hpp"
 
 using namespace fcpp;
 
+struct tag {};
+struct gat {};
+
 
 template <typename T>
-std::pair<T,T> rebuild(T y, T z) {
+void rebuilder(T& y, T&z) {
     T const& x{y};
     common::osstream os, osx;
     os << y;
@@ -25,7 +30,25 @@ std::pair<T,T> rebuild(T y, T z) {
     EXPECT_EQ((std::vector<char>)os, (std::vector<char>)osx);
     common::isstream is(os);
     is >> z;
-    return {y, z};
+}
+
+template <typename T>
+std::tuple<T,T,int,int,int> rebuild(T y, T z, bool h) {
+    int h1 = 0, h2 = 1, h3 = 0;
+    rebuilder(y, z);
+    return {y, z, h1, h2, h3};
+}
+
+template <typename T>
+std::tuple<T,T,int,int,int> rebuild(T y, T z) {
+    common::hstream hs;
+    int h1 = int(hs << y);
+    hs = {};
+    int h2 = int(hs << z);
+    rebuilder(y, z);
+    hs = {};
+    int h3 = int(hs << z);
+    return {y, z, h1, h2, h3};
 }
 
 size_t rebuild_size(size_t y) {
@@ -37,10 +60,12 @@ size_t rebuild_size(size_t y) {
     return z;
 }
 
-#define SERIALIZE_CHECK(x, null) {          \
-            auto result = rebuild(x, null); \
-            EXPECT_EQ(x, get<0>(result));   \
-            EXPECT_EQ(x, get<1>(result));   \
+#define SERIALIZE_CHECK(x, ...) {                       \
+            auto result = rebuild(x, __VA_ARGS__);      \
+            EXPECT_EQ(x, get<0>(result));               \
+            EXPECT_EQ(x, get<1>(result));               \
+            EXPECT_EQ(get<2>(result), get<4>(result));  \
+            EXPECT_NE(get<2>(result), get<3>(result));  \
         }
 
 
@@ -80,26 +105,6 @@ TEST(SerializeTest, Indexed) {
     SERIALIZE_CHECK(z, {});
 }
 
-namespace std {
-
-//! @brief STD tuple hasher.
-template <>
-struct hash<tuple<int,bool>> {
-    size_t operator()(tuple<int,bool> const& k) const {
-        return (get<0>(k) << 1) + get<1>(k);
-    }
-};
-
-//! @brief FCPP tuple hasher.
-template <>
-struct hash<fcpp::tuple<int,bool>> {
-    size_t operator()(fcpp::tuple<int,bool> const& k) const {
-        return (fcpp::get<0>(k) << 1) + fcpp::get<1>(k);
-    }
-};
-
-}
-
 TEST(SerializeTest, Iterable) {
     EXPECT_EQ(15ULL,     rebuild_size(15));
     EXPECT_EQ(3058ULL,   rebuild_size(3058));
@@ -107,23 +112,27 @@ TEST(SerializeTest, Iterable) {
     EXPECT_EQ(7646860119211199969ULL, rebuild_size(7646860119211199969LL));
     std::vector<int> x = {1, 2, 4, 8};
     SERIALIZE_CHECK(x, {});
+    std::multiset<int> ms = {1, 2, 4, 8};
+    SERIALIZE_CHECK(ms, {});
     std::set<int> s = {1, 2, 4, 8};
     SERIALIZE_CHECK(s, {});
+    std::unordered_multiset<trace_t> mt = {1, 2, 4, 8};
+    SERIALIZE_CHECK(mt, {}, false);
     std::unordered_set<trace_t> t = {1, 2, 4, 8};
-    SERIALIZE_CHECK(t, {});
+    SERIALIZE_CHECK(t, {}, false);
     std::map<trace_t,double> m = {{4, 2}, {42, 2.4}};
     SERIALIZE_CHECK(m, {});
     std::unordered_map<int,double> n = {{4, 2}, {42, 2.4}};
-    SERIALIZE_CHECK(n, {});
+    SERIALIZE_CHECK(n, {}, false);
     std::tuple<std::unordered_map<int, std::pair<std::vector<char>, short>>, double> y = {
         {{2, {{}, 1}}, {3, {{2,3,4}, 2}}}, 4.2
     };
-    SERIALIZE_CHECK(y, {});
-    std::unordered_map<std::tuple<int,bool>, int> u;
+    SERIALIZE_CHECK(y, {}, false);
+    std::unordered_map<std::tuple<int,bool>, int, common::hash<std::tuple<int,bool>>> u;
     u[std::make_tuple(4,false)] = 2;
-    SERIALIZE_CHECK(u, {});
+    SERIALIZE_CHECK(u, {}, false);
     std::string str = "thestring";
-    SERIALIZE_CHECK(u, {});
+    SERIALIZE_CHECK(str, {});
 }
 
 TEST(SerializeTest, FCPP) {
@@ -148,7 +157,7 @@ TEST(SerializeTest, FCPP) {
     m.insert(2, 'z');
     m.insert(3, 'x');
     m.insert(4, 4242);
-    SERIALIZE_CHECK(m, {});
+    SERIALIZE_CHECK(m, {}, false);
     internal::flat_ptr<int, true> p{42};
     SERIALIZE_CHECK(p, {});
     internal::flat_ptr<int, false> q{42};
@@ -158,10 +167,101 @@ TEST(SerializeTest, FCPP) {
     e->insert(10);
     e->insert(1, 4.2);
     e->insert(3, details::make_field<bool>({2, 4}, {false, true, true}));
-    SERIALIZE_CHECK(e, {});
-    std::unordered_map<tuple<int,bool>, int> u;
+    SERIALIZE_CHECK(e, {}, false);
+    std::unordered_map<tuple<int,bool>, int, common::hash<tuple<int,bool>>> u;
     u[make_tuple(4,false)] = 2;
-    SERIALIZE_CHECK(u, {});
+    SERIALIZE_CHECK(u, {}, false);
+}
+
+TEST(SerializeTest, Aggregators) {
+    aggregator::count<bool> count;
+    count.insert(false);
+    count.insert(true);
+    count.insert(true);
+    SERIALIZE_CHECK(count, {});
+    aggregator::distinct<int> distinct;
+    distinct.insert(4);
+    distinct.insert(2);
+    distinct.insert(4);
+    SERIALIZE_CHECK(distinct, {}, false);
+    aggregator::list<int> list;
+    list.insert(4);
+    list.insert(2);
+    list.insert(4);
+    SERIALIZE_CHECK(list, {});
+    aggregator::sum<int> sum;
+    sum.insert(4);
+    sum.insert(2);
+    sum.insert(4);
+    SERIALIZE_CHECK(sum, {});
+    aggregator::only_finite<aggregator::mean<double>> mean;
+    mean.insert(4);
+    mean.insert(2);
+    mean.insert(4);
+    SERIALIZE_CHECK(mean, {});
+    aggregator::moment<double,3> moment;
+    moment.insert(4);
+    moment.insert(2);
+    moment.insert(4);
+    SERIALIZE_CHECK(moment, {});
+    aggregator::deviation<double> deviation;
+    deviation.insert(4);
+    deviation.insert(2);
+    deviation.insert(4);
+    SERIALIZE_CHECK(deviation, {});
+    aggregator::deviation<double> stats;
+    stats.insert(4);
+    stats.insert(2);
+    stats.insert(4);
+    SERIALIZE_CHECK(stats, {});
+    aggregator::min<int> min;
+    min.insert(4);
+    min.insert(2);
+    min.insert(4);
+    SERIALIZE_CHECK(min, {});
+    aggregator::max<int> max;
+    max.insert(4);
+    max.insert(2);
+    max.insert(4);
+    SERIALIZE_CHECK(max, {});
+    aggregator::quantile<double,false,50> quantilefalse;
+    quantilefalse.insert(4);
+    quantilefalse.insert(2);
+    quantilefalse.insert(4);
+    SERIALIZE_CHECK(quantilefalse, {}, false);
+    aggregator::quantile<double,true,50> quantiletrue;
+    quantiletrue.insert(4);
+    quantiletrue.insert(2);
+    quantiletrue.insert(4);
+    SERIALIZE_CHECK(quantiletrue, {});
+    aggregator::combine<aggregator::min<int>, aggregator::max<int>> combine;
+    combine.insert(4);
+    combine.insert(2);
+    combine.insert(4);
+    SERIALIZE_CHECK(combine, {});
+}
+
+TEST(SerializeTest, Plots) {
+    plot::none none;
+    none << common::make_tagged_tuple<tag,gat>(4,2);
+    none << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(none, {}, false);
+    plot::value<tag> value;
+    value << common::make_tagged_tuple<tag,gat>(4,2);
+    value << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(value, {});
+    plot::filter<gat, filter::above<1>, plot::value<tag>> filter;
+    filter << common::make_tagged_tuple<tag,gat>(4,2);
+    filter << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(filter, {});
+    plot::join<plot::value<tag>, plot::filter<gat, filter::above<1>, plot::none>> join;
+    join << common::make_tagged_tuple<tag,gat>(4,2);
+    join << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(join, {});
+    plot::split<gat, plot::join<plot::value<tag>, plot::filter<gat, filter::above<1>, plot::none>>> split;
+    split << common::make_tagged_tuple<tag,gat>(4,2);
+    split << common::make_tagged_tuple<tag,gat>(2,4);
+    SERIALIZE_CHECK(split, {});
 }
 
 TEST(SerializeTest, Error) {

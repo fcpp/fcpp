@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file renderer.hpp
@@ -8,6 +8,7 @@
 #ifndef FCPP_GRAPHICS_RENDERER_H_
 #define FCPP_GRAPHICS_RENDERER_H_
 
+#include <deque>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -81,6 +82,9 @@ namespace fcpp {
 
             //! @brief It draws a star of lines, given the center and sides.
             void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
+
+            //! @brief It draws the tail of a node, as a sequence of lines given their endpoints, the color to be used and a width.
+            void drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const& n, color const& c, float w) const;
 
             //! @brief It draws the specified text in the specified window coordinates, scale and color.
             void drawText(std::string text, float x, float y, float scale) const;

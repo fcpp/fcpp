@@ -30,64 +30,6 @@
  */
 namespace fcpp {
 
-//! @brief Namespace for filtering functions.
-namespace filter {
-    //! @brief Filters values within `L/den` and `U/den` (included).
-    template <intmax_t L, intmax_t U, intmax_t den = 1>
-    struct within {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            v *= den;
-            if (L > std::numeric_limits<intmax_t>::min() and L > v) return false;
-            if (U < std::numeric_limits<intmax_t>::max() and U < v) return false;
-            return true;
-        }
-    };
-
-    //! @brief Filters values above `L/den` (included).
-    template <intmax_t L, intmax_t den = 1>
-    using above = within<L, std::numeric_limits<intmax_t>::max(), den>;
-
-    //! @brief Filters values below `U/den` (included).
-    template <intmax_t U, intmax_t den = 1>
-    using below = within<std::numeric_limits<intmax_t>::min(), U, den>;
-
-    //! @brief Filters values equal to `V/den`.
-    template <intmax_t V, intmax_t den = 1>
-    using equal = within<V, V, den>;
-
-    //! @brief Negate a filter.
-    template <typename F>
-    struct neg : F {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            return not F::operator()(v);
-        }
-    };
-
-    //! @brief Joins filters (or).
-    template <typename F, typename G>
-    struct vee : F, G {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            return F::operator()(v) or G::operator()(v);
-        }
-    };
-
-    //! @brief Disjoins filters (and).
-    template <typename F, typename G>
-    struct wedge : F, G {
-        //! @brief Filter check.
-        template <typename V>
-        bool operator()(V v) const {
-            return F::operator()(v) and G::operator()(v);
-        }
-    };
-}
-
 
 //! @brief Namespace for plot building tools.
 namespace plot {
@@ -122,6 +64,10 @@ struct point {
     double devdn;
     //! @brief The default value used when the deviation is not available.
     static constexpr double no_dev = -std::numeric_limits<double>::infinity();
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        return true;
+    }
 };
 
 //! @brief Printing a single point.
@@ -150,11 +96,16 @@ struct plot {
     std::vector<double> xvals;
     //! @brief Values of y coordinates with labels.
     std::vector<std::pair<std::string, std::vector<std::tuple<double,double,double>>>> yvals;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        return xvals.empty();
+    }
 };
 
 //! @brief Printing a single plot.
 template <typename O>
 O& operator<<(O& o, plot const& p) {
+    if (p.empty()) return o;
     o << "plot.put(plot.plot(name+\"-" << details::shorten(p.xname) << details::shorten(p.yname) << (p.title.size() ? "-" : "") << details::multi_shorten(p.title) << "\", \"" << p.title << "\", \"" << p.xname << "\", \"" << p.yname << "\", new string[] {";
     bool first = true;
     for (auto const& y : p.yvals) {
@@ -232,11 +183,17 @@ struct page {
     size_t cols;
     //! @brief Plot list.
     std::vector<plot> plots;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        for (auto const& p : plots) if (not p.empty()) return false;
+        return true;
+    }
 };
 
 //! @brief Printing a single page.
 template <typename O>
 O& operator<<(O& o, page const& p) {
+    if (p.empty()) return o;
     if (p.title.size()) o << "// " << p.title << "\n\n";
     o << "plot.ROWS = " << p.rows << ";\n";
     o << "plot.COLS = " << p.cols << ";\n\n";
@@ -269,11 +226,17 @@ struct file {
     std::vector<page> pages;
     //! @brief Custom plot options.
     option_type options;
+    //! @brief Whether the plot should be considered an empty plot.
+    bool empty() const {
+        for (auto const& p : pages) if (not p.empty()) return false;
+        return true;
+    }
 };
 
 //! @brief Printing a file.
 template <typename O>
 O& operator<<(O& o, file const& f) {
+    if (f.empty()) return o;
     o << "// " << f.title << "\n";
     o << "string name = \"" << f.title << "\";\n\n";
     o << "import \"plot.asy\" as plot;\n";
@@ -315,6 +278,16 @@ class none {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(none const& o) const {
+        return true;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(none const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot merging.
     none& operator+=(none const&) {
         return *this;
@@ -323,6 +296,12 @@ class none {
     //! @brief Plot building for internal use.
     build_type build() const {
         return {};
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) const {
+        return s;
     }
 };
 
@@ -538,7 +517,7 @@ class first_rows {
     void print_headers(O&, common::type_sequence<>) const {}
     template <typename O, typename U, typename... Us>
     void print_headers(O& o, common::type_sequence<U,Us...>) const {
-        o << common::details::strip_namespaces(common::type_name<U>()) << " ";
+        o << common::strip_namespaces(common::type_name<U>()) << " ";
         print_headers(o, common::type_sequence<Us...>{});
     }
 
@@ -680,12 +659,19 @@ class last_rows {
 };
 
 
-//! @brief Filters values for column S according to property F in plotter P.
-template <typename S, typename F, typename P>
+//! @brief Filters values for columns and properties in a plotter.
+template <typename... Ts>
 class filter {
+    //! @brief The type sequence of type parameters.
+    using types = common::type_sequence<Ts...>;
+    //! @brief The plotter type.
+    using plotter_type = typename types::back;
+    //! @brief The tuple of filters.
+    using filter_type = common::tagged_tuple_t<typename types::pop_back>;
+
   public:
     //! @brief The internal build type.
-    using build_type = typename P::build_type;
+    using build_type = typename plotter_type::build_type;
 
     //! @brief Default constructor.
     filter() = default;
@@ -705,8 +691,8 @@ class filter {
     //! @brief Row processing.
     template <typename R>
     filter& operator<<(R const& row) {
-        if (m_filter(common::get<S>(row)))
-            (m_plotter << row);
+        if (check(row, typename filter_type::tags{}))
+            m_plotter << row;
         return *this;
     }
 
@@ -716,16 +702,49 @@ class filter {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(filter const& o) const {
+        return m_plotter == o.m_plotter;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(filter const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         return m_plotter.build();
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_plotter;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_plotter;
+    }
+
   private:
+    //! @brief Checks whether the row complies to the filters (empty overload).
+    template <typename R>
+    inline bool check(R const&, common::type_sequence<>) {
+        return true;
+    }
+    //! @brief Checks whether the row complies to the filters (active overload).
+    template <typename R, typename S, typename... Ss>
+    inline bool check(R const& row, common::type_sequence<S, Ss...>) {
+        return common::get<S>(m_filters)(common::get<S>(row)) and check(row, common::type_sequence<Ss...>{});
+    }
+
     //! @brief The plotter.
-    P m_plotter;
+    plotter_type m_plotter;
     //! @brief The callable filter class.
-    F m_filter;
+    filter_type m_filters;
 };
 
 
@@ -872,6 +891,16 @@ class join {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(join const& o) const {
+        return m_plotters == o.m_plotters;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(join const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         build_type res;
@@ -879,11 +908,23 @@ class join {
         return res;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_plotters;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_plotters;
+    }
+
   private:
     //! @brief Forwarding rows to plotters.
     template <typename R, size_t... is>
     void input_impl(R const& row, std::index_sequence<is...>) {
-        common::details::ignore((std::get<is>(m_plotters) << row)...);
+        common::ignore_args((std::get<is>(m_plotters) << row)...);
     }
 
     //! @brief Stop joining plotter builds.
@@ -902,7 +943,7 @@ class join {
     //! @brief Merges all sub-plots.
     template <size_t... is>
     inline void sum_impl(join const& o, std::index_sequence<is...>) {
-        common::details::ignore((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
+        common::ignore_args((std::get<is>(m_plotters) += std::get<is>(o.m_plotters))...);
     }
 
     //! @brief The plotters.
@@ -952,7 +993,7 @@ namespace details {
 //! @endcond
 
 //! @brief Maintains a value for the column S aggregated with A.
-template <typename S, typename A = aggregator::mean<double>>
+template <typename S, typename A = aggregator::only_finite<aggregator::mean<double>>>
 class value {
   public:
     //! @brief The internal build type.
@@ -978,11 +1019,13 @@ class value {
     //! @brief Copy assignment.
     value& operator=(value const& o) {
         m_aggregator = o.m_aggregator;
+        return *this;
     }
 
     //! @brief Move assignment.
     value& operator=(value&& o) {
         m_aggregator = o.m_aggregator;
+        return *this;
     }
 
     //! @brief Plot merging.
@@ -991,28 +1034,38 @@ class value {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(value const& o) const {
+        return m_aggregator == o.m_aggregator;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(value const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         point p;
-        std::string t = tag_name(common::bool_pack<details::has_name_method<S>::value>{}); // tag name
+        std::string t = tag_name(common::number_sequence<details::has_name_method<S>::value>{}); // tag name
         size_t pos = t.find("<");
         if (pos != std::string::npos) {
-            p.unit = common::details::strip_namespaces(t.substr(0, pos));
-            p.source = common::details::strip_namespaces(t.substr(pos+1, t.size()-pos-2));
+            p.unit = common::strip_namespaces(t.substr(0, pos));
+            p.source = common::strip_namespaces(t.substr(pos+1, t.size()-pos-2));
         } else {
             pos = t.find("__");
             if (pos != std::string::npos) {
-                p.source = common::details::strip_namespaces(t.substr(0, pos));
+                p.source = common::strip_namespaces(t.substr(0, pos));
                 p.unit = t.substr(pos+2);
             } else {
-                p.source = common::details::strip_namespaces(t);
+                p.source = common::strip_namespaces(t);
                 p.unit = p.source;
             }
         }
         details::format_type(p.unit);
         details::format_type(p.source);
         std::string ar = A::name(); // row aggregator
-        std::string ad = aggregator_name(common::bool_pack<details::has_name_method<S>::value>{}); // device aggregator
+        std::string ad = aggregator_name(common::number_sequence<details::has_name_method<S>::value>{}); // device aggregator
         p.source += " (" + ad + ar + ")";
         auto r = m_aggregator.template result<S>();
         p.value = std::get<0>(r);
@@ -1021,22 +1074,34 @@ class value {
         return {p};
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_aggregator;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_aggregator;
+    }
+
   private:
     //! @brief Device aggregator name (if present).
-    std::string aggregator_name(common::bool_pack<true>) const {
+    std::string aggregator_name(common::number_sequence<true>) const {
         return S::name() + "-";
     }
     //! @brief Device aggregator name (if absent).
-    std::string aggregator_name(common::bool_pack<false>) const {
+    std::string aggregator_name(common::number_sequence<false>) const {
         return "";
     }
 
     //! @brief Tag name (if aggregator present).
-    std::string tag_name(common::bool_pack<true>) const {
+    std::string tag_name(common::number_sequence<true>) const {
         return common::type_name<typename S::tag>();
     }
     //! @brief Tag name (if aggregator absent).
-    std::string tag_name(common::bool_pack<false>) const {
+    std::string tag_name(common::number_sequence<false>) const {
         return common::type_name<S>();
     }
 
@@ -1131,7 +1196,7 @@ namespace details {
     };
     //! @brief Maintains values for multiple explicit columns and no aggregators (defaults to `mean<double>`).
     template <typename S, template<class...> class A>
-    struct values<S, A<>> : public values<S, A<aggregator::mean<double>>> {};
+    struct values<S, A<>> : public values<S, A<aggregator::only_finite<aggregator::mean<double>>>> {};
     //! @brief Maintains values for multiple explicit columns and multiple aggregators.
     template <typename S, template<class...> class A, typename A1, typename... As>
     struct values<S, A<A1, As...>> : public joiner<typename values<S, A<A1>>::type, typename values<S, A<As>>::type...> {};
@@ -1233,8 +1298,6 @@ class split {
 
     static_assert(details::key_type<S>::single or not std::is_same<typename details::inspector<parent_build_type>::type, point>::value, "cannot split points with multiple keys");
 
-    static_assert(details::key_type<S>::single or std::is_same<std::ratio<0>, B>::value, "cannot use bucket size with multiple keys");
-
     //! @brief The type used for splitting keys.
     using key_type = typename details::key_type<S>::type;
 
@@ -1254,18 +1317,20 @@ class split {
     //! @brief Copy assignment.
     split& operator=(split const& o) {
         m_plotters = o.m_plotters;
+        return *this;
     }
 
     //! @brief Move assignment.
     split& operator=(split&& o) {
         m_plotters = o.m_plotters;
+        return *this;
     }
 
     //! @brief Row processing.
     template <typename R>
     split& operator<<(R const& row) {
         static_assert(common::type_intersect<typename R::tags, typename key_type::tags>::size == key_type::tags::size, "splitting key not in plot row");
-        key_type k = approx_impl(row, B{});
+        key_type k = approx_impl(row, B{}, typename key_type::tags{});
         P* p;
         {
             common::lock_guard<true> l(m_mutex);
@@ -1291,6 +1356,16 @@ class split {
         return *this;
     }
 
+    //! @brief Equality operator.
+    bool operator==(split const& o) const {
+        return m_plotters == o.m_plotters;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(split const& o) const {
+        return !(*this == o);
+    }
+
     //! @brief Plot building for internal use.
     build_type build() const {
         std::map<key_type, parent_build_type> m;
@@ -1301,23 +1376,43 @@ class split {
         return res;
     }
 
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename T>
+    T& serialize(T& s) {
+        return s & m_plotters;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename T>
+    T& serialize(T& s) const {
+        return s << m_plotters;
+    }
+
   private:
+    //! @brief Approximates a single value according to a given scale.
+    template <intmax_t num, intmax_t den, typename T>
+    T& approx_impl(T& x) const {
+        intmax_t n = x * den / num + 0.5;
+        return x = double(n*num)/den;
+    }
+
     //! @brief No approximations without buckets.
-    template <typename R>
-    key_type approx_impl(R const& row, std::ratio<0>) const {
+    template <typename R, typename T>
+    key_type approx_impl(R const& row, std::ratio<0>, T) const {
         return row;
     }
-    //! @brief Approximating the key to the closest bucket multiple.
-    template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>>
-    key_type approx_impl(R const& row, std::ratio<num,den>) const {
+
+    //! @brief Approximating the keys to their closest bucket multiple.
+    template <typename R, intmax_t num, intmax_t den, typename = std::enable_if_t<num != 0>, typename... Ss>
+    key_type approx_impl(R const& row, std::ratio<num,den>, common::type_sequence<Ss...>) const {
         key_type k = row;
-        intmax_t n = std::get<0>(k) * den / num + 0.5;
-        std::get<0>(k) = double(n*num)/den;
+        common::ignore_args(approx_impl<num,den>(common::get<Ss>(k))...);
         return k;
     }
+
     //! @brief Single plot building.
     void build_impl(std::array<plot, 1>& res, std::map<key_type, parent_build_type>& m) const {
-        res[0].xname = details::format_type(common::details::strip_namespaces(common::type_name<S>()));
+        res[0].xname = details::format_type(common::strip_namespaces(common::type_name<S>()));
         std::set<std::string> units;
         if (m.size()) for (point const& q : m.begin()->second) {
             if (q.unit.size()) units.insert(q.unit);

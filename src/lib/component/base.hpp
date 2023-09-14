@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file base.hpp
@@ -25,25 +25,25 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel {};
 
-    //! @brief Declaration flag associating to whether running should follow real time.
+    //! @brief Declaration flag associating to whether running should follow real time (defaults to `FCPP_REALTIME < INF`).
     template <bool b>
     struct realtime {};
 
-    //! @brief Declaration tag associating to a clock type
+    //! @brief Declaration tag associating to a clock type (defaults to `std::chrono::high_resolution_clock`).
     template <typename T>
     struct clock_type {};
 
-    //! @brief Node initialisation tag associating to a `device_t` unique identifier.
+    //! @brief Node initialisation tag associating to a `device_t` unique identifier (required).
     struct uid {};
 }
 
@@ -223,7 +223,7 @@ struct base {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const&) {
+            explicit net(common::tagged_tuple<S,T> const&) {
                 m_realtime_start = clock_t::now();
                 m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den;
                 m_last_update = m_next_update = 0;

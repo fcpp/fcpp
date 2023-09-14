@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_connector.hpp
@@ -29,33 +29,29 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a connector class.
-    template <typename T>
-    struct connector;
-
-    //! @brief Declaration tag associating to a delay generator for sending messages after rounds.
+    //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
     struct delay;
 
-    //! @brief Declaration flag associating to whether message sizes should be emulated.
+    //! @brief Declaration flag associating to whether message sizes should be emulated (defaults to false).
     template <bool b>
     struct message_size;
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Declaration flag associating to whether the neighbour relation is symmetric.
+    //! @brief Declaration flag associating to whether the neighbour relation is symmetric (defaults to true).
     template <bool b>
     struct symmetric;
 
-    //! @brief Declaration flag associating to whether the topology of the graph is static. For FUTURE use.
+    //! @brief Declaration flag associating to whether the topology of the graph is static (for future use).
     template <bool b>
     struct static_topology;
 
@@ -76,6 +72,7 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::message_size defines whether message sizes should be emulated (defaults to false).
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
+ * - \ref tags::symmetric defines whether the neighbour relation is symmetric (defaults to true).
  */
 template <class... Ts>
 struct graph_connector {
@@ -263,7 +260,7 @@ struct graph_connector {
             template <typename S, typename T>
             inline void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
-                receive_size(common::bool_pack<message_size>{}, d, m);
+                receive_size(common::number_sequence<message_size>{}, d, m);
             }
 
           private: // implementation details
@@ -272,10 +269,10 @@ struct graph_connector {
 
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
-            void receive_size(common::bool_pack<false>, device_t, common::tagged_tuple<S,T> const&) {}
+            void receive_size(common::number_sequence<false>, device_t, common::tagged_tuple<S,T> const&) {}
             //! @brief Stores size of received message.
             template <typename S, typename T>
-            void receive_size(common::bool_pack<true>, device_t d, common::tagged_tuple<S,T> const& m) {
+            void receive_size(common::number_sequence<true>, device_t d, common::tagged_tuple<S,T> const& m) {
                 common::osstream os;
                 os << m;
                 fcpp::details::self(m_nbr_msg_size.front(), d) = os.size();
@@ -314,7 +311,7 @@ struct graph_connector {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {

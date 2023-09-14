@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file identifier.hpp
@@ -23,7 +23,7 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
@@ -108,23 +108,23 @@ namespace details {
 //! @endcond
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Declaration flag associating to whether many events are expected to happen at the same time.
+    //! @brief Declaration flag associating to whether many events are expected to happen at the same time (defaults to \ref FCPP_SYNCHRONISED).
     template <bool b>
     struct synchronised {};
 
-    //! @brief Node initialisation tag associating to the unique identifier of an object.
+    //! @brief Node initialisation tag associating to a `device_t` unique identifier (required).
     struct uid;
 
-    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it.
+    //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
     struct epsilon {};
 
-    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    //! @brief Net initialisation tag associating to the number of threads that can be created (defaults to \ref FCPP_THREADS).
     struct threads {};
 }
 
@@ -185,7 +185,7 @@ struct identifier {
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_next_uid(0), m_epsilon(common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON)), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {}
 
             /**
              * @brief Returns next event to schedule for the net component.

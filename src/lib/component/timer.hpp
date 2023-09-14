@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file timer.hpp
@@ -21,16 +21,16 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Node initialisation tag associating to a starting time of execution.
+    //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start {};
 
-    //! @brief Net initialisation tag associating to a factor to be applied to real time.
+    //! @brief Net initialisation tag associating to a factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
     struct realtime_factor {};
 }
 
@@ -208,7 +208,7 @@ struct timer {
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t) {
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {
                 m_offs = 0;
                 m_fact = common::get_or<tags::realtime_factor>(t, FCPP_REALTIME < INF ? FCPP_REALTIME : 1);
                 m_inv = 1/m_fact;

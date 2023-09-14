@@ -12,6 +12,7 @@
 #include "lib/data/color.hpp"
 #include "lib/data/field.hpp"
 #include "lib/data/hyperloglog.hpp"
+#include "lib/data/ordered.hpp"
 #include "lib/data/shape.hpp"
 #include "lib/data/tuple.hpp"
 #include "lib/data/vec.hpp"

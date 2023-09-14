@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file logger.hpp
@@ -35,57 +35,57 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to a sequence of storage tags and corresponding aggregator types.
+    //! @brief Declaration tag associating to a sequence of storage tags and corresponding aggregator types (defaults to the empty sequence).
     template <typename... Ts>
     struct aggregators {};
 
-    //! @brief Declaration tag associating to a sequence of storage tags and corresponding functor types.
+    //! @brief Declaration tag associating to a sequence of storage tags and corresponding functor types (defaults to the empty sequence).
     template <typename... Ts>
     struct log_functors {};
 
-    //! @brief Declaration tag associating to a sequence of initialisation tags to be fed to plotters.
+    //! @brief Declaration tag associating to a sequence of initialisation tags to be fed to plotters (defaults to the empty sequence).
     template <typename... Ts>
     struct extra_info {};
 
-    //! @brief Declaration tag associating to a sequence generator type scheduling writing of data.
+    //! @brief Declaration tag associating to a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
     template <typename T>
     struct log_schedule {};
 
-    //! @brief Declaration tag associating to a plot type.
+    //! @brief Declaration tag associating to a plot type (defaults to \ref plot::none).
     template <typename T>
     struct plot_type {};
 
-    //! @brief Declaration tag associating to the output stream type to be used.
+    //! @brief Declaration tag associating to the output stream type to be used (defaults to `std::ostream`).
     template <typename T>
     struct ostream_type {};
 
-    //! @brief Declaration flag associating to whether parallelism is enabled.
+    //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
 
-    //! @brief Declaration flag associating to whether new values are pushed to aggregators or pulled when needed.
+    //! @brief Declaration flag associating to whether new values are pushed to aggregators or pulled when needed (defaults to \ref FCPP_VALUE_PUSH).
     template <bool b>
     struct value_push {};
 
-    //! @brief Net initialisation tag associating to the maximum length allowed when printing containers.
+    //! @brief Net initialisation tag associating to the maximum length allowed when printing containers (defaults to \ref FCPP_MAX_PRINT_LEN).
     struct max_print_len {};
 
-    //! @brief Net initialisation tag associating to the main name of a component composition instance.
+    //! @brief Net initialisation tag associating to the main name of a component composition instance (defaults to the empty string).
     struct name {};
 
-    //! @brief Net initialisation tag associating to an output stream for logging.
+    //! @brief Net initialisation tag associating to an output stream for logging (defaults to `std::cout`).
     struct output {};
 
-    //! @brief Net initialisation tag associating to a pointer to a plotter object.
+    //! @brief Net initialisation tag associating to a pointer to a plotter object (defaults to `nullptr`).
     struct plotter {};
 
-    //! @brief Net initialisation tag associating to the number of threads that can be created.
+    //! @brief Net initialisation tag associating to the number of threads that can be created (defaults to \ref FCPP_THREADS).
     struct threads;
 }
 
@@ -93,8 +93,8 @@ namespace tags {
 //! @cond INTERNAL
 namespace details {
     //! @brief Makes a stream reference from a `std::string` path.
-    template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(std::string const& s, common::tagged_tuple<S,T> const& t) {
+    template <typename O, typename S, typename T>
+    std::shared_ptr<O> make_stream(std::string const& s, common::tagged_tuple<S,T> const& t) {
         if (s.back() == '/' or s.back() == '\\') {
             std::stringstream ss;
             ss << s;
@@ -103,28 +103,23 @@ namespace details {
                 ss << name << "_";
             t.print(ss, common::underscore_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
             ss << ".txt";
-            return std::shared_ptr<std::ostream>(new std::ofstream(ss.str()));
-        } else return std::shared_ptr<std::ostream>(new std::ofstream(s));
+            return std::shared_ptr<O>(new std::ofstream(ss.str()));
+        } else return std::shared_ptr<O>(new std::ofstream(s));
     }
     //! @brief Makes a stream reference from a `char const*` path.
-    template <typename S, typename T>
-    std::shared_ptr<std::ostream> make_stream(char const* s, common::tagged_tuple<S,T> const& t) {
-        return make_stream(std::string(s), t);
+    template <typename O, typename S, typename T>
+    std::shared_ptr<O> make_stream(char const* s, common::tagged_tuple<S,T> const& t) {
+        return make_stream<O>(std::string(s), t);
     }
     //! @brief Makes a stream reference from a stream pointer.
     template <typename O, typename S, typename T>
     std::shared_ptr<O> make_stream(O* o, common::tagged_tuple<S,T> const&) {
-        return std::shared_ptr<O>(o, [] (void*) {});
+        return {o, [] (void*) {}};
     }
-    //! @brief Makes a reference to a plotter.
-    template <typename T>
-    std::shared_ptr<T> make_plotter(T* o) {
-        return std::shared_ptr<T>(o, [] (void*) {});
-    }
-    //! @brief Makes a reference to a plotter.
-    template <typename T>
-    std::shared_ptr<T> make_plotter(std::nullptr_t) {
-        return std::shared_ptr<T>(new T());
+    //! @brief Makes a stream reference from a null pointer.
+    template <typename O, typename S, typename T>
+    std::shared_ptr<O> make_stream(std::nullptr_t, common::tagged_tuple<S,T> const&) {
+        return {nullptr, [] (void*) {}};
     }
     //! @brief Computes the row type given a the aggregator and functor tuples (general case).
     template <typename A, typename F>
@@ -170,6 +165,7 @@ namespace details {
  *
  * <b>Declaration tags:</b>
  * - \ref tags::aggregators defines a sequence of storage tags and corresponding aggregator types (defaults to the empty sequence).
+ * - \ref tags::log_functors defines a sequence of storage tags and corresponding functor types (defaults to the empty sequence).
  * - \ref tags::extra_info defines a sequence of net initialisation tags and types to be fed to plotters (defaults to the empty sequence).
  * - \ref tags::log_schedule defines a sequence generator type scheduling writing of data (defaults to \ref sequence::never).
  * - \ref tags::plot_type defines a plot type (defaults to \ref plot::none).
@@ -285,31 +281,41 @@ struct logger {
             //! @brief Type for the aggregation rows (fed to plotters).
             using row_type = common::tagged_tuple_cat<log_type, extra_info_type>;
 
+          private: // implementation details
+            //! @brief Checks whether a type is in the aggregator data.
+            template <typename A>
+            constexpr static bool type_supported = row_type::tags::template count<std::remove_reference_t<A>> != 0;
+
+          public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(details::make_plotter<plot_type>(common::get_or<tags::plotter>(t, nullptr))), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)), m_max_print_len(common::get_or<tags::max_print_len>(t, FCPP_MAX_PRINT_LEN)) {
-                std::time_t time = clock_t::to_time_t(clock_t::now());
-                std::string tstr = std::string(ctime(&time));
-                tstr.pop_back();
-                *m_stream << "##########################################################\n";
-                *m_stream << "# FCPP data export started at:  " << tstr << " #\n";
-                *m_stream << "##########################################################\n# ";
-                t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
-                *m_stream << "\n#\n";
-                *m_stream << "# The columns have the following meaning:\n# time ";
-                print_headers(a_tags());
-                print_tags(f_tags());
-                *m_stream << std::endl;
+            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t), m_stream(details::make_stream<ostream_type>(common::get_or<tags::output>(t, &std::cout), t)), m_plotter(common::get_or<tags::plotter>(t, nullptr), [] (void*) {}), m_row(t), m_schedule(get_generator(has_randomizer<P>{}, *this),t), m_functors(functor_init(t, f_tags{})), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)), m_max_print_len(common::get_or<tags::max_print_len>(t, FCPP_MAX_PRINT_LEN)) {
+                if (m_stream != nullptr) {
+                    std::time_t time = clock_t::to_time_t(clock_t::now());
+                    std::string tstr = std::string(ctime(&time));
+                    tstr.pop_back();
+                    *m_stream << "##########################################################\n";
+                    *m_stream << "# FCPP data export started at:  " << tstr << " #\n";
+                    *m_stream << "##########################################################\n# ";
+                    t.print(*m_stream, common::assignment_tuple, common::skip_tags<tags::name,tags::output,tags::plotter>);
+                    *m_stream << "\n#\n";
+                    *m_stream << "# The columns have the following meaning:\n# time ";
+                    print_headers(a_tags());
+                    print_tags(f_tags());
+                    *m_stream << std::endl;
+                }
             }
 
             //! @brief Destructor printing an export end section.
             ~net() {
-                std::time_t time = clock_t::to_time_t(clock_t::now());
-                std::string tstr = std::string(ctime(&time));
-                tstr.pop_back();
-                *m_stream << "##########################################################\n";
-                *m_stream << "# FCPP data export finished at: " << tstr << " #\n";
-                *m_stream << "##########################################################" << std::endl;
+                if (m_stream != nullptr) {
+                    std::time_t time = clock_t::to_time_t(clock_t::now());
+                    std::string tstr = std::string(ctime(&time));
+                    tstr.pop_back();
+                    *m_stream << "##########################################################\n";
+                    *m_stream << "# FCPP data export finished at: " << tstr << " #\n";
+                    *m_stream << "##########################################################" << std::endl;
+                }
                 maybe_clear(has_identifier<P>{}, *this);
             }
 
@@ -326,15 +332,51 @@ struct logger {
             void update() {
                 if (m_schedule.next() < P::net::next()) {
                     PROFILE_COUNT("logger");
-                    data_puller(common::bool_pack<not value_push>(), *this);
+                    data_puller(common::number_sequence<not value_push>(), *this);
                     row_update(a_tags{}, f_tags{});
-                    print_output(l_tags{});
-                    *m_stream << std::endl;
-                    data_plotter(std::is_same<plot_type, plot::none>{});
+                    if (m_stream != nullptr) {
+                        print_output(l_tags{});
+                        *m_stream << std::endl;
+                    }
+                    if (m_plotter != nullptr)
+                        data_plotter(std::is_same<plot_type, plot::none>{});
                     m_schedule.step(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                     if (not value_push) m_aggregators = aggregators_type{};
                 } else P::net::update();
             }
+
+            //! @brief Access to aggregator data as tagged tuple.
+            row_type const& aggregator_tuple() const {
+                return m_row;
+            }
+
+            //! @cond INTERNAL
+            #define MISSING_TYPE_MESSAGE "access to non-existent aggregator data A"
+            //! @endcond
+
+            /**
+             * @brief Access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& aggregator() const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return common::get_or_wildcard<T>(m_row);
+            }
+
+            /**
+             * @brief Access to stored data.
+             *
+             * @tparam T The tag corresponding to the data to be accessed.
+             */
+            template <typename T>
+            auto const& aggregator(T) const {
+                static_assert(type_supported<T>, MISSING_TYPE_MESSAGE);
+                return common::get_or_wildcard<T>(m_row);
+            }
+
+            #undef MISSING_TYPE_MESSAGE
 
             //! @brief Erases data from the aggregators.
             template <typename S, typename T>
@@ -372,14 +414,14 @@ struct logger {
             inline void print_headers(common::type_sequence<>) const {}
             template <typename U, typename... Us>
             inline void print_headers(common::type_sequence<U,Us...>) const {
-                common::get<U>(m_aggregators).header(*m_stream, common::details::strip_namespaces(common::type_name<U>()));
+                common::get<U>(m_aggregators).header(*m_stream, common::strip_namespaces(common::type_name<U>()));
                 print_headers(common::type_sequence<Us...>());
             }
             //! @brief Prints the functor headers.
             inline void print_tags(common::type_sequence<>) const {}
             template <typename U, typename... Us>
             inline void print_tags(common::type_sequence<U,Us...>) const {
-                *m_stream << common::details::strip_namespaces(common::type_name<U>()) << " ";
+                *m_stream << common::strip_namespaces(common::type_name<U>()) << " ";
                 print_tags(common::type_sequence<Us...>{});
             }
 
@@ -413,15 +455,15 @@ struct logger {
 
             //! @brief Accesses a tuple (effective overload).
             template <typename U, typename S, typename T>
-            inline auto const& smart_getter(S&, T const& t, common::bool_pack<true>) {
+            inline auto const& smart_getter(S&, T const& t, common::number_sequence<true>) {
                 return common::get<U>(t);
             }
 
             //! @brief Accesses a tuple (pretender overload).
             template <typename U, typename S, typename T>
-            inline auto smart_getter(S&, T const&, common::bool_pack<false>) {
+            inline auto smart_getter(S&, T const&, common::number_sequence<false>) {
                 using A = typename S::template tag_type<U>::type;
-                return *((A*)42);
+                return common::declare_reference<A>();
             }
 
             //! @brief Erases data from the aggregators (empty overload).
@@ -431,7 +473,7 @@ struct logger {
             //! @brief Erases data from the aggregators.
             template <typename S, typename T, typename U, typename... Us>
             inline void aggregator_erase_impl(S& a, T const& t, common::type_sequence<U, Us...>) {
-                common::get<U>(a).erase(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                common::get<U>(a).erase(smart_getter<U>(a, t, common::number_sequence<T::tags::template count<U> != 0>{}));
                 aggregator_erase_impl(a, t, common::type_sequence<Us...>{});
             }
 
@@ -443,14 +485,14 @@ struct logger {
             template <typename S, typename T, typename U, typename... Us>
             inline void aggregator_insert_impl(S& a,  T const& t, common::type_sequence<U, Us...>) {
                 static_assert(T::tags::template count<U> != 0, "unsupported tag in aggregators (add U to storage tag list)");
-                common::get<U>(a).insert(smart_getter<U>(a, t, common::bool_pack<T::tags::template count<U> != 0>{}));
+                common::get<U>(a).insert(smart_getter<U>(a, t, common::number_sequence<T::tags::template count<U> != 0>{}));
                 aggregator_insert_impl(a, t, common::type_sequence<Us...>{});
             }
 
             //! @brief Inserts an aggregator data into the aggregators.
             template <typename S, typename T, typename... Us>
             inline void aggregator_add_impl(S& a,  T const& t, common::type_sequence<Us...>) {
-                common::details::ignore((common::get<Us>(a) += common::get<Us>(t))...);
+                common::ignore_args((common::get<Us>(a) += common::get<Us>(t))...);
             }
 
             //! @brief Returns the `randomizer` generator if available.
@@ -477,7 +519,7 @@ struct logger {
 
             //! @brief Collects data actively from nodes if `identifier` is available.
             template <typename N>
-            void data_puller(common::bool_pack<true>, N& n) {
+            void data_puller(common::number_sequence<true>, N& n) {
                 if (parallel == false or m_threads == 1) {
                     for (auto it = n.node_begin(); it != n.node_end(); ++it)
                         aggregator_insert_impl(m_aggregators, it->second.storage_tuple(), a_tags());
@@ -495,14 +537,14 @@ struct logger {
 
             //! @brief Does nothing otherwise.
             template <typename N>
-            inline void data_puller(common::bool_pack<false>, N&) {}
+            inline void data_puller(common::number_sequence<false>, N&) {}
 
             //! @brief Updates row data.
             template <typename... Us, typename... Ss>
             inline void row_update(common::type_sequence<Us...>, common::type_sequence<Ss...>) {
                 common::get<plot::time>(m_row) = m_schedule.next();
-                common::details::ignore((m_row = common::get<Us>(m_aggregators).template result<Us>())...);
-                common::details::ignore((common::get<Ss>(m_row) = common::get<Ss>(m_functors)(get_generator(has_randomizer<P>{}, *this), m_row))...);
+                common::ignore_args((m_row = common::get<Us>(m_aggregators).template result<Us>())...);
+                common::ignore_args((common::get<Ss>(m_row) = common::get<Ss>(m_functors)(get_generator(has_randomizer<P>{}, *this), m_row))...);
             }
 
             //! @brief Plots data if a plotter is given.

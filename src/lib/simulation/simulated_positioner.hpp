@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file simulated_positioner.hpp
@@ -23,26 +23,26 @@
 namespace fcpp {
 
 
-//! @brief Namespace for all FCPP components.
+// Namespace for all FCPP components.
 namespace component {
 
 
-//! @brief Namespace of tags to be used for initialising components.
+// Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to the dimensionality of the space.
+    //! @brief Declaration tag associating to the dimensionality of the space (defaults to 2).
     template <intmax_t n>
     struct dimension {};
 
-    //! @brief Node initialisation tag associating to a starting position.
+    //! @brief Node initialisation tag associating to a starting position (required).
     struct x {};
 
-    //! @brief Node initialisation tag associating to a starting velocity.
+    //! @brief Node initialisation tag associating to a starting velocity (defaults to the null vector).
     struct v {};
 
-    //! @brief Node initialisation tag associating to a starting acceleration.
+    //! @brief Node initialisation tag associating to a starting acceleration (defaults to the null vector).
     struct a {};
 
-    //! @brief Node initialisation tag associating to a starting friction coefficient.
+    //! @brief Node initialisation tag associating to a starting friction coefficient (defaults to zero).
     struct f {};
 }
 
@@ -62,6 +62,8 @@ namespace details {
 
 /**
  * @brief Component handling physical evolution of a position through time.
+ *
+ * Requires a \ref timer parent component.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
@@ -92,6 +94,7 @@ struct simulated_positioner {
     struct component : public P {
         //! @cond INTERNAL
         DECLARE_COMPONENT(positioner);
+        REQUIRE_COMPONENT(positioner,timer);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -305,6 +308,11 @@ struct simulated_positioner {
                 return m_nbr_dist;
             }
 
+            //! @brief Lags since most recent distance measurements.
+            fcpp::field<times_t> const& nbr_dist_lag() const {
+                return P::node::nbr_lag();
+            }
+
           private: // implementation details
             //! @brief Position at a given time on a given coordinate (viscous general case; relative to round start).
             real_t position(size_t i, real_t dt) const {
@@ -325,6 +333,7 @@ struct simulated_positioner {
                 }
                 return end;
             }
+            //! @brief Searches for a time when the i-th coordinates becomes `y` (overload without an end time).
             times_t binary_search(size_t i, times_t start, real_t y) const {
                 real_t dt = 1;
                 real_t xs = position(i, start);

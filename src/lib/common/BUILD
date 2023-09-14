@@ -8,6 +8,15 @@ cc_library(
 )
 
 cc_library(
+    name = 'immutable_map',
+    hdrs = ['immutable_map.hpp'],
+    srcs = ['immutable_map.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
     name = 'multitype_map',
     hdrs = ['multitype_map.hpp'],
     srcs = ['multitype_map.cpp'],
@@ -24,6 +33,15 @@ cc_library(
     name = 'mutex',
     hdrs = ['mutex.hpp'],
     srcs = ['mutex.cpp'],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'number_sequence',
+    hdrs = ['number_sequence.hpp'],
+    srcs = ['number_sequence.cpp'],
     visibility = [
         '//visibility:public',
     ],
@@ -124,6 +142,19 @@ cc_library(
     name = 'traits',
     hdrs = ['traits.hpp'],
     srcs = ['traits.cpp'],
+    deps = [
+        "//lib/common:number_sequence",
+        "//lib/common:type_sequence",
+    ],
+    visibility = [
+        '//visibility:public',
+    ],
+)
+
+cc_library(
+    name = 'type_sequence',
+    hdrs = ['type_sequence.hpp'],
+    srcs = ['type_sequence.cpp'],
     visibility = [
         '//visibility:public',
     ],

@@ -4,6 +4,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/option:aggregator",
+        "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],
@@ -28,7 +29,20 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/option:distribution",
+        "//lib/data:color",
         "//test:helper",
+    ],
+    copts = ['-Iexternal/gtest/googletest/include/'],
+    args = ['--gtest_color=yes'],
+    timeout = 'short',
+)
+
+cc_test(
+    name = "filter",
+    srcs = ["filter.cpp"],
+    deps = [
+        "@gtest//:main",
+        "//lib/option:filter",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
     args = ['--gtest_color=yes'],

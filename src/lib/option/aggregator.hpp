@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file aggregator.hpp
@@ -18,11 +18,13 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "lib/settings.hpp"
 #include "lib/common/algorithm.hpp"
 #include "lib/common/tagged_tuple.hpp"
+#include "lib/option/filter.hpp"
 
 
 /**
@@ -116,6 +118,28 @@ class count {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(count const& o) const {
+        return m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(count const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_count;
+    }
+
   private:
     //! @brief The counter.
     size_t m_count = 0;
@@ -123,8 +147,10 @@ class count {
 
 
 //! @brief Aggregates values by counting how many distinct values are present.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class distinct {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::distinct should be removed");
+
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -134,7 +160,7 @@ class distinct {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<distinct<U, only_finite>, size_t>;
+    using result_type = common::tagged_tuple_t<distinct<U, deprecated>, size_t>;
 
     //! @brief Default constructor.
     distinct() = default;
@@ -177,6 +203,28 @@ class distinct {
     template <typename O>
     void output(O& os) const {
         os << std::get<0>(result<void>()) << " ";
+    }
+
+    //! @brief Equality operator.
+    bool operator==(distinct const& o) const {
+        return m_counts == o.m_counts;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(distinct const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_counts;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_counts;
     }
 
   private:
@@ -253,6 +301,28 @@ class list {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(list const& o) const {
+        return m_items == o.m_items;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(list const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_items;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_items;
+    }
+
   private:
     //! @brief The list of items (in a per-thread basis).
     std::vector<std::vector<T>> m_items;
@@ -260,8 +330,9 @@ class list {
 
 
 //! @brief Aggregates values by summing them.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class sum {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::sum should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -271,7 +342,7 @@ class sum {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<sum<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<sum<U, deprecated>, T>;
 
     //! @brief Default constructor.
     sum() = default;
@@ -284,15 +355,12 @@ class sum {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_sum -= value;
+        m_sum -= value;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-        }
+        m_sum += value;
     }
 
     //! @brief The results of aggregation.
@@ -318,14 +386,37 @@ class sum {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(sum const& o) const {
+        return m_sum == o.m_sum;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(sum const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum;
+    }
+
   private:
     T m_sum = 0;
 };
 
 
 //! @brief Aggregates values by averaging.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class mean {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::mean should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -335,7 +426,7 @@ class mean {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<mean<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<mean<U, deprecated>, T>;
 
     //! @brief Default constructor.
     mean() = default;
@@ -349,18 +440,14 @@ class mean {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= value;
-            m_count--;
-        }
+        m_sum -= value;
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-            m_count++;
-        }
+        m_sum += value;
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -386,6 +473,28 @@ class mean {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(mean const& o) const {
+        return m_sum == o.m_sum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(mean const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_count;
+    }
+
   private:
     T m_sum = 0;
     size_t m_count = 0;
@@ -393,8 +502,9 @@ class mean {
 
 
 //! @brief Aggregates values by n-th moment.
-template <typename T, char n, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, char n, int deprecated = 2>
 class moment {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::moment should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -404,7 +514,7 @@ class moment {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<moment<U, n, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<moment<U, n, deprecated>, T>;
 
     //! @brief Default constructor.
     moment() = default;
@@ -418,18 +528,14 @@ class moment {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= pow(value, n);
-            m_count--;
-        }
+        m_sum -= pow(value, n);
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += pow(value, n);
-            m_count++;
-        }
+        m_sum += pow(value, n);
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -455,6 +561,28 @@ class moment {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(moment const& o) const {
+        return m_sum == o.m_sum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(moment const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_count;
+    }
+
   private:
     T m_sum = 0;
     size_t m_count = 0;
@@ -462,8 +590,9 @@ class moment {
 
 
 //! @brief Aggregates values by standard deviation.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class deviation {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::deviation should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -473,7 +602,7 @@ class deviation {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<deviation<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<deviation<U, deprecated>, T>;
 
     //! @brief Default constructor.
     deviation() = default;
@@ -488,20 +617,16 @@ class deviation {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= value;
-            m_sqsum -= value*value;
-            m_count--;
-        }
+        m_sum -= value;
+        m_sqsum -= value*value;
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-            m_sqsum += value*value;
-            m_count++;
-        }
+        m_sum += value;
+        m_sqsum += value*value;
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -531,6 +656,28 @@ class deviation {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(deviation const& o) const {
+        return m_sum == o.m_sum and m_sqsum == o.m_sqsum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(deviation const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_sqsum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_sqsum << m_count;
+    }
+
   private:
     T m_sum = 0;
     T m_sqsum = 0;
@@ -539,15 +686,16 @@ class deviation {
 
 
 //! @brief Aggregates values by mean and standard deviation.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class stats {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::stats should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The type of values aggregated.
     using type = T;
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<mean<U, only_finite>, T, deviation<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<mean<U, deprecated>, T, deviation<U, deprecated>, T>;
 
     //! @brief Default constructor.
     stats() = default;
@@ -562,20 +710,16 @@ class stats {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum -= value;
-            m_sqsum -= value*value;
-            m_count--;
-        }
+        m_sum -= value;
+        m_sqsum -= value*value;
+        m_count--;
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_sum += value;
-            m_sqsum += value*value;
-            m_count++;
-        }
+        m_sum += value;
+        m_sqsum += value*value;
+        m_count++;
     }
 
     //! @brief The results of aggregation.
@@ -606,6 +750,28 @@ class stats {
         os << std::get<0>(res) << " " << std::get<1>(res) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(stats const& o) const {
+        return m_sum == o.m_sum and m_sqsum == o.m_sqsum and m_count == o.m_count;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(stats const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_sum & m_sqsum & m_count;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_sum << m_sqsum << m_count;
+    }
+
   private:
     T m_sum = 0;
     T m_sqsum = 0;
@@ -621,8 +787,9 @@ class stats {
  * @{
  */
 //! @brief Aggregates values by taking the minimum (insert-only).
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+template <typename T, int deprecated = 2>
 class min {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::min should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -632,7 +799,7 @@ class min {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<min<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<min<U, deprecated>, T>;
 
     //! @brief Default constructor.
     min() = default;
@@ -650,9 +817,7 @@ class min {
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_min = std::min(m_min, value);
-        }
+        m_min = std::min(m_min, value);
     }
 
     //! @brief The results of aggregation.
@@ -678,14 +843,37 @@ class min {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(min const& o) const {
+        return m_min == o.m_min;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(min const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_min;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_min;
+    }
+
   private:
     T m_min = std::numeric_limits<T>::has_infinity ? std::numeric_limits<T>::infinity() : std::numeric_limits<T>::max();
 };
 
 
-//! @brief Aggregates values by taking the minimum (insert-only).
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity>
+//! @brief Aggregates values by taking the maximum (insert-only).
+template <typename T, int deprecated = 2>
 class max {
+    static_assert(deprecated == 2, "the only_finite template argument to aggregator::max should be removed, use aggregator::only_finite if needed");
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -695,7 +883,7 @@ class max {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = common::tagged_tuple_t<max<U, only_finite>, T>;
+    using result_type = common::tagged_tuple_t<max<U, deprecated>, T>;
 
     //! @brief Default constructor.
     max() = default;
@@ -713,9 +901,7 @@ class max {
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value)) {
-            m_max = std::max(m_max, value);
-        }
+        m_max = std::max(m_max, value);
     }
 
     //! @brief The results of aggregation.
@@ -741,6 +927,28 @@ class max {
         os << std::get<0>(result<void>()) << " ";
     }
 
+    //! @brief Equality operator.
+    bool operator==(max const& o) const {
+        return m_max == o.m_max;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(max const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_max;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_max;
+    }
+
   private:
     T m_max = std::numeric_limits<T>::has_infinity ? -std::numeric_limits<T>::infinity() : std::numeric_limits<T>::lowest();
 };
@@ -759,7 +967,7 @@ class max {
  * @param insert_only Whether erase should be supported or not.
  * @param qs The required quantiles.
  */
-template <typename T, bool only_finite, bool insert_only, char... qs>
+template <typename T, bool insert_only, char... qs>
 class quantile;
 
 //! @cond INTERNAL
@@ -772,8 +980,8 @@ namespace details {
     }
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
-    template <typename U, typename T, bool only_finite, bool insert_only, char... qs>
-    using quantile_result_type = common::tagged_tuple<common::type_sequence<quantile<U, only_finite, insert_only, qs>...>, common::type_sequence<std::enable_if_t<qs==qs, T>...>>;
+    template <typename U, typename T, bool insert_only, char... qs>
+    using quantile_result_type = common::tagged_tuple<common::type_sequence<quantile<U, insert_only, qs>...>, common::type_sequence<std::enable_if_t<qs==qs, T>...>>;
 
     //! @brief The results of aggregation for quantile.
     template <typename T, size_t n>
@@ -797,8 +1005,8 @@ namespace details {
     }
 
     //! @brief The results of aggregation for quantile as tuple.
-    template <typename U, typename T, bool only_finite, bool insert_only, char... qs, size_t... is>
-    quantile_result_type<U, T, only_finite, insert_only, qs...> quantiles_tuple(quantile<T, only_finite, insert_only, qs...> const&, std::vector<T>& ev, std::array<char,sizeof...(qs)> const& quantiles, std::index_sequence<is...>) {
+    template <typename U, typename T, bool insert_only, char... qs, size_t... is>
+    quantile_result_type<U, T, insert_only, qs...> quantiles_tuple(quantile<T, insert_only, qs...> const&, std::vector<T>& ev, std::array<char,sizeof...(qs)> const& quantiles, std::index_sequence<is...>) {
         std::array<T,sizeof...(qs)> r = details::quantiles(ev, quantiles);
         return {r[is]...};
     }
@@ -817,8 +1025,8 @@ namespace details {
 //! @endcond
 
 //! @brief Implementation supporting erase.
-template <typename T, bool only_finite, char... qs>
-class quantile<T, only_finite, false, qs...> {
+template <typename T, char... qs>
+class quantile<T, false, qs...> {
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -828,7 +1036,7 @@ class quantile<T, only_finite, false, qs...> {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = details::quantile_result_type<U, T, only_finite, false, qs...>;
+    using result_type = details::quantile_result_type<U, T, false, qs...>;
 
     //! @brief Default constructor.
     quantile() = default;
@@ -841,14 +1049,12 @@ class quantile<T, only_finite, false, qs...> {
 
     //! @brief Erases a value from the aggregation set.
     void erase(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_values.erase(m_values.find(value));
+        m_values.erase(m_values.find(value));
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_values.insert(value);
+        m_values.insert(value);
     }
 
     //! @brief The results of aggregation.
@@ -877,14 +1083,36 @@ class quantile<T, only_finite, false, qs...> {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
 
+    //! @brief Equality operator.
+    bool operator==(quantile const& o) const {
+        return m_values == o.m_values;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(quantile const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_values;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_values;
+    }
+
   private:
     std::array<char, sizeof...(qs)> const m_quantiles = {qs...};
     std::unordered_multiset<T> m_values;
 };
 
 //! @brief Implementation not supporting erase.
-template <typename T, bool only_finite, char... qs>
-class quantile<T, only_finite, true, qs...> {
+template <typename T, char... qs>
+class quantile<T, true, qs...> {
   public:
     //! @brief The tag aggregated from result type.
     using tag = T;
@@ -894,7 +1122,7 @@ class quantile<T, only_finite, true, qs...> {
 
     //! @brief The type of the aggregation result, given the tag of the aggregated values.
     template <typename U>
-    using result_type = details::quantile_result_type<U, T, only_finite, true, qs...>;
+    using result_type = details::quantile_result_type<U, T, true, qs...>;
 
     //! @brief Default constructor.
     quantile() = default;
@@ -912,8 +1140,7 @@ class quantile<T, only_finite, true, qs...> {
 
     //! @brief Inserts a new value to be aggregated.
     void insert(T value) {
-        if (not only_finite or std::isfinite(value))
-            m_values.push_back(value);
+        m_values.push_back(value);
     }
 
     //! @brief The results of aggregation.
@@ -941,6 +1168,28 @@ class quantile<T, only_finite, true, qs...> {
         details::quantile_output(os, result<void>(), std::make_index_sequence<sizeof...(qs)>{});
     }
 
+    //! @brief Equality operator.
+    bool operator==(quantile const& o) const {
+        return m_values == o.m_values;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(quantile const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_values;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_values;
+    }
+
   private:
     std::array<char, sizeof...(qs)> const m_quantiles = {qs...};
     std::vector<T> m_values;
@@ -948,23 +1197,23 @@ class quantile<T, only_finite, true, qs...> {
 
 
 //! @brief Aggregates values by maintaining their minimum.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using minimum = quantile<T,only_finite,insert_only,0>;
+template <typename T, bool insert_only = false>
+using minimum = quantile<T,insert_only,0>;
 
 
 //! @brief Aggregates values by maintaining their median.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using median = quantile<T,only_finite,insert_only,50>;
+template <typename T, bool insert_only = false>
+using median = quantile<T,insert_only,50>;
 
 
 //! @brief Aggregates values by maintaining their maximum.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using maximum = quantile<T,only_finite,insert_only,100>;
+template <typename T, bool insert_only = false>
+using maximum = quantile<T,insert_only,100>;
 
 
 //! @brief Aggregates values by maintaining their minimum, 25% quartile, median, 75% quartile and maximum.
-template <typename T, bool only_finite = std::numeric_limits<T>::has_infinity, bool insert_only = false>
-using quartile = quantile<T,only_finite,insert_only,0,25,50,75,100>;
+template <typename T, bool insert_only = false>
+using quartile = quantile<T,insert_only,0,25,50,75,100>;
 //! @}
 
 
@@ -975,7 +1224,7 @@ using quartile = quantile<T,only_finite,insert_only,0,25,50,75,100>;
  * Supports erase only if supported by every aggregator.
  */
 template <typename... Ts>
-class combine : public Ts... {
+class combine {
   public:
     //! @brief The type of values aggregated.
     using type = typename common::type_sequence<Ts...>::front::type;
@@ -989,25 +1238,25 @@ class combine : public Ts... {
 
     //! @brief Combines aggregated values.
     combine& operator+=(combine const& o) {
-        common::details::ignore(Ts::operator+=(o)...);
+        common::ignore_args((std::get<Ts>(m_aggregators)+=std::get<Ts>(o.m_aggregators))...);
         return *this;
     }
 
     //! @brief Erases a value from the aggregation set.
     void erase(type value) {
-        common::details::ignore((Ts::erase(value),0)...);
+        common::ignore_args((std::get<Ts>(m_aggregators).erase(value),0)...);
     }
 
     //! @brief Inserts a new value to be aggregated.
     void insert(type value) {
-        common::details::ignore((Ts::insert(value),0)...);
+        common::ignore_args((std::get<Ts>(m_aggregators).insert(value),0)...);
     }
 
     //! @brief The results of aggregation.
     template <typename U>
     result_type<U> result() const {
         result_type<U> r;
-        common::details::ignore((r = Ts::template result<U>())...);
+        common::ignore_args((r = std::get<Ts>(m_aggregators).template result<U>())...);
         return r;
     }
 
@@ -1021,20 +1270,42 @@ class combine : public Ts... {
     //! @brief Outputs the aggregator description.
     template <typename O>
     void header(O& os, std::string tag) const {
-        header_impl(os, tag, common::type_sequence<Ts...>());
+        header_impl(os, tag, common::type_sequence<Ts...>{});
     }
 
     //! @brief Printed results of aggregation.
     template <typename O>
     void output(O& os) const {
-        output_impl(os, common::type_sequence<Ts...>());
+        output_impl(os, common::type_sequence<Ts...>{});
+    }
+
+    //! @brief Equality operator.
+    bool operator==(combine const& o) const {
+        return m_aggregators == o.m_aggregators;
+    }
+
+    //! @brief Inequality operator.
+    bool operator!=(combine const& o) const {
+        return !(*this == o);
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_aggregators;
+    }
+
+    //! @brief Serialises the content from/to a given input/output stream (const overload).
+    template <typename S>
+    S& serialize(S& s) const {
+        return s << m_aggregators;
     }
 
   private:
     //! @brief Outputs the aggregator description.
     template <typename O, typename S, typename... Ss>
     void header_impl(O& os, std::string& tag, common::type_sequence<S,Ss...>) const {
-        S::header(os, tag);
+        std::get<S>(m_aggregators).header(os, tag);
         header_impl(os, tag, common::type_sequence<Ss...>());
     }
     template <typename O>
@@ -1043,19 +1314,22 @@ class combine : public Ts... {
     //! @brief Printed results of aggregation.
     template <typename O, typename S, typename... Ss>
     void output_impl(O& os, common::type_sequence<S,Ss...>) const {
-        S::output(os);
+        std::get<S>(m_aggregators).output(os);
         output_impl(os, common::type_sequence<Ss...>());
     }
     template <typename O>
     void output_impl(O&, common::type_sequence<>) const {}
+
+    //! @brief The aggregators to be combined.
+    std::tuple<Ts...> m_aggregators;
 };
 
 
 /**
  * @brief Aggregates containers of values through a value aggregator.
  *
- * @param T The container type.
- * @param A The value aggregator type.
+ * @tparam T The container type.
+ * @tparam A The value aggregator type.
  */
 template <typename T, typename A>
 class container : public A {
@@ -1072,6 +1346,143 @@ class container : public A {
     void insert(T const& values) {
         for (auto const& value: values) A::insert(value);
     }
+};
+
+
+/**
+ * @brief Filters only values respecting filter F before feeding them to another aggregator.
+ *
+ * @tparam F The filter predicate type.
+ * @tparam A The value aggregator type.
+ */
+template <typename F, typename A>
+class filter : public A {
+    //! @brief The type of values aggregated.
+    using T = typename A::type;
+
+    template <typename T>
+    struct remap_tuple;
+
+    template <typename... Ss, typename... Ts>
+    struct remap_tuple<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Ts...>>> {
+        using type = common::tagged_tuple<common::type_sequence<filter<F,Ss>...>, common::type_sequence<Ts...>>;
+    };
+
+  public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = typename remap_tuple<typename A::template result_type<U>>::type;
+
+    //! @brief Default constructor.
+    filter() = default;
+
+    //! @brief Erases a value from the aggregation set.
+    inline void erase(T const& value) {
+        if (m_filter(value)) A::erase(value);
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    inline void insert(T const& value) {
+        if (m_filter(value)) A::insert(value);
+    }
+
+    //! @brief The results of aggregation.
+    template <typename U>
+    result_type<U> result() const {
+        auto t = A::template result<U>();
+        return reinterpret_cast<result_type<U>&>(t);
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        std::string fs = F::name();
+        std::string as = A::name();
+        std::string s = fs + ' ';
+        for (char c : as)
+            if (c == '-') s += '-' + fs + ' ';
+            else s.push_back(c);
+        return s;
+    }
+
+  private:
+    //! @brief The callable filter class.
+    F m_filter;
+};
+
+
+/**
+ * @brief Filters only finite values before feeding them to another aggregator.
+ *
+ * @tparam A The value aggregator type.
+ */
+template <typename A>
+using only_finite = filter<fcpp::filter::finite, A>;
+
+
+/**
+ * @brief Maps a functor to values before feeding them to another aggregator.
+ *
+ * @tparam F The callable class functor type.
+ * @tparam A The value aggregator type.
+ */
+template <typename F, typename A>
+class mapper : public A {
+    //! @brief The type of values aggregated.
+    using T = typename A::type;
+
+    template <typename T>
+    struct remap_tuple;
+
+    template <typename... Ss, typename... Ts>
+    struct remap_tuple<common::tagged_tuple<common::type_sequence<Ss...>, common::type_sequence<Ts...>>> {
+        using type = common::tagged_tuple<common::type_sequence<mapper<F,Ss>...>, common::type_sequence<Ts...>>;
+    };
+
+  public:
+    //! @brief The tag aggregated from result type.
+    using tag = T;
+
+    //! @brief The type of the aggregation result, given the tag of the aggregated values.
+    template <typename U>
+    using result_type = typename remap_tuple<typename A::template result_type<U>>::type;
+
+    //! @brief Default constructor.
+    mapper() = default;
+
+    //! @brief Erases a value from the aggregation set.
+    inline void erase(T const& value) {
+        A::erase(m_functor(value));
+    }
+
+    //! @brief Inserts a new value to be aggregated.
+    inline void insert(T const& value) {
+        A::insert(m_functor(value));
+    }
+
+    //! @brief The results of aggregation.
+    template <typename U>
+    result_type<U> result() const {
+        auto t = A::template result<U>();
+        return reinterpret_cast<result_type<U>&>(t);
+    }
+
+    //! @brief The aggregator name.
+    static std::string name() {
+        std::string fs = common::type_name<F>();
+        std::string as = A::name();
+        std::string s = fs + ' ';
+        for (char c : as)
+            if (c == '-') s += '-' + fs + ' ';
+            else s.push_back(c);
+        return s;
+    }
+
+  private:
+    //! @brief The callable filter class.
+    F m_functor;
 };
 
 

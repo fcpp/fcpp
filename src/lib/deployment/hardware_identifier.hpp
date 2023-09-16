@@ -106,6 +106,11 @@ struct hardware_identifier {
                 else P::net::update();
             }
 
+            //! @brief Pushes a new event into the queue.
+            inline void push_event(device_t uid, times_t) {
+                assert(m_node.uid == uid);
+            }
+
             //! @brief Returns the total number of nodes.
             static constexpr size_t node_size() {
                 return 1;
@@ -127,6 +132,11 @@ struct hardware_identifier {
                 assert(m_node.uid == uid);
                 l = lock_type(m_node.mutex);
                 return m_node;
+            }
+
+            //! @brief Constructs an empty node lock, to be used with \ref node_at.
+            inline lock_type node_lock() {
+                return {};
             }
 
           private: // implementation details

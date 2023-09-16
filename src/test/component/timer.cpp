@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -8,6 +8,20 @@
 using namespace fcpp;
 using namespace component::tags;
 
+
+// Mock identifier component.
+struct identifier {
+    template <typename F, typename P>
+    struct component : public P {
+        DECLARE_COMPONENT(identifier);
+        using node = typename P::node;
+        struct net : public P::net {
+            using P::net::net;
+
+            void push_event(device_t, times_t) {}
+        };
+    };
+};
 
 // Very simple scheduler performing updates every times_t(10).
 struct scheduler {
@@ -74,8 +88,11 @@ struct exposer {
     };
 };
 
+using d3 = reactive_delay<distribution::constant_n<times_t,3>>;
+
 using combo1 = component::combine_spec<exposer<true>,component::timer<>,component::base<>>;
 using combo2 = component::combine_spec<exposer<false>,component::timer<>,scheduler,component::base<>>;
+using combo3 = component::combine_spec<identifier,exposer<false>,component::timer<d3>,scheduler,component::base<>>;
 
 
 TEST(TimerTest, NodePlanning) {
@@ -103,6 +120,35 @@ TEST(TimerTest, NodePlanning) {
     EXPECT_EQ(7, device.previous_time());
     EXPECT_EQ(8, device.current_time());
     EXPECT_EQ(TIME_MAX, device.next_time());
+}
+
+TEST(TimerTest, NodeReacting) {
+    combo3::net  network{common::make_tagged_tuple<>()};
+    combo3::node device{network, common::make_tagged_tuple<uid>(1)};
+    EXPECT_EQ(0, device.next_time());
+    device.update();
+    EXPECT_EQ(0, device.current_time());
+    EXPECT_EQ(10, device.next_time());
+    device.receive(3, 2, common::make_tagged_tuple<>());
+    EXPECT_EQ(6, device.next_time());
+    device.receive(4, 3, common::make_tagged_tuple<>());
+    EXPECT_EQ(6, device.next_time());
+    device.update();
+    EXPECT_EQ(0, device.previous_time());
+    EXPECT_EQ(6, device.current_time());
+    EXPECT_EQ(16, device.next_time());
+    device.update();
+    EXPECT_EQ(6, device.previous_time());
+    EXPECT_EQ(16, device.current_time());
+    EXPECT_EQ(26, device.next_time());
+    device.receive(17, 1, common::make_tagged_tuple<>());
+    EXPECT_EQ(6, device.previous_time());
+    EXPECT_EQ(16, device.current_time());
+    EXPECT_EQ(20, device.next_time());
+    device.update();
+    EXPECT_EQ(16, device.previous_time());
+    EXPECT_EQ(20, device.current_time());
+    EXPECT_EQ(30, device.next_time());
 }
 
 TEST(TimerTest, NodeScheduling) {

@@ -104,6 +104,7 @@ cc_library(
     deps = [
         "//lib/component:base",
         "//lib/data:field",
+        "//lib/option:sequence",
     ],
     visibility = [
         '//visibility:public',

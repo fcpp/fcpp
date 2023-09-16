@@ -13,6 +13,7 @@
 
 #include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
+#include "lib/option/sequence.hpp"
 
 
 /**
@@ -27,6 +28,10 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
+    //! @brief Declaration tag associating to a generator of delays for reactive rounds after a message is received (defaults to \ref sequence::never).
+    template <typename T>
+    struct reactive_delay {};
+
     //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start {};
 
@@ -45,6 +50,9 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::realtime defines whether running should follow real time (defaults to `FCPP_REALTIME < INF`).
  *
+ * <b>Declaration tags:</b>
+ * - \ref tags::reactive_delay defines a generator of delays for reactive rounds after a message is received (defaults to \ref sequence::never).
+ *
  * <b>Node initialisation tags:</b>
  * - \ref tags::start associates to a starting time of execution (defaults to \ref TIME_MAX).
  *
@@ -53,6 +61,9 @@ namespace tags {
  */
 template <class... Ts>
 struct timer {
+    //! @brief Generator type for the delay of reactive rounds after messages.
+    using reactive_delay_type = common::option_type<tags::reactive_delay, sequence::never, Ts...>;
+
     //! @brief Whether running should follow real time.
     constexpr static bool realtime = common::option_flag<tags::realtime, FCPP_REALTIME < INF, Ts...>;
 
@@ -71,6 +82,8 @@ struct timer {
         DECLARE_COMPONENT(timer);
         AVOID_COMPONENT(timer,connector);
         CHECK_COMPONENT(calculus);
+        CHECK_COMPONENT(identifier);
+        CHECK_COMPONENT(randomizer);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -83,7 +96,7 @@ struct timer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_neigh(TIME_MIN) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_neigh(TIME_MIN), m_react(get_generator(has_randomizer<P>{}, *this),t) {
                 m_prev = m_cur = TIME_MIN;
                 m_next = common::get_or<tags::start>(t, TIME_MAX);
                 m_offs = (m_next == TIME_MAX ? 0 : m_next);
@@ -125,6 +138,11 @@ struct timer {
             void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 fcpp::details::self(m_neigh, d) = t;
+                times_t r = m_react(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
+                if (r < TIME_MAX and t + r < next()) {
+                    next_time(t + r);
+                    maybe_push_event(P::node::net, has_identifier<F>{});
+                }
             }
 
             //! @brief Returns the time of the second most recent round (previous during rounds).
@@ -178,6 +196,16 @@ struct timer {
             }
 
           private: // implementation details
+            //! @brief Pushes a new event to the identifier.
+            template <typename N>
+            inline void maybe_push_event(N& n, std::true_type) {
+                n.push_event(P::node::uid, m_next);
+            }
+
+            //! @brief Does not push a new event to the identifier.
+            template <typename N>
+            inline void maybe_push_event(N&, std::false_type) {}
+
             //! @brief Changes the domain of a field-like structure to match the domain of the neightbours ids.
             template <typename A>
             void maybe_align_inplace(field<A>& x, std::true_type) {
@@ -187,6 +215,18 @@ struct timer {
             //! @brief Does not perform any alignment
             template <typename A>
             void maybe_align_inplace(field<A>&, std::false_type) {}
+
+            //! @brief Returns the `randomizer` generator if available.
+            template <typename N>
+            inline auto& get_generator(std::true_type, N& n) {
+                return n.generator();
+            }
+
+            //! @brief Returns a `crand` generator otherwise.
+            template <typename N>
+            inline crand get_generator(std::false_type, N&) {
+                return {};
+            }
 
             //! @brief Times of previous, current and next planned rounds.
             times_t m_prev, m_cur, m_next;
@@ -199,6 +239,9 @@ struct timer {
 
             //! @brief Warping factor for the following schedule.
             real_t m_fact;
+
+            //! @brief The generator for the delay of reactive rounds after messages.
+            reactive_delay_type m_react;
         };
 
         //! @brief The global part of the component.

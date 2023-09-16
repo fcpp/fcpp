@@ -181,7 +181,26 @@ struct identifier {
             using map_type = common::random_access_map<device_t, node_type>;
 
             //! @brief The type of node locks.
-            using lock_type = common::unique_lock<parallel>;
+            struct lock_type : public common::unique_lock<parallel> {
+                //! @brief Default constructor not owning a lock.
+                lock_type() noexcept : common::unique_lock<parallel>(), m_node(nullptr), m_next() {}
+                //! @brief Move constructor.
+                lock_type(lock_type&& o) = default;
+                //! @brief Locking constructor, storing event information.
+                lock_type(common::mutex<parallel>& m, node_type& n) noexcept : common::unique_lock<parallel>(m), m_node(&n), m_next(n.next()) {}
+                //! @brief Destructor updating event queue if needed.
+                ~lock_type() {
+                    if (m_node->next() != m_next)
+                        m_node->net.push_event(m_node->uid, m_node->next());
+                }
+                //! @brief Move assignment operator.
+                lock_type& operator=(lock_type&& o) = default;
+              private:
+                //! @brief A reference to the node being locked.
+                node_type* m_node;
+                //! @brief The next event at the time of locking.
+                times_t m_next;
+            };
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
@@ -199,20 +218,35 @@ struct identifier {
             //! @brief Updates the internal status of net component.
             void update() {
                 if (m_queue.next() < P::net::next()) {
-                    std::vector<device_t> nv = m_queue.pop(m_queue.next() + m_epsilon);
-                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), nv.size(), [&nv,this](size_t i, size_t){
+                    times_t t = m_queue.next();
+                    std::vector<device_t> nv = m_queue.pop(t + m_epsilon), dv;
+                    assert(m_queue.next() > t);
+                    common::mutex<parallel> m;
+                    common::parallel_for(common::tags::general_execution<parallel>(m_threads), nv.size(), [&](size_t i, size_t){
                         if (m_nodes.count(nv[i]) > 0) {
                             node_type& n = m_nodes.at(nv[i]);
-                            common::lock_guard<parallel> device_lock(n.mutex);
-                            n.update();
+                            times_t nxt;
+                            {
+                                common::lock_guard<parallel> device_lock(n.mutex);
+                                if (n.next() > t + m_epsilon) return;
+                                n.update();
+                                nxt = n.next();
+                            }
+                            if (nxt == TIME_MAX) {
+                                common::lock_guard<parallel> l(m);
+                                dv.push_back(n.uid);
+                            } else if (nxt > t) push_event(n.uid, nxt);
                         }
                     });
-                    for (device_t uid : nv) if (m_nodes.count(uid) > 0) {
-                        times_t nxt = m_nodes.at(uid).next();
-                        if (nxt < TIME_MAX) m_queue.push(nxt, uid);
-                        else node_erase(uid);
-                    }
+                    for (device_t uid : dv) node_erase(uid);
+                    assert(m_queue.next() > t);
                 } else P::net::update();
+            }
+
+            //! @brief Pushes a new event into the queue.
+            void push_event(device_t uid, times_t t) {
+                common::lock_guard<parallel> l(m_queue_mutex);
+                m_queue.push(t, uid);
             }
 
             //! @brief Returns the total number of nodes.
@@ -232,8 +266,14 @@ struct identifier {
 
             //! @brief Access to the node with a given device device identifier (given a lock for the node's mutex).
             node_type& node_at(device_t uid, lock_type& l) {
-                l = lock_type(m_nodes.at(uid).mutex);
-                return m_nodes.at(uid);
+                node_type& n = m_nodes.at(uid);
+                l = lock_type(m_nodes.at(uid).mutex, n);
+                return n;
+            }
+
+            //! @brief Constructs an empty node lock, to be used with \ref node_at.
+            inline lock_type node_lock() {
+                return {};
             }
 
           protected: // visible by net objects only
@@ -263,7 +303,7 @@ struct identifier {
                 auto tt = push_uid(t, typename S::template intersect<tags::uid>());
                 device_t const& id = common::get<tags::uid>(tt);
                 m_nodes.emplace(std::piecewise_construct, std::make_tuple(id), std::tuple<typename F::net&, decltype(tt)>(P::net::as_final(), tt));
-                m_queue.push(m_nodes.at(id).next(), id);
+                push_event(id, m_nodes.at(id).next());
                 return id;
             }
 
@@ -309,6 +349,9 @@ struct identifier {
 
             //! @brief The number of threads to be used.
             size_t const m_threads;
+
+            //! @brief Mutex for accessing the queue of events.
+            common::mutex<parallel> m_queue_mutex;
         };
     };
 };

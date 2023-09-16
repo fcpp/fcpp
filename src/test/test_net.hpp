@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file test_net.hpp
@@ -88,6 +88,9 @@ namespace details {
         typename C::node& node_at(device_t uid, T&&) {
             return m_nodes.at(uid);
         }
+        inline int node_lock() {
+            return 42;
+        }
       private:
         std::unordered_map<device_t, typename C::node> m_nodes;
         device_t m_next_uid = 0;
@@ -168,7 +171,7 @@ struct test_net {
 
     //! @brief Accesses a node in the network.
     node_type& d(int id) {
-        common::unique_lock<parallel> l;
+        auto l = m_network.node_lock();
         return m_network.node_at(id, l);
     }
 

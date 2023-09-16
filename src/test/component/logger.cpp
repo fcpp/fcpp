@@ -193,14 +193,14 @@ MULTI_TEST(LoggerTest, Pull, O, 2) {
         network.update();
         EXPECT_EQ(3.5f, network.next());
         {
-            common::unique_lock<(O & 1) == 1> l;
+            auto l = network.node_lock();
             auto& n = network.node_at(0, l);
             n.round_start(2);
             n.storage(tag{}) = true;
             n.round_end(2);
         }
         {
-            common::unique_lock<(O & 1) == 1> l;
+            auto l = network.node_lock();
             auto& n = network.node_at(2, l);
             n.round_start(2.5f);
             n.storage(tag{}) = true;
@@ -208,7 +208,7 @@ MULTI_TEST(LoggerTest, Pull, O, 2) {
             n.round_end(2.5f);
         }
         {
-            common::unique_lock<(O & 1) == 1> l;
+            auto l = network.node_lock();
             auto& n = network.node_at(1, l);
             n.round_start(3);
             n.storage(gat{}) = 1;
@@ -268,14 +268,14 @@ MULTI_TEST(LoggerTest, Plot, O, 2) {
         network.update();
         EXPECT_EQ(3.5f, network.next());
         {
-            common::unique_lock<(O & 1) == 1> l;
+            auto l = network.node_lock();
             auto& n = network.node_at(0, l);
             n.round_start(2);
             n.storage(tag{}) = true;
             n.round_end(2);
         }
         {
-            common::unique_lock<(O & 1) == 1> l;
+            auto l = network.node_lock();
             auto& n = network.node_at(2, l);
             n.round_start(2.5f);
             n.storage(tag{}) = true;
@@ -283,7 +283,7 @@ MULTI_TEST(LoggerTest, Plot, O, 2) {
             n.round_end(2.5f);
         }
         {
-            common::unique_lock<(O & 1) == 1> l;
+            auto l = network.node_lock();
             auto& n = network.node_at(1, l);
             n.round_start(3);
             n.storage(gat{}) = 1;
@@ -310,14 +310,14 @@ MULTI_TEST(LoggerTest, Nulls, O, 2) {
     network.update();
     EXPECT_EQ(3.5f, network.next());
     {
-        common::unique_lock<(O & 1) == 1> l;
+        auto l = network.node_lock();
         auto& n = network.node_at(0, l);
         n.round_start(2);
         n.storage(tag{}) = true;
         n.round_end(2);
     }
     {
-        common::unique_lock<(O & 1) == 1> l;
+        auto l = network.node_lock();
         auto& n = network.node_at(2, l);
         n.round_start(2.5f);
         n.storage(tag{}) = true;
@@ -325,7 +325,7 @@ MULTI_TEST(LoggerTest, Nulls, O, 2) {
         n.round_end(2.5f);
     }
     {
-        common::unique_lock<(O & 1) == 1> l;
+        auto l = network.node_lock();
         auto& n = network.node_at(1, l);
         n.round_start(3);
         n.storage(gat{}) = 1;

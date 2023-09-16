@@ -97,14 +97,14 @@ class context<true, pointer, M, Ts...> {
     }
 
     //! @brief Inserts an export for a device with a certain metric, possibly cleaning up.
-    void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t hoodsize) {
+    void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t hoodsize, device_t self) {
         assert(m_sorted_data.size() == 0);
         if (m <= threshold) {
-            if (m_metrics.count(d) == 0 or m_metrics[d] != m)
+            if (d != self and (m_metrics.count(d) == 0 or m_metrics[d] != m))
                 m_queue.emplace(m, d);
             m_metrics[d] = m;
             m_data[d] = std::move(e);
-            if (m_data.size() > hoodsize) pop();
+            if (size(self) > hoodsize) pop();
             else clean();
         }
     }
@@ -136,7 +136,7 @@ class context<true, pointer, M, Ts...> {
 
     //! @brief Changes the status of the context from "query" to "modify", updating metrics.
     template <typename N, typename T>
-    void unfreeze(N const& node, T const& metric, metric_type threshold) {
+    void unfreeze(N const& node, T const& metric, metric_type threshold, device_t self) {
         assert(m_sorted_data.size() == m_data.size());
         m_sorted_data.clear();
         m_queue = {};
@@ -146,7 +146,7 @@ class context<true, pointer, M, Ts...> {
                 m_data.erase(it->first);
                 it = m_metrics.erase(it);
             } else {
-                m_queue.emplace(it->second, it->first);
+                if (it->first != self) m_queue.emplace(it->second, it->first);
                 ++it;
             }
         }
@@ -237,7 +237,7 @@ class context<true, pointer, M, Ts...> {
   private:
     //! @brief Erases invalid values from the queue.
     void clean() {
-        while (m_metrics.count(m_queue.top().second) == 0 or m_metrics.at(m_queue.top().second) != m_queue.top().first)
+        while (m_queue.size() > 0 and (m_metrics.count(m_queue.top().second) == 0 or m_metrics.at(m_queue.top().second) != m_queue.top().first))
             m_queue.pop();
     }
 
@@ -292,7 +292,7 @@ class context<false, pointer, M, Ts...> {
     }
 
     //! @brief Inserts an export for a device with a certain metric, possibly cleaning up.
-    void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t) {
+    void insert(device_t d, export_type e, metric_type m, metric_type threshold, device_t, device_t) {
         if (m <= threshold) {
             if (m_data.size() > 0 and get<0>(m_data.back()) == d)
                 m_data.back() = data_type{d, m, std::move(e)};
@@ -302,23 +302,33 @@ class context<false, pointer, M, Ts...> {
 
     //! @brief Changes the status of the context from "modify" to "query".
     void freeze(device_t hoodsize, device_t self) {
+        if (m_data.size() < 2) {
+            m_self = m_data.size() == 0 or self <= get<0>(m_data[0]) ? 0 : 1;
+            return;
+        }
         std::stable_sort(m_data.begin(), m_data.end(), [](data_type const& x, data_type const& y){
             return get<0>(x) < get<0>(y);
         });
+        bool found = false;
         size_t w = 0;
         for (size_t r = 0; r+1 < m_data.size(); ++r) {
             if (get<0>(m_data[r]) < get<0>(m_data[r+1])) {
                 if (r > w) m_data[w] = std::move(m_data[r]);
+                found = found or get<0>(m_data[w]) == self;
                 ++w;
             }
         }
         if (m_data.size() > w+1) m_data[w] = std::move(m_data.back());
         m_data.resize(w+1);
+        if (not found) --hoodsize;
         if (m_data.size() > hoodsize) {
-            std::nth_element(m_data.begin(), m_data.begin()+hoodsize, m_data.end(), [](data_type const& x, data_type const& y){
-                return get<1>(x) < get<1>(y);
+            std::nth_element(m_data.begin(), m_data.begin()+hoodsize, m_data.end(), [self](data_type const& x, data_type const& y){
+                return get<0>(x) == self ? true : get<0>(y) == self ? false : get<1>(x) < get<1>(y);
             });
             m_data.resize(hoodsize);
+            std::stable_sort(m_data.begin(), m_data.end(), [](data_type const& x, data_type const& y){
+                return get<0>(x) < get<0>(y);
+            });
         }
         m_self = std::lower_bound(m_data.begin(), m_data.end(), data_type{self, metric_type{}, export_type{}}, [](data_type const& x, data_type const& y) {
             return get<0>(x) < get<0>(y);
@@ -327,7 +337,7 @@ class context<false, pointer, M, Ts...> {
 
     //! @brief Changes the status of the context from "query" to "modify", updating metrics.
     template <typename N, typename T>
-    void unfreeze(N const& node, T const& metric, metric_type threshold) {
+    void unfreeze(N const& node, T const& metric, metric_type threshold, device_t) {
         size_t w = 0;
         for (size_t r = 0; r < m_data.size(); ++r) {
             get<1>(m_data[r]) = metric.update(get<1>(m_data[r]), node);
@@ -336,6 +346,7 @@ class context<false, pointer, M, Ts...> {
                 ++w;
             }
         }
+        assert(w <= m_data.size());
         m_data.resize(w);
     }
 

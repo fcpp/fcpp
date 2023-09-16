@@ -53,12 +53,12 @@ TEST(OstreamTest, FCPP) {
     PRINT_EQ("(2; 2)", internal::twin<int,false>{2});
     {
         internal::context<true, true, int, bool, char> c;
-        c.insert(42, m, 0, 10, 10);
+        c.insert(42, m, 0, 10, 10, 0);
         PRINT_EQ("(42:(bool => {10:false}; char => {42:'x'})@0)", c);
     }
     {
         internal::context<false, false, int, bool, char> c;
-        c.insert(42, m, 0, 10, 10);
+        c.insert(42, m, 0, 10, 10, 0);
         PRINT_EQ("(42:(bool => {10:false}; char => {42:'x'})@0)", c);
     }
 }

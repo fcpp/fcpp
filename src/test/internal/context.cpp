@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <utility>
 
@@ -51,7 +51,7 @@ class ContextTest : public ::testing::Test {
 
 MULTI_TEST_F(ContextTest, Operators, O, 2) {
     context_type<O> data;
-    data.insert(1, m, 0.5, 1.5, 9);
+    data.insert(1, m, 0.5, 1.5, 9, 0);
     context_type<O> x(data), y, z;
     z = y;
     y = x;
@@ -61,9 +61,9 @@ MULTI_TEST_F(ContextTest, Operators, O, 2) {
 
 MULTI_TEST_F(ContextTest, InsertErase, O, 1) {
     context_type<O> x;
-    x.insert(1, m, 0.5, 1.5, 9);
-    x.insert(2, m, 0.3, 1.5, 9);
-    x.insert(3, m, 0.4, 1.5, 9);
+    x.insert(1, m, 0.5, 1.5, 9, 0);
+    x.insert(2, m, 0.3, 1.5, 9, 0);
+    x.insert(3, m, 0.4, 1.5, 9, 0);
     EXPECT_EQ(size_t(3), x.size(1));
     EXPECT_EQ(size_t(4), x.size(0));
     EXPECT_EQ(device_t(1), x.top());
@@ -72,22 +72,93 @@ MULTI_TEST_F(ContextTest, InsertErase, O, 1) {
     x.pop();
     EXPECT_EQ(device_t(2), x.top());
     x.freeze(10, 0);
-    x.unfreeze(0, metric{0.5}, 1.0);
+    x.unfreeze(0, metric{0.5}, 1.0, 0);
     EXPECT_EQ(device_t(2), x.top());
-    x.insert(3, m, 0.4, 1.5, 9);
+    x.insert(3, m, 0.4, 1.5, 9, 0);
     EXPECT_EQ(device_t(2), x.top());
     x.pop();
     EXPECT_EQ(device_t(3), x.top());
     x.freeze(10, 0);
-    x.unfreeze(0, metric{1.0}, 0.5);
+    x.unfreeze(0, metric{1.0}, 0.5, 0);
     EXPECT_EQ(size_t(1), x.size(9));
+}
+
+MULTI_TEST_F(ContextTest, HoodSize, O, 2) {
+    context_type<O> data;
+    std::vector<device_t> ex, res;
+    char c;
+
+    data.freeze(3, 0);
+    EXPECT_EQ(data.size(0), 1);
+    ex = std::vector<device_t>{0};
+    res = data.align(8, 0);
+    EXPECT_EQ(ex, res);
+    c = data.old(7, 'c', 0);
+    EXPECT_EQ('c', c);
+
+    data.unfreeze(0, metric{}, 10, 0);
+    data.insert(1, m,  4, 10, 3, 0);
+    data.insert(2, m, 15, 10, 3, 0);
+
+    data.freeze(3, 0);
+    EXPECT_EQ(data.size(0), 2);
+    ex = std::vector<device_t>{0,1};
+    res = data.align(8, 0);
+    EXPECT_EQ(ex, res);
+    c = data.old(7, 'c', 0);
+    EXPECT_EQ('c', c);
+
+    data.unfreeze(0, metric{}, 10, 0);
+    data.insert(2, m, 5, 10, 3, 0);
+    data.insert(3, m, 3, 10, 3, 0);
+
+    data.freeze(3, 0);
+    EXPECT_EQ(data.size(0), 3);
+    ex = std::vector<device_t>{0,1,3};
+    res = data.align(8, 0);
+    EXPECT_EQ(ex, res);
+    c = data.old(7, 'c', 0);
+    EXPECT_EQ('c', c);
+
+    data.unfreeze(0, metric{}, 10, 0);
+    data.insert(0, m, 15, 10, 3, 0);
+
+    data.freeze(3, 0);
+    EXPECT_EQ(data.size(0), 3);
+    ex = std::vector<device_t>{0,1,3};
+    res = data.align(8, 0);
+    EXPECT_EQ(ex, res);
+    c = data.old(7, 'c', 0);
+    EXPECT_EQ('c', c);
+
+    data.unfreeze(0, metric{}, 10, 0);
+    data.insert(0, m, 6, 10, 3, 0);
+
+    data.freeze(3, 0);
+    EXPECT_EQ(data.size(0), 3);
+    ex = std::vector<device_t>{0,1,3};
+    res = data.align(8, 0);
+    EXPECT_EQ(ex, res);
+    c = data.old(7, 'c', 0);
+    EXPECT_EQ('a', c);
+
+    data.unfreeze(0, metric{}, 10, 0);
+    data.insert(4, m, 2, 10, 3, 0);
+
+    data.freeze(3, 0);
+    EXPECT_EQ(data.size(0), 3);
+    ex = std::vector<device_t>{0,3,4};
+    res = data.align(8, 0);
+    EXPECT_EQ(ex, res);
+    c = data.old(7, 'c', 0);
+    EXPECT_EQ('a', c);
 }
 
 MULTI_TEST_F(ContextTest, Align, O, 2) {
     context_type<O> data;
-    data.insert(1, m, 0.5, 1.5, 9);
+    data.insert(1, m, 0.5, 1.5, 9, 0);
     m.insert(9);
-    data.insert(2, m, 1.0, 1.5, 9);
+    data.insert(2, m, 1.0, 1.5, 9, 0);
     data.freeze(9, 0);
     std::vector<device_t> ex, res;
     ex = std::vector<device_t>{0,1,2};
@@ -96,31 +167,31 @@ MULTI_TEST_F(ContextTest, Align, O, 2) {
     ex = std::vector<device_t>{0,2};
     res = data.align(9, 0);
     EXPECT_EQ(ex, res);
-    data.unfreeze(0, metric{}, 1.5);
+    data.unfreeze(0, metric{}, 1.5, 0);
 }
 
 MULTI_TEST_F(ContextTest, Old, O, 2) {
     char c;
     context_type<O> data;
-    data.insert(1, m, 0.5, 1.5, 9);
+    data.insert(1, m, 0.5, 1.5, 9, 0);
     data.freeze(9, 0);
     c = data.old(7, 'c', 0);
     EXPECT_EQ('c', c);
-    data.unfreeze(0, metric{}, 1.5);
-    data.insert(0, m, 1.0, 1.5, 9);
+    data.unfreeze(0, metric{}, 1.5, 0);
+    data.insert(0, m, 1.0, 1.5, 9, 0);
     data.freeze(9, 0);
     c = data.old(7, 'c', 0);
     EXPECT_EQ('a', c);
-    data.unfreeze(0, metric{}, 1.5);
+    data.unfreeze(0, metric{}, 1.5, 0);
 }
 
 MULTI_TEST_F(ContextTest, Nbr, O, 2) {
     context_type<O> data;
-    data.insert(1, m, 0.5, 1.5, 9);
+    data.insert(1, m, 0.5, 1.5, 9, 0);
     m.insert(42, '-');
     m.insert(3,  details::make_field({0,5}, std::vector<int>{1,2,9}));
     m.insert(18, details::make_field({0,5}, std::vector<int>{1,3,7}));
-    data.insert(2, m, 1.0, 1.5, 9);
+    data.insert(2, m, 1.0, 1.5, 9, 0);
     data.freeze(9, 0);
     fcpp::field<char> fcr, fce;
     fcr = data.nbr(42, '*', 0);
@@ -133,5 +204,5 @@ MULTI_TEST_F(ContextTest, Nbr, O, 2) {
     fir = data.nbr(3, field<int>{7}, 0);
     fie = details::make_field({1,2}, std::vector<int>{7,3,2});
     EXPECT_EQ(fie, fir);
-    data.unfreeze(0, metric{}, 1.5);
+    data.unfreeze(0, metric{}, 1.5, 0);
 }

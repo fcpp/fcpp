@@ -322,16 +322,16 @@ struct calculus {
             void round_end(times_t t) {
                 assert(stack_trace.empty());
                 P::node::round_end(t);
-                m_context.second().unfreeze(P::node::as_final(), m_metric, m_threshold);
+                m_context.second().unfreeze(P::node::as_final(), m_metric, m_threshold, P::node::uid);
             }
 
             //! @brief Receives an incoming message (possibly reading values from sensors).
             template <typename S, typename T>
             void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
-                m_context.second().insert(d, common::get<calculus_tag>(m), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
+                m_context.second().insert(d, common::get<calculus_tag>(m), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize, P::node::uid);
                 if (export_split and d == P::node::uid)
-                    m_context.first().insert(d, m_export.first(), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize);
+                    m_context.first().insert(d, m_export.first(), m_metric.build(P::node::as_final(), t, d, m), m_threshold, m_hoodsize, P::node::uid);
             }
 
             //! @brief Produces the message to send, both storing it in its argument and returning it.

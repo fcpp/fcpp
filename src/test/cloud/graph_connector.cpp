@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include <algorithm>
 #include <vector>
@@ -38,7 +38,7 @@ template <int O>
 using combo = component::combine_spec<
     exposer,
     component::scheduler<round_schedule<seq_per>>,
-    component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
+    component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, send_delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
         parallel<(O & 1) == 1>,
         synchronised<(O & 2) == 2>

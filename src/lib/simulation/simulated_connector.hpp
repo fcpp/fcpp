@@ -42,7 +42,15 @@ namespace tags {
 
     //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
-    struct delay {};
+    struct send_delay {};
+
+    //! @cond INTERNAL
+    //! @brief Legacy tag to be removed.
+    template <typename T>
+    struct delay {
+        static_assert(common::always_false<T>::value, "tags::delay has been renamed to tags::send_delay");
+    };
+    //! @endcond
 
     //! @brief Declaration tag associating to the dimensionality of the space (defaults to 2).
     template <intmax_t n>
@@ -131,7 +139,7 @@ namespace details {
  *
  * <b>Declaration tags:</b>
  * - \ref tags::connector defines the connector class (defaults to \ref connect::clique "connect::clique<dimension>").
- * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
+ * - \ref tags::send_delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *
  * <b>Declaration flags:</b>
@@ -176,7 +184,7 @@ struct simulated_connector {
     using connection_data_type = typename connector_type::data_type;
 
     //! @brief Delay generator for sending messages after rounds.
-    using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
+    using delay_type = common::option_type<tags::send_delay, distribution::constant_n<times_t, 0>, Ts...>;
 
     /**
      * @brief The actual component.

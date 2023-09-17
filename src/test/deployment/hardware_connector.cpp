@@ -38,7 +38,7 @@ template <int O>
 using combo = component::combine_spec<
     messager,
     component::scheduler<round_schedule<seq_per>>,
-    component::hardware_connector<parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 2>>, message_push<(O & 2) == 2>>,
+    component::hardware_connector<parallel<(O & 1) == 1>, send_delay<distribution::constant_n<times_t, 1, 2>>, message_push<(O & 2) == 2>>,
     component::hardware_identifier<parallel<(O & 1) == 1>>,
     component::base<parallel<(O & 1) == 1>>
 >;

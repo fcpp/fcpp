@@ -40,7 +40,7 @@ namespace tags {
 
     //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
-    struct delay;
+    struct send_delay;
 
     //! @brief Declaration flag associating to whether incoming messages are pushed or pulled (defaults to \ref FCPP_MESSAGE_PUSH).
     template <bool b>
@@ -63,7 +63,7 @@ namespace tags {
  *
  * <b>Declaration tags:</b>
  * - \ref tags::connector defines the connector class (defaults to \ref os::async_retry_network "os::async_retry_network<message_push>").
- * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
+ * - \ref tags::send_delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
  *
  * <b>Declaration flags:</b>
  * - \ref tags::message_push defines whether incoming messages are pushed or pulled (defaults to \ref FCPP_MESSAGE_PUSH).
@@ -81,7 +81,7 @@ struct hardware_connector {
     constexpr static bool parallel = common::option_flag<tags::parallel, FCPP_PARALLEL, Ts...>;
 
     //! @brief Delay generator for sending messages after rounds.
-    using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
+    using delay_type = common::option_type<tags::send_delay, distribution::constant_n<times_t, 0>, Ts...>;
 
     /**
      * @brief The actual component.

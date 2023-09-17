@@ -30,7 +30,7 @@ using combo1 = component::combine_spec<
         node_attributes<url,std::string,uid,device_t>,
         init<start,distribution::interval_n<times_t, 0, 1>>
     >,
-    component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, delay<distribution::constant_n<times_t, 1, 4>>>,
+    component::graph_connector<message_size<(O & 4) == 4>, parallel<(O & 1) == 1>, send_delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
         parallel<(O & 1) == 1>,
         synchronised<(O & 2) == 2>

@@ -37,7 +37,7 @@ namespace component {
 namespace tags {
     //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
-    struct delay;
+    struct send_delay;
 
     //! @brief Declaration flag associating to whether message sizes should be emulated (defaults to false).
     template <bool b>
@@ -66,7 +66,7 @@ namespace tags {
  * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
- * - \ref tags::delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
+ * - \ref tags::send_delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
  * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *
  * <b>Declaration flags:</b>
@@ -86,7 +86,7 @@ struct graph_connector {
     constexpr static bool symmetric = common::option_flag<tags::symmetric, true, Ts...>;
 
     //! @brief Delay generator for sending messages after rounds.
-    using delay_type = common::option_type<tags::delay, distribution::constant_n<times_t, 0>, Ts...>;
+    using delay_type = common::option_type<tags::send_delay, distribution::constant_n<times_t, 0>, Ts...>;
 
     //! @brief The type of settings data regulating connection.
     using connection_data_type = common::tagged_tuple_t<>;

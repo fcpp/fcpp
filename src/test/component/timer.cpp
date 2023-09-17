@@ -80,11 +80,7 @@ struct exposer {
                 if (plan) next_time(current_time() + 5);
             }
         };
-        struct net : public P::net {
-            using P::net::net;
-            using P::net::terminate;
-            using P::net::frequency;
-        };
+        using net = typename P::net;
     };
 };
 
@@ -201,19 +197,4 @@ TEST(TimerTest, NodeScheduling) {
     EXPECT_EQ(10, device.previous_time());
     EXPECT_EQ(12, device.current_time());
     EXPECT_EQ(TIME_MAX, device.next_time());
-}
-
-TEST(TimerTest, NetScheduling) {
-    combo2::net  network{common::make_tagged_tuple<>()};
-    EXPECT_EQ(0, network.next());
-    network.update();
-    EXPECT_EQ(20, network.next());
-    network.update();
-    EXPECT_EQ(40, network.next());
-    network.frequency(4);
-    EXPECT_EQ(25, network.next());
-    network.update();
-    EXPECT_EQ(30, network.next());
-    network.terminate();
-    EXPECT_EQ(TIME_MAX, network.next());
 }

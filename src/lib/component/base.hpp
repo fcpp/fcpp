@@ -45,6 +45,9 @@ namespace tags {
 
     //! @brief Node initialisation tag associating to a `device_t` unique identifier (required).
     struct uid {};
+
+    //! @brief Net initialisation tag associating to a factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
+    struct realtime_factor {};
 }
 
 
@@ -89,6 +92,9 @@ namespace tags {
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::uid associates to a `device_t` unique identifier (required).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::realtime_factor associates to a `real_t` factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
  */
 template <class... Ts>
 struct base {
@@ -217,17 +223,20 @@ struct base {
 
         //! @brief The global part of the component.
         class net {
+            static_assert(FCPP_REALTIME >= 0, "time cannot flow backwards");
+
           public: // visible by node objects and the main program
             //! @name constructors
             //! @{
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            explicit net(common::tagged_tuple<S,T> const&) {
+            explicit net(common::tagged_tuple<S,T> const& t) {
                 m_realtime_start = clock_t::now();
-                m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den;
+                m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den * common::get_or<tags::realtime_factor>(t, FCPP_REALTIME < INF ? FCPP_REALTIME : 1);
                 m_last_update = m_next_update = 0;
                 m_warn_delay = FCPP_TIME_EPSILON;
+                assert(m_realtime_factor >= 0);
             }
 
             //! @brief Deleted copy constructor.
@@ -252,12 +261,13 @@ struct base {
 
             //! @brief Runs the events until a given end. Should NEVER be overridden.
             void run(times_t end = TIME_MAX) {
-                times_t nxt;
-                while ((nxt = as_final().next()) < end) {
+                times_t nxt = as_final().next();
+                while (std::max(m_next_update, nxt) < end) {
                     m_next_update = nxt;
                     maybe_sleep(nxt, std::integral_constant<bool, realtime>{});
                     m_last_update = nxt;
                     as_final().update();
+                    nxt = as_final().next();
                 }
                 PROFILE_REPORT();
             }
@@ -271,6 +281,11 @@ struct base {
             //! @brief An estimate of real time elapsed from start. Should NEVER be overridden.
             inline times_t real_time() const {
                 return (clock_t::now() - m_realtime_start).count() * m_realtime_factor;
+            }
+
+            //! @brief Terminate round executions.
+            inline void terminate() {
+                m_next_update = TIME_MAX;
             }
 
           protected: // visible by net objects only

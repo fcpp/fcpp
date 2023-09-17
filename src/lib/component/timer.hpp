@@ -34,9 +34,6 @@ namespace tags {
 
     //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start {};
-
-    //! @brief Net initialisation tag associating to a factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
-    struct realtime_factor {};
 }
 
 
@@ -55,9 +52,6 @@ namespace tags {
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::start associates to a starting time of execution (defaults to \ref TIME_MAX).
- *
- * <b>Net initialisation tags:</b>
- * - \ref tags::realtime_factor associates to a `real_t` factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
  */
 template <class... Ts>
 struct timer {
@@ -245,78 +239,7 @@ struct timer {
         };
 
         //! @brief The global part of the component.
-        class net : public P::net {
-            static_assert(FCPP_REALTIME >= 0, "time cannot flow backwards");
-
-          public: // visible by node objects and the main program
-            //! @brief Constructor from a tagged tuple.
-            template <typename S, typename T>
-            explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {
-                m_offs = 0;
-                m_fact = common::get_or<tags::realtime_factor>(t, FCPP_REALTIME < INF ? FCPP_REALTIME : 1);
-                m_inv = 1/m_fact;
-                m_last_update = m_next_update = 0;
-                assert(m_fact >= 0);
-            }
-
-            /**
-             * @brief Returns next event to schedule for the net component.
-             *
-             * Should correspond to the next time also during updates.
-             */
-            times_t next() const {
-                m_next_update = P::net::next();
-                return m_offs < TIME_MAX and m_fact > 0 and m_next_update < TIME_MAX ? m_next_update * m_inv + m_offs : TIME_MAX;
-            }
-
-            //! @brief Updates the internal status of net component.
-            void update() {
-                m_last_update = m_next_update;
-                P::net::update();
-            }
-
-            //! @brief A measure of the internal time clock.
-            times_t internal_time() const {
-                if (not realtime or m_last_update == m_next_update or m_fact == 0 or m_inv == 0 or m_offs == TIME_MAX) return m_last_update;
-                times_t t = (P::net::real_time() - m_offs) * m_fact;
-                return std::max(std::min(t, m_next_update), m_last_update);
-            }
-
-            //! @brief Terminate round executions.
-            void terminate() {
-                m_offs = TIME_MAX;
-            }
-
-            //! @brief Returns the warping factor applied to following schedulers.
-            real_t frequency() const {
-                return m_fact;
-            }
-
-            //! @brief Sets the warping factor applied to following schedulers.
-            void frequency(real_t f) {
-                assert(f >= 0);
-                if (m_offs == TIME_MAX) return; // execution terminated, nothing to do
-                if (f > 0 and m_fact > 0)
-                    m_offs += m_last_update * (m_inv - 1/f);
-                else if (f > 0) // resume
-                    m_offs = P::net::as_final().next() - m_next_update / f;
-                m_fact = f;
-                m_inv = 1/f;
-            }
-
-          private: // implementation details
-            //! @brief Offset between the following schedule and actual times.
-            times_t m_offs;
-
-            //! @brief Warping factor and inverse for the following schedule.
-            real_t m_fact, m_inv;
-
-            //! @brief The internal time of the last update.
-            times_t m_last_update;
-
-            //! @brief The internal time of the next update.
-            mutable times_t m_next_update;
-        };
+        using net = typename P::net;
     };
 };
 

@@ -32,7 +32,7 @@ cc_test(
         "@gtest//:main",
         "//lib/component:base",
         "//lib/component:identifier",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//test:helper",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],
@@ -70,20 +70,6 @@ cc_test(
 )
 
 cc_test(
-    name = "scheduler",
-    srcs = ["scheduler.cpp"],
-    deps = [
-        "@gtest//:main",
-        "//lib/component:base",
-        "//lib/component:randomizer",
-        "//lib/component:scheduler",
-    ],
-    copts = ['-Iexternal/gtest/googletest/include/'],
-    args = ['--gtest_color=yes'],
-    timeout = 'short',
-)
-
-cc_test(
     name = "storage",
     srcs = ["storage.cpp"],
     deps = [
@@ -102,6 +88,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/component:base",
+        "//lib/component:randomizer",
         "//lib/component:timer",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

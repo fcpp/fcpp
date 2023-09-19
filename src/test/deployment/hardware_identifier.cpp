@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/component/scheduler.hpp"
+#include "lib/component/timer.hpp"
 #include "lib/component/storage.hpp"
 #include "lib/deployment/hardware_identifier.hpp"
 
@@ -50,7 +50,7 @@ using combo1 = component::combine_spec<
 template <int O>
 using combo2 = component::combine_spec<
     worker,
-    component::scheduler<round_schedule<seq_per>>,
+    component::timer<round_schedule<seq_per>>,
     component::hardware_identifier<parallel<(O & 1) == 1>>,
     component::base<parallel<(O & 1) == 1>>
 >;

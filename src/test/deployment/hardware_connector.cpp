@@ -5,7 +5,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/component/scheduler.hpp"
+#include "lib/component/timer.hpp"
 #include "lib/deployment/hardware_connector.hpp"
 #include "lib/deployment/hardware_identifier.hpp"
 
@@ -37,7 +37,7 @@ using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distrib
 template <int O>
 using combo = component::combine_spec<
     messager,
-    component::scheduler<round_schedule<seq_per>>,
+    component::timer<round_schedule<seq_per>>,
     component::hardware_connector<parallel<(O & 1) == 1>, send_delay<distribution::constant_n<times_t, 1, 2>>, message_push<(O & 2) == 2>>,
     component::hardware_identifier<parallel<(O & 1) == 1>>,
     component::base<parallel<(O & 1) == 1>>

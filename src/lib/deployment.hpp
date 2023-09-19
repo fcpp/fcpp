@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file deployment.hpp
@@ -36,7 +36,7 @@ namespace component {
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(deployment, hardware_logger, persister, storage, hardware_connector, timer, scheduler, hardware_identifier, randomizer, calculus);
+DECLARE_COMBINE(deployment, hardware_logger, persister, storage, hardware_connector, timer, hardware_identifier, randomizer, calculus);
 
 }
 

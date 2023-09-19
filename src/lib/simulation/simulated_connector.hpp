@@ -200,10 +200,10 @@ struct simulated_connector {
         //! @cond INTERNAL
         DECLARE_COMPONENT(connector);
         REQUIRE_COMPONENT(connector,positioner);
+        CHECK_COMPONENT(calculus);
         CHECK_COMPONENT(identifier);
         CHECK_COMPONENT(randomizer);
-        CHECK_COMPONENT(scheduler);
-        CHECK_COMPONENT(calculus);
+        CHECK_COMPONENT(timer);
         //! @endcond
 
         //! @brief The local part of the component.
@@ -323,7 +323,7 @@ struct simulated_connector {
             void round_end(times_t t) {
                 P::node::round_end(t);
                 P::node::net.cell_move(P::node::as_final(), t);
-                if (has_scheduler<P>::value and P::node::next() == TIME_MAX) m_leave = TIME_MAX;
+                if (has_timer<P>::value and P::node::next() == TIME_MAX) m_leave = TIME_MAX;
                 else set_leave_time(t);
             }
 

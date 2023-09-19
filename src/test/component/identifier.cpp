@@ -4,7 +4,7 @@
 
 #include "lib/component/base.hpp"
 #include "lib/component/identifier.hpp"
-#include "lib/component/scheduler.hpp"
+#include "lib/component/timer.hpp"
 
 #include "test/helper.hpp"
 
@@ -65,7 +65,7 @@ template <int O>
 using combo2 = component::combine_spec<
     exposer,
     worker,
-    component::scheduler<round_schedule<seq_per>>,
+    component::timer<round_schedule<seq_per>>,
     component::identifier<
         parallel<(O & 1) == 1>,
         synchronised<(O & 2) == 2>

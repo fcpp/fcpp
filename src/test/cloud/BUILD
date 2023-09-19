@@ -5,7 +5,7 @@ cc_test(
         "@gtest//:main",
         "//lib/component:base",
         "//lib/component:identifier",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//lib/cloud:graph_connector",
         "//test:helper",
     ],

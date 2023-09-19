@@ -73,19 +73,6 @@ cc_library(
 )
 
 cc_library(
-    name = 'scheduler',
-    hdrs = ['scheduler.hpp'],
-    srcs = ['scheduler.cpp'],
-    deps = [
-        "//lib/component:base",
-        "//lib/option:sequence",
-    ],
-    visibility = [
-        '//visibility:public',
-    ],
-)
-
-cc_library(
     name = 'storage',
     hdrs = ['storage.hpp'],
     srcs = ['storage.cpp'],

@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
 
 /**
  * @file cloud.hpp
@@ -32,7 +32,7 @@ namespace component {
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          */
-DECLARE_COMBINE(batch_graph_simulator, graph_connector, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer, calculus);
+DECLARE_COMBINE(batch_graph_simulator, graph_connector, timer, logger, storage, graph_spawner, identifier, randomizer, calculus);
 
 /**
  * @brief Combination of components for batch graph simulations with a graphical interface.
@@ -44,7 +44,7 @@ DECLARE_COMBINE(batch_graph_simulator, graph_connector, timer, scheduler, logger
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(interactive_graph_simulator, displayer, graph_connector, simulated_positioner, timer, scheduler, logger, storage, graph_spawner, identifier, randomizer, calculus);
+DECLARE_COMBINE(interactive_graph_simulator, displayer, graph_connector, simulated_positioner, timer, logger, storage, graph_spawner, identifier, randomizer, calculus);
 
 }
 

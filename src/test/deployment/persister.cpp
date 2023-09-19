@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-#include "lib/component/scheduler.hpp"
+#include "lib/component/timer.hpp"
 #include "lib/component/storage.hpp"
 #include "lib/coordination/basics.hpp"
 #include "lib/deployment/hardware_identifier.hpp"
@@ -14,14 +14,6 @@
 
 #include "test/fake_os.hpp"
 #include "test/helper.hpp"
-
-namespace fcpp {
-    namespace component {
-        namespace tags {
-            struct start {};
-        }
-    }
-}
 
 using namespace fcpp;
 using namespace component::tags;
@@ -52,7 +44,7 @@ using seq_per = sequence::periodic<distribution::constant_n<times_t, 15, 10>, di
 
 template <int O>
 using combo1 = component::combine_spec<
-    component::scheduler<round_schedule<seq_per>>,
+    component::timer<round_schedule<seq_per>>,
     component::persister<tuple_store<tag,bool,gat,int>>,
     component::calculus<
         program<main>,
@@ -71,7 +63,7 @@ MULTI_TEST(PersisterTest, Main, O, 3) {
     remove(".persistence");
     {
         typename combo1<O>::net network{common::make_tagged_tuple<persistence_path>(".persistence")};
-        common::unique_lock<FCPP_PARALLEL> l;
+        auto l = network.node_lock();
         auto& n = network.node_at(42, l);
         EXPECT_EQ(0, n.storage(gat{}));
         EXPECT_EQ(0, n.storage(oth{}));
@@ -89,7 +81,7 @@ MULTI_TEST(PersisterTest, Main, O, 3) {
     }
     {
         typename combo1<O>::net network{common::make_tagged_tuple<persistence_path>(".persistence")};
-        common::unique_lock<FCPP_PARALLEL> l;
+        auto l = network.node_lock();
         auto& n = network.node_at(42, l);
         EXPECT_EQ(2, n.storage(gat{}));
         EXPECT_EQ(2, n.storage(oth{}));

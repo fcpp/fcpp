@@ -7,7 +7,7 @@
 
 #include "lib/component/base.hpp"
 #include "lib/component/identifier.hpp"
-#include "lib/component/scheduler.hpp"
+#include "lib/component/timer.hpp"
 #include "lib/cloud/graph_connector.hpp"
 
 #include "test/helper.hpp"
@@ -37,7 +37,7 @@ using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distrib
 template <int O>
 using combo = component::combine_spec<
     exposer,
-    component::scheduler<round_schedule<seq_per>>,
+    component::timer<round_schedule<seq_per>>,
     component::graph_connector<message_size<(O & 2) == 2>, parallel<(O & 1) == 1>, send_delay<distribution::constant_n<times_t, 1, 4>>>,
     component::identifier<
         parallel<(O & 1) == 1>,

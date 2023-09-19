@@ -53,7 +53,6 @@ cc_library(
         "//lib/component:identifier",
         "//lib/component:logger",
         "//lib/component:randomizer",
-        "//lib/component:scheduler",
         "//lib/component:storage",
         "//lib/component:timer",
     ],

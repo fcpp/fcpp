@@ -4,9 +4,14 @@
 
 #include "lib/component/base.hpp"
 #include "lib/component/timer.hpp"
+#include "lib/component/randomizer.hpp"
 
 using namespace fcpp;
 using namespace component::tags;
+
+
+struct meantag {};
+struct devtag {};
 
 
 // Mock identifier component.
@@ -19,41 +24,6 @@ struct identifier {
             using P::net::net;
 
             void push_event(device_t, times_t) {}
-        };
-    };
-};
-
-// Very simple scheduler performing updates every times_t(10).
-struct scheduler {
-    template <typename F, typename P>
-    struct component : public P {
-        struct node : public P::node {
-            using P::node::node;
-
-            times_t next() const {
-                return m_next;
-            }
-
-            void update() {
-                times_t t = P::node::as_final().next();
-                m_next += 10;
-                P::node::round(t);
-            }
-
-            times_t m_next = 0;
-        };
-        struct net : public P::net {
-            using P::net::net;
-
-            times_t next() const {
-                return m_next;
-            }
-
-            void update() {
-                m_next += 20;
-            }
-
-            times_t m_next = 0;
         };
     };
 };
@@ -84,11 +54,32 @@ struct exposer {
     };
 };
 
-using d3 = reactive_delay<distribution::constant_n<times_t,3>>;
+using d3 = reactive_delay<distribution::constant_n<times_t, 3>>;
+using s10 = round_schedule<sequence::periodic_n<1, 0, 10>>;
 
 using combo1 = component::combine_spec<exposer<true>,component::timer<>,component::base<>>;
-using combo2 = component::combine_spec<exposer<false>,component::timer<>,scheduler,component::base<>>;
-using combo3 = component::combine_spec<identifier,exposer<false>,component::timer<d3>,scheduler,component::base<>>;
+using combo2 = component::combine_spec<exposer<false>,component::timer<s10>,component::base<>>;
+using combo3 = component::combine_spec<identifier,exposer<false>,component::timer<d3,s10>,component::base<>>;
+
+using seq_mul = sequence::multiple_n<3, 52, 10>;
+using seq_per = sequence::periodic<distribution::constant_n<times_t, 15, 10>, distribution::uniform_n<times_t, 2, 10, 1, meantag, devtag>, distribution::constant_n<times_t, 62, 10>, distribution::constant_n<size_t, 5>>;
+
+using scombo1 = component::combine_spec<
+    component::timer<round_schedule<seq_mul>>,
+    component::randomizer<>,
+    component::base<>
+>;
+using scombo2 = component::combine_spec<
+    component::timer<round_schedule<seq_per>,round_schedule<seq_mul>>,
+    component::randomizer<>,
+    component::base<>
+>;
+using scombo3 = component::combine_spec<component::timer<round_schedule<seq_mul>>,component::base<>>;
+using scombo4 = component::combine_spec<
+    component::timer<round_schedule<seq_per,seq_mul>>,
+    component::randomizer<>,
+    component::base<>
+>;
 
 
 TEST(TimerTest, NodePlanning) {
@@ -197,4 +188,111 @@ TEST(TimerTest, NodeScheduling) {
     EXPECT_EQ(10, device.previous_time());
     EXPECT_EQ(12, device.current_time());
     EXPECT_EQ(TIME_MAX, device.next_time());
+}
+
+TEST(TimerTest, SingleScheduler) {
+    scombo1::net  network{common::make_tagged_tuple<>()};
+    scombo1::node device{network, common::make_tagged_tuple<uid,seq_mul>(7,'b')};
+    times_t d;
+    d = device.next();
+    device.update();
+    EXPECT_NEAR(5.2f, d, 1e-6f);
+    d = device.next();
+    device.update();
+    EXPECT_NEAR(5.2f, d, 1e-6f);
+    d = device.next();
+    device.update();
+    EXPECT_NEAR(5.2f, d, 1e-6f);
+    d = device.next();
+    device.update();
+    EXPECT_EQ(TIME_MAX, d);
+    d = device.next();
+    device.update();
+    EXPECT_EQ(TIME_MAX, d);
+}
+
+TEST(TimerTest, MultipleScheduler) {
+    {
+        scombo2::net  network{common::make_tagged_tuple<>()};
+        scombo2::node device{network, common::make_tagged_tuple<uid,devtag>(7,0)};
+        times_t d;
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(1.5f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(3.5f, d, 1e-6f);
+        d = device.next();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.5f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+    }
+    {
+        scombo4::net  network{common::make_tagged_tuple<>()};
+        scombo4::node device{network, common::make_tagged_tuple<uid,devtag>(7,0)};
+        times_t d;
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(1.5f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(3.5f, d, 1e-6f);
+        d = device.next();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.2f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_NEAR(5.5f, d, 1e-6f);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+        d = device.next();
+        device.update();
+        EXPECT_EQ(TIME_MAX, d);
+    }
+}
+
+TEST(TimerTest, NoRandomizer) {
+    scombo1::net  network{common::make_tagged_tuple<>()};
+    scombo1::node device{network, common::make_tagged_tuple<uid,seq_mul>(7,'b')};
+    times_t d;
+    d = device.next();
+    device.update();
+    EXPECT_NEAR(5.2f, d, 1e-6f);
+    d = device.next();
+    device.update();
+    EXPECT_NEAR(5.2f, d, 1e-6f);
+    d = device.next();
+    device.update();
+    EXPECT_NEAR(5.2f, d, 1e-6f);
+    d = device.next();
+    device.update();
+    EXPECT_EQ(TIME_MAX, d);
+    d = device.next();
+    device.update();
+    EXPECT_EQ(TIME_MAX, d);
 }

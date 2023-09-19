@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
@@ -213,7 +213,7 @@ using rows_type = plot::first_rows<
 DECLARE_OPTIONS(opt,
     program<main>,
     retain<metric::retain<5, 1>>, // messages are thrown away after 5/1 secs
-    round_schedule<sequence::periodic_n<1, ROUND_PERIOD, ROUND_PERIOD>>, // rounds are happening every 1 secs (den, start, period)
+    round_schedule<sequence::periodic_n<1, 0, ROUND_PERIOD>>, // rounds are happening every 1 secs (den, start, period)
     exports< // types that may appear in messages
         time_tracking_t,
         vulnerability_detection_t,

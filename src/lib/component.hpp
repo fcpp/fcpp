@@ -13,7 +13,6 @@
 #include "lib/component/identifier.hpp"
 #include "lib/component/logger.hpp"
 #include "lib/component/randomizer.hpp"
-#include "lib/component/scheduler.hpp"
 #include "lib/component/storage.hpp"
 #include "lib/component/timer.hpp"
 

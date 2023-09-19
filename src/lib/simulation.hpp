@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file simulation.hpp
@@ -38,7 +38,7 @@ namespace component {
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-DECLARE_COMBINE(batch_simulator, simulated_connector, simulated_map, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer, calculus);
+DECLARE_COMBINE(batch_simulator, simulated_connector, simulated_map, simulated_positioner, timer, logger, storage, spawner, identifier, randomizer, calculus);
 
 /**
  * @brief Combination of components for interactive simulations.
@@ -50,7 +50,7 @@ DECLARE_COMBINE(batch_simulator, simulated_connector, simulated_map, simulated_p
  * network.run();
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
-DECLARE_COMBINE(interactive_simulator, displayer, simulated_connector, simulated_map, simulated_positioner, timer, scheduler, logger, storage, spawner, identifier, randomizer, calculus);
+DECLARE_COMBINE(interactive_simulator, displayer, simulated_connector, simulated_map, simulated_positioner, timer, logger, storage, spawner, identifier, randomizer, calculus);
 
 }
 

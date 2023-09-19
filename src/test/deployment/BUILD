@@ -3,7 +3,7 @@ cc_test(
     srcs = ["hardware_connector.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//lib/deployment:hardware_connector",
         "//lib/deployment:hardware_identifier",
         "//test:fake_os",
@@ -19,7 +19,7 @@ cc_test(
     srcs = ["hardware_identifier.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//lib/component:storage",
         "//lib/deployment:hardware_identifier",
         "//test:fake_os",
@@ -35,7 +35,7 @@ cc_test(
     srcs = ["hardware_logger.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//lib/component:storage",
         "//lib/deployment:hardware_logger",
         "//lib/deployment:hardware_identifier",
@@ -52,7 +52,7 @@ cc_test(
     srcs = ["persister.cpp"],
     deps = [
         "@gtest//:main",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//lib/component:storage",
         "//lib/coordination:basics",
         "//lib/deployment:hardware_identifier",

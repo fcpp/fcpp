@@ -19,7 +19,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/component:base",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//lib/simulation:simulated_connector",
         "//lib/simulation:simulated_positioner",
         "//test:helper",
@@ -49,7 +49,7 @@ cc_test(
     deps = [
         "@gtest//:main",
         "//lib/component:base",
-        "//lib/component:scheduler",
+        "//lib/component:timer",
         "//lib/simulation:simulated_positioner",
     ],
     copts = ['-Iexternal/gtest/googletest/include/'],

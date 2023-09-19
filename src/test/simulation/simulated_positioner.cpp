@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 
 #include "lib/component/base.hpp"
-#include "lib/component/scheduler.hpp"
+#include "lib/component/timer.hpp"
 #include "lib/simulation/simulated_positioner.hpp"
 
 using namespace fcpp;
@@ -32,7 +32,6 @@ struct exposer {
 struct mytimer {
     template <typename F, typename P>
     struct component : public P {
-        DECLARE_COMPONENT(timer);
         struct node : public P::node {
             using P::node::node;
             field<times_t> const& nbr_lag() const {
@@ -49,7 +48,7 @@ using seq_per = sequence::periodic<distribution::constant_n<times_t, 2>, distrib
 using combo1 = component::combine_spec<
     component::simulated_positioner<dimension<2>>,
     mytimer,
-    component::scheduler<round_schedule<seq_per>>,
+    component::timer<round_schedule<seq_per>>,
     component::base<>
 >;
 

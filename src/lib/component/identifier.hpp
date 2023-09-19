@@ -232,10 +232,11 @@ struct identifier {
                                 n.update();
                                 nxt = n.next();
                             }
+                            assert(nxt >= t);
                             if (nxt == TIME_MAX) {
                                 common::lock_guard<parallel> l(m);
                                 dv.push_back(n.uid);
-                            } else if (nxt >= t) push_event(n.uid, nxt);
+                            } else push_event(n.uid, nxt);
                         }
                     });
                     for (device_t uid : dv) node_erase(uid);

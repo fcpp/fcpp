@@ -89,12 +89,14 @@ struct timer {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_neigh(TIME_MIN), m_react(get_generator(has_randomizer<P>{}, *this),t), m_schedule(get_generator(has_randomizer<P>{}, *this),t) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_neigh(TIME_MIN), m_react_gen(get_generator(has_randomizer<P>{}, *this),t), m_schedule(get_generator(has_randomizer<P>{}, *this),t) {
                 m_prev = m_cur = TIME_MIN;
                 m_next = common::get_or<tags::start>(t, TIME_MAX);
                 m_offs = (m_next == TIME_MAX ? 0 : m_next);
                 if (m_schedule.next() < TIME_MAX)
                     m_next = m_offs + m_schedule(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
+                m_mod_next = std::min(m_next, TIME_FAR);
+                m_react = m_react_gen(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                 m_fact = 1;
             }
 
@@ -104,7 +106,7 @@ struct timer {
              * Should correspond to the next time also during updates.
              */
             times_t next() const {
-                return std::min(m_next, P::node::next());
+                return std::min(m_mod_next, P::node::next());
             }
 
             //! @brief Updates the internal status of node component.
@@ -115,6 +117,8 @@ struct timer {
                     m_cur = m_next;
                     m_next = m_schedule(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                     m_next = m_offs < TIME_MAX and m_next < TIME_MAX ? m_next/m_fact + m_offs : TIME_MAX;
+                    m_mod_next = std::min(m_next, std::max(TIME_FAR, m_offs));
+                    m_react = m_react_gen(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
                     P::node::round(m_cur);
                 } else P::node::update();
             }
@@ -130,11 +134,20 @@ struct timer {
             void receive(times_t t, device_t d, common::tagged_tuple<S,T> const& m) {
                 P::node::receive(t, d, m);
                 fcpp::details::self(m_neigh, d) = t;
-                times_t r = m_react(get_generator(has_randomizer<P>{}, *this), common::tagged_tuple_t<>{});
-                if (r < TIME_MAX and t + r < next_time()) {
-                    next_time(t + r);
+                if (m_react < TIME_MAX and t + m_react < m_next) {
+                    next_time(t + m_react);
                     maybe_push_event(P::node::net, has_identifier<F>{});
                 }
+            }
+
+            //! @brief Returns the reaction time for scheduling a round after a message arrives.
+            times_t reaction_time() const {
+                return m_react;
+            }
+
+            //! @brief Plans the reaction time for scheduling a round after a message arrives (`TIME_MAX` to prevent reacting).
+            void reaction_time(times_t t) {
+                m_react = t;
             }
 
             //! @brief Returns the time of the second most recent round (previous during rounds).
@@ -152,18 +165,19 @@ struct timer {
                 return m_next;
             }
 
-            //! @brief Plans the time of the next round (`TIME_MAX` to indicate termination).
+            //! @brief Plans the time of the next round (`TIME_MAX` to indicate no more rounds without removing the device).
             void next_time(times_t t) {
                 if (t < TIME_MAX) {
                     assert(m_offs < TIME_MAX);
                     m_offs += t - (m_next < TIME_MAX ? m_next : m_cur);
-                } else m_offs = TIME_MAX;
+                };
                 m_next = t;
+                m_mod_next = std::min(m_next, std::max(TIME_FAR, m_offs));
             }
 
-            //! @brief Terminate round executions.
+            //! @brief Terminate round executions, causing the device to be removed from the network.
             void terminate() {
-                m_next = m_offs = TIME_MAX;
+                m_mod_next = m_next = m_offs = TIME_MAX;
             }
 
             //! @brief Returns the time stamps of the most recent messages from neighbours.
@@ -223,8 +237,11 @@ struct timer {
                 return {};
             }
 
-            //! @brief Times of previous, current and next planned rounds.
-            times_t m_prev, m_cur, m_next;
+            //! @brief Times of previous, current, next and modified-next planned rounds
+            times_t m_prev, m_cur, m_next, m_mod_next;
+
+            //! @brief The reaction time for scheduling a round after a message arrives.
+            times_t m_react;
 
             //! @brief Times of neighbours.
             field<times_t> m_neigh;
@@ -236,7 +253,7 @@ struct timer {
             real_t m_fact;
 
             //! @brief The generator for the delay of reactive rounds after messages.
-            reactive_delay_type m_react;
+            reactive_delay_type m_react_gen;
 
             //! @brief The sequence generator.
             schedule_type m_schedule;

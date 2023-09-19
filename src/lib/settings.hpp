@@ -247,6 +247,8 @@ namespace fcpp {
     using times_t = FCPP_TIME_TYPE;
     //! @brief Minimum time (infinitely in the past).
     constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
+    //! @brief Far away time (but not infinitely in the future).
+    constexpr times_t TIME_FAR = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::max() : std::numeric_limits<times_t>::max() - times_t(1);
     //! @brief Maximum time (infinitely in the future).
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
     //! @brief Shorthand to real infinity value.

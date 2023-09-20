@@ -289,7 +289,7 @@ struct simulated_connector {
                     if (t == m_leave) {
                         PROFILE_COUNT("connector/cell");
                         m_leave = TIME_MAX;
-                        if (pt < TIME_MAX) {
+                        if (pt < TIME_FAR) {
                             P::node::net.cell_move(P::node::as_final(), t);
                             set_leave_time(t);
                         }
@@ -323,7 +323,7 @@ struct simulated_connector {
             void round_end(times_t t) {
                 P::node::round_end(t);
                 P::node::net.cell_move(P::node::as_final(), t);
-                if (has_timer<P>::value and P::node::next() == TIME_MAX) m_leave = TIME_MAX;
+                if (has_timer<P>::value and P::node::next() >= TIME_FAR) m_leave = TIME_MAX;
                 else set_leave_time(t);
             }
 

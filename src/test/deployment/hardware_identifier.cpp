@@ -79,5 +79,5 @@ MULTI_TEST(HardwareIdentifierTest, Schedule, O, 1) {
     network.update();
     EXPECT_EQ(5.5f, network.next());
     network.update();
-    EXPECT_EQ(TIME_MAX, network.next());
+    EXPECT_GE(network.next(), TIME_FAR);
 }

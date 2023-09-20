@@ -229,10 +229,11 @@ struct identifier {
                             {
                                 common::lock_guard<parallel> device_lock(n.mutex);
                                 if (n.next() > t + m_epsilon) return;
-                                n.update();
+                                do n.update();
+                                while (n.next() <= t + m_epsilon);
                                 nxt = n.next();
                             }
-                            assert(nxt >= t);
+                            assert(nxt > t + m_epsilon);
                             if (nxt == TIME_MAX) {
                                 common::lock_guard<parallel> l(m);
                                 dv.push_back(n.uid);
@@ -240,12 +241,15 @@ struct identifier {
                         }
                     });
                     for (device_t uid : dv) node_erase(uid);
-                    assert(m_queue.next() >= t);
+                    assert(m_queue.next() > t + m_epsilon);
                 } else P::net::update();
             }
 
             //! @brief Pushes a new event into the queue.
             void push_event(device_t uid, times_t t) {
+                if (t >= TIME_FAR) return;
+                if (synchronised and m_epsilon > 0)
+                    t = uint64_t(t / m_epsilon) * m_epsilon;
                 common::lock_guard<parallel> l(m_queue_mutex);
                 m_queue.push(t, uid);
             }

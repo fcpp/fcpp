@@ -205,10 +205,10 @@ TEST(TimerTest, SingleScheduler) {
     EXPECT_NEAR(5.2f, d, 1e-6f);
     d = device.next();
     device.update();
-    EXPECT_EQ(TIME_MAX, d);
+    EXPECT_EQ(TIME_FAR, d);
     d = device.next();
     device.update();
-    EXPECT_EQ(TIME_MAX, d);
+    EXPECT_EQ(TIME_FAR, d);
 }
 
 TEST(TimerTest, MultipleScheduler) {
@@ -238,10 +238,10 @@ TEST(TimerTest, MultipleScheduler) {
         EXPECT_NEAR(5.5f, d, 1e-6f);
         d = device.next();
         device.update();
-        EXPECT_EQ(TIME_MAX, d);
+        EXPECT_EQ(TIME_FAR, d);
         d = device.next();
         device.update();
-        EXPECT_EQ(TIME_MAX, d);
+        EXPECT_EQ(TIME_FAR, d);
     }
     {
         scombo4::net  network{common::make_tagged_tuple<>()};
@@ -269,10 +269,10 @@ TEST(TimerTest, MultipleScheduler) {
         EXPECT_NEAR(5.5f, d, 1e-6f);
         d = device.next();
         device.update();
-        EXPECT_EQ(TIME_MAX, d);
+        EXPECT_EQ(TIME_FAR, d);
         d = device.next();
         device.update();
-        EXPECT_EQ(TIME_MAX, d);
+        EXPECT_EQ(TIME_FAR, d);
     }
 }
 
@@ -291,8 +291,8 @@ TEST(TimerTest, NoRandomizer) {
     EXPECT_NEAR(5.2f, d, 1e-6f);
     d = device.next();
     device.update();
-    EXPECT_EQ(TIME_MAX, d);
+    EXPECT_EQ(TIME_FAR, d);
     d = device.next();
     device.update();
-    EXPECT_EQ(TIME_MAX, d);
+    EXPECT_EQ(TIME_FAR, d);
 }

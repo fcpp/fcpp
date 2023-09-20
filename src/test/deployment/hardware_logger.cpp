@@ -67,7 +67,7 @@ MULTI_TEST(HardwareLoggerTest, Main, O, 1) {
         }
         EXPECT_EQ(5.5f, network.next());
         network.run();
-        EXPECT_EQ(TIME_MAX, network.next());
+        EXPECT_GE(network.next(), TIME_FAR);
     }
     std::string line;
     getline(s, line);
@@ -125,6 +125,6 @@ MULTI_TEST(HardwareLoggerTest, Nulls, O, 1) {
         }
         EXPECT_EQ(5.5f, network.next());
         network.run();
-        EXPECT_EQ(TIME_MAX, network.next());
+        EXPECT_GE(network.next(), TIME_FAR);
     }
 }

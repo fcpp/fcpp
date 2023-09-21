@@ -42,7 +42,7 @@ namespace {
     //! @brief Initialize the lsb mask for the broadword code in insert(counter)
     constexpr size_t get_lsbMask(size_t register_bit_size, size_t word_bit_size) {
         size_t mask = 0;
-        for (size_t i = 0; i < word_bit_size-register_bit_size; i += register_bit_size)
+        for (size_t i = 0; i <= word_bit_size-register_bit_size; i += register_bit_size)
             mask |= size_t(1) << i;
         return mask;
     }

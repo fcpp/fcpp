@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
 
 #include <cassert>
 #include <cmath>
@@ -100,9 +100,9 @@ TEST(HyperLogLogTest, Clear) {
     EXPECT_TRUE(x.empty());
 }
 
-TEST(HyperLogLogTest, Insert) {
+TEST(HyperLogLogTest, InsertSize) {
     hyperloglog_counter<64,6> x, y;
-    hyperloglog_counter<128,6> w, z;
+    hyperloglog_counter<128,4> w, z;
     hyperloglog_counter<100,6> p, q;
     hyperloglog_counter<64,5> x5;
     real_t s;
@@ -124,12 +124,12 @@ TEST(HyperLogLogTest, Insert) {
     EXPECT_FLOAT_EQ(s, 831946.400618537);
 
     // test #2b (128 registers)
-    w = hyperloglog_counter<128,6>();
+    w = hyperloglog_counter<128,4>();
     for (size_t i=1; i<1000000; i++)
         w.insert(i);
     s = w.size();
 
-    EXPECT_FLOAT_EQ(s, 856712.3439500469);
+    EXPECT_FLOAT_EQ(s, 825823.488269);
 
     // test #2c (100 registers)
     p = hyperloglog_counter<100,6>();
@@ -181,8 +181,8 @@ TEST(HyperLogLogTest, Insert) {
     EXPECT_FLOAT_EQ(s, 18.411652636913974);
 
     // test #4b (128 registers)
-    w = hyperloglog_counter<128,6>();
-    z = hyperloglog_counter<128,6>();
+    w = hyperloglog_counter<128,4>();
+    z = hyperloglog_counter<128,4>();
 
     for (size_t i=0; i<10; i++) {
         w.insert(i);
@@ -215,4 +215,27 @@ TEST(HyperLogLogTest, Insert) {
     s = p.size();
 
     EXPECT_FLOAT_EQ(s, 19.845095);
+}
+
+TEST(HyperLogLogTest, InsertEqual) {
+    {
+        using hll_t = hyperloglog_counter<128,4>;
+        hll_t tot;
+        for (size_t i=0; i<65536; ++i) tot.insert(i);
+        std::vector<hll_t> h(65536);
+        for (size_t i=0; i<65536; ++i) h[i].insert(i);
+        for (size_t j=1; j<65536; j*=2)
+            for (size_t i=0; i<65536-j; i+=2*j) h[i].insert(h[i+j]);
+        EXPECT_EQ(tot, h[0]);
+    }
+    {
+        using hll_t = hyperloglog_counter<100,6>;
+        hll_t tot;
+        for (size_t i=0; i<65536; ++i) tot.insert(i);
+        std::vector<hll_t> h(65536);
+        for (size_t i=0; i<65536; ++i) h[i].insert(i);
+        for (size_t j=1; j<65536; j*=2)
+            for (size_t i=0; i<65536-j; i+=2*j) h[i].insert(h[i+j]);
+        EXPECT_EQ(tot, h[0]);
+    }
 }

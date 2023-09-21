@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
+// Copyright © 2023 Giorgio Audrito and Gianluca Torta. All Rights Reserved.
 
 /**
  * @file hyperloglog.hpp
@@ -188,19 +188,18 @@ class hyperloglog_counter {
 
     //! @brief Inserts collection of elements.
     void insert(hyperloglog_counter const& c) {
-        size_t accumulator[counter_word_size];
-        size_t mask[counter_word_size];
-
-        for (size_t i=counter_word_size; i-- != 0;) accumulator[i] = c.m_data[i] | msbMask;
-        for (size_t i=counter_word_size; i-- != 0;) mask[i] = m_data[i] & ~msbMask;
-        subtract(accumulator, mask, counter_word_size);
-        for (size_t i=counter_word_size; i-- != 0;)
-            accumulator[i] = ((accumulator[i] | (c.m_data[i] ^ m_data[i])) ^ (c.m_data[i] | ~m_data[i])) & msbMask;
-        for (size_t i=counter_word_size-1; i-- != 0;) mask[i] = accumulator[i] >> (register_bit_size-1) | accumulator[i+1] << (word_bit_size-register_bit_size+1) | msbMask;
-        mask[counter_word_size-1] = accumulator[counter_word_size-1] >> (register_bit_size-1) | msbMask;
-        subtract(mask, lsbMask, counter_word_size);
-        for (size_t i=counter_word_size; i-- != 0;) mask[i] = (mask[i] | msbMask) ^ accumulator[i];
-        for (size_t i=counter_word_size; i-- != 0;) m_data[i] ^= (m_data[i] ^ c.m_data[i]) & mask[i];
+        size_t t;
+        for (size_t i=0; i<counter_word_size; ++i) {
+            // compare the register_bit_size-1 least significant bits of each register
+            t = (m_data[i] | msbMask) - (c.m_data[i] & ~msbMask);
+            // m_data is greater than c.m_data if the first bit is the same and the rest is larger,
+            // or if the first bit of m_data is set while the first of c.m_data is not
+            t = ( ( t & ~(m_data[i] ^ c.m_data[i]) ) | (m_data[i] & ~c.m_data[i]) ) & msbMask;
+            // converts a single 1 in the most significant bit of a register into all 1s
+            t = (t << 1) - (t >> (register_bit_size-1));
+            // take m_data if it is larger, c.m_data otherwise
+            m_data[i] = (m_data[i] & t) | (c.m_data[i] & ~t);
+        }
     }
 
     //! @brief Inserts a range of elements.

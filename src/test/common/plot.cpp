@@ -164,6 +164,36 @@ TEST(PlotTest, SplitJoinValue) {
     }
 }
 
+using multisplitjoinvalue = plot::split<common::type_sequence<plot::time>, plot::join<plot::value<temp<tag>>, plot::value<temp<gat>>>>;
+
+TEST(PlotTest, MultiSplitJoinValue) {
+    {
+        multisplitjoinvalue p;
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(0, 10, 0);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(1, 5,  5);
+        p << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(1, 0, 10);
+        std::vector<plot::point> pb = p.build();
+        EXPECT_EQ(pb.size(), 4);
+        EXPECT_POINT(pb[0], "temp", "tag (finite mean, time = 0)", 10);
+        EXPECT_POINT(pb[1], "temp", "gat (finite mean, time = 0)", 0);
+        EXPECT_POINT(pb[2], "temp", "tag (finite mean, time = 1)", 2.5);
+        EXPECT_POINT(pb[3], "temp", "gat (finite mean, time = 1)", 7.5);
+    }
+    {
+        multisplitjoinvalue p1, p2;
+        p1 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(0, 10, 0);
+        p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(1, 5,  5);
+        p2 << common::make_tagged_tuple<plot::time, temp<tag>, temp<gat>>(1, 0, 10);
+        p1 += p2;
+        std::vector<plot::point> pb = p1.build();
+        EXPECT_EQ(pb.size(), 4);
+        EXPECT_POINT(pb[0], "temp", "tag (finite mean, time = 0)", 10);
+        EXPECT_POINT(pb[1], "temp", "gat (finite mean, time = 0)", 0);
+        EXPECT_POINT(pb[2], "temp", "tag (finite mean, time = 1)", 2.5);
+        EXPECT_POINT(pb[3], "temp", "gat (finite mean, time = 1)", 7.5);
+    }
+}
+
 using filtersplitvalue = plot::filter<plot::time, filter::above<1>, plot::split<temp<tag>, plot::value<temp<gat>>>>;
 
 TEST(PlotTest, FilterSplitValue) {

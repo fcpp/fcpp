@@ -81,13 +81,37 @@ inline U&& type_pack_wrapper(U&& x) {
  *  Useful to allow parameter pack expansion of an expression that does not depend
  *  on a integer parameter pack, according to the pack. Sample usage:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * f(common::type_pack_wrapper<xs>(<expr>)...);
+ * f(common::number_pack_wrapper<xs>(<expr>)...);
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 template <intmax_t, typename U>
 inline U&& number_pack_wrapper(U&& x) {
     return std::forward<U>(x);
 }
+
+/**
+ *  @brief Helper template returning its second argument.
+ *
+ *  Useful to allow parameter pack expansion for a type expression that does
+ *  not depend on a type parameter pack, according to the pack. Sample usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * common::type_pack_type_wrapper<Ts, <expr>>...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+template <typename, typename U>
+using type_pack_type_wrapper = U;
+
+/**
+ *  @brief Helper template returning its second argument.
+ *
+ *  Useful to allow parameter pack expansion of a type expression that doesn't
+ *  depend on a integer parameter pack, according to the pack. Sample usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * common::number_pack_type_wrapper<xs, <expr>>...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+template <intmax_t, typename U>
+using number_pack_type_wrapper = U;
 
 
 // TYPE PREDICATES

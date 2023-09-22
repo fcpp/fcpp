@@ -528,26 +528,28 @@ while [ "$1" != "" ]; do
                     cmake_builderx $alltargets
                 fi
             fi
-            for t in $alltargets; do
-                target=bin/run/$t
-                if [ ${#exitcodes[@]} -gt 0 ]; then
-                    quitter
-                fi
-                name="${target:8}"
-                file="output/$name"
-                raw="bin/output"
-                mkdir -p bin/output output/raw
-                cd bin
-                if [ $rtype == "STD" ]; then
-                    echo -e "\033[1;4mrun/$name $@\033[0m\n"
-                    run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
-                else
-                    echo -e "\033[1;4mmpiexec --hostfile ../$hostfile $mpiopts run/$name $@\033[0m\n"
-                    mpiexec --hostfile "../$hostfile" $mpiopts run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
-                fi
-                cd ..
-                monitor $pid $name $file $raw
-            done
+            if [ "$?" == "0" ]; then
+                for t in $alltargets; do
+                    target=bin/run/$t
+                    if [ ${#exitcodes[@]} -gt 0 ]; then
+                        quitter
+                    fi
+                    name="${target:8}"
+                    file="output/$name"
+                    raw="bin/output"
+                    mkdir -p bin/output output/raw
+                    cd bin
+                    if [ $rtype == "STD" ]; then
+                        echo -e "\033[1;4mrun/$name $@\033[0m\n"
+                        run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
+                    else
+                        echo -e "\033[1;4mmpiexec --hostfile ../$hostfile $mpiopts run/$name $@\033[0m\n"
+                        mpiexec --hostfile "../$hostfile" $mpiopts run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
+                    fi
+                    cd ..
+                    monitor $pid $name $file $raw
+                done
+            fi
         else
             finder "$1" "cc_binary"
             if [ "$targets" == "" ]; then
@@ -602,10 +604,12 @@ while [ "$1" != "" ]; do
                     cmake_builderx $alltargets
                 fi
             fi
-            for t in $alltargets; do
-                target=bin/test/$t
-                reporter $target
-            done
+            if [ "$?" == "0" ]; then
+                for t in $alltargets; do
+                    target=bin/test/$t
+                    reporter $target
+                done
+            fi
         else
             alltargets=""
             while [ "$1" != "" ]; do
@@ -640,12 +644,14 @@ while [ "$1" != "" ]; do
         if [ $builder == cmake ]; then
             opts="$opts -DFCPP_BUILD_TESTS=ON"
             cmake_builderx
-            cmake_finderx "" test
-            alltargets="$targets"
-            for t in $alltargets; do
-                target=bin/test/$t
-                reporter $target
-            done
+            if [ "$?" == "0" ]; then
+                cmake_finderx "" test
+                alltargets="$targets"
+                for t in $alltargets; do
+                    target=bin/test/$t
+                    reporter $target
+                done
+            fi
         else
             for folder in ${folders[@]}; do
                 alltargets="$alltargets $folder/..."

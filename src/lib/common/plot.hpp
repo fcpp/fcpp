@@ -1232,13 +1232,13 @@ namespace details {
     template <typename S>
     struct key_type {
         using type = common::tagged_tuple_t<S, double>;
-        static constexpr bool single = true;
+        static constexpr bool multisplit = false;
     };
     //! @brief The type to be used for multiple keys.
     template <typename... Ss>
     struct key_type<common::type_sequence<Ss...>> {
         using type = common::tagged_tuple_cat<common::tagged_tuple_t<Ss, double>...>;
-        static constexpr bool single = (sizeof...(Ss) == 1);
+        static constexpr bool multisplit = true;
     };
 
     //! @brief Inspects a build type.
@@ -1258,52 +1258,64 @@ namespace details {
     };
 
     //! @brief Promotes a maximal build type after split.
-    template <typename P, bool single>
+    template <typename P, bool single, bool multisplit>
     struct promote_impl {
         using type = std::vector<page>;
     };
     //! @brief Promotes multiple plots after split.
-    template <>
-    struct promote_impl<plot, false> {
+    template <bool multisplit>
+    struct promote_impl<plot, false, multisplit> {
         using type = std::array<page, 1>;
     };
     //! @brief Promotes a single plot after split.
-    template <>
-    struct promote_impl<plot, true> {
+    template <bool multisplit>
+    struct promote_impl<plot, true, multisplit> {
         using type = std::vector<plot>;
     };
-    //! @brief Promotes points after split.
+    //! @brief Promotes points after a single split.
     template <bool single>
-    struct promote_impl<point, single> {
+    struct promote_impl<point, single, false> {
         using type = std::array<plot, 1>;
+    };
+    //! @brief Promotes points after a multiple split.
+    template <bool single>
+    struct promote_impl<point, single, true> {
+        using type = std::vector<point>;
     };
 
     //! @brief Promotes a build type after split.
-    template <typename P>
-    using promote = typename promote_impl<typename inspector<P>::type, inspector<P>::single>::type;
+    template <typename P, bool multisplit>
+    using promote = typename promote_impl<typename inspector<P>::type, inspector<P>::single, multisplit>::type;
 }
 //! @endcond
 
 /**
- * Split rows depending on
+ * Split rows depending on:
  *
  * @tparam S A column tag, or a `type_sequence` of column tags.
  * @tparam P The plotter to be split.
- * @tparam B A bucket size (as `std::ratio`, only for a single key).
+ * @tparam B A bucket size (as `std::ratio`).
+ *
+ * Splitting (one or more) points with a single column tag results in a single
+ * plot of the point values varying the given tag. Splitting (one or more)
+ * points with a type sequence of (one or more) tags results insteads in more
+ * points, one for each value of the splitting tag(s).
+ *
+ * Splitting a single plot results in a row of plots. Splitting a row of
+ * plots results in a single plot page. Splitting one or more pages results
+ * in further pages for each splitting tag value.
  */
 template <typename S, typename P, typename B = std::ratio<0>>
 class split {
     //! @brief The build type of dependent plotters.
     using parent_build_type = typename P::build_type;
 
-    static_assert(details::key_type<S>::single or not std::is_same<typename details::inspector<parent_build_type>::type, point>::value, "cannot split points with multiple keys");
-
     //! @brief The type used for splitting keys.
     using key_type = typename details::key_type<S>::type;
 
   public:
     //! @brief The internal build type.
-    using build_type = details::promote<parent_build_type>;
+    using build_type = details::promote<parent_build_type, details::key_type<S>::multisplit>;
 
     //! @brief Default constructor.
     split() = default;
@@ -1329,7 +1341,7 @@ class split {
     //! @brief Row processing.
     template <typename R>
     split& operator<<(R const& row) {
-        static_assert(common::type_intersect<typename R::tags, typename key_type::tags>::size == key_type::tags::size, "splitting key not in plot row");
+        static_assert(common::type_intersect<typename R::tags, typename key_type::tags>::size == key_type::tags::size, "splitting keys not all in plot row");
         key_type k = approx_impl(row, B{}, typename key_type::tags{});
         P* p;
         {
@@ -1408,6 +1420,23 @@ class split {
         key_type k = row;
         common::ignore_args(approx_impl<num,den>(common::get<Ss>(k))...);
         return k;
+    }
+
+    //! @brief Multiple points building.
+    void build_impl(std::vector<point>& res, std::map<key_type, parent_build_type>& m) const {
+        for (auto& p : m) {
+            std::stringstream ss;
+            p.first.print(ss, common::assignment_tuple);
+            std::string spec = details::format_type(ss.str()) + ")";
+            for (point& pt : p.second) {
+                if (pt.source.back() == ')') {
+                    pt.source.pop_back();
+                    pt.source += ", ";
+                } else pt.source += " (";
+                pt.source += spec;
+                res.push_back(std::move(pt));
+            }
+        }
     }
 
     //! @brief Single plot building.

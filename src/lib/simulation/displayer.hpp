@@ -706,7 +706,7 @@ struct displayer {
                     if (n < 0.1) m_tail_normals.push_back({0,0});
                     else m_tail_normals.push_back(unit(std::move(n)));
                 }
-                double dt = common::get_or<tail_time_tag>(P::node::storage_tuple(), tail_time_val);
+                double dt = common::get_or<tail_time_tag>(P::node::storage_tuple(), double(tail_time_val));
                 while (m_tail_times.front() < t - dt) {
                     m_tail_points.pop_front();
                     m_tail_normals.pop_front();
@@ -724,14 +724,14 @@ struct displayer {
             void draw(bool star) const {
                 // gather shape and size
                 shape s = common::get_or<shape_tag>(P::node::storage_tuple(), shape(shape_val));
-                double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val);
+                double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
                 if (m_highlight) d *= 1.5;
                 // gather personal position
                 glm::vec3 p = get_cached_position();
                 // render the node
                 P::node::net.getRenderer().drawShape(s, p, d, m_colors);
                 // render the shadow
-                double shadow_d = common::get_or<shadow_size_tag>(P::node::storage_tuple(), shadow_size_val);
+                double shadow_d = common::get_or<shadow_size_tag>(P::node::storage_tuple(), double(shadow_size_val));
                 if (shadow_d > 0) {
                     shape shadow_s = common::get_or<shadow_shape_tag>(P::node::storage_tuple(), shadow_shape_val == -1 ? s : shape(shadow_shape_val));
                     color shadow_c = common::get_or<shadow_color_tag>(P::node::storage_tuple(), shadow_color_val == -1 ? m_colors[0] : color(shadow_color_val));
@@ -751,16 +751,16 @@ struct displayer {
                 // render the label
                 std::string label_text = common::get_or<label_text_tag>(P::node::storage_tuple(), "");
                 if (label_text.size()) {
-                    double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val) * 0.5;
+                    double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val)) * 0.5;
                     glm::vec3 p = get_cached_position() + glm::vec3(d,d,d);
-                    double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), label_size_val);
+                    double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), double(label_size_val));
                     color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), color(label_color_val));
                     P::node::net.getRenderer().drawLabel(label_text, p, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
                 }
                 if (m_tail_points.size() > 1) {
-                    double d = common::get_or<size_tag>(P::node::storage_tuple(), size_val);
+                    double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
                     if (m_highlight) d *= 1.5;
-                    d *= common::get_or<tail_width_tag>(P::node::storage_tuple(), tail_width_val);
+                    d *= common::get_or<tail_width_tag>(P::node::storage_tuple(), double(tail_width_val));
                     P::node::net.getRenderer().drawTail(m_tail_points, m_tail_normals, m_tail_color, d);
                 }
             }

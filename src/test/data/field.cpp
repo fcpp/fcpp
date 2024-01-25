@@ -429,3 +429,14 @@ TEST_F(FieldTest, InfixOperators) {
     EXPECT_EQ(make_tuple(2,1.0), details::self(z, 2));
     EXPECT_EQ(make_tuple(1,0.5), details::other(z));
 }
+
+TEST_F(FieldTest, Reading) {
+    std::stringstream ss("2 {0:1.5, 2:2, *:1} oth");
+    int i;
+    field<double> f;
+    std::string s;
+    ss >> i >> f >> s;
+    EXPECT_EQ(i, 2);
+    EXPECT_EQ(f, details::make_field({0,2}, std::vector<double>{1,1.5,2}));
+    EXPECT_EQ(s, "oth");
+}

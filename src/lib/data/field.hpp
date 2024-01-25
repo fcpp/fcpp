@@ -11,6 +11,8 @@
 #include <cassert>
 
 #include <algorithm>
+#include <iostream>
+#include <sstream>
 #include <vector>
 
 #include "lib/settings.hpp"
@@ -1282,6 +1284,38 @@ operator<<(A const& x, field<B> const& y) {
 #undef _DEF_UOP
 #undef _DEF_BOP
 #undef _DEF_IOP
+
+//! @brief Reading data from textual stream.
+template <typename T>
+std::istream& operator>>(std::istream& in, field<T>& v) {
+    std::vector<device_t> ids;
+    std::vector<T> vals(1);
+    char c = 0;
+    while (c != '{') in >> c;
+    while (true) {
+        std::string s;
+        char c = 0;
+        while (c != ':') {
+            in >> c;
+            if (c != ' ') s.push_back(c);
+        }
+        if (s == "*:") {
+            in >> vals[0];
+            while (c != '}') in >> c;
+            break;
+        }
+        T val;
+        in >> val;
+        std::stringstream ss(s);
+        device_t id;
+        ss >> id;
+        ids.push_back(id);
+        vals.push_back(val);
+        while (c != ',') in >> c;
+    }
+    v = details::make_field(std::move(ids), std::move(vals));
+    return in;
+}
 
 
 }

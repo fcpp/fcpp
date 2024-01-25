@@ -1,5 +1,7 @@
 // Copyright © 2023 Giorgio Audrito. All Rights Reserved.
 
+#include <sstream>
+
 #include "gtest/gtest.h"
 
 #include "lib/data/vec.hpp"
@@ -59,4 +61,15 @@ TEST(VecTest, Multiplication) {
     EXPECT_EQ(5,  norm(w));
     t *= 2;
     EXPECT_EQ(u, t);
+}
+
+TEST(VecTest, Reading) {
+    std::stringstream ss("2 [10, 2.5,4] oth");
+    int i;
+    vec<3> v;
+    std::string s;
+    ss >> i >> v >> s;
+    EXPECT_EQ(i, 2);
+    EXPECT_EQ(v, make_vec(10, 2.5, 4));
+    EXPECT_EQ(s, "oth");
 }

@@ -11,6 +11,7 @@
 #include <cmath>
 
 #include <array>
+#include <iostream>
 
 #include "lib/settings.hpp"
 
@@ -92,6 +93,18 @@ struct vec {
     real_t data[n];
 };
 
+//! @brief Reading data from textual stream.
+template <size_t n>
+std::istream& operator>>(std::istream& in, vec<n>& v) {
+    char c = 0;
+    while (c != '[') in >> c;
+    for (size_t i=0; i<n; ++i) {
+        in >> v[i];
+        c = 0;
+        while (c != (i == n-1 ? ']' : ',')) in >> c;
+    }
+    return in;
+}
 
 //! @brief Infix vectorial addition.
 template <size_t n>

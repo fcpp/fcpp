@@ -212,7 +212,7 @@ struct simulated_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(common::get_or<tags::connection_data>(t, connection_data_type{})), m_nbr_msg_size(0) {
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_data(t), m_nbr_msg_size(0) {
                 m_send = m_leave = TIME_MAX;
                 m_epsilon = common::get_or<tags::epsilon>(t, FCPP_TIME_EPSILON);
                 P::node::net.cell_enter(P::node::as_final());

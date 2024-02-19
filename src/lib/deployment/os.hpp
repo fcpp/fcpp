@@ -83,14 +83,15 @@ class network {
     using data_type = typename transceiver_t::data_type;
 
     //! @brief Constructor with default settings.
-    network(N& n) : m_node(n), m_transceiver({}), m_manager(std::mem_fn(&network::manage), this) {}
+    network(N& n) : m_node(n), m_transceiver({}), th_receive(std::mem_fn(&network::manage_receive), this), th_send(std::mem_fn(&network::manage_send), this) {}
 
     //! @brief Constructor with given settings.
-    network(N& n, data_type d) : m_node(n), m_transceiver(d), m_manager(std::mem_fn(&network::manage), this) {}
+    network(N& n, data_type d) : m_node(n), m_transceiver(d), th_receive(std::mem_fn(&network::manage_receive), this), th_send(std::mem_fn(&network::manage_send), this) {}
 
     ~network() {
         m_running = false;
-        m_manager.join();
+        th_receive.join();
+        th_send.join();
     }
 
     //! @brief Access to network settings.
@@ -122,8 +123,8 @@ class network {
     }
 
   private:
-    //! @brief Manages the send and receive of messages.
-    void manage() {
+    //! @brief Manages the send of messages.
+    void manage_send() {
         while (m_running) {
             {
                 common::lock_guard<true> l(m_send_mutex);
@@ -139,6 +140,12 @@ class network {
                 }
             }
             std::this_thread::yield();
+        }
+    }
+
+     //! @brief Manages the receive of messages.
+    void manage_receive() {
+        while (m_running) {
             // receiving
             message_type m = m_transceiver.receive(m_attempt);
             if (not m.content.empty()) {
@@ -178,8 +185,11 @@ class network {
     //! @brief Number of attempts failed for a send.
     int m_attempt = 0;
 
-    //! @brief Thread managing send and receive of messages.
-    std::thread m_manager;
+    //! @brief Thread managing receive of messages.
+    std::thread th_receive;
+
+    //! @brief Thread managing send of messages.
+    std::thread th_send;
 };
 
 };

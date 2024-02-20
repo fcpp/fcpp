@@ -55,6 +55,11 @@ TEST(FunctorTest, Maths) {
     EXPECT_DOUBLE_EQ(3.0, f1(rnd, t));
     t = {4};
     EXPECT_DOUBLE_EQ(4.0, f1(rnd, t));
+    functor::abs<tag> f2(rnd, t);
+    t = {4};
+    EXPECT_DOUBLE_EQ(4.0, f2(rnd, t));
+    t = {-3};
+    EXPECT_DOUBLE_EQ(3.0, f2(rnd, t));
 }
 
 TEST(FunctorTest, Analitics) {

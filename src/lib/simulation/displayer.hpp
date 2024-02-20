@@ -753,14 +753,14 @@ struct displayer {
                 if (label_text.size()) {
                     double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val)) * 0.5;
                     glm::vec3 p = get_cached_position() + glm::vec3(d,d,d);
-                    double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), label_size_val);
+                    double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), double(label_size_val));
                     color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), color(label_color_val));
                     P::node::net.getRenderer().drawLabel(label_text, p, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
                 }
                 if (m_tail_points.size() > 1) {
                     double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
                     if (m_highlight) d *= 1.5;
-                    d *= common::get_or<tail_width_tag>(P::node::storage_tuple(), tail_width_val);
+                    d *= common::get_or<tail_width_tag>(P::node::storage_tuple(), double(tail_width_val));
                     P::node::net.getRenderer().drawTail(m_tail_points, m_tail_normals, m_tail_color, d);
                 }
             }

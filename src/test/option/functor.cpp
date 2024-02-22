@@ -29,18 +29,24 @@ TEST(FunctorTest, Arithmetics) {
     functor::mul<functor::add<tag, distribution::constant_n<int, 2>>, gat> f3(rnd, t);
     functor::div<tag, distribution::constant_n<double, 2>> f4(rnd, t);
     functor::pow<tag, distribution::constant_n<int, 2>> f5(rnd, t);
+    functor::max<tag, gat> f6(rnd, t);
+    functor::min<tag, distribution::constant_n<double, 2>> f7(rnd, t);
     t = {1, 2};
     EXPECT_EQ(-1.0, f1(rnd, t));
     EXPECT_EQ(+4.0, f2(rnd, t));
     EXPECT_EQ(+6.0, f3(rnd, t));
     EXPECT_EQ(+0.5, f4(rnd, t));
     EXPECT_EQ(+1.0, f5(rnd, t));
+    EXPECT_EQ(+2.0, f6(rnd, t));
+    EXPECT_EQ(+1.0, f7(rnd, t));
     t = {3, 1};
     EXPECT_EQ(+2.0, f1(rnd, t));
     EXPECT_EQ(+3.0, f2(rnd, t));
     EXPECT_EQ(+5.0, f3(rnd, t));
     EXPECT_EQ(+1.5, f4(rnd, t));
     EXPECT_EQ(+9.0, f5(rnd, t));
+    EXPECT_EQ(+3.0, f6(rnd, t));
+    EXPECT_EQ(+2.0, f7(rnd, t));
 }
 
 TEST(FunctorTest, Maths) {

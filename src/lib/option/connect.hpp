@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2024 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file connect.hpp
@@ -32,11 +32,20 @@ namespace tags {
     //! @brief Net initialisation tag associating to 50%-likely communication radius (required for \ref connect::radial).
     struct half_radius {};
 
+    //! @brief Node initialisation tag associating to the ratio of time when sleeping and not listening (required for \ref connect::radial).
+    struct sleep_ratio {};
+
     //! @brief Node initialisation tag associating to a network rank (required for \ref connect::hierarchical).
     struct network_rank {};
 
-    //! @brief Node initialisation tag associating to the ratio to full power (required for \ref connect::powered).
-    struct power_ratio {};
+    //! @brief Node initialisation tag associating to the ratio to full transmission power (required for \ref connect::powered).
+    struct send_power_ratio {};
+
+    //! @brief Node initialisation tag associating to the ratio to full receive sensitivity (required for \ref connect::powered).
+    struct recv_power_ratio {};
+
+    //! @brief Legacy name for backward compatibility.
+    using power_ratio = send_power_ratio;
 }
 
 }
@@ -95,7 +104,7 @@ class fixed : public clique<n> {
     //! @brief Shortcut to the parent fixed connector.
     using C = clique<n>;
 
-    //! brief Shortcut to the radius tag.
+    //! @brief Shortcut to the radius tag.
     using radius = component::tags::radius;
 
   public:
@@ -148,15 +157,18 @@ class powered : public fixed<num,den,n> {
     //! @brief Shortcut to the parent fixed connector.
     using C = fixed<num,den,n>;
 
-    //! brief Shortcut to the power_ratio tag.
-    using power_ratio = component::tags::power_ratio;
+    //! @brief Shortcut to the send_power_ratio tag.
+    using send_power_ratio = component::tags::send_power_ratio;
+
+    //! @brief Shortcut to the recv_power_ratio tag.
+    using recv_power_ratio = component::tags::recv_power_ratio;
 
   public:
     //! @brief Type for representing a position.
     using typename C::position_type;
 
     //! @brief The node data type.
-    using data_type = typename C::data_type::template push_back<power_ratio, real_t>;
+    using data_type = typename C::data_type::template push_back<send_power_ratio, real_t>::template push_back<recv_power_ratio, real_t>;
 
     //! @brief Inheriting constructor.
     using C::C;
@@ -164,7 +176,7 @@ class powered : public fixed<num,den,n> {
     //! @brief The maximum radius of connection.
     template <typename T>
     real_t relative_radius(T const& data1, T const& data2) const {
-        return C::relative_radius(data1, data2) * common::get<power_ratio>(data1) * common::get<power_ratio>(data2);
+        return C::relative_radius(data1, data2) * common::get<send_power_ratio>(data1) * common::get<recv_power_ratio>(data2);
     }
 
     //! @brief Checks if connection is possible.
@@ -192,15 +204,18 @@ template <intmax_t r50, typename C>
 class radial : public C {
     static_assert(1 <= r50 and r50 <= 99, "half radius out of bounds");
 
-    //! brief Shortcut to the power_ratio tag.
+    //! @brief Shortcut to the half_radius tag.
     using half_radius = component::tags::half_radius;
+
+    //! @brief Shortcut to the sleep_ratio tag.
+    using sleep_ratio = component::tags::sleep_ratio;
 
   public:
     //! @brief Type for representing a position.
     using typename C::position_type;
 
     //! @brief The node data type.
-    using typename C::data_type;
+    using data_type = typename C::data_type::template push_back<sleep_ratio, real_t>;
 
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
@@ -215,6 +230,8 @@ class radial : public C {
         if (not C::operator()(std::forward<G>(g), data1, pos1, data2, pos2)) return false;
         std::uniform_real_distribution<real_t> dist;
         real_t r = dist(g);
+        if (r < common::get<sleep_ratio>(data2)) return false;
+        r = dist(g);
         real_t r99 = C::relative_radius(data1, data2);
         return r*r*r > 1/(7 * exp((m_r50 - norm(pos1 - pos2)/r99) * m_k) + 1);
     }

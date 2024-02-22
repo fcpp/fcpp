@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2024 Giorgio Audrito. All Rights Reserved.
 
 #include <algorithm>
 #include <vector>
@@ -54,7 +54,7 @@ TEST(ConnectTest, Radial) {
 
 TEST(ConnectTest, Powered) {
     connect::powered<4> connector(nullptr, common::make_tagged_tuple<>());
-    connect::powered<4>::data_type data = 0.5f;
+    connect::powered<4>::data_type data = std::make_tuple(0.5f,0.5f);
     bool connect;
     connect = connector(nullptr, data, make_vec(0.5f,1), data, make_vec(0.4f,0.9f));
     EXPECT_TRUE(connect);

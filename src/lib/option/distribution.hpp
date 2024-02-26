@@ -144,22 +144,17 @@ namespace details {
         return dist(g, t);
     }
 
-    template <typename T, typename I>
-    using if_literal = std::conditional_t<std::is_literal_type<T>::value, T, I>;
-
-    template <typename T>
-    constexpr auto maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<1>) {
-        return if_literal<T, intmax_t>(num);
+    constexpr intmax_t maybe_divide(intmax_t num, common::number_sequence<1>) {
+        return num;
     }
 
-    template <typename T>
-    constexpr auto maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<0>) {
-        return if_literal<T, long double>(num * std::numeric_limits<long double>::infinity());
+    constexpr long double maybe_divide(intmax_t num, common::number_sequence<0>) {
+        return num * std::numeric_limits<long double>::infinity();
     }
 
-    template <typename T, intmax_t den, typename = std::enable_if_t<(den > 1)>>
-    constexpr auto maybe_divide(common::type_sequence<T>, intmax_t num, common::number_sequence<den>) {
-        return if_literal<T, long double>(num / (long double)den);
+    template <intmax_t den, typename = std::enable_if_t<(den > 1)>>
+    constexpr long double maybe_divide(intmax_t num, common::number_sequence<den>) {
+        return num / (long double)den;
     }
 }
 //! @endcond
@@ -225,7 +220,7 @@ struct constant_n {
     //! @brief Constructor.
     template <typename G, typename S, typename T>
     constant_n(G&&, common::tagged_tuple<S,T> const& t) {
-        constexpr auto def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
+        constexpr auto def = details::maybe_divide(num, common::number_sequence<den>{});
         val = type(common::get_or<val_tag>(t, def));
     }
 
@@ -253,7 +248,7 @@ struct constant_n<R, num, den, void> {
     //! @brief Generator function.
     template <typename G, typename T>
     type operator()(G&&, T&&) {
-        constexpr auto def = details::maybe_divide(common::type_sequence<type>{}, num, common::number_sequence<den>{});
+        constexpr auto def = details::maybe_divide(num, common::number_sequence<den>{});
         return type(def);
     }
 };

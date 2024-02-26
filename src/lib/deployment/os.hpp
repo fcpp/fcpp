@@ -139,7 +139,7 @@ class network {
                     }
                 }
             }
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 
@@ -157,7 +157,7 @@ class network {
                     m_receive.push_back(std::move(m));
                 }
             }
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 

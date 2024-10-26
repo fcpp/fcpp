@@ -469,84 +469,51 @@ struct graph_connector {
 
                 //! @brief Updates the internal status of net component.
                 void update() {
-                    std::cout << "Net updated launched" << std::endl;
                     times_t t_send = m_send_schedule.next();
                     times_t t_recv = m_recv_schedule.next();
                     times_t pt = P::net::next();
-                    // verifico quale evento di update vada eseguito prima
-                    // tra il mio e quello del padre
+
                     std::cout << "t_send: " << t_send << std::endl;
                     std::cout << "t_recv: " << t_recv << std::endl;
                     std::cout << "pt: " << pt << std::endl;
 
 
                     if (t_send < pt) {
-                        /*
-                            1) Individuare lista messaggi da inviare
-                            2) capire come funzioni l'invio
-                                -che metodo si usa?
-                                    -forse asincrono, per non dover aspettare la receive degli altri
-                                    -forse bloccante, ma solo nel senso di ripartire con l'esecuzione
-                                    quando sono sicuro che il messaggio sia in viaggio
-                                -chi è il destinatario?
-                                    -io mando il messaggio al processo MPI, il codice di invio e ricezione
-                                    viene eseguito da qualsiasi nodo (perchè in effetti tutti hanno
-                                    la loro mappa con i messaggi da inviare)
-                                    -l'idea è che il primo che riceve i messaggi si occupa di smistarli, quindi
-                                    non serve eleggere un leader. L'unico potenziale problema è evitare
-                                    la duplicazione dei messaggi (questo si risolve verificando che gli accesssi
-                                    al buffer del processo mpi siano sincronizzati)
-                                -serve serializzare i messaggi da inviare?
-                            3) capire come fare la ricezione
-                                -che metodo si usa?
-                                -cosa ricevo?
-                                -chi riceve?
-                                -serve lo smistamento?
-                        */
-                        // TODO: ha senso? Cosa fa?
+                        std::cout << "Send launched" << std::endl;
                         PROFILE_COUNT("graph_connector");
                         PROFILE_COUNT("graph_connector/send");
-                        m_send_schedule.step();
+                        m_send_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
                         // sending messages to remote nodes
                         common::osstream os;
                         int snd_buffer_size = 0;
-                        std::cout << "Scanning remote messages..." << std::endl;
 
                         for (std::pair<const int, mpi_node_message_type> process_messages : m_communication_maps){
-                            std::cout << "Sending remote message to process: " << process_messages.first << std::endl;
+                            //std::cout << "Sending remote message to process: " << process_messages.first << std::endl;
                             os << process_messages.second;
                             snd_buffer_size = os.size();
                             std::vector<char> m_data = std::move(os.data());
                             // 0 for a size message, 1 for a data message
                             MPI_Send(&snd_buffer_size, 1, MPI_INT, process_messages.first, 0, MPI_COMM_WORLD);
-                            // move dovrebbe evitare di fare una copia dei dati, operazione molto costosa
                             MPI_Send(m_data.data(), snd_buffer_size, MPI_CHAR, process_messages.first, 1, MPI_COMM_WORLD);
                         }
-                        std::cout << "Messages to be sent scanned" << std::endl;
                     } else if (t_recv < pt){
-                        // receiving messages from remote node using MPI_receive
+                        std::cout << "Receive launched" << std::endl;
                         int rcv_buffer_size;
-                        // Ha senso fare una receive sola, contando che potrebbero essersi accumulati
-                        // i dati provenienti da tanti processi MPI diversi??
-                        // non bisognerebbe fare un polling di tutti i processi MPI??
                         int messageExists = 0;
-                        std::cout << "Looking for messages from MPI processes..." << std::endl;
+                        m_recv_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
                         for (int rank = 0; rank < m_MPI_procs_count - 1; rank++){
                             messageExists = 0;
-                            std::cout << "Checking remote message from process: " << rank << std::endl;
+                           // std::cout << "Checking remote message from process: " << rank << std::endl;
                             rcv_buffer_size = 0;
-                            // TODO: rendere non bloccante qualora non ci siano messaggi dal
-                            // processo di rango rank
                             MPI_Iprobe(rank, 0, MPI_COMM_WORLD, &messageExists, MPI_STATUS_IGNORE);
                             if (messageExists){
-                                std::cout << "Receiving remote message from process: " << rank << std::endl;
+                                //std::cout << "Receiving remote message from process: " << rank << std::endl;
                                 MPI_Recv(&rcv_buffer_size, 1, MPI_INT, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                                 // TODO: si può rendere più efficiente evitando di riallocare ogni volta?
                                 std::vector<char>rcv_buffer(rcv_buffer_size);
                                 // qui bisogna fare un loop per considerare ogni rango
                                 // per ciascuno, assicurarsi che la computazione non si blocchi se non ci sono messaggi
                                 MPI_Recv(&rcv_buffer[0], rcv_buffer_size, MPI_CHAR, rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                                //common::isstream is(std::move(rcv_buffer));
                                 common::isstream is(std::move(rcv_buffer));
                                 mpi_node_message_type incoming_msg_map;
                                 is >> incoming_msg_map;
@@ -560,6 +527,7 @@ struct graph_connector {
                                     common::lock_guard<parallel> l(n->mutex);
                                     // id mittente
                                     for (std::pair<const device_t, std::pair<times_t, typename F::node::message_t>> msg : node_messages.second){
+                                        std::cout << "Sending message from local node " << msg.first << std::endl;
                                         n->receive(msg.second.first, msg.first, msg.second.second);
                                     }
                                 }
@@ -567,8 +535,10 @@ struct graph_connector {
                                 std::cout << "No message coming from process of rank: " << rank << std::endl;
                             }
                         }
-                    } else
+                    } else {
+                        std::cout << "Parent update launched" << std::endl;
                         P::net::update();
+                    }
                 }             
             private: // implementation details
                 //! @brief Returns the `randomizer` generator if available.

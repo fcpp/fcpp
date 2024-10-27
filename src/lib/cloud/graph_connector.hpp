@@ -469,6 +469,10 @@ struct graph_connector {
 
                 //! @brief Updates the internal status of net component.
                 void update() {
+                    int myId;
+                    MPI_Comm_rank(MPI_COMM_WORLD, &myId);
+                    std::cout << "Process: " << myId << std::endl;
+
                     times_t t_send = m_send_schedule.next();
                     times_t t_recv = m_recv_schedule.next();
                     times_t pt = P::net::next();
@@ -496,12 +500,14 @@ struct graph_connector {
                             MPI_Send(&snd_buffer_size, 1, MPI_INT, process_messages.first, 0, MPI_COMM_WORLD);
                             MPI_Send(m_data.data(), snd_buffer_size, MPI_CHAR, process_messages.first, 1, MPI_COMM_WORLD);
                         }
-                    } else if (t_recv < pt){
+                    } 
+
+                    if (t_recv < pt){
                         std::cout << "Receive launched" << std::endl;
                         int rcv_buffer_size;
                         int messageExists = 0;
                         m_recv_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
-                        for (int rank = 0; rank < m_MPI_procs_count - 1; rank++){
+                        for (int rank = 0; rank < m_MPI_procs_count; rank++){
                             messageExists = 0;
                            // std::cout << "Checking remote message from process: " << rank << std::endl;
                             rcv_buffer_size = 0;
@@ -521,13 +527,14 @@ struct graph_connector {
                                 // ora scansiono la mappa, smistando i messaggi ai destinatari
                                 // id ricevitore
                                 for (std::pair<const device_t, node_message_type> node_messages : incoming_msg_map){
-                                    std::cout << "Sending message to local node " << node_messages.first << std::endl;
+                                    std::cout << "Processing messages SENT to node " << node_messages.first << std::endl;
                                     // recupero il puntatore a nodo
                                     typename F::node* n = const_cast<typename F::node*>(&P::net::node_at(node_messages.first));
                                     common::lock_guard<parallel> l(n->mutex);
                                     // id mittente
                                     for (std::pair<const device_t, std::pair<times_t, typename F::node::message_t>> msg : node_messages.second){
-                                        std::cout << "Sending message from local node " << msg.first << std::endl;
+                                        std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
+                                        std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
                                         n->receive(msg.second.first, msg.first, msg.second.second);
                                     }
                                 }
@@ -535,7 +542,9 @@ struct graph_connector {
                                 std::cout << "No message coming from process of rank: " << rank << std::endl;
                             }
                         }
-                    } else {
+                    }
+                    
+                    if (pt <= t_send && pt <= t_recv) {
                         std::cout << "Parent update launched" << std::endl;
                         P::net::update();
                     }

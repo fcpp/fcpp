@@ -188,6 +188,7 @@ struct graph_connector {
              */
             template <typename S, typename T>
             node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_msg_size(0) {
+                std::cout << "Node constructor launched" << std::endl;
             }
 
             //! @brief Destructor ensuring deadlock-free mutual disconnection.
@@ -213,6 +214,8 @@ struct graph_connector {
                         P::node::mutex.unlock();
                     }
                 }
+                // probabilmente è inutile, perchè il riferimento verrebbe eliminato
+                // scorrendo i vicini del vicino, ma sicuramente non è sbagliato
                 if (symmetric) return;
                 while (m_neighbours.second().size() > 0) {
                     if (P::node::mutex.try_lock()) {
@@ -235,6 +238,7 @@ struct graph_connector {
 
             //! @brief Adds given device to neighbours (returns true on succeed).
             bool connect(device_t i) {
+                std::cout << "Connect method launched" << std::endl;
                 if (P::node::uid == i or m_neighbours.first().count(i) > 0) return false;
                 
                 // Attualmente questa istruzione non funziona, perchè in questo punto net
@@ -246,12 +250,17 @@ struct graph_connector {
 
                 m_neighbours.first().emplace(i, node_accessor(i));
                 common::unlock_guard<parallel> u(P::node::mutex);
+                /*
                 if (sender_rank == receiver_rank){
                     // local neigbour: setting up a standard connection
+                    std::cout << "Node uid" << i << std::endl;
+                    std::cout << "Adding node to remote neighbours" << std::endl;
                     typename F::node* n = const_cast<typename F::node*>(&P::node::net.node_at(i));
+                    std::cout << "Node Added to remote negibours" << std::endl;
                     common::lock_guard<parallel> l(n->mutex);
                     n->m_neighbours.second().emplace(P::node::uid, node_accessor(P::node::uid));
-                }
+                    
+                }*/
                 
                 return true;
             }
@@ -267,14 +276,14 @@ struct graph_connector {
 
                 m_neighbours.first().erase(i);
                 common::unlock_guard<parallel> u(P::node::mutex);
-                
+                /*
                 if (sender_rank == receiver_rank){
                     // physical connection: there is another arc that must be removed
                     // in a deadlock-free way
                     typename F::node* n = m_neighbours.first().at(i);
                     common::lock_guard<parallel> l(n->mutex);
                     n->m_neighbours.second().erase(P::node::uid);
-                }
+                }*/
                 
                 return true;
             }
@@ -425,7 +434,9 @@ struct graph_connector {
                     m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t),
                     m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)),
                     m_MPI_procs_count(common::get<tags::mpi_procs>(t)),
-                    node_splitter(get_generator(has_randomizer<P>{}, *this), t){}
+                    node_splitter(get_generator(has_randomizer<P>{}, *this), t){
+                        std::cout << "Net constructor launched" << std::endl;
+                    }
 
                 //! @brief Destructor ensuring that nodes are deleted first.
                 ~net() {
@@ -463,12 +474,14 @@ struct graph_connector {
                 }
 
                 void add_to_map(int rank, device_t receiver_uid, times_t timestamp, typename F::node::message_t msg, device_t sender_uid){
+                   // std::cout << "Adding to remote map " << std::endl;
                     common::lock_guard<parallel> l(comm_map_mutex);
                     m_communication_maps[rank][receiver_uid][sender_uid] = std::make_pair(timestamp, msg);
                 }
 
                 //! @brief Updates the internal status of net component.
                 void update() {
+                    std::cout << "Net update launched" << std::endl;
                     int myId;
                     MPI_Comm_rank(MPI_COMM_WORLD, &myId);
                     std::cout << "Process: " << myId << std::endl;
@@ -477,10 +490,11 @@ struct graph_connector {
                     times_t t_recv = m_recv_schedule.next();
                     times_t pt = P::net::next();
 
+                    
                     std::cout << "t_send: " << t_send << std::endl;
                     std::cout << "t_recv: " << t_recv << std::endl;
                     std::cout << "pt: " << pt << std::endl;
-
+                    
 
                     if (t_send < pt) {
                         std::cout << "Send launched" << std::endl;
@@ -527,19 +541,19 @@ struct graph_connector {
                                 // ora scansiono la mappa, smistando i messaggi ai destinatari
                                 // id ricevitore
                                 for (std::pair<const device_t, node_message_type> node_messages : incoming_msg_map){
-                                    std::cout << "Processing messages SENT to node " << node_messages.first << std::endl;
+                                    //std::cout << "Processing messages SENT to node " << node_messages.first << std::endl;
                                     // recupero il puntatore a nodo
                                     typename F::node* n = const_cast<typename F::node*>(&P::net::node_at(node_messages.first));
                                     common::lock_guard<parallel> l(n->mutex);
                                     // id mittente
                                     for (std::pair<const device_t, std::pair<times_t, typename F::node::message_t>> msg : node_messages.second){
-                                        std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
-                                        std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
+                                        //std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
+                                        //std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
                                         n->receive(msg.second.first, msg.first, msg.second.second);
                                     }
                                 }
                             } else {
-                                std::cout << "No message coming from process of rank: " << rank << std::endl;
+                               // std::cout << "No message coming from process of rank: " << rank << std::endl;
                             }
                         }
                     }

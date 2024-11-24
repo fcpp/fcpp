@@ -169,6 +169,7 @@ struct graph_spawner {
             //! @brief Reads arc information from file and creates corresponding connections.
             void read_arcs(std::shared_ptr<std::istream> is) {
                 device_t d1, d2;
+                
                 while (true) {
                     *is >> d1;
                     if (!*is) {
@@ -176,6 +177,8 @@ struct graph_spawner {
                         break;
                     }
                     *is >> d2;
+                    std::cout << "d1 " << d1 << std::endl;
+                    std::cout << "d2 " << d2 << std::endl;
                     assert(*is);
                     if (d1 != d2) {
                         typename net::lock_type l;

@@ -177,8 +177,6 @@ struct graph_spawner {
                         break;
                     }
                     *is >> d2;
-                    std::cout << "d1 " << d1 << std::endl;
-                    std::cout << "d2 " << d2 << std::endl;
                     assert(*is);
                     if (d1 != d2) {
                         typename net::lock_type l;

@@ -188,7 +188,6 @@ struct graph_connector {
              */
             template <typename S, typename T>
             node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_msg_size(0) {
-                std::cout << "Node constructor launched" << std::endl;
             }
 
             //! @brief Destructor ensuring deadlock-free mutual disconnection.
@@ -238,7 +237,6 @@ struct graph_connector {
 
             //! @brief Adds given device to neighbours (returns true on succeed).
             bool connect(device_t i) {
-                std::cout << "Connect method launched" << std::endl;
                 if (P::node::uid == i or m_neighbours.first().count(i) > 0) return false;
                 
                 // Attualmente questa istruzione non funziona, perchè in questo punto net
@@ -312,13 +310,11 @@ struct graph_connector {
 
             //! @brief Returns the time of the next sending of messages.
             times_t send_time() const {
-                std::cout << "Setting sending time" << std::endl;
                 return m_send;
             }
 
             //! @brief Plans the time of the next sending of messages (`TIME_MAX` to prevent sending).
             void send_time(times_t t) {
-                std::cout << "Setting sending time" << std::endl;
                 m_send = t;
             }
 
@@ -434,9 +430,7 @@ struct graph_connector {
                     m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t),
                     m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)),
                     m_MPI_procs_count(common::get<tags::mpi_procs>(t)),
-                    node_splitter(get_generator(has_randomizer<P>{}, *this), t){
-                        std::cout << "Net constructor launched" << std::endl;
-                    }
+                    node_splitter(get_generator(has_randomizer<P>{}, *this), t){}
 
                 //! @brief Destructor ensuring that nodes are deleted first.
                 ~net() {
@@ -481,23 +475,14 @@ struct graph_connector {
 
                 //! @brief Updates the internal status of net component.
                 void update() {
-                    std::cout << "Net update launched" << std::endl;
                     int myId;
                     MPI_Comm_rank(MPI_COMM_WORLD, &myId);
-                    std::cout << "Process: " << myId << std::endl;
 
                     times_t t_send = m_send_schedule.next();
                     times_t t_recv = m_recv_schedule.next();
-                    times_t pt = P::net::next();
-
-                    
-                    std::cout << "t_send: " << t_send << std::endl;
-                    std::cout << "t_recv: " << t_recv << std::endl;
-                    std::cout << "pt: " << pt << std::endl;
-                    
+                    times_t pt = P::net::next();                    
 
                     if (t_send < pt) {
-                        std::cout << "Send launched" << std::endl;
                         PROFILE_COUNT("graph_connector");
                         PROFILE_COUNT("graph_connector/send");
                         m_send_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
@@ -517,7 +502,6 @@ struct graph_connector {
                     } 
 
                     if (t_recv < pt){
-                        std::cout << "Receive launched" << std::endl;
                         int rcv_buffer_size;
                         int messageExists = 0;
                         m_recv_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
@@ -559,7 +543,6 @@ struct graph_connector {
                     }
                     
                     if (pt <= t_send && pt <= t_recv) {
-                        std::cout << "Parent update launched" << std::endl;
                         P::net::update();
                     }
                 }             

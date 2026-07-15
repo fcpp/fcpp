@@ -41,7 +41,7 @@ struct mytimer {
     };
 };
 
-DECLARE_COMBINE(calc_pos, component::calculus, component::simulated_positioner, mytimer, component::randomizer);
+DECLARE_COMBINE(calc_pos, component::calculus, component::simulated_positioner, mytimer, component::randomizer, component::base);
 
 template <int O>
 using combo = calc_pos<options<O>>;

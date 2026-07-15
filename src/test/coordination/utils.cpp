@@ -20,7 +20,7 @@ DECLARE_OPTIONS(options,
     online_drop<(O & 4) == 4>
 );
 
-DECLARE_COMBINE(calc_only, component::calculus);
+DECLARE_COMBINE(calc_only, component::calculus, component::base);
 
 template <int O>
 using combo = calc_only<options<O>>;

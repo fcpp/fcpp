@@ -992,8 +992,13 @@ namespace details {
 }
 //! @endcond
 
-//! @brief Maintains a value for the column S aggregated with A.
-template <typename S, typename A = aggregator::only_finite<aggregator::mean<double>>>
+/**
+ * @brief Maintains a value for the column S aggregated with A.
+ *
+ * @tparam S the tag of the aggregator column (e.g. `aggregator::mean<tags::data>`)
+ * @tparam A the aggregator to be used (defaults to `mean<double>`, use `stats<double>` to show error bars)
+ */
+template <typename S, typename A = aggregator::mean<double>>
 class value {
   public:
     //! @brief The internal build type.
@@ -1196,7 +1201,7 @@ namespace details {
     };
     //! @brief Maintains values for multiple explicit columns and no aggregators (defaults to `mean<double>`).
     template <typename S, template<class...> class A>
-    struct values<S, A<>> : public values<S, A<aggregator::only_finite<aggregator::mean<double>>>> {};
+    struct values<S, A<>> : public values<S, A<aggregator::mean<double>>> {};
     //! @brief Maintains values for multiple explicit columns and multiple aggregators.
     template <typename S, template<class...> class A, typename A1, typename... As>
     struct values<S, A<A1, As...>> : public joiner<typename values<S, A<A1>>::type, typename values<S, A<As>>::type...> {};
@@ -1219,8 +1224,8 @@ namespace details {
  * @brief Maintains values for multiple columns and aggregators.
  *
  * @tparam S The sequence of tags and aggregators for logging (intertwined).
- * @tparam A The sequence of row aggregators (if empty, `mean<double>` is assumed).
- * @tparam Ts Description of fields to be extracted as tags, aggregators or units (if empty, S is interpreted as fields).
+ * @tparam A The sequence of row aggregators (`mean<double>` is used if `A` is the empty sequence, use `common::type_sequence<aggregator::stats<double>>` to show error bars).
+ * @tparam Ts Description of fields to be extracted as tags, aggregators or units (if empty, S is interpreted as a sequence of fields).
  */
 template <typename S, typename A, typename... Ts>
 using values = typename details::values<S, A, Ts...>::type;
@@ -1526,7 +1531,7 @@ class split {
  * @tparam S The sequence of tags and aggregators for logging (intertwined).
  * @tparam X The tag to be used for the x axis.
  * @tparam Y The unit to be used for the y axis.
- * @tparam A The sequence of row aggregators (defaults to `mean<double>`).
+ * @tparam A The sequence of row aggregators (defaults to `aggregator::mean<double>`, use `common::type_sequence<aggregator::stats<double>>` to display variance bars).
  */
 template <typename S, typename X, template<class> class Y, typename A = common::type_sequence<>>
 using plotter = split<X, values<S, A, unit<Y>>>;

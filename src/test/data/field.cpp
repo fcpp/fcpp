@@ -274,14 +274,23 @@ TEST_F(FieldTest, MapReduce) {
     details::self(get<0>(y), 0) = 5;
     details::self(get<0>(y), 1) = 6;
     using loc_type = tuple<int, int>;
-    loc_type t = details::fold_hood([] (device_t uid, loc_type x, loc_type y) {
+    loc_type t;
+    t = details::fold_hood([] (device_t uid, loc_type x, loc_type y) {
         return uid == 1 ? y : std::max(x, y);
     }, y, {0,1,2});
+    EXPECT_EQ(t, make_tuple(5,2));
+    t = details::fold_hood([] (device_t uid, loc_type x, loc_type y) {
+        return uid == 1 ? make_tuple(5,2) : std::max(x, y);
+    }, make_tuple(1, 2), {0,1,2});
     EXPECT_EQ(t, make_tuple(5,2));
     tuple<device_t, loc_type> u;
     u = details::fold_hood([] (device_t uid, loc_type x, tuple<device_t, loc_type> y) {
         return std::max(make_tuple(uid, x), y);
     }, y, make_tuple(0, make_tuple(3,-1)), {0,1,2,3}, 2);
+    EXPECT_EQ(u, (tuple<device_t, loc_type>{3, {1,2}}));
+    u = details::fold_hood([] (device_t uid, loc_type x, tuple<device_t, loc_type> y) {
+        return std::max(make_tuple(uid, x), y);
+    }, make_tuple(1, 2), make_tuple(0, make_tuple(3,-1)), {0,1,2,3}, 2);
     EXPECT_EQ(u, (tuple<device_t, loc_type>{3, {1,2}}));
     field<tuple<int,int>> z{{3,4}};
     details::self(z, 1) = make_tuple(7,8);

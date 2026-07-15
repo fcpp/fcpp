@@ -102,7 +102,7 @@ struct storage {
             }
 
             //! @cond INTERNAL
-            #define MISSING_TYPE_MESSAGE "unsupported tag access (add A to node storage tag list)"
+            #define MISSING_TYPE_MESSAGE ANSI_START "unsupported tag access (add A to node storage tag list)" ANSI_END
             //! @endcond
 
             /**
@@ -183,7 +183,7 @@ struct storage {
             }
 
             //! @cond INTERNAL
-            #define MISSING_TYPE_MESSAGE "unsupported tag access (add A to net storage tag list)"
+            #define MISSING_TYPE_MESSAGE ANSI_START "unsupported tag access (add A to net storage tag list)" ANSI_END
             //! @endcond
 
             /**

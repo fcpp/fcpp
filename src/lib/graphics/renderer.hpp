@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2025 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file renderer.hpp
@@ -17,7 +17,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <stb_image/stb_image.h>
+#include <stb_image.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
@@ -81,7 +81,7 @@ namespace fcpp {
             void drawShadow(shape sh, glm::vec3 p, double d, color const& c) const;
 
             //! @brief It draws a star of lines, given the center and sides.
-            void drawStar(glm::vec3 const& p, std::vector<glm::vec3> const& np) const;
+            void drawStar(glm::vec3 const& p, std::vector<std::pair<glm::vec3, float>> const& np, std::vector<glm::vec3> const& nl, color const& c) const;
 
             //! @brief It draws the tail of a node, as a sequence of lines given their endpoints, the color to be used and a width.
             void drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const& n, color const& c, float w) const;

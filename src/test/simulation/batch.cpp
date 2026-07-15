@@ -99,6 +99,19 @@ TEST(BatchTest, Lists) {
         EXPECT_EQ(t, tuple_type(6));
     }
     {
+        using tuple_type = common::tagged_tuple_t<tag, int>;
+        auto x = batch::double_list<tag,int>({2, 3, 5}, {4, 6}) + batch::double_list<tag,int>({8}, {1, 7});
+        EXPECT_SAME(typename decltype(x)::value_type, tuple_type);
+        EXPECT_EQ(x.core_size(), 4);
+        EXPECT_EQ(x.extra_size(), 4);
+        tuple_type t;
+        std::vector<int> v = {2, 3, 5, 8, 4, 6, 1, 7};
+        for (size_t i = 0; i < 8; ++i) {
+            EXPECT_TRUE(x(t, i));
+            EXPECT_EQ(t, tuple_type(v[i]));
+        }
+    }
+    {
         using tuple_type = common::tagged_tuple_t<tag, double>;
         auto x = batch::arithmetic<tag>(2.0, 5.0, 0.5);
         EXPECT_SAME(typename decltype(x)::value_type, tuple_type);

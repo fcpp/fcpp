@@ -26,7 +26,7 @@ namespace details {
     template <typename T, typename U>
     void expect_same(std::string file, int line) {
         bool b = std::is_same<T, U>::value;
-        EXPECT_TRUE(b) << "\033[4A" << file << ":" << line << ": Failure\n"
+        EXPECT_TRUE(b) << "\u001b[4A" << file << ":" << line << ": Failure\n"
                        << "      Expected: " << common::type_name<T>() << "\n"
                        << "To be equal to: " << common::type_name<U>();
     }

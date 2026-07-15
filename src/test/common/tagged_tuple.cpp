@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 #include <sstream>
 
@@ -82,12 +82,14 @@ TEST_F(TaggedTupleTest, Get) {
     common::get_or_wildcard<gat>(t) = true;
 }
 
-void get_or_wildcard_test() {
+bool get_or_wildcard_test() {
     bool b;
     test_type t;
     b = common::get_or_wildcard<oth>(t);
     common::get_or_wildcard<oth>(test_type(t)) = "baz";
+    common::get_or_wildcard<oth>(test_type(t)) *= 42;
     b = common::get_or_wildcard<oth>((test_type const&)t);
+    return b;
 }
 
 TEST_F(TaggedTupleTest, Call) {
@@ -191,4 +193,16 @@ TEST_F(TaggedTupleTest, Print) {
 
 TEST_F(TaggedTupleTest, TupleCat) {
     EXPECT_SAME(common::tagged_tuple_cat<common::tagged_tuple_t<tag,int,gat,bool>, common::tagged_tuple_t<oth,double,hto,char>>, common::tagged_tuple_t<tag,int,gat,bool,oth,double,hto,char>);
+    int x = 10;
+    auto y = common::make_tagged_tuple_t(
+        tag{}, x,
+        gat{}, true,
+        oth{}, 0.5,
+        hto{}, 'a'
+    );
+    EXPECT_SAME(decltype(y), common::tagged_tuple_t<tag,int,gat,bool,oth,double,hto,char>);
+    EXPECT_EQ(common::get<tag>(y), 10);
+    EXPECT_EQ(common::get<gat>(y), true);
+    EXPECT_EQ(common::get<oth>(y), 0.5);
+    EXPECT_EQ(common::get<hto>(y), 'a');
 }

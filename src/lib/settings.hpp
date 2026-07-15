@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2024 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file settings.hpp
@@ -8,8 +8,10 @@
 #ifndef FCPP_SETTINGS_H_
 #define FCPP_SETTINGS_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 
 //! @brief Identifier for low-end, resource constrained systems.
@@ -241,10 +243,31 @@
  * @brief Namespace containing all the objects in the FCPP library.
  */
 namespace fcpp {
+    //! @brief Signed integer type with a minimum given width in bits.
+    template <size_t n>
+    using intn_t = std::conditional_t<
+        n <= 16,
+        std::conditional_t<n <= 8,  int8_t,  int16_t>,
+        std::conditional_t<n <= 32, int32_t, int64_t>
+    >;
+
+    //! @brief Unsigned integer type with a minimum given width in bits.
+    template <size_t n>
+    using uintn_t = std::conditional_t<
+        n <= 16,
+        std::conditional_t<n <= 8,  uint8_t,  uint16_t>,
+        std::conditional_t<n <= 32, uint32_t, uint64_t>
+    >;
+
     //! @brief Type used for real numbers.
     using real_t = FCPP_REAL_TYPE;
+
     //! @brief Type used for times.
     using times_t = FCPP_TIME_TYPE;
+
+#ifdef NAN
+    #undef NAN
+#endif
     //! @brief Minimum time (infinitely in the past).
     constexpr times_t TIME_MIN = std::numeric_limits<times_t>::has_infinity ? -std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::lowest();
     //! @brief Far away time (but not infinitely in the future).
@@ -253,50 +276,14 @@ namespace fcpp {
     constexpr times_t TIME_MAX = std::numeric_limits<times_t>::has_infinity ? std::numeric_limits<times_t>::infinity() : std::numeric_limits<times_t>::max();
     //! @brief Shorthand to real infinity value.
     constexpr real_t INF = std::numeric_limits<real_t>::infinity();
-#ifdef NAN
-    #undef NAN
-#endif
     //! @brief Shorthand to real not-a-number value.
     constexpr real_t NAN = std::numeric_limits<real_t>::quiet_NaN();
 
-#if   FCPP_DEVICE == 8
     //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
-    typedef uint8_t device_t;
-#elif FCPP_DEVICE == 16
-    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
-    typedef uint16_t device_t;
-#elif FCPP_DEVICE == 24
-    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
-    typedef uint32_t device_t;
-#elif FCPP_DEVICE == 32
-    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
-    typedef uint32_t device_t;
-#elif FCPP_DEVICE == 48
-    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
-    typedef uint64_t device_t;
-#elif FCPP_DEVICE == 64
-    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
-    typedef uint64_t device_t;
-#else
-    static_assert(false, "invalid value for FCPP_DEVICE");
-    //! @brief Type for device identifiers (depends on @ref FCPP_DEVICE).
-    typedef uint64_t device_t;
-#endif
+    using device_t = uintn_t<FCPP_DEVICE>;
 
-#if   FCPP_HOPS == 8
     //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
-    typedef int8_t hops_t;
-#elif FCPP_HOPS == 16
-    //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
-    typedef int16_t hops_t;
-#elif FCPP_HOPS == 32
-    //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
-    typedef int32_t hops_t;
-#else
-    static_assert(false, "invalid value for FCPP_HOPS");
-    //! @brief Type for hop counts (depends on @ref FCPP_HOPS).
-    typedef int32_t hops_t;
-#endif
+    using hops_t = intn_t<FCPP_HOPS>;
 }
 
 

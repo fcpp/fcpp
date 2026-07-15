@@ -45,9 +45,6 @@ namespace tags {
 
     //! @brief Node initialisation tag associating to a `device_t` unique identifier (required).
     struct uid {};
-
-    //! @brief Net initialisation tag associating to a factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
-    struct realtime_factor {};
 }
 
 
@@ -92,9 +89,6 @@ namespace tags {
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::uid associates to a `device_t` unique identifier (required).
- *
- * <b>Net initialisation tags:</b>
- * - \ref tags::realtime_factor associates to a `real_t` factor to be applied to real time (defaults to \ref FCPP_REALTIME if not infinite).
  */
 template <class... Ts>
 struct base {
@@ -127,7 +121,7 @@ struct base {
             using mutex_type = common::mutex<parallel>;
 
             //! @cond INTERNAL
-            #define MISSING_TAG_MESSAGE "missing required 'tags::uid' node initialisation tag"
+            #define MISSING_TAG_MESSAGE ANSI_START "missing required tags::uid node initialisation tag" ANSI_END
             //! @endcond
 
             //! @name constructors
@@ -223,20 +217,17 @@ struct base {
 
         //! @brief The global part of the component.
         class net {
-            static_assert(FCPP_REALTIME >= 0, "time cannot flow backwards");
-
           public: // visible by node objects and the main program
             //! @name constructors
             //! @{
 
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
-            explicit net(common::tagged_tuple<S,T> const& t) {
+            explicit net(common::tagged_tuple<S,T> const&) {
                 m_realtime_start = clock_t::now();
-                m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den * common::get_or<tags::realtime_factor>(t, FCPP_REALTIME < INF ? FCPP_REALTIME : 1);
+                m_realtime_factor = real_t(clock_t::period::num) / clock_t::period::den;
                 m_last_update = m_next_update = 0;
                 m_warn_delay = FCPP_TIME_EPSILON;
-                assert(m_realtime_factor >= 0);
             }
 
             //! @brief Deleted copy constructor.
@@ -259,15 +250,14 @@ struct base {
             //! @brief Updates the internal status of net component.
             void update() {}
 
-            //! @brief Runs the events until a given end. Should NEVER be overridden.
+            //! @brief Runs the events until a given maximum time. Should NEVER be overridden.
             void run(times_t end = TIME_FAR) {
-                times_t nxt = as_final().next();
-                while (std::max(m_next_update, nxt) < end) {
+                times_t nxt;
+                while ((nxt = as_final().next()) < end) {
                     m_next_update = nxt;
                     maybe_sleep(nxt, std::integral_constant<bool, realtime>{});
                     m_last_update = nxt;
                     as_final().update();
-                    nxt = as_final().next();
                 }
                 PROFILE_REPORT();
             }
@@ -281,11 +271,6 @@ struct base {
             //! @brief An estimate of real time elapsed from start. Should NEVER be overridden.
             inline times_t real_time() const {
                 return (clock_t::now() - m_realtime_start).count() * m_realtime_factor;
-            }
-
-            //! @brief Terminate round executions.
-            inline void terminate() {
-                m_next_update = TIME_MAX;
             }
 
           protected: // visible by net objects only
@@ -350,8 +335,8 @@ namespace details {
     template <typename F, template <class...> class... Cs>
     struct combine;
 
-    template <template <class...> class F, typename... Ts>
-    struct combine<F<Ts...>> : public base<Ts...>::template component<F<Ts...>> {};
+    template <template <class...> class F, typename... Ts, template <class...> class C>
+    struct combine<F<Ts...>, C> : public C<Ts...>::template component<F<Ts...>> {};
 
     template <template <class...> class F, typename... Ts, template <class...> class C, template <class...> class... Cs>
     struct combine<F<Ts...>, C, Cs...> : public C<Ts...>::template component<F<Ts...>, combine<F<Ts...>, Cs...>> {};
@@ -371,7 +356,7 @@ struct combine_spec : public details::combine_spec<combine_spec<Ts...>, Ts...> {
 /**
  * @brief Combines components into a single templated object.
  *
- * @param Ts Template components to chain together (`base` is implied as last).
+ * @param Ts Template components to chain together (the last must be a `base`).
  */
 template <template<class...> class... Cs>
 struct combine {
@@ -387,7 +372,7 @@ struct combine {
  * Example of intended usage:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * namespace component {
- *   DECLARE_COMBINE(mycombo, calculus, exporter, storage, ...);
+ *   DECLARE_COMBINE(mycombo, calculus, exporter, storage, ..., base);
  *   DECLARE_OPTIONS(myopt, tags::program<myprogram>, tags::dimension<2>, ...);
  *   mycombo<myopt>::net network;
  * }
@@ -405,7 +390,7 @@ struct combine {
  * Example of intended usage:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * namespace component {
- *   DECLARE_COMBINE(mycombo, calculus, exporter, storage, ...);
+ *   DECLARE_COMBINE(mycombo, calculus, exporter, storage, ..., base);
  *   DECLARE_OPTIONS(myopt, tags::program<myprogram>, tags::dimension<2>, ...);
  *   mycombo<myopt>::net network;
  * }

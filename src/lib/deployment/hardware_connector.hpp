@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file hardware_connector.hpp
@@ -49,9 +49,6 @@ namespace tags {
     //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
-
-    //! @brief Node initialisation tag associating to communication power (defaults to `connector_type::data_type{}`).
-    struct connection_data;
 }
 
 
@@ -68,9 +65,6 @@ namespace tags {
  * <b>Declaration flags:</b>
  * - \ref tags::message_push defines whether incoming messages are pushed or pulled (defaults to \ref FCPP_MESSAGE_PUSH).
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
- *
- * <b>Node initialisation tags:</b>
- * - \ref tags::connection_data associates to communication power (defaults to `connector_type::data_type{}`).
  */
 template <class... Ts>
 struct hardware_connector {
@@ -117,7 +111,7 @@ struct hardware_connector {
              * @param t A `tagged_tuple` gathering initialisation values.
              */
             template <typename S, typename T>
-            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_dist(INF), m_nbr_msg_size(0), m_network(*this, common::get_or<tags::connection_data>(t, connection_data_type{})) {}
+            node(typename F::net& n, common::tagged_tuple<S,T> const& t) : P::node(n,t), m_delay(get_generator(has_randomizer<P>{}, *this),t), m_send(TIME_MAX), m_nbr_dist(INF), m_nbr_msg_size(0), m_network(*this, t) {}
 
             //! @brief Connector data.
             connection_data_type& connector_data() {

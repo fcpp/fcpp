@@ -112,9 +112,10 @@ endfunction()
 # MAIN PROJECT SETUP #
 ######################
 
+include(FetchContent)
 project(
     fcpp
-    VERSION 0.8.1
+    VERSION 0.9.2
     DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
 option(FCPP_BUILD_GL        "Build OpenGL features."          OFF)
@@ -165,6 +166,7 @@ set(
     lib/data/bloom.cpp
     lib/data/color.cpp
     lib/data/field.cpp
+    lib/data/gps_trace.cpp
     lib/data/hyperloglog.cpp
     lib/data/ordered.cpp
     lib/data/shape.cpp
@@ -225,15 +227,20 @@ endif(FCPP_BUILD_GL)
 
 add_library(
         stb_image
+        ./external/stb_image/stb_image_write.h
         ./external/stb_image/stb_image.h
         ./external/stb_image/stb_image.cpp
+        ./external/rapidxml-1.13/rapidxml.hpp
 )
 target_include_directories(stb_image PUBLIC ./external/stb_image)
+add_library(rapidxml INTERFACE)
+target_include_directories(rapidxml INTERFACE ./external/rapidxml-1.13)
 if(FCPP_BUILD_MPI)
     find_package(MPI REQUIRED)
     target_link_libraries(
         fcpp PUBLIC
         stb_image
+        rapidxml
         ${MPI_LIBRARIES}
     )
     target_include_directories(fcpp PUBLIC ${MPI_INCLUDE_PATH})
@@ -247,6 +254,7 @@ else()
     target_link_libraries(
         fcpp PUBLIC
         stb_image
+        rapidxml
     )
 endif(FCPP_BUILD_MPI)
 set_target_properties(${target_name} PROPERTIES PREFIX "run/")
@@ -263,18 +271,26 @@ if(FCPP_BUILD_GL)
         ./external/glad-core-3.3/include/glad/glad.h
         ./external/glad-core-3.3/src/glad.c
     )
-    add_subdirectory(./external/glm-0.9.9.8/glm)
-    add_subdirectory(./external/glfw-3.3.4)
-    add_subdirectory(./external/freetype-2.11.0)
     target_include_directories(glad PUBLIC ./external/glad-core-3.3/include)
-    target_include_directories(
-        fcpp PUBLIC
-        ./external
-        ./external/glad-core-3.3/include
-        ./external/glm-0.9.9.8/glm
-        ./external/glfw-3.3.4/include
-        ./external/freetype-2.11.0/devel
+    FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        GIT_TAG        1.0.3
+        GIT_SHALLOW    TRUE
     )
+    FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG        3.4
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_Declare(
+        freetype
+        GIT_REPOSITORY https://github.com/freetype/freetype.git
+        GIT_TAG        VER-2-14-3
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(glm glfw freetype)
     target_link_libraries(
         fcpp PUBLIC
         glad
@@ -293,14 +309,12 @@ endif(FCPP_BUILD_GL)
 ################
 
 if(FCPP_BUILD_TESTS)
-    cmake_minimum_required(VERSION 3.14)
-    include(FetchContent)
     if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
         cmake_policy(SET CMP0135 NEW)
     endif()
     FetchContent_Declare(
       googletest
-      URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+      URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
     )
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
@@ -351,6 +365,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/data/bloom.cpp)
         fcpp_test(test/data/color.cpp)
         fcpp_test(test/data/field.cpp)
+        fcpp_test(test/data/gps_trace.cpp)
         fcpp_test(test/data/hyperloglog.cpp)
         fcpp_test(test/data/ordered.cpp)
         fcpp_test(test/data/tuple.cpp)

@@ -1,8 +1,9 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2025 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
 
 #include "lib/common/multitype_map.hpp"
+#include "lib/common/option.hpp"
 #include "lib/common/ostream.hpp"
 #include "lib/common/plot.hpp"
 #include "lib/common/serialize.hpp"
@@ -22,7 +23,7 @@ struct gat {};
 
 
 template <typename T>
-void rebuilder(T& y, T&z) {
+void rebuilder(T& y, T& z) {
     T const& x{y};
     common::osstream os, osx;
     os << y;
@@ -44,7 +45,7 @@ std::tuple<T,T,int,int,int> rebuild(T y, T z) {
     common::hstream hs;
     int h1 = int(hs << y);
     hs = {};
-    int h2 = int(hs << z);
+    int h2 = y == z ? h1+1 : int(hs << z);
     rebuilder(y, z);
     hs = {};
     int h3 = int(hs << z);
@@ -133,6 +134,13 @@ TEST(SerializeTest, Iterable) {
     SERIALIZE_CHECK(u, {}, false);
     std::string str = "thestring";
     SERIALIZE_CHECK(str, {});
+    common::option<std::array<int,2>, false> o0{};
+    SERIALIZE_CHECK(o0, {});
+    common::option<std::array<int,2>, true> o1{std::array<int,2>{}};
+    SERIALIZE_CHECK(o1, {});
+    common::option<std::array<int,2>> o20{}, o21{std::array<int,2>{}};
+    SERIALIZE_CHECK(o20, {});
+    SERIALIZE_CHECK(o21, {});
 }
 
 TEST(SerializeTest, FCPP) {

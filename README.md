@@ -13,7 +13,6 @@ An efficient C++14 implementation of the [Exchange Calculus](https://drops.dagst
 ## Setup
 
 The next sections contain the setup instructions based on the CMake build system for the various supported OSs and virtual containers. Jump to the section dedicated to your system of choice and ignore the others.
-For backward compatibility (and faster testing), the [Bazel](https://bazel.build) build system is also supported but not recommended: in particular, the OpenGL graphical user interface is not available with Bazel. In order to use Bazel instead of CMake for building, you have to install it and then substitute `./make.sh bazel` for `./make.sh` in the commands of the "Testing" and "Execution" sections.
 
 ### Windows
 
@@ -45,9 +44,28 @@ To install these packages in Ubuntu, type the following command:
 ```
 sudo apt-get install xorg-dev g++ cmake asymptote doxygen
 ```
+
+If you are using Wayland the following additional packages must be installed:
+```
+sudo apt-get install libwayland-dev libxkbcommon-dev
+```
+
 In Fedora, the `xorg-dev` package is not available. Instead, install the packages:
 ```
 libX11-devel libXinerama-devel.x86_64 libXcursor-devel.x86_64 libXi-devel.x86_64 libXrandr-devel.x86_64 mesa-libGL-devel.x86_64
+```
+
+Additionally for Wayland on Fedora you'll need the following packages:
+```
+wayland-devel libxkbcommon-devel
+```
+
+More detail on dependencies for distribution using Wayland are available at the following [link](https://www.glfw.org/docs/latest/compile_guide.html#compile_deps_wayland).
+
+In Arch Linux, you can instead install the packages as follows:
+```
+sudo pacman -S xorg-server-devel gcc cmake
+yay -S asymptote
 ```
 
 ### MacOS
@@ -83,22 +101,6 @@ docker run -it --volume $PWD:/fcpp --workdir /fcpp docker.pkg.github.com/fcpp/fc
 and the following command to exit it:
 ```
 exit
-```
-
-### Vagrant container
-
-**Warning:** the graphical simulations are based on OpenGL, which is **not** available in the Vagrant container. Use this system for batch simulations only.
-
-Download Vagrant from [https://www.vagrantup.com](https://www.vagrantup.com) and VirtualBox from [https://www.virtualbox.org](https://www.virtualbox.org), then type the following commands in a terminal to enter the Vagrant container:
-```
-vagrant up
-vagrant ssh
-cd fcpp
-```
-and the following commands to exit it:
-```
-exit
-vagrant halt
 ```
 
 ### Virtual Machines

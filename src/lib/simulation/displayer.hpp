@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2025 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file displayer.hpp
@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -72,11 +73,27 @@ namespace tags {
     template <intmax_t... cs>
     struct color_val {};
 
-    //! @brief Declaration tag associating to storage tags with the text of the node labels (defaults to no text).
+    //! @brief Declaration tag associating to a storage tag regulating the color of edges (defaults to none).
+    template <typename T>
+    struct edge_color_tag {};
+
+    //! @brief Declaration tag associating to the base colors of edges (defaults to black).
+    template <intmax_t c>
+    struct edge_color_val {};
+
+    //! @brief Declaration tag associating to a storage tag regulating the size of edges (defaults to none).
+    template <typename T>
+    struct edge_size_tag {};
+
+    //! @brief Declaration tag associating to the base size of edges (defaults to 0).
+    template <intmax_t num, intmax_t den = 1>
+    struct edge_size_val {};
+
+    //! @brief Declaration tag associating to a storage tag with the text of the node labels (defaults to no text).
     template <typename T>
     struct label_text_tag {};
 
-    //! @brief Declaration tag associating to storage tags regulating the size of node labels (defaults to none).
+    //! @brief Declaration tag associating to a storage tag regulating the size of node labels (defaults to none).
     template <typename T>
     struct label_size_tag {};
 
@@ -84,7 +101,7 @@ namespace tags {
     template <intmax_t num, intmax_t den = 1>
     struct label_size_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the color of node labels (defaults to none).
+    //! @brief Declaration tag associating to a storage tag regulating the color of node labels (defaults to none).
     template <typename T>
     struct label_color_tag {};
 
@@ -100,7 +117,7 @@ namespace tags {
     template <intmax_t n>
     struct shadow_shape_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the color of node shadows (defaults to none).
+    //! @brief Declaration tag associating to a storage tag regulating the color of node shadows (defaults to none).
     template <typename T>
     struct shadow_color_tag {};
 
@@ -108,7 +125,7 @@ namespace tags {
     template <intmax_t c>
     struct shadow_color_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the size of node shadows (defaults to none).
+    //! @brief Declaration tag associating to a storage tag regulating the size of node shadows (defaults to none).
     template <typename T>
     struct shadow_size_tag {};
 
@@ -116,7 +133,7 @@ namespace tags {
     template <intmax_t num, intmax_t den = 1>
     struct shadow_size_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the time duration of past positions creating the node tail (defaults to none).
+    //! @brief Declaration tag associating to a storage tag regulating the time duration of past positions creating the node tail (defaults to none).
     template <typename T>
     struct tail_time_tag {};
 
@@ -128,7 +145,7 @@ namespace tags {
     template <intmax_t num, intmax_t den = 1>
     struct tail_granularity {};
 
-    //! @brief Declaration tag associating to storage tags regulating the color of the node tail (defaults to none).
+    //! @brief Declaration tag associating to a storage tag regulating the color of the node tail (defaults to none).
     template <typename T>
     struct tail_color_tag {};
 
@@ -136,7 +153,7 @@ namespace tags {
     template <intmax_t c>
     struct tail_color_val {};
 
-    //! @brief Declaration tag associating to storage tags regulating the width of the node tail (defaults to none).
+    //! @brief Declaration tag associating to a storage tag regulating the width of the node tail (defaults to none).
     template <typename T>
     struct tail_width_tag {};
 
@@ -517,6 +534,10 @@ namespace details {
  * - \ref tags::size_val defines the base size of nodes (defaults to 1).
  * - \ref tags::color_tag defines storage tags regulating the colors of nodes (defaults to none).
  * - \ref tags::color_val defines the base colors of nodes (defaults to white).
+ * - \ref tags::edge_color_tag defines a storage tag regulating the color of edges (defaults to none).
+ * - \ref tags::edge_color_val defines the base color of edges (defaults to black).
+ * - \ref tags::edge_size_tag defines a storage tag regulating the size of edges (defaults to none).
+ * - \ref tags::edge_size_val defines the base size of edges (defaults to 0).
  * - \ref tags::label_text_tag defines a storage tag regulating the text of node labels (defaults to no text).
  * - \ref tags::label_size_tag defines a storage tag regulating the size of node labels (defaults to none).
  * - \ref tags::label_size_val defines the base size of node labels (defaults to 1).
@@ -588,6 +609,18 @@ struct displayer {
     //! @brief Base colors of nodes (defaults to white).
     using color_val = common::option_nums<tags::color_val, Ts...>;
 
+    //! @brief Storage tag regulating the color of edges.
+    using edge_color_tag = common::option_type<tags::edge_color_tag, void, Ts...>;
+
+    //! @brief Base color of edges (defaults to black).
+    constexpr static intmax_t edge_color_val = common::option_num<tags::edge_color_val, BLACK, Ts...>;
+
+    //! @brief Storage tag regulating the size of edges.
+    using edge_size_tag = common::option_type<tags::edge_size_tag, void, Ts...>;
+
+    //! @brief Base size of edges (defaults to 0).
+    constexpr static double edge_size_val = common::option_float<tags::edge_size_val, 0, 1, Ts...>;
+
     //! @brief Storage tag associated to the text of the node labels.
     using label_text_tag = common::option_type<tags::label_text_tag, void, Ts...>;
 
@@ -609,10 +642,10 @@ struct displayer {
     //! @brief Base shape of nodes (defaults to the same shape as the node).
     constexpr static intmax_t shadow_shape_val = common::option_num<tags::shadow_shape_val, -1, Ts...>;
 
-    //! @brief Storage tags regulating the color of node shadows.
+    //! @brief Storage tag regulating the color of node shadows.
     using shadow_color_tag = common::option_type<tags::shadow_color_tag, void, Ts...>;
 
-    //! @brief Base colors of node shadows (defaults to the same color as the node).
+    //! @brief Base color of node shadows (defaults to the same color as the node).
     constexpr static intmax_t shadow_color_val = common::option_num<tags::shadow_color_val, -1, Ts...>;
 
     //! @brief Storage tag regulating the size of node shadows.
@@ -739,10 +772,16 @@ struct displayer {
                 }
                 if (star) {
                     // gather neighbours' positions
-                    std::vector<glm::vec3> np;
-                    for (device_t d : m_prev_nbr_uids)
-                        np.push_back(P::node::net.node_at(d).get_cached_position());
-                    P::node::net.getRenderer().drawStar(p, np);
+                    std::unordered_map<packed_color, std::pair<std::vector<std::pair<glm::vec3, float>>, std::vector<glm::vec3>>> np;
+                    auto ec = common::get_or<edge_color_tag>(P::node::storage_tuple(), edge_color_val);
+                    auto es = common::get_or<edge_size_tag>(P::node::storage_tuple(), edge_size_val);
+                    for (device_t d : m_prev_nbr_uids) {
+                        float s = fcpp::details::self(es, d);
+                        if (s > 0) np[fcpp::details::self(ec, d)].first.emplace_back(P::node::net.node_at(d).get_cached_position(), s);
+                        else np[fcpp::details::self(ec, d)].second.push_back(P::node::net.node_at(d).get_cached_position());
+                    }
+                    for (auto const& n : np)
+                        P::node::net.getRenderer().drawStar(p, n.second.first, n.second.second, color(n.first));
                 }
             }
 
@@ -924,12 +963,15 @@ struct displayer {
                 m_deltaTime{ 0.0f },
                 m_lastFrame{ 0.0f },
                 m_lastFraction{ 0.0f },
+                m_viewport_changed{ true },
                 m_FPS{ 0 } {
                     m_frameCounts.push_back(0);
                     constexpr auto max = details::numseq_to_vec<area>::max;
                     constexpr auto min = details::numseq_to_vec<area>::min;
                     m_viewport_max = details::vec_to_glm(common::get_or<tags::area_max>(t, max), -INF);
                     m_viewport_min = details::vec_to_glm(common::get_or<tags::area_min>(t, min), +INF);
+                    m_viewport_min[2] = m_viewport_max[2] = 0;
+                    m_viewport_fixed = m_viewport_max.x > m_viewport_min.x and m_viewport_max.y > m_viewport_min.y;
                     maybe_set_color_theme(color_theme{});
                 }
 
@@ -954,33 +996,24 @@ struct displayer {
                     PROFILE_COUNT("displayer");
                     if (not m_legenda) {
                         PROFILE_COUNT("displayer/nodes");
-                        if (rt == 0) {
-                            if (m_viewport_min.x > m_viewport_max.x) {
-                                common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
-                                    viewport_update(n_beg[i].second.cache_position(t));
-                                });
-                                double approx = 1;
-                                while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) > 2000 * approx * approx)
-                                    approx *= 10;
-                                while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) <= 20 * approx * approx)
-                                    approx /= 10;
-                                m_viewport_min.x = std::floor(m_viewport_min.x / approx) * approx;
-                                m_viewport_max.x = std::ceil(m_viewport_max.x / approx) * approx;
-                                m_viewport_min.y = std::floor(m_viewport_min.y / approx) * approx;
-                                m_viewport_max.y = std::ceil(m_viewport_max.y / approx) * approx;
-                            } else m_viewport_min[2] = m_viewport_max[2] = 0;
-                        } else {
-                            if (m_pointer && m_mouseStartX == std::numeric_limits<float>::infinity()) highlightHoveredNode();
-                            common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
-                                n_beg[i].second.cache_position(t);
-                            });
-                        }
+                        if (m_pointer && m_mouseStartX == std::numeric_limits<float>::infinity()) highlightHoveredNode();
+                        common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
+                            viewport_update(n_beg[i].second.cache_position(t));
+                        });
                         for (size_t i = 0; i < n_end-n_beg; ++i) n_beg[i].second.draw(m_links);
                     }
-                    if (rt == 0) {
-                        // stop simulated time
-                        frequency(0);
-                        // first frame only: set camera position, rotation, sensitivity
+                    if (m_viewport_changed) {
+                        // round viewport to a nice number
+                        double approx = 1;
+                        while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) > 2000 * approx * approx)
+                            approx *= 10;
+                        while ((m_viewport_max.x - m_viewport_min.x) * (m_viewport_max.y - m_viewport_min.y) <= 20 * approx * approx)
+                            approx /= 10;
+                        m_viewport_min.x = std::floor(m_viewport_min.x / approx) * approx;
+                        m_viewport_max.x = std::ceil(m_viewport_max.x / approx) * approx;
+                        m_viewport_min.y = std::floor(m_viewport_min.y / approx) * approx;
+                        m_viewport_max.y = std::ceil(m_viewport_max.y / approx) * approx;
+                        // set camera position, rotation, sensitivity
                         glm::vec3 viewport_size = m_viewport_max - m_viewport_min;
                         glm::vec3 camera_pos = (m_viewport_min + m_viewport_max) / 2.0f;
                         double dz = std::max(viewport_size.x/m_renderer.getAspectRatio(), viewport_size.y);
@@ -994,6 +1027,11 @@ struct displayer {
                         while (grid_scale * 200 < diagonal) grid_scale *= 10;
                         while (grid_scale * 20 > diagonal) grid_scale /= 10;
                         m_renderer.makeGrid(m_viewport_min, m_viewport_max, grid_scale);
+                        m_viewport_changed = false;
+                    }
+                    if (rt == 0) {
+                        // stop simulated time
+                        frequency(0);
                         m_renderer.setGridTexture(m_texture);
                         setInternalCallbacks(); // call this after m_renderer is initialized
                     }
@@ -1120,14 +1158,17 @@ struct displayer {
 
             //! @brief Updates the viewport adding a position to it.
             void viewport_update(glm::vec3 pos) {
-                for (int i=0; i<3; ++i) {
+                if (m_viewport_fixed) return;
+                for (int i=0; i<2; ++i) {
                     if (pos[i] < m_viewport_min[i]) {
                         common::lock_guard<parallel> l(m_viewport_mutex);
                         m_viewport_min[i] = pos[i];
+                        m_viewport_changed = true;
                     }
                     if (pos[i] > m_viewport_max[i]) {
                         common::lock_guard<parallel> l(m_viewport_mutex);
                         m_viewport_max[i] = pos[i];
+                        m_viewport_changed = true;
                     }
                 }
             }
@@ -1396,7 +1437,7 @@ struct displayer {
                     // terminate program
                     case GLFW_KEY_ESCAPE:
                         if (frequency() == 0) frequency(1);
-                        P::net::terminate();
+                        terminate();
                         break;
                     // show/hide links
                     case GLFW_KEY_L:
@@ -1434,7 +1475,7 @@ struct displayer {
                         break;
                     default:
                         // pass key to renderer
-                        if (not m_renderer.keyboardInput(key, first, deltaTime, mods) and first and not justoutoflegenda and key != GLFW_KEY_LEFT_SHIFT and key != GLFW_KEY_RIGHT_SHIFT) {
+                        if (not m_renderer.keyboardInput(key, first, deltaTime, mods) and first and not justoutoflegenda and key < GLFW_KEY_LEFT_SHIFT) {
                             // unrecognised key: stop simulation for legenda
                             frequency(0);
                             m_hoveredNode = -1;
@@ -1469,6 +1510,11 @@ struct displayer {
                     m_offs = P::net::as_final().next() - m_next_update / f;
                 m_fact = f;
                 m_inv = 1/f;
+            }
+
+            //! @brief Terminate round executions.
+            void terminate() {
+                m_offs = TIME_MAX;
             }
 
             //! @brief Returns next event to schedule for the net component, warped with frequency.
@@ -1563,6 +1609,12 @@ struct displayer {
 
             //! @brief Boundaries of the viewport.
             glm::vec3 m_viewport_min, m_viewport_max;
+
+            //! @brief Whether the viewport has changed since last frame.
+            bool m_viewport_changed;
+
+            //! @brief Whether the viewport is fixed (i.e., it cannot change during the simulation).
+            bool m_viewport_fixed;
 
             //! @brief Vector representing the raycast direction (in world space) generated while moving the cursor.
             glm::vec3 m_rayCast;

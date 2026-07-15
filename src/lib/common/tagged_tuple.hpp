@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file tagged_tuple.hpp
@@ -390,12 +390,31 @@ namespace details {
     // Single type sequence argument.
     template <typename... Ts>
     struct tagged_tuple_t<type_sequence<Ts...>> : public tagged_tuple_t<Ts...> {};
+
+    // Assigns tags and values to a tagged tuple (empty case).
+    template <typename U>
+    inline void make_tagged_tuple_t(U&) {}
+
+    // Assigns tags and values to a tagged tuple (non-empty case).
+    template <typename U, typename S, typename T, typename... Ts>
+    inline void make_tagged_tuple_t(U& t, S, T&& v, Ts&&... vs) {
+        get<S>(t) = v;
+        make_tagged_tuple_t(t, std::forward<Ts>(vs)...);
+    }
 }
 //! @endcond
 
 //! @brief The `tagged_tuple_t` alias, allowing to express a `tagged_tuple` by interleaving tags and types (possibly wrapped in a type sequence).
 template <typename... Ts>
 using tagged_tuple_t = typename details::tagged_tuple_t<Ts...>::type;
+
+//! @brief Utility function for creating tagged tuples by interleaving tags and values.
+template <typename... Ts>
+tagged_tuple_t<std::decay_t<Ts>...> make_tagged_tuple_t(Ts&&... vs) {
+    tagged_tuple_t<std::decay_t<Ts>...> t;
+    details::make_tagged_tuple_t(t, std::forward<Ts>(vs)...);
+    return t;
+}
 
 
 //! @cond INTERNAL

@@ -40,8 +40,19 @@ namespace details {
      * @param R The reference type.
      */
     template <typename I, typename V, typename D, typename P, typename R>
-    class iterator : public std::iterator<std::random_access_iterator_tag, V, D, P, R> {
+    class iterator {
       public:
+        //! @brief The underlying iterator type.
+        using iterator_category = std::random_access_iterator_tag;
+        //! @brief The value type.
+        using value_type        = V;
+        //! @brief The difference type.
+        using difference_type   = D;
+        //! @brief The pointer type.
+        using pointer           = P;
+        //! @brief The reference type.
+        using reference         = R;
+
         //! @name constructors
         //! @{
         //! @brief Default constructor.

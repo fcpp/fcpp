@@ -368,6 +368,8 @@ void wildcard_test() {
     int& x = declare_reference<int>();
     wildcard y = "foo";
     x = y;
+    y %= 8;
+    --y;
 }
 
 template <typename T>

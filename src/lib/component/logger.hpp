@@ -351,7 +351,7 @@ struct logger {
             }
 
             //! @cond INTERNAL
-            #define MISSING_TYPE_MESSAGE "access to non-existent aggregator data A"
+            #define MISSING_TYPE_MESSAGE ANSI_START "access to non-existent aggregator data A" ANSI_END
             //! @endcond
 
             /**

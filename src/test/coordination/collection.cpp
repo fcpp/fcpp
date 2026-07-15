@@ -62,7 +62,7 @@ struct lagdist {
         using net = typename P::net;
     };
 };
-DECLARE_COMBINE(calc_dist, lagdist, component::calculus);
+DECLARE_COMBINE(calc_dist, lagdist, component::calculus, component::base);
 
 template <int O>
 using combo = calc_dist<options<O>>;
@@ -109,7 +109,7 @@ struct lagdist1 {
         using net = typename P::net;
     };
 };
-DECLARE_COMBINE(calc_dist1, lagdist1, component::calculus);
+DECLARE_COMBINE(calc_dist1, lagdist1, component::calculus, component::base);
 
 template <int O>
 using combo1 = calc_dist1<options<O>>;
@@ -166,7 +166,7 @@ struct lagdist2 {
         using net = typename P::net;
     };
 };
-DECLARE_COMBINE(calc_dist2, lagdist2, component::calculus);
+DECLARE_COMBINE(calc_dist2, lagdist2, component::calculus, component::base);
 
 template <int O>
 using combo2 = calc_dist2<options<O>>;

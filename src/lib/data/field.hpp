@@ -131,6 +131,7 @@ class field : public details::field_base<std::is_same<T, bool>::value> {
     friend class field;
     template <bool b>
     friend struct details::field_base;
+    //! @}
 
     //! @brief Function friendships
     //! @{
@@ -961,6 +962,15 @@ namespace details {
         for (--n; n>0; --n) res = op(x, res);
         return res;
     }
+    //! @brief Inclusive folding with ids (optimization for locals).
+    template <typename F, typename A>
+    if_local<A, local_result<F,device_t,A const&,A const&>>
+    fold_hood(F&& op, A const& x, std::vector<device_t> const& dom) {
+        assert(dom.size() > 0);
+        local_result<F,device_t,A const&,A const&> res = x;
+        for (size_t k=1; k<dom.size(); ++k) res = op(dom[k], x, res);
+        return res;
+    }
     //! @brief Inclusive folding.
     template <typename F, typename A>
     if_field<A, local_result<F,A const&,A const&>>
@@ -996,6 +1006,15 @@ namespace details {
         assert(std::binary_search(dom.begin(), dom.end(), i));
         local_result<F,A const&,B const&> res = details::self(b, i);
         for (size_t n = dom.size(); n>1; --n) res = op(x, res);
+        return res;
+     }
+    //! @brief Exclusive folding with ids (optimization for locals).
+    template <typename F, typename A, typename B>
+    if_local<A, local_result<F,device_t,A const&,B const&>>
+    fold_hood(F&& op, A const& x, B const& b, std::vector<device_t> const& dom, device_t i) {
+        assert(std::binary_search(dom.begin(), dom.end(), i));
+        local_result<F,device_t,A const&,B const&> res = details::self(b, i);
+        for (size_t k=0; k<dom.size(); ++k) if (dom[k] != i) res = op(dom[k], x, res);
         return res;
      }
     //! @brief Exclusive folding.

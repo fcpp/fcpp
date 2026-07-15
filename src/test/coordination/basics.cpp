@@ -24,7 +24,7 @@ DECLARE_OPTIONS(options,
     online_drop<(O & 4) == 4>
 );
 
-DECLARE_COMBINE(calc_only, component::calculus);
+DECLARE_COMBINE(calc_only, component::calculus, component::base);
 
 template <int O>
 using combo = calc_only<options<O>>;
@@ -151,7 +151,7 @@ int sharing(node_t& node, trace_t call_point, int x) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
     return coordination::fold_hood(node, 0, [](int x, int y) {
         return x+y;
-    }, coordination::nbr(node, 1.0, x));
+    }, coordination::nbr(node, 1, x));
 }
 
 template <typename node_t>
@@ -183,10 +183,16 @@ MULTI_TEST(BasicsTest, Nbr, O, 3) {
     int d;
     d = sharing(d0, 0, 4);
     EXPECT_EQ(4, d);
+    d = sharing(d0, 1, 8);
+    EXPECT_EQ(8, d);
     d = sharing(d1, 0, 2);
     EXPECT_EQ(2, d);
+    d = sharing(d1, 1, 16);
+    EXPECT_EQ(16, d);
     d = sharing(d2, 0, 1);
     EXPECT_EQ(1, d);
+    d = sharing(d2, 1, 32);
+    EXPECT_EQ(32, d);
     d0.round_end(0);
     d1.round_end(0);
     d2.round_end(0);
@@ -196,6 +202,8 @@ MULTI_TEST(BasicsTest, Nbr, O, 3) {
     d0.round_start(0);
     d = sharing(d0, 0, 3);
     EXPECT_EQ(7, d);
+    d = sharing(d0, 1, 3);
+    EXPECT_EQ(56, d);
     d = gossip(d0, 1, 3);
     EXPECT_EQ(3, d);
     d = gossip(d1, 1, 2);

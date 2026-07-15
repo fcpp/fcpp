@@ -20,6 +20,18 @@
     #endif
 #endif
 
+#ifdef __clang__
+    //! @brief ANSI escape code for starting highlighting static assert error text in gcc (no codes in clang)
+    #define ANSI_START ""
+    //! @brief ANSI escape code for ending highlighting static assert error text in gcc (no codes in clang)
+    #define ANSI_END ""
+#else
+    //! @brief ANSI escape code for starting highlighting static assert error text in gcc (no codes in clang)
+    #define ANSI_START "\u001b[1m\u001b[4m"
+    //! @brief ANSI escape code for ending highlighting static assert error text in gcc (no codes in clang)
+    #define ANSI_END "\u001b[0m"
+#endif
+
 #include <cassert>
 #include <functional>
 #include <memory>
@@ -1011,10 +1023,111 @@ struct wildcard {
         return *this;
     }
 
+    //! @brief Generic assignment.
+    template <typename T>
+    wildcard& operator=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
     //! @brief Generic conversion.
     template <typename T>
     operator T() const {
         return declare_reference<T>();
+    }
+
+    //! @brief Generic addition assignment.
+    template <typename T>
+    wildcard& operator+=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic subtraction assignment.
+    template <typename T>
+    wildcard& operator-=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic multiplication assignment.
+    template <typename T>
+    wildcard& operator*=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic division assignment.
+    template <typename T>
+    wildcard& operator/=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic remainder assignment.
+    template <typename T>
+    wildcard& operator%=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic and assignment.
+    template <typename T>
+    wildcard& operator&=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic or assignment.
+    template <typename T>
+    wildcard& operator|=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic xor assignment.
+    template <typename T>
+    wildcard& operator^=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic left shift assignment.
+    template <typename T>
+    wildcard& operator<<=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic right shift assignment.
+    template <typename T>
+    wildcard& operator>>=(T&&) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic prefix increment.
+    wildcard& operator++() const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic postfix increment.
+    wildcard& operator++(int) const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic prefix decrement.
+    wildcard& operator--() const {
+        assert(false);
+        return *((wildcard*)this);
+    }
+
+    //! @brief Generic postfix decrement.
+    wildcard& operator--(int) const {
+        assert(false);
+        return *((wildcard*)this);
     }
 };
 

@@ -86,7 +86,7 @@ using combo2 = component::combine_spec<
     component::base<parallel<(O & 1) == 1>>
 >;
 using aggregator_t = aggregators<gat,aggregator::mean<double>,tag,aggregator::count<bool>>;
-using plotter_t = plot::split<oth, plot::split<plot::time, plot::values<aggregator_t, common::type_sequence<>, gat, tag>>>;
+using plotter_t = plot::split<oth, plot::split<plot::time, plot::values<aggregator_t, common::type_sequence<aggregator::only_finite<aggregator::mean<double>>>, gat, tag>>>;
 template <int O>
 using combo3 = component::combine_spec<
     exposer,

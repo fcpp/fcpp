@@ -13,6 +13,7 @@
 #include "lib/coordination/spreading.hpp"
 
 #ifndef FCPP_DIAMETER
+//! @brief Setting defining an upper bound to the diameter of the network.
 #define FCPP_DIAMETER 20
 #endif
 

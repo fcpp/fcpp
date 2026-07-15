@@ -44,10 +44,14 @@
 #define ARGS            node_t& node, trace_t call_point
 
 //! @brief Macro inserting the default arguments at function call.
-#define CALL            node, __COUNTER__
+#define CALL            node, __COUNTER__-trace_counter
+
+//! @brief Macro inserting inlining arguments at function call, within a function missing the CODE macro.
+#define INLINE          node, call_point
 
 //! @brief Macro inserting the default code at function start.
-#define CODE            internal::trace_call trace_caller(node.stack_trace, call_point);
+#define CODE            constexpr int trace_counter = __COUNTER__+1;                    \
+                        internal::trace_call trace_caller(node.stack_trace, call_point);
 
 //! @brief Macro defining a non-generic aggregate function.
 #define FUN_EXPORT      using
@@ -67,12 +71,13 @@
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * The code of the main function has access to the `node` object.
  */
-#define MAIN()                                  \
-struct main {                                   \
-    template <typename node_t>                  \
-    void operator()(node_t&, times_t);          \
-};                                              \
-template <typename node_t>                      \
+#define MAIN()                                          \
+struct main {                                           \
+    static constexpr int trace_counter = __COUNTER__+1; \
+    template <typename node_t>                          \
+    void operator()(node_t&, times_t);                  \
+};                                                      \
+template <typename node_t>                              \
 void main::operator()(node_t& node, times_t)
 
 

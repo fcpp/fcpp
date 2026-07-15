@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file os.hpp
@@ -17,6 +17,7 @@
 #include "lib/settings.hpp"
 #include "lib/common/algorithm.hpp"
 #include "lib/common/mutex.hpp"
+#include "lib/common/tagged_tuple.hpp"
 
 
 /**
@@ -51,11 +52,12 @@ device_t uid();
  *
  * It should have the following minimal public interface:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * struct data_type;                            // default-constructible type for settings
- * data_type data;                              // network settings
- * transceiver(data_type);                      // constructor with settings
- * bool send(device_t, std::vector<char>, int); // broadcasts a message after given attemps
- * message_type receive(int);                   // listens for messages after given failed sends
+ * struct data_type;                                // default-constructible type for settings
+ * data_type data;                                  // network settings
+ * template <typename S, typename T>
+ * transceiver(common::tagged_tuple<S,T> const&);   // constructor with a tagged tuple of settings
+ * bool send(device_t, std::vector<char>, int);     // broadcasts a message after given attemps
+ * message_type receive(int);                       // listens for messages after given failed sends
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 struct transceiver;
@@ -82,11 +84,9 @@ class network {
     //! @brief Default-constructible type for network settings.
     using data_type = typename transceiver_t::data_type;
 
-    //! @brief Constructor with default settings.
-    network(N& n) : m_node(n), m_transceiver({}), m_manager(std::mem_fn(&network::manage), this) {}
-
     //! @brief Constructor with given settings.
-    network(N& n, data_type d) : m_node(n), m_transceiver(d), m_manager(std::mem_fn(&network::manage), this) {}
+    template <typename S, typename T>
+    network(N& n, common::tagged_tuple<S,T> const& t) : m_node(n), m_transceiver(t), m_manager(std::mem_fn(&network::manage), this) {}
 
     ~network() {
         m_running = false;

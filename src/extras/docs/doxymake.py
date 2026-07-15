@@ -9,7 +9,7 @@ def parse_declaration(s):
     if s == "":
         return None
     st = search('struct ', s)
-    sm = search('\(', s)
+    sm = search(r'\(', s)
     assert not (st and sm)
     if st:
         return ('member types', s[st.span()[1]:], s.strip())
@@ -25,7 +25,7 @@ def parse_block(s):
     s = sub('//.*', '', s)
     s = sub('#.*', '', s)
     s = s.replace('\n', '#')
-    s = sub('/\*\*.*?\*/', '', s)
+    s = sub(r'/\*\*.*?\*/', '', s)
     t = ''
     count = 0
     for c in s:

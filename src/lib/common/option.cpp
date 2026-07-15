@@ -1,3 +1,3 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2025 Giorgio Audrito. All Rights Reserved.
 
 #include "lib/common/option.hpp"

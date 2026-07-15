@@ -320,3 +320,13 @@ TEST(SequenceTest, Circle) {
         }
     }
 }
+
+TEST(SequenceTest, Rectangle) {
+    std::mt19937 rnd(42);
+    {
+        sequence::rectangle_n<1, 0, 0, 3, 2, 10> e(rnd, nothing);
+        std::vector<vec<2>> v, w = {{0,0},{1,0},{2,0},{3,0},{3,1},{3,2},{2,2},{1,2},{0,2},{0,1}};
+        while (!e.empty()) v.push_back(e(rnd, nothing));
+        EXPECT_EQ(v, w);
+    }
+}

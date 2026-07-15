@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file sequence.hpp
@@ -757,9 +757,101 @@ struct circle_i<c_tag, r_tag, n_tag, 3> : public circle<distribution::constant_i
 //! @}
 
 
-}
+//! @brief Generates points in a rectangle given its extremes and the number of points to be generated on the perimeter.
+//! @{
+/**
+ * @brief With extremes and numerosity as distributions.
+ *
+ * `P::type` and `Q::type` must both be `vec<2>`.
+ * `N::type` must be convertible to `size_t`.
+ *
+ * @tparam P The first extreme (as distribution).
+ * @tparam Q The second extreme (as distribution).
+ * @tparam N The numerosity (as distribution).
+ */
+template <typename P, typename Q, typename N>
+class rectangle {
+    static_assert(std::is_same<typename P::type, vec<2>>::value, "the distribution P must generate a vec<2> value");
+    static_assert(std::is_same<typename Q::type, vec<2>>::value, "the distribution Q must generate a vec<2> value");
+    static_assert(std::is_same<typename N::type, size_t>::value, "the distribution N must generate a size_t value");
+  public:
+    //! @brief The type of results generated.
+    using type = vec<2>;
+
+    //! @brief Tagged tuple constructor.
+    template <typename G, typename S, typename T>
+    rectangle(G&& g, common::tagged_tuple<S,T> const& t) {
+        m_p = details::call_distr<P>(g,t);
+        m_q = details::call_distr<Q>(g,t);
+        size_t n = details::call_distr<N>(g,t);
+        real_t dx = std::abs(m_p[0] - m_q[0]);
+        real_t dy = std::abs(m_p[1] - m_q[1]);
+        real_t f = n/((dx+dy)*2);
+        m_nx = size_t(f * dx + 0.5);
+        m_ny = size_t(f * dy + 0.5);
+        m_i = 0;
+    }
+
+    //! @brief Check whether the sequence is finished.
+    bool empty() const {
+        return m_i >= 2*(m_nx + m_ny);
+    }
+
+    //! @brief Returns next element, without stepping over.
+    type next() const {
+        if (m_i < m_nx + m_ny) {
+            if (m_i < m_nx) {
+                real_t f = m_i * 1.0 / m_nx;
+                return {m_p[0]*(1-f) + f*m_q[0], m_p[1]};
+            } else {
+                real_t f = (m_i-m_nx) * 1.0 / m_ny;
+                return {m_q[0], m_p[1]*(1-f) + f*m_q[1]};
+            }
+        } else {
+            if (m_i < 2*m_nx + m_ny) {
+                real_t f = (m_i-m_nx-m_ny) * 1.0 / m_nx;
+                return {m_q[0]*(1-f) + f*m_p[0], m_q[1]};
+            } else {
+                real_t f = (m_i-2*m_nx-m_ny) * 1.0 / m_ny;
+                return {m_p[0], m_q[1]*(1-f) + f*m_p[1]};
+            }
+        }
+    }
+
+    //! @brief Steps over to next element, without returning.
+    template <typename G, typename T>
+    void step(G&&, T&&) {
+        ++m_i;
+    }
+
+    //! @brief Returns next element, stepping over.
+    template <typename G, typename T>
+    type operator()(G&&, T&&) {
+        type x = next();
+        step(details::none, details::none);
+        return x;
+    }
+
+  private:
+    type m_p, m_q;
+    size_t m_nx, m_ny;
+    int m_i;
+};
 
 
-}
+//! @brief With extremes and numerosity as numeric template parameters.
+template <intmax_t scale, intmax_t px, intmax_t py, intmax_t qx, intmax_t qy, intmax_t num>
+using rectangle_n = rectangle<distribution::point_n<scale, px, py>, distribution::point_n<scale, qx, qy>, distribution::constant_n<size_t, num, 1>>;
+
+//! @brief With extremes and numerosity as initialisation values.
+template <typename p_tag, typename q_tag, typename n_tag>
+using rectangle_i = rectangle<distribution::constant_i<vec<2>, p_tag>, distribution::constant_i<vec<2>, q_tag>, distribution::constant_i<size_t, n_tag>>;
+//! @}
+
+
+} // namespace sequence
+
+
+} // namespace fcpp
 
 #endif // FCPP_OPTION_SEQUENCE_H_

@@ -202,7 +202,7 @@ class powered : public fixed<num,den,n> {
  */
 template <intmax_t r50, typename C>
 class radial : public C {
-    static_assert(1 <= r50 and r50 <= 99, "half radius out of bounds");
+    static_assert(0 <= r50 and r50 <= 100, ANSI_START "half radius out of bounds" ANSI_END);
 
     //! @brief Shortcut to the half_radius tag.
     using half_radius = component::tags::half_radius;
@@ -220,7 +220,7 @@ class radial : public C {
     //! @brief Generator and tagged tuple constructor.
     template <typename G, typename S, typename T>
     radial(G&& g, common::tagged_tuple<S,T> const& t) : C(std::forward<G>(g), t) {
-        m_r50 = common::get_or<half_radius>(t, (real_t)r50)/100;
+        m_r50 = common::get_or<half_radius>(t, r50)/real_t(100);
         m_k = log(6792093.0/29701) / (1-m_r50);
     }
 

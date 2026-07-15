@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file fake_os.hpp
@@ -33,11 +33,12 @@ device_t uid() {
  *
  * It should have the following minimal public interface:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * struct data_type;                            // default-constructible type for settings
- * data_type data;                              // network settings
- * transceiver(data_type);                      // constructor with settings
- * bool send(device_t, std::vector<char>, int); // broadcasts a message after given attemps
- * message_type receive(int);                   // listens for messages after given failed sends
+ * struct data_type;                                // default-constructible type for settings
+ * data_type data;                                  // network settings
+ * template <typename S, typename T>
+ * transceiver(common::tagged_tuple<S,T> const&);   // constructor with a tagged tuple of settings
+ * bool send(device_t, std::vector<char>, int);     // broadcasts a message after given attemps
+ * message_type receive(int);                       // listens for messages after given failed sends
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 struct transceiver {
@@ -45,7 +46,8 @@ struct transceiver {
 
     data_type data;
 
-    transceiver(data_type) : data(this) {}
+    template <typename S, typename T>
+    transceiver(common::tagged_tuple<S,T> const&) : data(this) {}
 
     bool send(device_t, std::vector<char> m, int) {
         assert(not sending and not receiving);

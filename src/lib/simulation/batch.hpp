@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file batch.hpp
@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -93,6 +94,20 @@ namespace details {
     template <typename... Ts, typename F>
     inline generator<F, Ts...> make_generator(F&& f, size_t core_size, size_t extra_size) {
         return {std::move(f), core_size, extra_size};
+    }
+
+    //! @brief Disjoint concatenation of two generators for a same sequence of tags and types.
+    template <typename F, typename G, typename... Ts>
+    auto operator+(generator<F,Ts...> const& a, generator<G,Ts...> const& b) {
+        return make_generator<Ts...>([=](auto& t, size_t i){
+            if (i < a.core_size()) return a(t, i);
+            i -= a.core_size();
+            if (i < b.core_size()) return b(t, i);
+            i -= b.core_size();
+            if (i < a.extra_size()) return a(t, a.core_size()+i);
+            i -= a.extra_size();
+            return b(t, b.core_size()+i);
+        }, a.core_size()+b.core_size(), a.extra_size()+b.extra_size());
     }
 } // details
 //! @endcond
@@ -255,8 +270,8 @@ auto recursive(T init, F&& f) {
     for (size_t i = 0; ; ++i) {
         common::option<T> r = f(i, prev);
         if (r.empty()) break;
-        prev = r;
-        v.push_back(r);
+        prev = (T)r;
+        v.push_back((T)r);
     }
     return details::make_generator<S, T>([=](auto& t, size_t i){
         common::get<S>(t) = v[i];

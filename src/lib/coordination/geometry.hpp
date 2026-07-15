@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2025 Giorgio Audrito and Lorenzo Framarin. All Rights Reserved.
 
 /**
  * @file geometry.hpp
@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #include "lib/coordination/utils.hpp"
+#include "lib/data/gps_trace.hpp"
 #include "lib/data/vec.hpp"
 
 
@@ -66,6 +67,26 @@ tuple<size_t,real_t> follow_path(node_t& node, trace_t call_point, T const& path
 
 //! @brief Export list for follow_path.
 using follow_path_t = common::export_list<size_t>;
+
+
+/**
+ * @brief Follows the GPS track assigned to the calling node.
+ * @returns false when the track has finished.
+ */
+template <typename node_t>
+bool follow_track(node_t &node, trace_t call_point, gps_trace& trace) {
+    return old(node, call_point, size_t{0}, [&](size_t i){
+        times_t nt = node.next_time();
+        times_t ct = node.current_time();
+        if (ct >= nt) return i;
+        auto v = trace.next_point(node.uid, i, nt, ct, node.position());
+        node.velocity() = (std::move(v) - node.position()) / (nt - ct);
+        return i;
+    }) < (size_t)-1;
+}
+
+//! @brief Export list for follow_track.
+using follow_track_t = common::export_list<size_t>;
 
 
 //! @cond INTERNAL
@@ -240,9 +261,8 @@ inline typename node_t::position_type neighbour_charged_force(node_t& node, trac
 using neighbour_charged_force_t = common::export_list<real_t>;
 
 
-}
+} // namespace coordination
 
-
-}
+} // namespace fcpp
 
 #endif // FCPP_COORDINATION_GEOMETRY_H_

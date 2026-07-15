@@ -175,6 +175,11 @@ struct timer {
                 m_mod_next = std::min(m_next, std::max(TIME_FAR, m_offs));
             }
 
+            //! @brief Suspend planned round executions, without removing the device from the network and remaining open to reactive rounds.
+            void suspend() {
+                m_mod_next = m_next = m_offs = TIME_FAR;
+            }
+
             //! @brief Terminate round executions, causing the device to be removed from the network.
             void terminate() {
                 m_mod_next = m_next = m_offs = TIME_MAX;

@@ -152,6 +152,54 @@ inline T broadcast(node_t& node, trace_t call_point, P const& distance, T const&
 template <typename P, typename T> using broadcast_t = common::export_list<P, T>;
 
 
+//! @brief Broadcasts values from the `k` closest sources, calculating distances with a custom metric using BIS, storing the result in an unordered map.
+template <typename node_t, typename T, typename G, typename = common::if_signature<G, field<real_t>()>, typename V = std::unordered_map<device_t, tuple<real_t,real_t,T>>>
+V bis_ksource_broadcast(node_t& node, trace_t call_point, bool source, T value, int k, times_t period, real_t speed, G&& metric) {
+    internal::trace_call trace_caller(node.stack_trace, call_point);
+
+    auto map_merge = [&](V v1, V const& v2){
+        for (auto const& p : v2) {
+            if (not v1.count(p.first) or p.second < v1.at(p.first))
+                v1[p.first] = p.second;
+        }
+        return v1;
+    };
+    auto map_add = [&](V v, real_t d, times_t t){
+        for (auto& p : v) {
+            get<1>(p.second) += t;
+            get<0>(p.second) = max(get<0>(p.second)+d, (get<1>(p.second)-period)*speed);
+        }
+        return v;
+    };
+
+    V loc;
+    if (source) loc[node.uid] = make_tuple(0, 0, value);
+    return nbr(node, 0, loc, [&] (field<V> n) {
+        mod_hood(map_add, n, metric(), node.nbr_lag());
+        V res = fold_hood(node, 0, map_merge, n, loc);
+        if (res.size() > k) {
+            std::vector<std::pair<tuple<real_t,real_t,T>, device_t>> v;
+            for (auto const& p : res)
+                v.emplace_back(p.second, p.first);
+            std::sort(v.begin(), v.end());
+            res.clear();
+            for (int i=0; i<k; ++i)
+                res.emplace(v[i].second, v[i].first);
+        }
+        return res;
+    });
+}
+//! @brief Broadcasts values from the `k` closest sources, calculating distances using BIS, storing the result in an unordered map.
+template <typename node_t, typename T, typename V = std::unordered_map<device_t, tuple<real_t,real_t,T>>>
+inline V bis_ksource_broadcast(node_t& node, trace_t call_point, bool source, T value, int k, times_t period, real_t speed) {
+    return bis_ksource_broadcast(node, call_point, source, value, k, period, speed, [&](){
+        return node.nbr_dist();
+    });
+}
+//! @brief Export list for bis_ksource_broadcast.
+template <typename T> using bis_ksource_broadcast_t = common::export_list<std::unordered_map<device_t, tuple<real_t,real_t,T>>>;
+
+
 }
 
 

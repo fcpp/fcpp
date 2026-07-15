@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file simulated_connector.hpp
@@ -63,9 +63,6 @@ namespace tags {
     //! @brief Declaration flag associating to whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
     template <bool b>
     struct parallel;
-
-    //! @brief Node initialisation tag associating to communication power (defaults to `connector_type::data_type{}`).
-    struct connection_data {};
 
     //! @brief Initialisation tag associating to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
     struct epsilon;
@@ -147,7 +144,6 @@ namespace details {
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  *
  * <b>Node initialisation tags:</b>
- * - \ref tags::connection_data associates to communication power (defaults to `connector_type::data_type{}`).
  * - \ref tags::epsilon associates to the time sensitivity, allowing indeterminacy below it (defaults to \ref FCPP_TIME_EPSILON).
  *
  * Net initialisation tags (such as \ref tags::radius) are forwarded to connector classes.

@@ -11,6 +11,7 @@
 #include "lib/data/bloom.hpp"
 #include "lib/data/color.hpp"
 #include "lib/data/field.hpp"
+#include "lib/data/gps_trace.hpp"
 #include "lib/data/hyperloglog.hpp"
 #include "lib/data/ordered.hpp"
 #include "lib/data/shape.hpp"

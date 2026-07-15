@@ -1,4 +1,4 @@
-// Copyright © 2021 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2025 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file option.hpp
@@ -47,6 +47,10 @@ class option<T, false> {
     //! @brief Forwarding constructor.
     template <typename... Ts, typename = std::enable_if_t<std::is_constructible<T, Ts&&...>::value>>
     option(Ts&&...) {}
+
+    //! @brief Converting constructor.
+    template <typename A, typename = std::enable_if_t<std::is_convertible<A,T>::value>>
+    option(option<A, false> const&) {}
 
     //! @brief Copy constructor.
     option(option const&) = default;
@@ -106,8 +110,14 @@ class option<T, false> {
     }
 
     //! @brief Value extraction.
-    operator T() const {
+    explicit operator T() const {
         return {};
+    }
+
+    //! @brief Serialises the content to/from a given output stream.
+    template <typename S>
+    S& serialize(S& s) const {
+        return s;
     }
 };
 
@@ -115,13 +125,31 @@ class option<T, false> {
 //! @brief Class for handling an optional data (full overload).
 template <typename T>
 class option<T, true> {
+    //! @cond INTERNAL
+    //! @brief Class friendships
+    //! @{
+    template <typename A, int enable>
+    friend class option;
+    //! @endcond
+
   public:
     //! @brief The contained type.
     using value_type = T;
 
-    //! @brief Forwarding constructor.
-    template <typename... Ts, typename = std::enable_if_t<std::is_constructible<T, Ts&&...>::value>>
-    option(Ts&&... xs) : m_data(std::forward<Ts>(xs)...) {}
+    //! @brief Empty constructor.
+    option() = default;
+
+    //! @brief Forwarding constructor (single parameter).
+    template <typename T1, typename = std::enable_if_t<std::is_constructible<T, T1&&>::value and not std::is_same<std::decay_t<T1>, option>::value>>
+    option(T1&& x1) : m_data(std::forward<T1>(x1)) {}
+
+    //! @brief Forwarding constructor (multiple parameters).
+    template <typename T1, typename... Ts, typename = std::enable_if_t<std::is_constructible<T, T1&&, Ts&&...>::value and sizeof...(Ts)>>
+    option(T1&& x1, Ts&&... xs) : m_data(std::forward<T1>(x1), std::forward<Ts>(xs)...) {}
+
+    //! @brief Converting constructor.
+    template <typename A, typename = std::enable_if_t<std::is_convertible<A,T>::value>>
+    option(option<A, true> const& x) : m_data(x.m_data) {}
 
     //! @brief Copy constructor.
     option(option const&) = default;
@@ -201,8 +229,20 @@ class option<T, true> {
     }
 
     //! @brief Value extraction.
-    operator T() const {
+    explicit operator T() const {
         return m_data;
+    }
+
+    //! @brief Serialises the content from a given input stream.
+    template <typename S>
+    S& serialize(S& s) {
+        return s & m_data;
+    }
+
+    //! @brief Serialises the content to a given output stream.
+    template <typename S>
+    S& serialize(S& s) const {
+        return s & m_data;
     }
 
   private:
@@ -214,6 +254,13 @@ class option<T, true> {
 //! @brief Class for handling an optional data (run-time overload).
 template <typename T>
 class option<T, 2> {
+    //! @cond INTERNAL
+    //! @brief Class friendships
+    //! @{
+    template <typename A, int enable>
+    friend class option;
+    //! @endcond
+
   public:
     //! @brief The contained type.
     using value_type = T;
@@ -221,9 +268,17 @@ class option<T, 2> {
     //! @brief Empty constructor.
     option() : m_data(), m_some(false) {}
 
-    //! @brief Forwarding constructor.
-    template <typename... Ts, typename = std::enable_if_t<std::is_constructible<T, Ts&&...>::value>>
-    option(Ts&&... xs) : m_data(std::forward<Ts>(xs)...), m_some(true) {}
+    //! @brief Forwarding constructor (single parameter).
+    template <typename T1, typename = std::enable_if_t<std::is_constructible<T, T1&&>::value and not std::is_same<std::decay_t<T1>, option>::value>>
+    option(T1&& x1) : m_data(std::forward<T1>(x1)), m_some(true) {}
+
+    //! @brief Forwarding constructor (multiple parameters).
+    template <typename T1, typename... Ts, typename = std::enable_if_t<std::is_constructible<T, T1&&, Ts&&...>::value and sizeof...(Ts)>>
+    option(T1&& x1, Ts&&... xs) : m_data(std::forward<T1>(x1), std::forward<Ts>(xs)...), m_some(true) {}
+
+    //! @brief Converting constructor.
+    template <typename A, typename = std::enable_if_t<std::is_convertible<A,T>::value>>
+    option(option<A> const& x) : m_data(x.m_data), m_some(x.m_some) {}
 
     //! @brief Copy constructor.
     option(option const&) = default;
@@ -239,7 +294,7 @@ class option<T, 2> {
 
     //! @brief Equality operator.
     bool operator==(option const& o) const {
-        return m_some == o.m_some and m_data == o.m_data;
+        return m_some == o.m_some and (not m_some or m_data == o.m_data);
     }
 
     //! @brief Container size.
@@ -316,8 +371,24 @@ class option<T, 2> {
     }
 
     //! @brief Value extraction.
-    operator T() const {
+    explicit operator T() const {
         return m_data;
+    }
+
+    //! @brief Serialises the content from a given input stream.
+    template <typename S>
+    S& serialize(S& s) {
+        s & m_some;
+        if (m_some) s & m_data;
+        return s;
+    }
+
+    //! @brief Serialises the content to a given output stream.
+    template <typename S>
+    S& serialize(S& s) const {
+        s & m_some;
+        if (m_some) s & m_data;
+        return s;
     }
 
   private:

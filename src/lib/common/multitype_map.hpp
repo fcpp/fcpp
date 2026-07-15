@@ -91,7 +91,7 @@ class multitype_map {
     }
 
     //! @cond INTERNAL
-    #define MISSING_TYPE_MESSAGE "unsupported type access (add type A to exports type list)"
+    #define MISSING_TYPE_MESSAGE ANSI_START "unsupported type access (add type A to exports type list)" ANSI_END
     //! @endcond
 
     //! @brief Inserts value at corresponding key.

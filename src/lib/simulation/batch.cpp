@@ -39,7 +39,6 @@ void mpi_finalize() {
 #else
 
 bool mpi_init(int& rank, int& n_procs) {
-    std::cerr << "Invocata versiona sbagliata" << std::endl;
     rank = 0;
     n_procs = 1;
     return true;

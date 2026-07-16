@@ -218,6 +218,7 @@ struct div {
     details::element<B> m_b;
 };
 
+
 //! @brief Functor computing the remainder of elements' division.
 template <typename A, typename B, typename R = size_t>
 struct mod {
@@ -235,7 +236,7 @@ struct mod {
     }
 
   private:
-    //! @brief The first element (operand).
+    //! @brief The first element.
     details::element<A> m_a;
     //! @brief The second element.
     details::element<B> m_b;

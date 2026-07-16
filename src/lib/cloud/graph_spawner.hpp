@@ -18,8 +18,6 @@
 #include "lib/component/storage.hpp"
 #include "lib/option/sequence.hpp"
 
-#include <cxxabi.h>
-
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
@@ -124,7 +122,6 @@ struct graph_spawner {
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {
-                // Reading from file the graph that will be used as a base for the FCPP network
                 read_nodes(
                     details::make_istream(common::get_or<tags::nodesinput>(t, "nodes")),
                     build_distributions(t, typename init_tuple_type::tags(), typename init_tuple_type::types()),
@@ -137,8 +134,7 @@ struct graph_spawner {
             //! @brief Reads node information from file and creates corresponding nodes.
             void read_nodes(std::shared_ptr<std::istream> is, init_tuple_type dist, times_t start) {
                 attributes_tuple_type row;
-
-                while (read_row(*is, row, typename attributes_tuple_type::tags{})) { 
+                while (read_row(*is, row, typename attributes_tuple_type::tags{})) {
                     using res_type = std::result_of_t<init_tuple_type(crand, common::tagged_tuple_t<>)>;
                     using full_type = common::tagged_tuple_cat<attributes_tuple_type, res_type>;
                     full_type tt = row;
@@ -155,21 +151,17 @@ struct graph_spawner {
 
             //! @brief Reads elements from a row of nodes file (non-empty overload).
             template <typename S, typename... Ss>
-            inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<S, Ss...>) {                
-                                
+            inline bool read_row(std::istream& is, attributes_tuple_type& row, common::type_sequence<S, Ss...>) {
                 if (not (is >> common::get<S>(row))) {
-                    
                     assert(is.eof());
                     return false;
                 }
-                
                 return read_row(is, row, common::type_sequence<Ss...>{});
             }
 
             //! @brief Reads arc information from file and creates corresponding connections.
             void read_arcs(std::shared_ptr<std::istream> is) {
                 device_t d1, d2;
-                
                 while (true) {
                     *is >> d1;
                     if (!*is) {

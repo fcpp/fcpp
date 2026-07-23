@@ -142,7 +142,7 @@ struct calculus {
     using retain_type = common::option_type<tags::retain, metric::once, Ts...>;
 
     //! @brief Sequence of types to be used in exports.
-    using exports_type = common::export_list<common::option_types<tags::exports, Ts...>>;
+    using exports_type = common::export_list<typename common::details::type_sequence_multidecay<common::option_types<tags::exports, Ts...>>::type>;
 
     //! @brief Whether exports are wrapped in smart pointers.
     constexpr static bool export_pointer = common::option_flag<tags::export_pointer, FCPP_EXPORT_PTR, Ts...>;

@@ -31,17 +31,17 @@ TEST(TraitsTest, ExportList) {
     EXPECT_SAME(common::export_list<int, double, double, bool>,
                 common::type_sequence<int, double, bool>);
     EXPECT_SAME(common::export_list<int, double, common::type_sequence<void, int, char>, double, bool>,
-                common::type_sequence<int, double, void, char, bool>);
+                common::type_sequence<void, int, char, double, bool>);
     EXPECT_SAME(common::export_list<int, double, common::type_sequence<void, int, char, common::type_sequence<bool, float, bool>>, double, common::type_sequence<>, bool>,
-                common::type_sequence<int, double, void, char, bool, float>);
+                common::type_sequence<void, int, char, float, double, bool>);
 }
 
 TEST(TraitsTest, StorageList) {
     using namespace common;
     using a = storage_list<void*, bool, int*, char>;
     using b = storage_list<>;
-    struct c : storage_list<char*, int, int*, char> {};
-    EXPECT_SAME(storage_list<a, double*, double, b, c>, type_sequence<void*, bool, double*, double, char*, int, int*, char>);
+    using c = storage_list<char*, int, short*, char>;
+    EXPECT_SAME(storage_list<a, double*, double, b, c>, type_sequence<void*, bool, int*, char, double*, double, char*, int, short*, char>);
 }
 
 TEST(TraitsTest, IsTemplate) {

@@ -1,8 +1,8 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_connector.hpp
- * @brief Implementation of the `graph_connector` component handling message exchanges between nodes of a graph net.
+ * @brief Implementation of the `graph_connector` component handling message exchanges between nodes of a graph-based network.
  */
 
 #ifndef FCPP_CLOUD_GRAPH_CONNECTOR_H_
@@ -15,6 +15,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include <mpi.h>
+
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/serialize.hpp"
@@ -22,11 +24,9 @@
 #include "lib/data/field.hpp"
 #include "lib/internal/twin.hpp"
 #include "lib/option/distribution.hpp"
-#include "lib/option/sequence.hpp"
-#include <mpi.h>
-
-// Library to use mod functor
 #include "lib/option/functor.hpp"
+#include "lib/option/sequence.hpp"
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -40,6 +40,18 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
+    //! @brief Declaration tag associating to a delay generator for sending messages through MPI (defaults to `sequence::never`).
+    template <typename T>
+    struct mpi_send_schedule {};
+
+    //! @brief Declaration tag associating to a delay generator for receiving messages through MPI (defaults to `sequence::never`).
+    template <typename T>
+    struct mpi_recv_schedule {};
+
+    //! @brief Declaration tag associating to a node splitting functor (defaults to `functor::mod`).
+    template <typename A>
+    struct node_splitting;
+
     //! @brief Declaration tag associating to a delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
     template <typename T>
     struct send_delay;
@@ -60,42 +72,43 @@ namespace tags {
     template <bool b>
     struct static_topology;
 
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs (default to "arcs").
+    struct arcsinput {};
+
     //! @brief Net initialisation tag associating to the number of threads that can be created.
     struct threads;
 
-    //! @brief Tag associated to graph partitioning functor
-    template<typename A>
-    struct node_splitting;
-
-    //! @brief Tag associated to the number of MPI processes
-    struct mpi_procs{};
+    //! @brief Net initialisation tag associated to the total number of existing MPI processes (defaults to 1).
+    struct mpi_procs {};
 
     //! @brief Node initialisation tag associating to a `device_t` unique identifier.
     struct uid;
-
-    //! @brief Period between successive invocations of the send in the node update method
-    template <typename T>
-    struct mpi_send_schedule{};
-
-    //! @brief Period between successive invocations of the receive in the node update method
-    template <typename T>
-    struct mpi_recv_schedule{};
 }
 
 /**
- * @brief Component handling message exchanges between nodes of a graph net.
+ * @brief Component handling message exchanges between nodes of a graph-based network.
  *
+ * Requires a \ref identifier parent component.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
- * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
+ * - \ref tags::mpi_send_schedule defines the delay generator for sending messages through MPI (defaults to `sequence::never`).
+ * - \ref tags::mpi_recv_schedule defines the delay generator for receiving messages through MPI (defaults to `sequence::never`).
+ * - \ref tags::node_splitting defines the node splitting functor (defaults to `functor::mod`).
  * - \ref tags::send_delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
- * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *
  * <b>Declaration flags:</b>
  * - \ref tags::message_size defines whether message sizes should be emulated (defaults to false).
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  * - \ref tags::symmetric defines whether the neighbour relation is symmetric (defaults to true).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::arcsinput defines the name of the file or input stream specifying graph arcs (defaults to "arcs").
+ * - \ref tags::threads defines the number of threads that can be created (defaults to \ref FCPP_THREADS).
+ * - \ref tags::mpi_procs defines the total number of existing MPI processes (defaults to 1).
+ *
+ * <b>Node initialisation tags:</b>
+ * - \ref tags::uid associates to a `device_t` unique identifier (required).
  */
 template <class... Ts>
 struct graph_connector {
@@ -114,13 +127,13 @@ struct graph_connector {
     //! @brief The type of settings data regulating connection.
     using connection_data_type = common::tagged_tuple_t<>;
 
-    //! @brief The type of node splitting functor
+    //! @brief The node splitting functor (defaults to `functor::mod`).
     using node_splitting_type = common::option_type<tags::node_splitting, functor::mod<tags::uid, tags::mpi_procs, size_t>, Ts...>;
 
-    //! @brief Type of delay between successive invocation of the update method to send messages
+    //! @brief Delay generator for sending messages through MPI (defaults to `sequence::never`).
     using mpi_send_schedule_type = common::option_type<tags::mpi_send_schedule, sequence::never, Ts...>;
 
-    //! @brief Type of delay between successive invocation of the update method to receive messages
+    //! @brief Delay generator for receiving messages through MPI (defaults to `sequence::never`).
     using mpi_recv_schedule_type = common::option_type<tags::mpi_recv_schedule, sequence::never, Ts...>;
 
     /**
@@ -144,12 +157,12 @@ struct graph_connector {
         class node_accessor {
             public:
                 //! @brief Constructor that initializes the node reference
-                node_accessor(device_t uid){
+                node_accessor(device_t uid) {
                     ref_uid = uid;
                 }
 
                 //! @brief Message receipt method that handles the distinction between local and remote neighbour
-                void receive(typename F::net & loc_net_ref, times_t timestamp, device_t sender_uid, typename F::node::message_t newMsg){
+                void receive(typename F::net& loc_net_ref, times_t timestamp, device_t sender_uid, typename F::node::message_t newMsg) const {
                     // Retrives net reference to access its methods
 
                     // Computes the associated MPI process rank for both sender and receiver
@@ -157,7 +170,7 @@ struct graph_connector {
                     int receiver_rank = loc_net_ref.compute_rank(ref_uid);
 
                     // check whether nodes are handled by the same process
-                    if (sender_rank == receiver_rank){
+                    if (sender_rank == receiver_rank) {
                         // Retriving the reference to the neighbour via uid
                         typename F::node* n = const_cast<typename F::node*>(&loc_net_ref.node_at(ref_uid));
                         common::lock_guard<parallel> l(n->mutex);
@@ -169,7 +182,7 @@ struct graph_connector {
                 }
 
                 //! @brief Get method to retrieve node reference
-                device_t get_node_ref(){
+                device_t get_node_ref() const {
                     return ref_uid;
                 }
 
@@ -254,7 +267,7 @@ struct graph_connector {
                     std::cout << "Node uid" << i << std::endl;
                     std::cout << "Adding node to remote neighbours" << std::endl;
                     typename F::node* n = const_cast<typename F::node*>(&P::node::net.node_at(i));
-                    std::cout << "Node Added to remote negibours" << std::endl;
+                    std::cout << "Node added to remote neighbours" << std::endl;
                     common::lock_guard<parallel> l(n->mutex);
                     n->m_neighbours.second().emplace(P::node::uid, node_accessor(P::node::uid));
                     
@@ -355,9 +368,8 @@ struct graph_connector {
                         P::node::as_final().send(t, m);
                         P::node::as_final().receive(t, P::node::uid, m);
                         common::unlock_guard<parallel> u(P::node::mutex);
-                        for (std::pair<device_t, typename F::node*> p : m_neighbours.first()) {
-                            node_accessor n = p.second;
-                            n.receive(P::node::net, t, P::node::uid, m);
+                        for (auto const& p : m_neighbours.first()) {
+                            p.second.receive(P::node::net, t, P::node::uid, m);
                         }
                     }
                 } else P::node::update();
@@ -430,7 +442,7 @@ struct graph_connector {
                 m_send_schedule(get_generator(has_randomizer<P>{}, *this), t),
                 m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t),
                 m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)),
-                m_MPI_procs_count(common::get<tags::mpi_procs>(t)),
+                m_MPI_procs_count(common::get_or<tags::mpi_procs>(t, 1)),
                 node_splitter(get_generator(has_randomizer<P>{}, *this), t){}
 
             //! @brief Destructor ensuring that nodes are deleted first.
@@ -441,6 +453,7 @@ struct graph_connector {
                     n_beg[i].second.global_disconnect();
                 });
 
+/*
                 if (!m_communication_maps.size())
                     std::cout << "No messages exchanged" << std::endl;
                 else {
@@ -456,6 +469,7 @@ struct graph_connector {
                         }
                     }
                 }
+*/
 
                 // releasing the lock that protects the remote messages map
                 common::unlock_guard<parallel> u(comm_map_mutex);
@@ -598,9 +612,9 @@ struct graph_connector {
 };
 
 
-}
+} // namespace component
 
 
-}
+} // namespace fcpp
 
 #endif // FCPP_CLOUD_GRAPH_CONNECTOR_H_

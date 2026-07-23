@@ -13,9 +13,10 @@
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
-#include <mpi.h>
+#include <mpi.h> //TODO: remove
 
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
@@ -26,6 +27,7 @@
 #include "lib/option/distribution.hpp"
 #include "lib/option/functor.hpp"
 #include "lib/option/sequence.hpp"
+#include "lib/simulation/batch.hpp" // TODO: move only the MPI-related part to common/algorithm.hpp
 
 
 /**
@@ -48,7 +50,7 @@ namespace tags {
     template <typename T>
     struct mpi_recv_schedule {};
 
-    //! @brief Declaration tag associating to a node splitting functor (defaults to `functor::mod`).
+    //! @brief Declaration tag associating to a node splitting functor (defaults to `functor::mod`, should not be randomized).
     template <typename A>
     struct node_splitting;
 
@@ -91,7 +93,7 @@ namespace tags {
  * <b>Declaration tags:</b>
  * - \ref tags::mpi_send_schedule defines the delay generator for sending messages through MPI (defaults to `sequence::never`).
  * - \ref tags::mpi_recv_schedule defines the delay generator for receiving messages through MPI (defaults to `sequence::never`).
- * - \ref tags::node_splitting defines the node splitting functor (defaults to `functor::mod`).
+ * - \ref tags::node_splitting defines the node splitting functor (defaults to `functor::mod`, should not be randomized).
  * - \ref tags::send_delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
  *
  * <b>Declaration flags:</b>
@@ -101,7 +103,6 @@ namespace tags {
  *
  * <b>Net initialisation tags:</b>
  * - \ref tags::threads defines the number of threads that can be created (defaults to \ref FCPP_THREADS).
- * - \ref tags::mpi_procs defines the total number of existing MPI processes (defaults to 1).
  *
  * <b>Node initialisation tags:</b>
  * - \ref tags::uid associates to a `device_t` unique identifier (required).
@@ -123,8 +124,8 @@ struct graph_connector {
     //! @brief The type of settings data regulating connection.
     using connection_data_type = common::tagged_tuple_t<>;
 
-    //! @brief The node splitting functor (defaults to `functor::mod`).
-    using node_splitting_type = common::option_type<tags::node_splitting, functor::mod<tags::uid, tags::mpi_procs, size_t>, Ts...>;
+    //! @brief The node splitting functor (defaults to `functor::mod`, should not be randomized).
+    using node_splitting_type = common::option_type<tags::node_splitting, functor::mod<tags::uid, tags::mpi_procs, int>, Ts...>;
 
     //! @brief Delay generator for sending messages through MPI (defaults to `sequence::never`).
     using mpi_send_schedule_type = common::option_type<tags::mpi_send_schedule, sequence::never, Ts...>;
@@ -149,41 +150,90 @@ struct graph_connector {
         CHECK_COMPONENT(randomizer);
         //! @endcond
 
-        //! @brief Node wrapper that can distinguish between local and remote node
+        //! @brief Reference handling both local and remote nodes.
         class node_accessor {
-            public:
-                //! @brief Constructor that initializes the node reference
-                node_accessor(device_t uid) {
-                    ref_uid = uid;
+            //! @brief Type of a pointer to a node.
+            using node_pointer = typename F::node*;
+
+            //! @brief Type of a node numerical address.
+            using node_address = std::pair<device_t, int>;
+
+          public:
+            //! @brief Default constructor.
+            node_accessor() = default;
+
+            //! @brief Constructor for a remote node reference.
+            node_accessor(device_t uid, int rank) : m_ref(std::make_pair(uid, rank)) {}
+
+            //! @brief Constructor for a local node reference.
+            node_accessor(node_pointer n) : m_ref(n) {}
+
+            //! @brief Message receipt method that handles the distinction between local and remote neighbour
+            template <typename S, typename T>
+            void receive(typename F::net& net, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
+                if (auto* n = std::get_if<node_address>(&m_ref)) {
+                    // remote node reference
+                    net.mpi_receive(n->second, n->first, t, d, m);
                 }
-
-                //! @brief Message receipt method that handles the distinction between local and remote neighbour
-                void receive(typename F::net& loc_net_ref, times_t timestamp, device_t sender_uid, typename F::node::message_t newMsg) const {
-                    // Retrives net reference to access its methods
-
-                    // Computes the associated MPI process rank for both sender and receiver
-                    int sender_rank = loc_net_ref.compute_rank(sender_uid);
-                    int receiver_rank = loc_net_ref.compute_rank(ref_uid);
-
-                    // check whether nodes are handled by the same process
-                    if (sender_rank == receiver_rank) {
-                        // Retriving the reference to the neighbour via uid
-                        typename F::node* n = const_cast<typename F::node*>(&loc_net_ref.node_at(ref_uid));
-                        common::lock_guard<parallel> l(n->mutex);
-                        n->receive(timestamp, sender_uid, newMsg);
-                    } else {
-                        // receiver is a remote node: messages are added to communication map
-                        loc_net_ref.add_to_map(receiver_rank, ref_uid, timestamp, newMsg, sender_uid);
-                    }
+                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
+                    // local node reference
+                    common::lock_guard<parallel> l((*n)->mutex);
+                    (*n)->receive(t, d, m);
                 }
+            }
 
-            private:
-                //! @brief The uid of the referenced node.
-                device_t ref_uid;
+            //! @brief Local back-connection to a given node.
+            void connect(device_t i, node_pointer p) const {
+                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
+                    // local node reference
+                    common::lock_guard<parallel> l((*n)->mutex);
+                    (*n)->m_neighbours.second().emplace(i, p);
+                }
+            }
+
+            //! @brief Remote back-connection request to a given node.
+            void connect(device_t i, int rank) const {
+                if (auto* n = std::get_if<node_address>(&m_ref)) {
+                    // remote node reference
+                    // TODO: remote back-connection request
+                }
+            }
+
+            //! @brief Back-disconnection from a given node.
+            void disconnect(device_t i) const {
+                if (auto* n = std::get_if<node_address>(&m_ref)) {
+                    // remote node reference
+                    // TODO: remote back-disconnection request
+                }
+                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
+                    // local node reference
+                    common::lock_guard<parallel> l((*n)->mutex);
+                    (*n)->m_neighbours.second().erase(i);
+                }
+            }
+
+            //! @brief Inverse back-disconnection from a given node.
+            void co_disconnect(device_t i) const {
+                if (auto* n = std::get_if<node_address>(&m_ref)) {
+                    // remote node reference
+                    // TODO: remote inverse back-disconnection request
+                }
+                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
+                    // local node reference
+                    common::lock_guard<parallel> l((*n)->mutex);
+                    (*n)->m_neighbours.first().erase(i);
+                }
+            }
+
+          private:
+            //! @brief The uid of the referenced node.
+            std::variant<node_address, node_pointer> m_ref;
         };
 
         //! @brief The local part of the component.
         class node : public P::node {
+            friend class node_accessor;
+
           public: // visible by net objects and the main program
             /**
              * @brief Main constructor.
@@ -196,45 +246,27 @@ struct graph_connector {
 
             //! @brief Destructor ensuring deadlock-free mutual disconnection.
             ~node() {
-                int sender_rank = P::node::net.compute_rank(P::node::uid);
-                int receiver_rank;
-
                 while (m_neighbours.first().size() > 0) {
                     if (P::node::mutex.try_lock()) {
                         if (m_neighbours.first().size() > 0) {
-                            device_t node_uid = m_neighbours.first().begin()->first;
-                            receiver_rank = P::node::net.compute_rank(node_uid);
-                            // if the two nodes are on the same MPI process, a physical arc must be removed
-                            if (sender_rank == receiver_rank){
-                                typename F::node* n = const_cast<typename F::node*>(&P::node::net.node_at(node_uid));
-                                if (n->mutex.try_lock()) {
-                                    n->m_neighbours.second().erase(P::node::uid);
-                                    n->mutex.unlock();
-                                }
-                            }
+                            device_t i = m_neighbours.first().begin()->first;
+                            node_accessor n = m_neighbours.first().begin()->second;
                             m_neighbours.first().erase(m_neighbours.first().begin());
-                        }
-                        P::node::mutex.unlock();
+                            P::node::mutex.unlock();
+                            n.disconnect(P::node::uid);
+                        } else P::node::mutex.unlock();
                     }
                 }
-                // likely useless, since the reference would be deleted while
-                // running over neighbours' neighbours, but surely not wrong
                 if (symmetric) return;
                 while (m_neighbours.second().size() > 0) {
                     if (P::node::mutex.try_lock()) {
                         if (m_neighbours.second().size() > 0) {
-                            device_t node_uid = m_neighbours.second().begin()->first;
-                            receiver_rank = P::node::net.compute_rank(node_uid);
-                            if (sender_rank == receiver_rank){
-                                typename F::node* n = const_cast<typename F::node*>(&P::node::net.node_at(node_uid));
-                                if (n->mutex.try_lock()) {
-                                    n->m_neighbours.first().erase(P::node::uid);
-                                    n->mutex.unlock();
-                                }
-                            }
+                            device_t i = m_neighbours.second().begin()->first;
+                            node_accessor n = m_neighbours.second().begin()->second;
                             m_neighbours.second().erase(m_neighbours.second().begin());
-                        }
-                        P::node::mutex.unlock();
+                            P::node::mutex.unlock();
+                            n.co_disconnect(P::node::uid);
+                        } else P::node::mutex.unlock();
                     }
                 }
             }
@@ -242,51 +274,34 @@ struct graph_connector {
             //! @brief Adds given device to neighbours (returns true on succeed).
             bool connect(device_t i) {
                 if (P::node::uid == i or m_neighbours.first().count(i) > 0) return false;
-                
-                // Attualmente questa istruzione non funziona, perchè in questo punto net
-                // non è ancora inizializzato
-                //int sender_rank = P::node::net.compute_rank(P::node::uid);
-                int sender_rank = P::node::uid % 2;
-                //int receiver_rank = P::node::net.compute_rank(i);                
-                int receiver_rank = i % 2;                
-
-                m_neighbours.first().emplace(i, node_accessor(i));
+                int rank = P::node::net.mpi_rank(i);
+                node_accessor n;
+                if (rank == P::node::net.mpi_rank()) {
+                    // local node reference
+                    n = {const_cast<typename F::node*>(&P::node::net.node_at(i))};
+                } else {
+                    // remote node reference
+                    n = {i, rank};
+                }
+                m_neighbours.first().emplace(i, n);
                 common::unlock_guard<parallel> u(P::node::mutex);
-                /*
-                if (sender_rank == receiver_rank){
-                    // local neigbour: setting up a standard connection
-                    std::cout << "Node uid" << i << std::endl;
-                    std::cout << "Adding node to remote neighbours" << std::endl;
-                    typename F::node* n = const_cast<typename F::node*>(&P::node::net.node_at(i));
-                    std::cout << "Node added to remote neighbours" << std::endl;
-                    common::lock_guard<parallel> l(n->mutex);
-                    n->m_neighbours.second().emplace(P::node::uid, node_accessor(P::node::uid));
-                    
-                }*/
-                
+                if (rank == P::node::net.mpi_rank()) {
+                    // local node reference
+                    n.connect(P::node::uid, &P::node::as_final());
+                } else {
+                    // remote node reference
+                    n.connect(P::node::uid, P::node::net.mpi_rank());
+                }
                 return true;
             }
 
             //! @brief Removes given device from neighbours (returns true on succeed).
             bool disconnect(device_t i) {
-                int sender_rank = P::node::uid % 2;
-                //int sender_rank = P::node::net.compute_rank(P::node::uid);
-                int receiver_rank = i % 2;  
-                //int receiver_rank = P::node::net.compute_rank(i);   
-
                 if (P::node::uid == i or m_neighbours.first().count(i) == 0) return false;
-
+                node_accessor n = m_neighbours.first().at(i);
                 m_neighbours.first().erase(i);
                 common::unlock_guard<parallel> u(P::node::mutex);
-                /*
-                if (sender_rank == receiver_rank){
-                    // physical connection: there is another arc that must be removed
-                    // in a deadlock-free way
-                    typename F::node* n = m_neighbours.first().at(i);
-                    common::lock_guard<parallel> l(n->mutex);
-                    n->m_neighbours.second().erase(P::node::uid);
-                }*/
-                
+                n.disconnect(P::node::uid);
                 return true;
             }
 
@@ -358,14 +373,14 @@ struct graph_connector {
                         typename F::node::message_t m;
                         P::node::as_final().send(t, m);
                         P::node::as_final().receive(t, P::node::uid, m);
+                        auto copy = m_neighbours.first();
                         common::unlock_guard<parallel> u(P::node::mutex);
-                        for (auto const& p : m_neighbours.first()) {
+                        for (auto const& p : copy) {
                             p.second.receive(P::node::net, t, P::node::uid, m);
                         }
                     }
                 } else P::node::update();
             }
-
 
             //! @brief Performs computations at round start with current time `t`.
             void round_start(times_t t) {
@@ -425,16 +440,23 @@ struct graph_connector {
 
         //! @brief The global part of the component.
         class net : public P::net {
+            //! @brief Map associating a sender UID to the most recent message received from it.
+            using node_message_type = std::unordered_map<device_t, std::pair<times_t, typename F::node::message_t>>;
+
+            //! @brief Map associating a receiver UID to the map of messages sent to it.
+            using mpi_message_type = std::unordered_map<device_t, node_message_type>;
+
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             explicit net(common::tagged_tuple<S,T> const& t) : 
                 P::net(t), 
+                m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)),
                 m_send_schedule(get_generator(has_randomizer<P>{}, *this), t),
                 m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t),
-                m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)),
-                m_MPI_procs_count(common::get_or<tags::mpi_procs>(t, 1)),
-                node_splitter(get_generator(has_randomizer<P>{}, *this), t){}
+                m_node_splitter(get_generator(has_randomizer<P>{}, *this), t) {
+                batch::mpi_init(m_mpi_rank, m_mpi_procs);
+            }
 
             //! @brief Destructor ensuring that nodes are deleted first.
             ~net() {
@@ -443,60 +465,43 @@ struct graph_connector {
                 common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                     n_beg[i].second.global_disconnect();
                 });
-
-/*
-                if (!m_communication_maps.size())
-                    std::cout << "No messages exchanged" << std::endl;
-                else {
-                    std::cout << "Messages have been exchanged" << std::endl;
-                    for (std::pair<const int, mpi_node_message_type> process_messages : m_communication_maps){
-                        for (std::pair<const device_t, node_message_type> node_messages : process_messages.second){
-                            for (std::pair<const device_t, std::pair<times_t, typename F::node::message_t>> msg : node_messages.second){
-                                std::cout << "Message sent to process: " + std::to_string(process_messages.first) 
-                                + " to the node " + std::to_string(node_messages.first) 
-                                + " from the node " + std::to_string(msg.first) 
-                                + " at time: " + std::to_string(msg.second.first) << std::endl;
+                // TODO: remove debug information
+                if (m_mpi_comm_map.size()) {
+                    std::cerr << "MPI messages waiting to be sent:" << std::endl;
+                    for (auto const& process_messages : m_mpi_comm_map){
+                        for (auto const& node_messages : process_messages.second){
+                            for (auto const& msg : node_messages.second){
+                                std::cerr << "\tmessage sent to node " << node_messages.first
+                                    << " of rank " << process_messages.first
+                                    << " from node " << msg.first
+                                    << " at time " << msg.second.first << std::endl;
                             }
                         }
                     }
                 }
-*/
-
-                // releasing the lock that protects the remote messages map
-                common::unlock_guard<parallel> u(comm_map_mutex);
             }
 
-            int compute_rank(device_t target_uid){
-                return node_splitter(
-                    get_generator(has_randomizer<P>{}, *this),
-                    common::make_tagged_tuple<tags::uid, tags::mpi_procs>(target_uid, m_MPI_procs_count)
-                );
-            }
-
-            void add_to_map(int rank, device_t receiver_uid, times_t timestamp, typename F::node::message_t msg, device_t sender_uid){
-                // std::cout << "Adding to remote map " << std::endl;
-                common::lock_guard<parallel> l(comm_map_mutex);
-                m_communication_maps[rank][receiver_uid][sender_uid] = std::make_pair(timestamp, msg);
+            /**
+             * @brief Returns next event to schedule for the net component.
+             *
+             * Should correspond to the next time also during updates.
+             */
+            times_t next() const {
+                return min(min(m_send_schedule.next(), m_recv_schedule.next()), P::net::next());
             }
 
             //! @brief Updates the internal status of net component.
             void update() {
-                int myId;
-                MPI_Comm_rank(MPI_COMM_WORLD, &myId);
-
                 times_t t_send = m_send_schedule.next();
                 times_t t_recv = m_recv_schedule.next();
                 times_t pt = P::net::next();                    
 
-                if (t_send < pt) {
-                    PROFILE_COUNT("graph_connector");
-                    PROFILE_COUNT("graph_connector/send");
+                if (t_send < pt and t_send <= t_recv) {
                     m_send_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
-                    // sending messages to remote nodes
                     common::osstream os;
                     int snd_buffer_size = 0;
 
-                    for (std::pair<const int, mpi_node_message_type> process_messages : m_communication_maps){
+                    for (std::pair<const int, mpi_message_type> process_messages : m_mpi_comm_map){
                         //std::cout << "Sending remote message to process: " << process_messages.first << std::endl;
                         os << process_messages.second;
                         snd_buffer_size = os.size();
@@ -505,13 +510,11 @@ struct graph_connector {
                         MPI_Send(&snd_buffer_size, 1, MPI_INT, process_messages.first, 0, MPI_COMM_WORLD);
                         MPI_Send(m_data.data(), snd_buffer_size, MPI_CHAR, process_messages.first, 1, MPI_COMM_WORLD);
                     }
-                } 
-
-                if (t_recv < pt){
+                } else if (t_recv < pt) {
                     int rcv_buffer_size;
                     int messageExists = 0;
                     m_recv_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
-                    for (int rank = 0; rank < m_MPI_procs_count; rank++){
+                    for (int rank = 0; rank < m_mpi_procs; rank++) {
                         messageExists = 0;
                         // std::cout << "Checking remote message from process: " << rank << std::endl;
                         rcv_buffer_size = 0;
@@ -525,7 +528,7 @@ struct graph_connector {
                             // per ciascuno, assicurarsi che la computazione non si blocchi se non ci sono messaggi
                             MPI_Recv(&rcv_buffer[0], rcv_buffer_size, MPI_CHAR, rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                             common::isstream is(std::move(rcv_buffer));
-                            mpi_node_message_type incoming_msg_map;
+                            mpi_message_type incoming_msg_map;
                             is >> incoming_msg_map;
 
                             // ora scansiono la mappa, smistando i messaggi ai destinatari
@@ -542,15 +545,25 @@ struct graph_connector {
                                     n->receive(msg.second.first, msg.first, msg.second.second);
                                 }
                             }
-                        } else {
-                            // std::cout << "No message coming from process of rank: " << rank << std::endl;
                         }
                     }
-                }
-                
-                if (pt <= t_send && pt <= t_recv) {
-                    P::net::update();
-                }
+                } else P::net::update();
+            }
+
+            //! @brief The current MPI process rank.
+            inline int mpi_rank() const {
+                return m_mpi_rank;
+            }
+
+            //! @brief Computes the MPI process rank for a given node.
+            inline int mpi_rank(device_t i) {
+                return m_node_splitter(nullptr, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, m_mpi_procs));
+            }
+
+            //! @brief Receives a remote message to be sent through MPI.
+            inline void mpi_receive(int receiver_rank, device_t receiver_uid, times_t timestamp, device_t sender_uid, typename F::node::message_t const& msg) {
+                common::lock_guard<parallel> l(m_comm_map_mutex);
+                m_mpi_comm_map[receiver_rank][receiver_uid][sender_uid] = std::make_pair(timestamp, msg);
             }
 
           private: // implementation details
@@ -566,38 +579,29 @@ struct graph_connector {
                 return {};
             }
 
-            //! @brief Deletes all nodes if parent identifier.
-            template <typename N>
-            inline void maybe_clear(std::true_type, N& n) {
-                return n.node_clear();
-            }
-
-            //! @brief Object that dictates the sequence of sending events
-            mpi_send_schedule_type m_send_schedule;
-
-            //! @brief Object that dictates the sequence of receiving events
-            mpi_recv_schedule_type m_recv_schedule;
-
             //! @brief The number of threads to be used.
             size_t const m_threads;
 
-            //! @brief map that associates the sender to the messages sent
-            using node_message_type = std::unordered_map<device_t, std::pair<times_t, typename F::node::message_t>>;
+            //! @brief Number of MPI processes.
+            int m_mpi_procs;
 
-            //! @brief map that associates the receiver to the messages received
-            using mpi_node_message_type = std::unordered_map<device_t, node_message_type>;
+            //! @brief Rank of the current MPI process.
+            int m_mpi_rank;
 
-            //! @brief map that associates the MPI process to the messages addressed to node on it
-            std::unordered_map<int, mpi_node_message_type> m_communication_maps;
+            //! @brief Sequence of MPI sending events.
+            mpi_send_schedule_type m_send_schedule;
 
-            //! @brief Number of MPI processes
-            int m_MPI_procs_count;
+            //! @brief Sequence of MPI receiving events.
+            mpi_recv_schedule_type m_recv_schedule;
 
-            //! @brief Functor to compute the MPI process associated to a node
-            node_splitting_type node_splitter;
+            //! @brief Functor to compute the MPI process associated to a node.
+            node_splitting_type m_node_splitter;
 
-            //! @brief Mutex to manage parallel access to messages map
-            common::mutex<parallel> comm_map_mutex;
+            //! @brief Map associating the MPI process rank to the map of messages for its nodes.
+            std::unordered_map<int, mpi_message_type> m_mpi_comm_map;
+
+            //! @brief Mutex to manage parallel access to the communication map.
+            common::mutex<parallel> m_comm_map_mutex;
         };
     };
 };

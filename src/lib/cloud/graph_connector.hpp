@@ -72,9 +72,6 @@ namespace tags {
     template <bool b>
     struct static_topology;
 
-    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs (default to "arcs").
-    struct arcsinput {};
-
     //! @brief Net initialisation tag associating to the number of threads that can be created.
     struct threads;
 
@@ -103,7 +100,6 @@ namespace tags {
  * - \ref tags::symmetric defines whether the neighbour relation is symmetric (defaults to true).
  *
  * <b>Net initialisation tags:</b>
- * - \ref tags::arcsinput defines the name of the file or input stream specifying graph arcs (defaults to "arcs").
  * - \ref tags::threads defines the number of threads that can be created (defaults to \ref FCPP_THREADS).
  * - \ref tags::mpi_procs defines the total number of existing MPI processes (defaults to 1).
  *
@@ -181,11 +177,6 @@ struct graph_connector {
                     }
                 }
 
-                //! @brief Get method to retrieve node reference
-                device_t get_node_ref() const {
-                    return ref_uid;
-                }
-
             private:
                 //! @brief The uid of the referenced node.
                 device_t ref_uid;
@@ -211,7 +202,7 @@ struct graph_connector {
                 while (m_neighbours.first().size() > 0) {
                     if (P::node::mutex.try_lock()) {
                         if (m_neighbours.first().size() > 0) {
-                            device_t node_uid = (m_neighbours.first().begin()->second).get_node_ref();
+                            device_t node_uid = m_neighbours.first().begin()->first;
                             receiver_rank = P::node::net.compute_rank(node_uid);
                             // if the two nodes are on the same MPI process, a physical arc must be removed
                             if (sender_rank == receiver_rank){
@@ -232,7 +223,7 @@ struct graph_connector {
                 while (m_neighbours.second().size() > 0) {
                     if (P::node::mutex.try_lock()) {
                         if (m_neighbours.second().size() > 0) {
-                            device_t node_uid = (m_neighbours.second().begin()->second).get_node_ref();
+                            device_t node_uid = m_neighbours.second().begin()->first;
                             receiver_rank = P::node::net.compute_rank(node_uid);
                             if (sender_rank == receiver_rank){
                                 typename F::node* n = const_cast<typename F::node*>(&P::node::net.node_at(node_uid));

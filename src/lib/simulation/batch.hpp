@@ -766,6 +766,15 @@ namespace details {
             p = P{};
         }
     }
+
+    //! @brief Maybe uses MPI to aggregate plots (inactive overload).
+    inline void maybe_aggregate_plots(nullptr_t, int n_procs, int rank) {}
+
+    //! @brief Maybe uses MPI to aggregate plots (active overload).
+    template <typename P>
+    inline void maybe_aggregate_plots(P* p, int n_procs, int rank) {
+        aggregate_plots(*p, n_procs, rank);
+    }
 } // details
 //! @endcond
 
@@ -861,8 +870,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
     // wait threads to close and finalize
     for (std::thread& t : pool) t.join();
     if (rank == 0) manager.join();
-    if (plot != nullptr)
-        details::aggregate_plots(*plot, n_procs, rank);
+    details::maybe_aggregate_plots(plot, n_procs, rank);
     if (initialized) mpi_finalize();
 }
 

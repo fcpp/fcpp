@@ -16,8 +16,6 @@
 #include <variant>
 #include <vector>
 
-#include <mpi.h> //TODO: remove
-
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/serialize.hpp"
@@ -150,6 +148,7 @@ struct graph_connector {
         CHECK_COMPONENT(randomizer);
         //! @endcond
 
+#ifdef FCPP_MPI
         //! @brief Reference handling both local and remote nodes.
         class node_accessor {
             //! @brief Type of a pointer to a node.
@@ -226,9 +225,52 @@ struct graph_connector {
             }
 
           private:
-            //! @brief The uid of the referenced node.
+            //! @brief The reference to the node.
             std::variant<node_address, node_pointer> m_ref;
         };
+#else
+        //! @brief Reference handling local nodes.
+        class node_accessor {
+            //! @brief Type of a pointer to a node.
+            using node_pointer = typename F::node*;
+
+          public:
+            //! @brief Default constructor.
+            node_accessor() = default;
+
+            //! @brief Constructor for a local node reference.
+            node_accessor(node_pointer n) : m_ref(n) {}
+
+            //! @brief Message receipt method that handles the distinction between local and remote neighbour
+            template <typename S, typename T>
+            void receive(typename F::net& net, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
+                common::lock_guard<parallel> l(m_ref->mutex);
+                m_ref->receive(t, d, m);
+            }
+
+            //! @brief Local back-connection to a given node.
+            void connect(device_t i, node_pointer p) const {
+                common::lock_guard<parallel> l(m_ref->mutex);
+                m_ref->m_neighbours.second().emplace(i, p);
+            }
+
+            //! @brief Back-disconnection from a given node.
+            void disconnect(device_t i) const {
+                common::lock_guard<parallel> l(m_ref->mutex);
+                m_ref->m_neighbours.second().erase(i);
+            }
+
+            //! @brief Inverse back-disconnection from a given node.
+            void co_disconnect(device_t i) const {
+                common::lock_guard<parallel> l(m_ref->mutex);
+                m_ref->m_neighbours.first().erase(i);
+            }
+
+          private:
+            //! @brief The reference to the node.
+            node_pointer m_ref;
+        };
+#endif
 
         //! @brief The local part of the component.
         class node : public P::node {
@@ -274,6 +316,7 @@ struct graph_connector {
             //! @brief Adds given device to neighbours (returns true on succeed).
             bool connect(device_t i) {
                 if (P::node::uid == i or m_neighbours.first().count(i) > 0) return false;
+#ifdef FCPP_MPI
                 int rank = P::node::net.mpi_rank(i);
                 node_accessor n;
                 if (rank == P::node::net.mpi_rank()) {
@@ -283,8 +326,12 @@ struct graph_connector {
                     // remote node reference
                     n = {i, rank};
                 }
+#else
+                node_accessor n{const_cast<typename F::node*>(&P::node::net.node_at(i))};
+#endif
                 m_neighbours.first().emplace(i, n);
                 common::unlock_guard<parallel> u(P::node::mutex);
+#ifdef FCPP_MPI
                 if (rank == P::node::net.mpi_rank()) {
                     // local node reference
                     n.connect(P::node::uid, &P::node::as_final());
@@ -292,6 +339,9 @@ struct graph_connector {
                     // remote node reference
                     n.connect(P::node::uid, P::node::net.mpi_rank());
                 }
+#else
+                n.connect(P::node::uid, &P::node::as_final());
+#endif
                 return true;
             }
 
@@ -440,21 +490,27 @@ struct graph_connector {
 
         //! @brief The global part of the component.
         class net : public P::net {
+            friend class node_accessor;
+
+#ifdef FCPP_MPI
             //! @brief Map associating a sender UID to the most recent message received from it.
             using node_message_type = std::unordered_map<device_t, std::pair<times_t, typename F::node::message_t>>;
 
             //! @brief Map associating a receiver UID to the map of messages sent to it.
             using mpi_message_type = std::unordered_map<device_t, node_message_type>;
+#endif
 
           public: // visible by node objects and the main program
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             explicit net(common::tagged_tuple<S,T> const& t) : 
-                P::net(t), 
-                m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)),
+                P::net(t),
+#ifdef FCPP_MPI
                 m_send_schedule(get_generator(has_randomizer<P>{}, *this), t),
                 m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t),
-                m_node_splitter(get_generator(has_randomizer<P>{}, *this), t) {
+                m_node_splitter(get_generator(has_randomizer<P>{}, *this), t),
+#endif
+                m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
                 batch::mpi_init(m_mpi_rank, m_mpi_procs);
             }
 
@@ -465,6 +521,7 @@ struct graph_connector {
                 common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                     n_beg[i].second.global_disconnect();
                 });
+#ifdef FCPP_MPI
                 // TODO: remove debug information
                 if (m_mpi_comm_map.size()) {
                     std::cerr << "MPI messages waiting to be sent:" << std::endl;
@@ -479,8 +536,10 @@ struct graph_connector {
                         }
                     }
                 }
+#endif
             }
 
+#ifdef FCPP_MPI
             /**
              * @brief Returns next event to schedule for the net component.
              *
@@ -549,6 +608,7 @@ struct graph_connector {
                     }
                 } else P::net::update();
             }
+#endif
 
             //! @brief The current MPI process rank.
             inline int mpi_rank() const {
@@ -557,13 +617,11 @@ struct graph_connector {
 
             //! @brief Computes the MPI process rank for a given node.
             inline int mpi_rank(device_t i) {
+#ifdef FCPP_MPI
                 return m_node_splitter(nullptr, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, m_mpi_procs));
-            }
-
-            //! @brief Receives a remote message to be sent through MPI.
-            inline void mpi_receive(int receiver_rank, device_t receiver_uid, times_t timestamp, device_t sender_uid, typename F::node::message_t const& msg) {
-                common::lock_guard<parallel> l(m_comm_map_mutex);
-                m_mpi_comm_map[receiver_rank][receiver_uid][sender_uid] = std::make_pair(timestamp, msg);
+#else
+                return m_mpi_rank;
+#endif
             }
 
           private: // implementation details
@@ -579,6 +637,14 @@ struct graph_connector {
                 return {};
             }
 
+#ifdef FCPP_MPI
+            //! @brief Receives a remote message to be sent through MPI.
+            inline void mpi_receive(int receiver_rank, device_t receiver_uid, times_t timestamp, device_t sender_uid, typename F::node::message_t const& msg) {
+                common::lock_guard<parallel> l(m_comm_map_mutex);
+                m_mpi_comm_map[receiver_rank][receiver_uid][sender_uid] = std::make_pair(timestamp, msg);
+            }
+#endif
+
             //! @brief The number of threads to be used.
             size_t const m_threads;
 
@@ -588,6 +654,7 @@ struct graph_connector {
             //! @brief Rank of the current MPI process.
             int m_mpi_rank;
 
+#ifdef FCPP_MPI
             //! @brief Sequence of MPI sending events.
             mpi_send_schedule_type m_send_schedule;
 
@@ -602,6 +669,7 @@ struct graph_connector {
 
             //! @brief Mutex to manage parallel access to the communication map.
             common::mutex<parallel> m_comm_map_mutex;
+#endif
         };
     };
 };

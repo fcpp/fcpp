@@ -253,7 +253,7 @@ while [ "$1" != "" ]; do
         shift 1
         opts="$opts -DFCPP_BUILD_MPI=ON"
         rtype="MPI"
-        while [ "$1" != "run" -a "$1" != "build" -a "$1" != "hosts" ]; do
+        while [ "$1" != "run" -a "$1" != "build" -a "$1" != "hosts" -a "$1" != "test" ]; do
             mpiopts="$mpiopts $1"
             shift 1
         done

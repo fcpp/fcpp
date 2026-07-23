@@ -523,6 +523,8 @@ TEST(BatchTest, Run) {
     std::sort(w.begin(), w.end());
     EXPECT_EQ(v, w);
     v = {};
+    int r, p;
+    batch::mpi_init(r, p);
     batch::run(combomock{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5,8), batch::list<double>(2,7)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0,6), batch::list<char>(1,2,4)));
     std::sort(v.begin(), v.end());
     EXPECT_EQ(v, w);
@@ -533,6 +535,8 @@ TEST(BatchTest, Run) {
 TEST(BatchTest, Options) {
     using namespace batch;
     using types = option_combine<genericombok, void, options<int, bool>, common::type_sequence<char,long>, options<common::type_sequence<double>, short>>;
+    int r, p;
+    batch::mpi_init(r, p);
     EXPECT_SAME(types, common::type_sequence<genericombok<void, int, char, long, double>, genericombok<void, bool, char, long, double>, genericombok<void, int, char, long, short>, genericombok<void, bool, char, long, short>>);
     v = {};
     batch::run(types{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0), batch::list<char>(1,2)));

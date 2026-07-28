@@ -82,6 +82,19 @@ namespace tags {
     struct uid;
 }
 
+
+//! @brief Enumeration type for kinds of connection and disconnection requests.
+enum class request_kind : int8_t {
+    CONNECT = -1,
+    NONE = 0,
+    DISCONNECT = 1,
+    BIDISCONNECT = 2
+};
+
+//! @brief Converts a request_kind to its string representation.
+std::string to_string(request_kind r);
+
+
 /**
  * @brief Component handling message exchanges between nodes of a graph-based network.
  *
@@ -158,18 +171,24 @@ struct graph_connector {
             using node_address = std::pair<device_t, int>;
 
           public:
-            //! @brief Default constructor.
-            node_accessor() = default;
+            //! @brief Direct local-only constructor.
+            node_accessor(node_pointer p) : m_ref(p) {}
 
-            //! @brief Constructor for a remote node reference.
-            node_accessor(device_t uid, int rank) : m_ref(std::make_pair(uid, rank)) {}
-
-            //! @brief Constructor for a local node reference.
-            node_accessor(node_pointer n) : m_ref(n) {}
+            //! @brief General constructor.
+            node_accessor(typename F::net& net, device_t i) {
+                int rank = net.mpi_rank(i);
+                if (rank == net.mpi_rank()) {
+                    // local node reference
+                    m_ref = const_cast<node_pointer>(&net.node_at(i));
+                } else {
+                    // remote node reference
+                    m_ref = node_address(i, rank);
+                }
+            }
 
             //! @brief Message receipt method that handles the distinction between local and remote neighbour
             template <typename S, typename T>
-            void receive(typename F::net& net, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
+            inline void receive(typename F::net& net, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
                 if (auto* n = std::get_if<node_address>(&m_ref)) {
                     // remote node reference
                     net.mpi_receive(n->second, n->first, t, d, m);
@@ -181,28 +200,24 @@ struct graph_connector {
                 }
             }
 
-            //! @brief Local back-connection to a given node.
-            void connect(device_t i, node_pointer p) const {
+            //! @brief Back-connection request to a given node.
+            inline void connect(typename F::net& net, device_t i, node_pointer p) const {
                 if (auto* n = std::get_if<node_pointer>(&m_ref)) {
                     // local node reference
                     common::lock_guard<parallel> l((*n)->mutex);
                     (*n)->m_neighbours.second().emplace(i, p);
                 }
-            }
-
-            //! @brief Remote back-connection request to a given node.
-            void connect(device_t i, int rank) const {
                 if (auto* n = std::get_if<node_address>(&m_ref)) {
                     // remote node reference
-                    // TODO: remote back-connection request
+                    net.mpi_conn_request(n->second, n->first, i, request_kind::CONNECT);
                 }
             }
 
             //! @brief Back-disconnection from a given node.
-            void disconnect(device_t i) const {
+            inline void disconnect(typename F::net& net, device_t i) const {
                 if (auto* n = std::get_if<node_address>(&m_ref)) {
                     // remote node reference
-                    // TODO: remote back-disconnection request
+                    net.mpi_conn_request(n->second, n->first, i, request_kind::DISCONNECT);
                 }
                 if (auto* n = std::get_if<node_pointer>(&m_ref)) {
                     // local node reference
@@ -211,16 +226,17 @@ struct graph_connector {
                 }
             }
 
-            //! @brief Inverse back-disconnection from a given node.
-            void co_disconnect(device_t i) const {
+            //! @brief Total disconnection from a given node.
+            inline void bidisconnect(typename F::net& net, device_t i) const {
                 if (auto* n = std::get_if<node_address>(&m_ref)) {
                     // remote node reference
-                    // TODO: remote inverse back-disconnection request
+                    net.mpi_conn_request(n->second, n->first, i, request_kind::BIDISCONNECT);
                 }
                 if (auto* n = std::get_if<node_pointer>(&m_ref)) {
                     // local node reference
                     common::lock_guard<parallel> l((*n)->mutex);
                     (*n)->m_neighbours.first().erase(i);
+                    (*n)->m_neighbours.second().erase(i);
                 }
             }
 
@@ -235,35 +251,36 @@ struct graph_connector {
             using node_pointer = typename F::node*;
 
           public:
-            //! @brief Default constructor.
-            node_accessor() = default;
+            //! @brief Direct local-only constructor.
+            node_accessor(node_pointer p) : m_ref(p) {}
 
-            //! @brief Constructor for a local node reference.
-            node_accessor(node_pointer n) : m_ref(n) {}
+            //! @brief General constructor.
+            node_accessor(typename F::net& net, device_t i) : m_ref(const_cast<typename F::node*>(&net.node_at(i))) {}
 
             //! @brief Message receipt method that handles the distinction between local and remote neighbour
             template <typename S, typename T>
-            void receive(typename F::net& net, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
+            void receive(typename F::net&, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
                 common::lock_guard<parallel> l(m_ref->mutex);
                 m_ref->receive(t, d, m);
             }
 
             //! @brief Local back-connection to a given node.
-            void connect(device_t i, node_pointer p) const {
+            void connect(typename F::net&, device_t i, node_pointer p) const {
                 common::lock_guard<parallel> l(m_ref->mutex);
                 m_ref->m_neighbours.second().emplace(i, p);
             }
 
             //! @brief Back-disconnection from a given node.
-            void disconnect(device_t i) const {
+            void disconnect(typename F::net&, device_t i) const {
                 common::lock_guard<parallel> l(m_ref->mutex);
                 m_ref->m_neighbours.second().erase(i);
             }
 
             //! @brief Inverse back-disconnection from a given node.
-            void co_disconnect(device_t i) const {
+            void bidisconnect(typename F::net&, device_t i) const {
                 common::lock_guard<parallel> l(m_ref->mutex);
                 m_ref->m_neighbours.first().erase(i);
+                m_ref->m_neighbours.second().erase(i);
             }
 
           private:
@@ -275,6 +292,9 @@ struct graph_connector {
         //! @brief The local part of the component.
         class node : public P::node {
             friend class node_accessor;
+
+            //! @brief Stores the list of neighbours in the graph.
+            using neighbour_list = std::unordered_map<device_t, node_accessor>;
 
           public: // visible by net objects and the main program
             /**
@@ -288,60 +308,27 @@ struct graph_connector {
 
             //! @brief Destructor ensuring deadlock-free mutual disconnection.
             ~node() {
-                while (m_neighbours.first().size() > 0) {
-                    if (P::node::mutex.try_lock()) {
-                        if (m_neighbours.first().size() > 0) {
-                            device_t i = m_neighbours.first().begin()->first;
-                            node_accessor n = m_neighbours.first().begin()->second;
-                            m_neighbours.first().erase(m_neighbours.first().begin());
-                            P::node::mutex.unlock();
-                            n.disconnect(P::node::uid);
-                        } else P::node::mutex.unlock();
+                neighbour_list nlist;
+                {
+                    common::lock_guard<parallel> l(P::node::mutex);
+                    std::swap(nlist, m_neighbours.first());
+                    if (not symmetric) {
+                        nlist.insert(m_neighbours.second().begin(), m_neighbours.second().end());
+                        m_neighbours.second().clear();
                     }
                 }
-                if (symmetric) return;
-                while (m_neighbours.second().size() > 0) {
-                    if (P::node::mutex.try_lock()) {
-                        if (m_neighbours.second().size() > 0) {
-                            device_t i = m_neighbours.second().begin()->first;
-                            node_accessor n = m_neighbours.second().begin()->second;
-                            m_neighbours.second().erase(m_neighbours.second().begin());
-                            P::node::mutex.unlock();
-                            n.co_disconnect(P::node::uid);
-                        } else P::node::mutex.unlock();
-                    }
+                for (auto const& n : nlist) {
+                    n.second.bidisconnect(P::node::net, P::node::uid);
                 }
             }
 
             //! @brief Adds given device to neighbours (returns true on succeed).
             bool connect(device_t i) {
                 if (P::node::uid == i or m_neighbours.first().count(i) > 0) return false;
-#ifdef FCPP_MPI
-                int rank = P::node::net.mpi_rank(i);
-                node_accessor n;
-                if (rank == P::node::net.mpi_rank()) {
-                    // local node reference
-                    n = {const_cast<typename F::node*>(&P::node::net.node_at(i))};
-                } else {
-                    // remote node reference
-                    n = {i, rank};
-                }
-#else
-                node_accessor n{const_cast<typename F::node*>(&P::node::net.node_at(i))};
-#endif
+                node_accessor n{P::node::net, i};
                 m_neighbours.first().emplace(i, n);
                 common::unlock_guard<parallel> u(P::node::mutex);
-#ifdef FCPP_MPI
-                if (rank == P::node::net.mpi_rank()) {
-                    // local node reference
-                    n.connect(P::node::uid, &P::node::as_final());
-                } else {
-                    // remote node reference
-                    n.connect(P::node::uid, P::node::net.mpi_rank());
-                }
-#else
-                n.connect(P::node::uid, &P::node::as_final());
-#endif
+                n.connect(P::node::net, P::node::uid, &P::node::as_final());
                 return true;
             }
 
@@ -351,13 +338,13 @@ struct graph_connector {
                 node_accessor n = m_neighbours.first().at(i);
                 m_neighbours.first().erase(i);
                 common::unlock_guard<parallel> u(P::node::mutex);
-                n.disconnect(P::node::uid);
+                n.disconnect(P::node::net, P::node::uid);
                 return true;
             }
 
             //! @brief Disconnects from every neighbour (should only be used on all neighbours at once).
             void global_disconnect() {
-                return;
+                return; // TODO: handle this case
                 m_neighbours.first().clear();
                 if (not symmetric) m_neighbours.second().clear();
             }
@@ -446,9 +433,6 @@ struct graph_connector {
             }
 
           private: // implementation details
-            //! @brief Stores the list of neighbours in the graph.
-            using neighbour_list = std::unordered_map<device_t, node_accessor>;
-
             //! @brief Stores size of received message (disabled).
             template <typename S, typename T>
             void receive_size(common::number_sequence<false>, device_t, common::tagged_tuple<S,T> const&) {}
@@ -493,10 +477,15 @@ struct graph_connector {
             friend class node_accessor;
 
 #ifdef FCPP_MPI
-            //! @brief Map associating a sender UID to the most recent message received from it.
-            using node_message_type = std::unordered_map<device_t, std::pair<times_t, typename F::node::message_t>>;
+            //! @brief Structure representing messages for a single node.
+            struct node_message_type {
+                //! @brief Map associating a device UID with a connection (+1) or disconnection (-1) request from it.
+                std::unordered_map<device_t, request_kind> conn_requests;
+                //! @brief Map associating a sender UID to the most recent timestamped message received from it.
+                std::unordered_map<device_t, std::pair<times_t, typename F::node::message_t>> messages;
+            };
 
-            //! @brief Map associating a receiver UID to the map of messages sent to it.
+            //! @brief Map associating a receiver UID to the structure of messages for it.
             using mpi_message_type = std::unordered_map<device_t, node_message_type>;
 #endif
 
@@ -525,9 +514,15 @@ struct graph_connector {
                 // TODO: remove debug information
                 if (m_mpi_comm_map.size()) {
                     std::cerr << "MPI messages waiting to be sent:" << std::endl;
-                    for (auto const& process_messages : m_mpi_comm_map){
-                        for (auto const& node_messages : process_messages.second){
-                            for (auto const& msg : node_messages.second){
+                    for (auto const& process_messages : m_mpi_comm_map) {
+                        for (auto const& node_messages : process_messages.second) {
+                            for (auto const& req : node_messages.second.conn_requests) {
+                                std::cerr << "\t" << to_string(req)
+                                    << " request sent to node" << node_messages.first
+                                    << " of rank " << process_messages.first
+                                    << " from node " << req.first;
+                            }
+                            for (auto const& msg : node_messages.second.messages) {
                                 std::cerr << "\tmessage sent to node " << node_messages.first
                                     << " of rank " << process_messages.first
                                     << " from node " << msg.first
@@ -556,6 +551,7 @@ struct graph_connector {
                 times_t pt = P::net::next();                    
 
                 if (t_send < pt and t_send <= t_recv) {
+                    // TODO: provide FCPP abstraction on MPI basic routines MPI_Send/MPI_Recv/MPI_Iprobe/MPI_Get_count
                     m_send_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
                     common::osstream os;
                     int snd_buffer_size = 0;
@@ -595,14 +591,16 @@ struct graph_connector {
                             for (std::pair<const device_t, node_message_type> node_messages : incoming_msg_map){
                                 //std::cout << "Processing messages SENT to node " << node_messages.first << std::endl;
                                 // recupero il puntatore a nodo
+                                // TODO: check whether the node still exists, if not send back a disconnection request
                                 typename F::node* n = const_cast<typename F::node*>(&P::net::node_at(node_messages.first));
                                 common::lock_guard<parallel> l(n->mutex);
                                 // id mittente
-                                for (std::pair<const device_t, std::pair<times_t, typename F::node::message_t>> msg : node_messages.second){
+                                for (std::pair<const device_t, std::pair<times_t, typename F::node::message_t>> msg : node_messages.second.messages){
                                     //std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
                                     //std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
                                     n->receive(msg.second.first, msg.first, msg.second.second);
                                 }
+                                // TODO: process node_messages.second.conn_requests
                             }
                         }
                     }
@@ -641,7 +639,24 @@ struct graph_connector {
             //! @brief Receives a remote message to be sent through MPI.
             inline void mpi_receive(int receiver_rank, device_t receiver_uid, times_t timestamp, device_t sender_uid, typename F::node::message_t const& msg) {
                 common::lock_guard<parallel> l(m_comm_map_mutex);
-                m_mpi_comm_map[receiver_rank][receiver_uid][sender_uid] = std::make_pair(timestamp, msg);
+                m_mpi_comm_map[receiver_rank][receiver_uid].messages[sender_uid] = std::make_pair(timestamp, msg);
+            }
+
+            //! @brief Receives a remote connection or disconnection request to be sent through MPI.
+            inline void mpi_conn_request(int receiver_rank, device_t receiver_uid, device_t sender_uid, request_kind req) {
+                common::lock_guard<parallel> l(m_comm_map_mutex);
+                auto& conn_requests = m_mpi_comm_map[receiver_rank][receiver_uid].conn_requests;
+                if (conn_requests.count(sender_uid)) {
+                    if (static_cast<int8_t>(req) * static_cast<int8_t>(conn_requests[sender_uid]) == -1) {
+                        // connect-disconnect or disconnect-connect, same as doing nothing
+                        conn_requests.erase(sender_uid);
+                        return;
+                    }
+                }
+                // otherwise, the last operation wins
+                // (since bidisconnect is only issued on destruction,
+                // we can assume it can only be the last)
+                conn_requests[sender_uid] = req;
             }
 #endif
 

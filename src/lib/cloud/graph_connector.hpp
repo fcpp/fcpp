@@ -526,10 +526,9 @@ struct graph_connector {
         using mpi_message_type = std::unordered_map<device_t, node_message_type>;
 
         //! @brief Object with MPI communication map and its mutex.
-        //!
         //! Defined here to make sure it's constructed before P::net
-        // this way, the communication map can be accessed without errors
-        // when building the graph (in particular when connecting a node to its peers)
+        //! this way, the communication map can be accessed without errors
+        //! when building the graph (in particular when connecting a node to its peers)
         struct mpi_comm_state {
             //! @brief Map associating the MPI process rank to the map of messages for its nodes.
             std::unordered_map<int, mpi_message_type> comm_map;
@@ -653,18 +652,18 @@ struct graph_connector {
                                 for (auto const& msg : node_messages.second.messages) {
                                     //std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
                                     //std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
-                                    n->receive(P::net::as_final(), msg.second.first, msg.first, msg.second.second);
+                                    n.receive(P::net::as_final(), msg.second.first, msg.first, msg.second.second);
                                 }
                                 for (auto const& msg : node_messages.second.conn_requests) {
                                     switch (msg.second) {
                                         case request_kind::CONNECT:
-                                            n->connect_from(msg.first);
+                                            n.connect_from(P::net::as_final(), msg.first);
                                             break;
                                         case request_kind::DISCONNECT:
-                                            n->disconnect_from(msg.first);
+                                            n.disconnect_from(P::net::as_final(), msg.first);
                                             break;
                                         case request_kind::BIDISCONNECT:
-                                            n->bidisconnect_from(msg.first);
+                                            n.bidisconnect_from(P::net::as_final(), msg.first);
                                             break;
                                     }
                                 }

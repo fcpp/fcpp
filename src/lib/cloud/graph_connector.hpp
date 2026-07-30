@@ -171,10 +171,7 @@ struct graph_connector {
             using node_address = std::pair<device_t, int>;
 
           public:
-            //! @brief Direct local-only constructor.
-            node_accessor(node_pointer p) : m_ref(p) {}
-
-            //! @brief General constructor.
+            //! @brief Constructor.
             node_accessor(typename F::net& net, device_t i) {
                 int rank = net.mpi_rank(i);
                 if (rank == net.mpi_rank()) {
@@ -189,23 +186,22 @@ struct graph_connector {
             //! @brief Message receipt method that handles the distinction between local and remote neighbour
             template <typename S, typename T>
             inline void receive(typename F::net& net, times_t t, device_t d, common::tagged_tuple<S,T> const& m) const {
-                if (auto* n = std::get_if<node_address>(&m_ref)) {
-                    // remote node reference
-                    net.mpi_receive(n->second, n->first, t, d, m);
-                }
                 if (auto* n = std::get_if<node_pointer>(&m_ref)) {
                     // local node reference
                     common::lock_guard<parallel> l((*n)->mutex);
                     (*n)->receive(t, d, m);
                 }
+                if (auto* n = std::get_if<node_address>(&m_ref)) {
+                    // remote node reference
+                    net.mpi_receive(n->second, n->first, t, d, m);
+                }
             }
 
             //! @brief Back-connection request to a given node.
-            inline void connect(typename F::net& net, device_t i, node_pointer p) const {
+            inline void connect_from(typename F::net& net, device_t i) const {
                 if (auto* n = std::get_if<node_pointer>(&m_ref)) {
                     // local node reference
-                    common::lock_guard<parallel> l((*n)->mutex);
-                    (*n)->m_neighbours.second().emplace(i, p);
+                    (*n)->connect_from(i);
                 }
                 if (auto* n = std::get_if<node_address>(&m_ref)) {
                     // remote node reference
@@ -214,29 +210,26 @@ struct graph_connector {
             }
 
             //! @brief Back-disconnection from a given node.
-            inline void disconnect(typename F::net& net, device_t i) const {
+            inline void disconnect_from(typename F::net& net, device_t i) const {
+                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
+                    // local node reference
+                    (*n)->disconnect_from(i);
+                }
                 if (auto* n = std::get_if<node_address>(&m_ref)) {
                     // remote node reference
                     net.mpi_conn_request(n->second, n->first, i, request_kind::DISCONNECT);
                 }
-                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
-                    // local node reference
-                    common::lock_guard<parallel> l((*n)->mutex);
-                    (*n)->m_neighbours.second().erase(i);
-                }
             }
 
             //! @brief Total disconnection from a given node.
-            inline void bidisconnect(typename F::net& net, device_t i) const {
+            inline void bidisconnect_from(typename F::net& net, device_t i) const {
+                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
+                    // local node reference
+                    (*n)->bidisconnect_from(i);
+                }
                 if (auto* n = std::get_if<node_address>(&m_ref)) {
                     // remote node reference
                     net.mpi_conn_request(n->second, n->first, i, request_kind::BIDISCONNECT);
-                }
-                if (auto* n = std::get_if<node_pointer>(&m_ref)) {
-                    // local node reference
-                    common::lock_guard<parallel> l((*n)->mutex);
-                    (*n)->m_neighbours.first().erase(i);
-                    (*n)->m_neighbours.second().erase(i);
                 }
             }
 
@@ -251,10 +244,7 @@ struct graph_connector {
             using node_pointer = typename F::node*;
 
           public:
-            //! @brief Direct local-only constructor.
-            node_accessor(node_pointer p) : m_ref(p) {}
-
-            //! @brief General constructor.
+            //! @brief Constructor.
             node_accessor(typename F::net& net, device_t i) : m_ref(const_cast<typename F::node*>(&net.node_at(i))) {}
 
             //! @brief Message receipt method that handles the distinction between local and remote neighbour
@@ -265,22 +255,18 @@ struct graph_connector {
             }
 
             //! @brief Local back-connection to a given node.
-            void connect(typename F::net&, device_t i, node_pointer p) const {
-                common::lock_guard<parallel> l(m_ref->mutex);
-                m_ref->m_neighbours.second().emplace(i, p);
+            void connect_from(typename F::net&, device_t i) const {
+                m_ref->connect_from(i);
             }
 
             //! @brief Back-disconnection from a given node.
-            void disconnect(typename F::net&, device_t i) const {
-                common::lock_guard<parallel> l(m_ref->mutex);
-                m_ref->m_neighbours.second().erase(i);
+            void disconnect_from(typename F::net&, device_t i) const {
+                m_ref->disconnect_from(i);
             }
 
             //! @brief Inverse back-disconnection from a given node.
-            void bidisconnect(typename F::net&, device_t i) const {
-                common::lock_guard<parallel> l(m_ref->mutex);
-                m_ref->m_neighbours.first().erase(i);
-                m_ref->m_neighbours.second().erase(i);
+            void bidisconnect_from(typename F::net&, device_t i) const {
+                m_ref->bidisconnect_from(i);
             }
 
           private:
@@ -291,8 +277,6 @@ struct graph_connector {
 
         //! @brief The local part of the component.
         class node : public P::node {
-            friend class node_accessor;
-
             //! @brief Stores the list of neighbours in the graph.
             using neighbour_list = std::unordered_map<device_t, node_accessor>;
 
@@ -318,7 +302,7 @@ struct graph_connector {
                     }
                 }
                 for (auto const& n : nlist) {
-                    n.second.bidisconnect(P::node::net, P::node::uid);
+                    n.second.bidisconnect_from(P::node::net, P::node::uid);
                 }
             }
 
@@ -328,7 +312,7 @@ struct graph_connector {
                 node_accessor n{P::node::net, i};
                 m_neighbours.first().emplace(i, n);
                 common::unlock_guard<parallel> u(P::node::mutex);
-                n.connect(P::node::net, P::node::uid, &P::node::as_final());
+                n.connect_from(P::node::net, P::node::uid);
                 return true;
             }
 
@@ -338,8 +322,41 @@ struct graph_connector {
                 node_accessor n = m_neighbours.first().at(i);
                 m_neighbours.first().erase(i);
                 common::unlock_guard<parallel> u(P::node::mutex);
-                n.disconnect(P::node::net, P::node::uid);
+                n.disconnect_from(P::node::net, P::node::uid);
                 return true;
+            }
+
+            //! @brief Removes given device from neighbours bidirectionally (returns true on succeed).
+            bool bidisconnect(device_t i) {
+                if (P::node::uid == i or m_neighbours.first().count(i) + m_neighbours.second().count(i) == 0) return false;
+                node_accessor n = m_neighbours.first().count(i) ? m_neighbours.first().at(i) : m_neighbours.second().at(i);
+                m_neighbours.first().erase(i);
+                m_neighbours.second().erase(i);
+                common::unlock_guard<parallel> u(P::node::mutex);
+                n.bidisconnect_from(P::node::net, P::node::uid);
+                return true;
+            }
+
+            //! @brief Registers a connection from another node (for internal use).
+            void connect_from(device_t i) {
+                if (P::node::uid == i or m_neighbours.second().count(i) > 0) return;
+                common::lock_guard<parallel> l(P::node::mutex);
+                m_neighbours.second().emplace(i, node_accessor{P::node::net, i});
+            }
+
+            //! @brief Registers a disconnection from another node (for internal use).
+            void disconnect_from(device_t i) {
+                if (P::node::uid == i or m_neighbours.second().count(i) == 0) return;
+                common::lock_guard<parallel> l(P::node::mutex);
+                m_neighbours.second().erase(i);
+            }
+
+            //! @brief Registers a bidisconnection from another node (for internal use).
+            void bidisconnect_from(device_t i) {
+                if (P::node::uid == i or m_neighbours.first().count(i) + m_neighbours.second().count(i) == 0) return;
+                common::lock_guard<parallel> l(P::node::mutex);
+                m_neighbours.first().erase(i);
+                m_neighbours.second().erase(i);
             }
 
             //! @brief Disconnects from every neighbour (should only be used on all neighbours at once).
@@ -592,15 +609,24 @@ struct graph_connector {
                                     }
                                     continue;
                                 }
-                                typename F::node* n = const_cast<typename F::node*>(&P::net::node_at(node_messages.first));
-                                common::lock_guard<parallel> l(n->mutex);
+                                node_accessor n{P::net::as_final(), node_messages.first};
                                 for (auto const& msg : node_messages.second.messages) {
                                     //std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
                                     //std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
-                                    n->receive(msg.second.first, msg.first, msg.second.second);
+                                    n->receive(P::net::as_final(), msg.second.first, msg.first, msg.second.second);
                                 }
                                 for (auto const& msg : node_messages.second.conn_requests) {
-                                    // TODO: process node_messages.second.conn_requests
+                                    switch (msg.second) {
+                                        case request_kind::CONNECT:
+                                            n->connect_from(msg.first);
+                                            break;
+                                        case request_kind::DISCONNECT:
+                                            n->disconnect_from(msg.first);
+                                            break;
+                                        case request_kind::BIDISCONNECT:
+                                            n->bidisconnect_from(msg.first);
+                                            break;
+                                    }
                                 }
                             }
                         }

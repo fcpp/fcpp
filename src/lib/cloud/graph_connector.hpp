@@ -489,18 +489,6 @@ struct graph_connector {
             connection_data_type m_data;
         };
 
-        //! @brief Store basic mpi parameters
-        // represented this way so that it can be constructed before P::net
-        // which means that m_mpi_procs will be initialized when splitting the graph
-        // without any code duplication
-        struct mpi_info {
-            mpi_info() {
-                batch::mpi_init(rank, procs);
-            }
-            int rank;
-            int procs;
-        };
-
 #ifdef FCPP_MPI
         //! @brief Structure representing messages for a single node.
         struct node_message_type {
@@ -525,24 +513,12 @@ struct graph_connector {
         //! @brief Map associating a receiver UID to the structure of messages for it.
         using mpi_message_type = std::unordered_map<device_t, node_message_type>;
 
-        //! @brief Object with MPI communication map and its mutex.
-        //! Defined here to make sure it's constructed before P::net
-        //! this way, the communication map can be accessed without errors
-        //! when building the graph (in particular when connecting a node to its peers)
-        struct mpi_comm_state {
-            //! @brief Map associating the MPI process rank to the map of messages for its nodes.
-            std::unordered_map<int, mpi_message_type> comm_map;
-
-            //! @brief Mutex to manage parallel access to the communication map.
-            common::mutex<parallel> comm_map_mutex;
-        };
-
         //! @brief The global part of the component.
-        class net : public mpi_info, public mpi_comm_state, public P::net {
+        class net : public P::net {
             friend class node_accessor;
 #else
         //! @brief The global part of the component.
-        class net : public mpi_info, public P::net {
+        class net : public P::net {
             friend class node_accessor;
 #endif
 
@@ -557,6 +533,7 @@ struct graph_connector {
                 m_node_splitter(get_generator(has_randomizer<P>{}, *this), t),
 #endif
                 m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
+                batch::mpi_init(m_mpi_rank, m_mpi_procs);
             }
 
             //! @brief Destructor ensuring that edges are deleted first.
@@ -567,9 +544,9 @@ struct graph_connector {
                     n_beg[i].second.global_disconnect();
                 });
 #if defined(FCPP_MPI) && !defined(NDEBUG)
-                if (mpi_comm_state::comm_map.size()) {
+                if (m_mpi_comm_map.size()) {
                     std::cerr << "MPI messages waiting to be sent:" << std::endl;
-                    for (auto const& process_messages : mpi_comm_state::comm_map) {
+                    for (auto const& process_messages : m_mpi_comm_map) {
                         for (auto const& node_messages : process_messages.second) {
                             for (auto const& req : node_messages.second.conn_requests) {
                                 std::cerr << "\t" << to_string(req)
@@ -609,8 +586,8 @@ struct graph_connector {
                 if (t_send < pt and t_send <= t_recv) {
                     // sending our comm_map to other MPI nodes
                     m_send_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
-                    common::lock_guard<parallel> l(mpi_comm_state::comm_map_mutex);
-                    for (auto const& process_messages : mpi_comm_state::comm_map) {
+                    common::lock_guard<parallel> l(m_comm_map_mutex);
+                    for (auto const& process_messages : m_mpi_comm_map) {
                         //std::cout << "Sending remote message to process: " << process_messages.first << std::endl;
                         common::osstream os;
                         os << process_messages.second;
@@ -619,11 +596,11 @@ struct graph_connector {
                         MPI_Send(&snd_buffer_size, 1, MPI_INT, process_messages.first, 0, MPI_COMM_WORLD);
                         MPI_Send(os.data().data(), snd_buffer_size, MPI_CHAR, process_messages.first, 1, MPI_COMM_WORLD);
                     }
-                    mpi_comm_state::comm_map.clear();
+                    m_mpi_comm_map.clear();
                 } else if (t_recv < pt) {
                     // processing received comm_maps from other MPI nodes
                     m_recv_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
-                    for (int rank = 0; rank < mpi_info::procs; ++rank) {
+                    for (int rank = 0; rank < m_mpi_procs; ++rank) {
                         // std::cout << "Checking remote message from process: " << rank << std::endl;
                         int messageExists = 0;
                         int rcv_buffer_size = 0;
@@ -676,15 +653,15 @@ struct graph_connector {
 
             //! @brief The current MPI process rank.
             inline int mpi_rank() const {
-                return mpi_info::rank;
+                return m_mpi_rank;
             }
 
             //! @brief Computes the MPI process rank for a given node.
             inline int mpi_rank(device_t i) {
 #ifdef FCPP_MPI
-                return m_node_splitter(nullptr, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, mpi_info::procs));
+                return m_node_splitter(nullptr, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, m_mpi_procs));
 #else
-                return mpi_info::rank;
+                return m_mpi_rank;
 #endif
             }
 
@@ -704,14 +681,14 @@ struct graph_connector {
 #ifdef FCPP_MPI
             //! @brief Receives a remote message to be sent through MPI.
             inline void mpi_receive(int receiver_rank, device_t receiver_uid, times_t timestamp, device_t sender_uid, typename F::node::message_t const& msg) {
-                common::lock_guard<parallel> l(mpi_comm_state::comm_map_mutex);
-                mpi_comm_state::comm_map[receiver_rank][receiver_uid].messages[sender_uid] = std::make_pair(timestamp, msg);
+                common::lock_guard<parallel> l(m_comm_map_mutex);
+                m_mpi_comm_map[receiver_rank][receiver_uid].messages[sender_uid] = std::make_pair(timestamp, msg);
             }
 
             //! @brief Receives a remote connection or disconnection request to be sent through MPI.
             inline void mpi_conn_request(int receiver_rank, device_t receiver_uid, device_t sender_uid, request_kind req) {
-                common::lock_guard<parallel> l(mpi_comm_state::comm_map_mutex);
-                auto& conn_requests = mpi_comm_state::comm_map[receiver_rank][receiver_uid].conn_requests;
+                common::lock_guard<parallel> l(m_comm_map_mutex);
+                auto& conn_requests = m_mpi_comm_map[receiver_rank][receiver_uid].conn_requests;
                 if (conn_requests.count(sender_uid)) {
                     if (static_cast<int8_t>(req) * static_cast<int8_t>(conn_requests[sender_uid]) == -1) {
                         // connect-disconnect or disconnect-connect, same as doing nothing
@@ -729,6 +706,12 @@ struct graph_connector {
             //! @brief The number of threads to be used.
             size_t const m_threads;
 
+            //! @brief Number of MPI processes.
+            int m_mpi_procs;
+
+            //! @brief Rank of the current MPI process.
+            int m_mpi_rank;
+
 #ifdef FCPP_MPI
             //! @brief Sequence of MPI sending events.
             mpi_send_schedule_type m_send_schedule;
@@ -738,6 +721,12 @@ struct graph_connector {
 
             //! @brief Functor to compute the MPI process associated to a node.
             node_splitting_type m_node_splitter;
+
+            //! @brief Map associating the MPI process rank to the map of messages for its nodes.
+            std::unordered_map<int, mpi_message_type> m_mpi_comm_map;
+
+            //! @brief Mutex to manage parallel access to the communication map.
+            common::mutex<parallel> m_comm_map_mutex;
 #endif
         };
     };

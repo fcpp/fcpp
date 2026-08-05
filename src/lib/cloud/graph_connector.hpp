@@ -19,6 +19,7 @@
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/serialize.hpp"
+#include "lib/common/utilities.hpp"
 #include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
 #include "lib/internal/twin.hpp"
@@ -67,10 +68,6 @@ namespace tags {
     //! @brief Declaration flag associating to whether the neighbour relation is symmetric (defaults to true).
     template <bool b>
     struct symmetric;
-
-    //! @brief Declaration flag associating to whether the topology of the graph is static (for future use).
-    template <bool b>
-    struct static_topology;
 
     //! @brief Net initialisation tag associating to the number of threads that can be created.
     struct threads;

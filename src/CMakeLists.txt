@@ -144,6 +144,7 @@ set(
     lib/common/tagged_tuple.cpp
     lib/common/traits.cpp
     lib/common/type_sequence.cpp
+    lib/common/utilities.cpp
     lib/component.cpp
     lib/component/base.cpp
     lib/component/calculus.cpp
@@ -348,6 +349,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/common/tagged_tuple.cpp)
         fcpp_test(test/common/traits.cpp)
         fcpp_test(test/common/type_sequence.cpp)
+        fcpp_test(test/common/utilities.cpp)
         fcpp_test(test/component/base.cpp)
         fcpp_test(test/component/calculus.cpp)
         fcpp_test(test/component/identifier.cpp)

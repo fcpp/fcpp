@@ -132,6 +132,7 @@ set(
     lib/common.cpp
     lib/common/algorithm.cpp
     lib/common/immutable_map.cpp
+    lib/common/mpi.cpp
     lib/common/multitype_map.cpp
     lib/common/mutex.cpp
     lib/common/number_sequence.cpp
@@ -336,6 +337,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/cloud/graph_spawner.cpp)
         fcpp_test(test/common/algorithm.cpp)
         fcpp_test(test/common/immutable_map.cpp)
+        fcpp_test(test/common/mpi.cpp)
         fcpp_test(test/common/multitype_map.cpp)
         fcpp_test(test/common/mutex.cpp)
         fcpp_test(test/common/number_sequence.cpp)

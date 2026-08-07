@@ -174,6 +174,12 @@
 #endif
 
 
+#ifndef FCPP_MPI_BUF_SIZE
+    //! @brief The default size of the buffer used for receiving MPI messages (128MB).
+    #define FCPP_MPI_BUF_SIZE 134217728
+#endif
+
+
 #ifndef FCPP_MESSAGE_PUSH
     //! @brief Setting defining whether incoming messages are pushed or pulled.
     #define FCPP_MESSAGE_PUSH true

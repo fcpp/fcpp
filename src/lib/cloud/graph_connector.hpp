@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "lib/common/algorithm.hpp"
+#include "lib/common/mpi.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/serialize.hpp"
 #include "lib/common/utilities.hpp"
@@ -26,7 +27,6 @@
 #include "lib/option/distribution.hpp"
 #include "lib/option/functor.hpp"
 #include "lib/option/sequence.hpp"
-#include "lib/simulation/batch.hpp" // TODO: move only the MPI-related part to common/algorithm.hpp
 
 
 /**
@@ -523,15 +523,13 @@ struct graph_connector {
             //! @brief Constructor from a tagged tuple.
             template <typename S, typename T>
             explicit net(common::tagged_tuple<S,T> const& t) : 
-                P::net(t),
+                P::net(t), m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)), m_mpi(1, false)
 #ifdef FCPP_MPI
-                m_send_schedule(get_generator(has_randomizer<P>{}, *this), t),
-                m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t),
-                m_node_splitter(get_generator(has_randomizer<P>{}, *this), t),
+                , m_send_schedule(get_generator(has_randomizer<P>{}, *this), t)
+                , m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t)
+                , m_node_splitter(get_generator(has_randomizer<P>{}, *this), t)
 #endif
-                m_threads(common::get_or<tags::threads>(t, FCPP_THREADS)) {
-                batch::mpi_init(m_mpi_rank, m_mpi_procs);
-            }
+                {}
 
             //! @brief Destructor ensuring that edges are deleted first.
             ~net() {
@@ -579,7 +577,6 @@ struct graph_connector {
                 times_t t_recv = m_recv_schedule.next();
                 times_t pt = P::net::next();                    
 
-                // TODO: provide FCPP abstraction on MPI basic routines MPI_Send/MPI_Recv/MPI_Iprobe/MPI_Get_count
                 if (t_send < pt and t_send <= t_recv) {
                     // sending our comm_map to other MPI nodes
                     m_send_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
@@ -588,58 +585,47 @@ struct graph_connector {
                         //std::cout << "Sending remote message to process: " << process_messages.first << std::endl;
                         common::osstream os;
                         os << process_messages.second;
-                        int snd_buffer_size = os.size();
-                        // 0 for a size message, 1 for a data message
-                        MPI_Send(&snd_buffer_size, 1, MPI_INT, process_messages.first, 0, MPI_COMM_WORLD);
-                        MPI_Send(os.data().data(), snd_buffer_size, MPI_CHAR, process_messages.first, 1, MPI_COMM_WORLD);
+                        m_mpi.isend(0, {process_messages.first, std::move(os.data())});
                     }
                     m_mpi_comm_map.clear();
                 } else if (t_recv < pt) {
                     // processing received comm_maps from other MPI nodes
                     m_recv_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
-                    for (int rank = 0; rank < m_mpi_procs; ++rank) {
-                        // std::cout << "Checking remote message from process: " << rank << std::endl;
-                        int messageExists = 0;
-                        int rcv_buffer_size = 0;
-                        MPI_Iprobe(rank, 0, MPI_COMM_WORLD, &messageExists, MPI_STATUS_IGNORE);
-                        if (messageExists) {
-                            //std::cout << "Receiving remote message from process: " << rank << std::endl;
-                            MPI_Recv(&rcv_buffer_size, 1, MPI_INT, rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                            std::vector<char> rcv_buffer(rcv_buffer_size);
-                            MPI_Recv(rcv_buffer.data(), rcv_buffer_size, MPI_CHAR, rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                            common::isstream is(std::move(rcv_buffer));
-                            mpi_message_type comm_map;
-                            is >> comm_map;
-                            for (auto const& node_messages : comm_map) {
-                                //std::cout << "Processing messages SENT to node " << node_messages.first << std::endl;
-                                if (not P::net::node_count(node_messages.first)) {
-                                    // send back a bidisconnection request to each node communicating with a non-existing node
-                                    for (auto const& msg : node_messages.second.messages) {
-                                        mpi_conn_request(rank, msg.first, node_messages.first, request_kind::BIDISCONNECT);
-                                    }
-                                    for (auto const& msg : node_messages.second.conn_requests) {
-                                        mpi_conn_request(rank, msg.first, node_messages.first, request_kind::BIDISCONNECT);
-                                    }
-                                    continue;
-                                }
-                                node_accessor n{P::net::as_final(), node_messages.first};
+                    while (true) {
+                        common::option<common::mpi_message> m = m_mpi.irecv(0);
+                        if (m.empty()) break;
+                        common::isstream is(std::move(m.front().data));
+                        mpi_message_type comm_map;
+                        is >> comm_map;
+                        for (auto const& node_messages : comm_map) {
+                            //std::cout << "Processing messages SENT to node " << node_messages.first << std::endl;
+                            if (not P::net::node_count(node_messages.first)) {
+                                // send back a bidisconnection request to each node communicating with a non-existing node
                                 for (auto const& msg : node_messages.second.messages) {
-                                    //std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
-                                    //std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
-                                    n.receive(P::net::as_final(), msg.second.first, msg.first, msg.second.second);
+                                    mpi_conn_request(m.front().rank, msg.first, node_messages.first, request_kind::BIDISCONNECT);
                                 }
                                 for (auto const& msg : node_messages.second.conn_requests) {
-                                    switch (msg.second) {
-                                        case request_kind::CONNECT:
-                                            n.connect_from(P::net::as_final(), msg.first);
-                                            break;
-                                        case request_kind::DISCONNECT:
-                                            n.disconnect_from(P::net::as_final(), msg.first);
-                                            break;
-                                        case request_kind::BIDISCONNECT:
-                                            n.bidisconnect_from(P::net::as_final(), msg.first);
-                                            break;
-                                    }
+                                    mpi_conn_request(m.front().rank, msg.first, node_messages.first, request_kind::BIDISCONNECT);
+                                }
+                                continue;
+                            }
+                            node_accessor n{P::net::as_final(), node_messages.first};
+                            for (auto const& msg : node_messages.second.messages) {
+                                //std::cout << "Message RECEIVED FROM " << msg.first << std::endl;
+                                //std::cout << "Message TIMESTAMP " << msg.second.first << std::endl;
+                                n.receive(P::net::as_final(), msg.second.first, msg.first, msg.second.second);
+                            }
+                            for (auto const& msg : node_messages.second.conn_requests) {
+                                switch (msg.second) {
+                                    case request_kind::CONNECT:
+                                        n.connect_from(P::net::as_final(), msg.first);
+                                        break;
+                                    case request_kind::DISCONNECT:
+                                        n.disconnect_from(P::net::as_final(), msg.first);
+                                        break;
+                                    case request_kind::BIDISCONNECT:
+                                        n.bidisconnect_from(P::net::as_final(), msg.first);
+                                        break;
                                 }
                             }
                         }
@@ -650,15 +636,15 @@ struct graph_connector {
 
             //! @brief The current MPI process rank.
             inline int mpi_rank() const {
-                return m_mpi_rank;
+                return m_mpi.rank;
             }
 
             //! @brief Computes the MPI process rank for a given node.
             inline int mpi_rank(device_t i) {
 #ifdef FCPP_MPI
-                return m_node_splitter(nullptr, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, m_mpi_procs));
+                return m_node_splitter(nullptr, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, m_mpi.n_procs));
 #else
-                return m_mpi_rank;
+                return m_mpi.rank;
 #endif
             }
 
@@ -703,11 +689,8 @@ struct graph_connector {
             //! @brief The number of threads to be used.
             size_t const m_threads;
 
-            //! @brief Number of MPI processes.
-            int m_mpi_procs;
-
-            //! @brief Rank of the current MPI process.
-            int m_mpi_rank;
+            //! @brief The MPI manager.
+            common::mpi_manager m_mpi;
 
 #ifdef FCPP_MPI
             //! @brief Sequence of MPI sending events.

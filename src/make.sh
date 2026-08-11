@@ -555,7 +555,7 @@ while [ "$1" != "" ]; do
         fi
         reporter $0 clean -p gcc pedantic test all
         reporter $0 clean -p clang pedantic test all
-        reporter $0 clean -p mpi -n 3 pedantic test all
+        reporter $0 clean -p pedantic mpi -n 3 test all
         reporter $0 doc
         quitter
     else

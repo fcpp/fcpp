@@ -1,6 +1,7 @@
 // Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 #include "gtest/gtest.h"
+
 #include "lib/common/mpi.hpp"
 
 using namespace fcpp;
@@ -108,4 +109,13 @@ TEST(MpiTest, NonBlocking) {
         mpi->isend(tag, {0, msg.front().data});
     }
     mpi->barrier();
+}
+
+TEST(MpiTest, Unmatched) {
+    constexpr int tag1 = 3, tag2 = 4;
+    if (mpi->rank == 0 and mpi->n_procs > 1) {
+        // master sends a message that nobody will receive, then listens for a message that nobody will send
+        mpi->isend(tag1, {1, {'u', 'n', 'm', 'a', 't', 'c', 'h', 'e', 'd'}});
+        auto msg = mpi->irecv(tag2, 1);
+    }
 }

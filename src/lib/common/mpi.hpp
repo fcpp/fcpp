@@ -82,7 +82,8 @@ struct mpi_manager {
 
     //! @brief Sends a message to another rank (blocking).
     inline void send(int tag, mpi_message const& msg) {
-        assert(msg.rank != rank);
+        assert(0 <= tag and tag < n_tags);
+        assert(msg.rank == MPI_ANY_SOURCE or (0 <= msg.rank and msg.rank < n_procs and msg.rank != rank));
         #ifdef FCPP_MPI
             assert(multithread or m_allowed_thread == std::this_thread::get_id());
             MPI_Send(msg.data.data(), msg.data.size(), MPI_CHAR, msg.rank, tag, MPI_COMM_WORLD);

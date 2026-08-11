@@ -773,6 +773,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
     auto plot = common::get_or<component::tags::plotter>(vs[0], nullptr);
     constexpr int rank_master = 0;
     common::mpi_manager mpi(4);
+    assert(mpi.multithread);
 
     // setup initial chunks
     size_t initial_chunk = std::max(size_t((1 - e.dynamic) * vs.size()), std::min(vs.size(), e.num * mpi.n_procs));

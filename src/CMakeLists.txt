@@ -99,7 +99,6 @@ function(fcpp_test target_executable)
         target_link_libraries(${target_name}_test PRIVATE
             fcpp
             fcpp_testlib
-            gtest
             gtest_main
         )
         target_include_directories(${target_name}_test PRIVATE .)

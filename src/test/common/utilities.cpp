@@ -2,14 +2,17 @@
 
 #include "gtest/gtest.h"
 
+#include "lib/common/mpi.hpp"
 #include "lib/common/utilities.hpp"
 
 #include "test/helper.hpp"
 
 using namespace fcpp;
 
+common::mpi_manager mm(1);
+
 TEST(UtilitiesTest, MakeIstream) {
-    std::string s = "__tmp__", t;
+    std::string s = "__tmp__" + std::to_string(mm.rank), t;
     {
         std::ofstream os(s);
         ASSERT_TRUE(os.is_open());

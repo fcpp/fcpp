@@ -15,9 +15,11 @@ public:
     void SetUp() override {
         // Create 10 communication tags for the test suite
         mpi = std::make_unique<common::mpi_manager>(10);
+        std::cerr << ("Running tests on MPI node " + std::to_string(mpi->rank) + "/" + std::to_string(mpi->n_procs)) << std::endl;
     }
 
     void TearDown() override {
+        std::cerr << ("Ending tests on MPI node " + std::to_string(mpi->rank) + "/" + std::to_string(mpi->n_procs)) << std::endl;
         mpi.reset();
     }
 };
@@ -27,7 +29,11 @@ public:
 
 TEST(MpiTest, Init) {
     ASSERT_NE(mpi, nullptr);
+#ifdef FCPP_MPI
     EXPECT_TRUE(mpi->initialized);
+#else
+    EXPECT_FALSE(mpi->initialized);
+#endif
     EXPECT_GE(mpi->rank, 0);
     EXPECT_LT(mpi->rank, mpi->n_procs);
     EXPECT_EQ(mpi->n_tags, 10);

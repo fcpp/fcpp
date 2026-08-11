@@ -45,11 +45,11 @@ namespace tags {
     template <typename T>
     struct mpi_send_schedule {};
 
-    //! @brief Declaration tag associating to a delay generator for receiving messages through MPI (defaults to `sequence::never`).
+    //! @brief Declaration tag associating to a delay generator for receiving messages through MPI (defaults to `sequence::never`, should be more than twice as frequent than \ref tags::mpi_send_schedule to prevent message accumulation).
     template <typename T>
     struct mpi_recv_schedule {};
 
-    //! @brief Declaration tag associating to a node splitting functor (defaults to `functor::mod`, should not be randomized).
+    //! @brief Declaration tag associating to a node splitting functor (defaults to `functor::mod`, is not randomized).
     template <typename A>
     struct node_splitting;
 
@@ -100,8 +100,8 @@ std::string to_string(request_kind r);
  *
  * <b>Declaration tags:</b>
  * - \ref tags::mpi_send_schedule defines the delay generator for sending messages through MPI (defaults to `sequence::never`).
- * - \ref tags::mpi_recv_schedule defines the delay generator for receiving messages through MPI (defaults to `sequence::never`).
- * - \ref tags::node_splitting defines the node splitting functor (defaults to `functor::mod`, should not be randomized).
+ * - \ref tags::mpi_recv_schedule defines the delay generator for receiving messages through MPI (defaults to `sequence::never`, should be more than twice as frequent than \ref tags::mpi_send_schedule to prevent message accumulation).
+ * - \ref tags::node_splitting defines the node splitting functor (defaults to `functor::mod`, is not randomized).
  * - \ref tags::send_delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
  *
  * <b>Declaration flags:</b>
@@ -132,13 +132,13 @@ struct graph_connector {
     //! @brief The type of settings data regulating connection.
     using connection_data_type = common::tagged_tuple_t<>;
 
-    //! @brief The node splitting functor (defaults to `functor::mod`, should not be randomized).
+    //! @brief The node splitting functor (defaults to `functor::mod`, is not randomized).
     using node_splitting_type = common::option_type<tags::node_splitting, functor::mod<tags::uid, tags::mpi_procs, int>, Ts...>;
 
     //! @brief Delay generator for sending messages through MPI (defaults to `sequence::never`).
     using mpi_send_schedule_type = common::option_type<tags::mpi_send_schedule, sequence::never, Ts...>;
 
-    //! @brief Delay generator for receiving messages through MPI (defaults to `sequence::never`).
+    //! @brief Delay generator for receiving messages through MPI (defaults to `sequence::never`, should be more than twice as frequent than \ref tags::mpi_send_schedule to prevent message accumulation).
     using mpi_recv_schedule_type = common::option_type<tags::mpi_recv_schedule, sequence::never, Ts...>;
 
     /**
@@ -527,7 +527,7 @@ struct graph_connector {
 #ifdef FCPP_MPI
                 , m_send_schedule(get_generator(has_randomizer<P>{}, *this), t)
                 , m_recv_schedule(get_generator(has_randomizer<P>{}, *this), t)
-                , m_node_splitter(get_generator(has_randomizer<P>{}, *this), t)
+                , m_node_splitter(norand{}, t)
 #endif
                 {}
 
@@ -540,20 +540,20 @@ struct graph_connector {
                 });
 #if defined(FCPP_MPI) && !defined(NDEBUG)
                 if (m_mpi_comm_map.size()) {
-                    std::cerr << "MPI messages waiting to be sent:" << std::endl;
+                    std::cerr << (std::to_string(m_mpi_comm_map.size()) + " MPI messages waiting to be sent:\n") << std::flush;
                     for (auto const& process_messages : m_mpi_comm_map) {
                         for (auto const& node_messages : process_messages.second) {
                             for (auto const& req : node_messages.second.conn_requests) {
-                                std::cerr << "\t" << to_string(req)
-                                    << " request sent to node" << node_messages.first
-                                    << " of rank " << process_messages.first
-                                    << " from node " << req.first;
+                                std::cerr << ("\t" + to_string(req)
+                                    + " request sent to node" + std::to_string(node_messages.first)
+                                    + " of rank " + std::to_string(process_messages.first)
+                                    + " from node " + std::to_string(req.first) + "\n") << std::flush;
                             }
                             for (auto const& msg : node_messages.second.messages) {
-                                std::cerr << "\tmessage sent to node " << node_messages.first
-                                    << " of rank " << process_messages.first
-                                    << " from node " << msg.first
-                                    << " at time " << msg.second.first << std::endl;
+                                std::cerr << ("\tmessage sent to node " + std::to_string(node_messages.first)
+                                    + " of rank " + std::to_string(process_messages.first)
+                                    + " from node " + std::to_string(msg.first)
+                                    + " at time " + std::to_string(msg.second.first) + "\n") << std::flush;
                             }
                         }
                     }
@@ -591,9 +591,9 @@ struct graph_connector {
                 } else if (t_recv < pt) {
                     // processing received comm_maps from other MPI nodes
                     m_recv_schedule.step(get_generator(has_randomizer<P>{}, *this), fcpp::common::make_tagged_tuple<>());
-                    while (true) {
-                        common::option<common::mpi_message> m = m_mpi.irecv(0);
-                        if (m.empty()) break;
+                    for (int rank = 0; rank < m_mpi.n_procs; ++rank) if (rank != m_mpi.rank) {
+                        common::option<common::mpi_message> m = m_mpi.irecv(0, rank);
+                        if (m.empty()) continue;
                         common::isstream is(std::move(m.front().data));
                         mpi_message_type comm_map;
                         is >> comm_map;
@@ -642,7 +642,7 @@ struct graph_connector {
             //! @brief Computes the MPI process rank for a given node.
             inline int mpi_rank(device_t i) {
 #ifdef FCPP_MPI
-                return m_node_splitter(nullptr, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, m_mpi.n_procs));
+                return m_node_splitter(norand{}, common::make_tagged_tuple<tags::uid, tags::mpi_procs>(i, m_mpi.n_procs));
 #else
                 return m_mpi.rank;
 #endif

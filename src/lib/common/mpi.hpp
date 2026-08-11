@@ -9,14 +9,18 @@
 #define FCPP_COMMON_MPI_H_
 
 #ifdef FCPP_MPI
-    #include <assert.h>
     #include <mpi.h>
+
+    #include <list>
+    #include <mutex>
+    #include <thread>
 #else
     //! @brief Identifier for any MPI source (used in MPI receive calls).
     #define MPI_ANY_SOURCE -1
 #endif
 
-#include <list>
+#include <assert.h>
+
 #include <vector>
 
 #include "lib/settings.hpp"
@@ -70,18 +74,30 @@ struct mpi_manager {
     mpi_manager& operator=(mpi_manager&&) = delete;
 
     //! @brief Forces MPI processes to wait for each other.
-    void barrier();
+    inline void barrier() {
+        #ifdef FCPP_MPI
+            MPI_Barrier(MPI_COMM_WORLD);
+        #endif
+    }
 
     //! @brief Sends a message to another rank (blocking).
-    void send(int tag, mpi_message const& msg);
+    inline void send(int tag, mpi_message const& msg) {
+        assert(msg.rank != rank);
+        #ifdef FCPP_MPI
+            assert(multithread or m_allowed_thread == std::this_thread::get_id());
+            MPI_Send(msg.data.data(), msg.data.size(), MPI_CHAR, msg.rank, tag, MPI_COMM_WORLD);
+        #endif
+    }
     //! @brief Sends a message to another rank (non-blocking).
     void isend(int tag, mpi_message msg);
 
-    //! @brief Receives a message (of a maximum buf_size) from another rank (blocking).
-    mpi_message recv(int tag, int rank = MPI_ANY_SOURCE, int buf_size = FCPP_MPI_BUF_SIZE);
-    //! @brief Receives messages (of a maximum buf_size) from another rank (non-blocking).
-    option<mpi_message> irecv(int tag, int rank = MPI_ANY_SOURCE, int buf_size = FCPP_MPI_BUF_SIZE);
+    //! @brief Receives a message from another rank (blocking).
+    mpi_message recv(int tag, int rank = MPI_ANY_SOURCE);
+    //! @brief Receives messages from another rank (non-blocking). Concurrent irecvs with the same tag and rank are undefined behaviour.
+    option<mpi_message> irecv(int tag, int rank = MPI_ANY_SOURCE);
 
+    //! @brief Whether this manager supports multithreaded use.
+    bool const multithread;
     //! @brief Whether this manager initialized MPI.
     bool const initialized;
     //! @brief The rank of the current MPI process.
@@ -93,32 +109,18 @@ struct mpi_manager {
 
 #ifdef FCPP_MPI
 private:
-    //! @brief Wrapper to MPI_Initialized
-    static bool get_initialized(bool multithread) {
-        int init;
-        MPI_Initialized(&init);
-        if (init) return false;
-        int noargc = 0;
-        char** noargv = nullptr;
-        if (multithread) {
-            int provided;
-            MPI_Init_thread(&noargc, &noargv, MPI_THREAD_SERIALIZED, &provided);
-            assert(provided >= MPI_THREAD_SERIALIZED);
-        } else {
-            MPI_Init(&noargc, &noargv);
-        }
-        return true;
-    }
+    //! @brief Wrapper to MPI_Initialized and MPI_Init (_thread).
+    static bool get_initialized(bool& multithread, std::thread::id& allowed_thread);
 
-    //! @brief Wrapper to MPI_Comm_rank
-    static int get_rank() {
+    //! @brief Wrapper to MPI_Comm_rank.
+    inline static int get_rank() {
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         return rank;
     }
 
-    //! @brief Wrapper to MPI_Comm_size
-    static int get_n_procs() {
+    //! @brief Wrapper to MPI_Comm_size.
+    inline static int get_n_procs() {
         int n_procs;
         MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
         return n_procs;
@@ -135,6 +137,10 @@ private:
         MPI_Request request;
     };
 
+    //! @brief The only thread allowed to perform MPI operations (if not multithreaded).
+    std::thread::id m_allowed_thread;
+    //! @brief Mutex for multithreaded isend operations.
+    std::mutex m_isend_mutex;
     //! @brief The list of send promises.
     std::list<promise> m_sends;
     //! @brief Circular iterator on the list of send promises for cleanup.

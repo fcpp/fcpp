@@ -5,17 +5,18 @@ function usage() {
     echo -e "    \033[1m./make.sh [options...] command [parameters...]\033[0m"
     echo
     echo -e "\033[4moptions:\033[0m"
-    echo -e "    \033[1mclean\033[0m:                           cleans all built files before command execution"
-    echo -e "    \033[1mdoc\033[0m:                             builds the documentation before command execution"
+    echo -e "    \033[1mclean [-p]\033[0m:                      cleans all (built) files before command execution"
+    echo -e "    \033[1mpedantic\033[0m:                        treats warnings as errors while building"
     echo -e "    \033[1mgui\033[0m:                             enables the graphical user interface on cmake"
     echo -e "    \033[1mmpi\033[0m:                             enables the message passing interface for running on clusters"
-    echo -e "    \033[1mhosts <path>\033[0m:                    sets the \033[4mrelative\033[0m path to a hostfile for MPI (defaults to hosts.txt)"
+    echo -e "    \033[1mhosts <path>\033[0m:                    sets the \033[4mrelative\033[0m path to a hostfile for MPI (defaults to none)"
     echo -e "    \033[1munix\033[0m:                            overrides the auto-detected cmake platform to unix"
     echo -e "    \033[1mwindows\033[0m:                         overrides the auto-detected cmake platform to windows"
     echo -e "    \033[1mgcc\033[0m:                             sets the compiler to gcc"
     echo -e "    \033[1mclang\033[0m:                           sets the compiler to clang"
     echo
     echo -e "\033[4mcommands and parameters:\033[0m"
+    echo -e "    \033[1mdoc\033[0m:                             builds the documentation"
     echo -e "    \033[1msed\033[0m:                             manipulates patterns in source files"
     echo -e "       <pattern> [replace]"
     echo -e "    \033[1mbuild\033[0m:                           builds binaries for given targets"
@@ -24,9 +25,9 @@ function usage() {
     echo -e "       <copts...> <targets...>"
     echo -e "    \033[1mrun\033[0m:                             build and runs given targets"
     echo -e "       <copts...> <targets...>"
-    echo -e "    \033[1mall\033[0m:                             builds all possible targets and documentation"
+    echo -e "    \033[1mdoctest\033[0m:                         tests everything and builds the documentation"
     echo -e "       <copts...>"
-    echo -e "    \033[1mmultiall\033[0m:                        tests everything with both clang and gcc"
+    echo -e "    \033[1mmultitest\033[0m:                       tests everything with gcc, clang and mpi then builds the documentation"
     echo -e "       <copts...>"
     echo -e "Targets can be substrings demanding builds for all possible expansions."
     exit 1
@@ -36,12 +37,12 @@ if [ "$1" == "" ]; then
     usage
 fi
 
-hostfile="hosts.txt"
+hostfile=""
 btype="Debug"
 rtype="STD"
 opts=""
 copts=""
-mpiopts="-N 1"
+mpiopts=""
 cmakeopts=""
 targets=""
 errored=( )
@@ -151,6 +152,7 @@ function mkdoc() {
         errored=( "${errored[@]}" "$failcmd" )
     fi
     rm tmpdoc.err
+    return ${#exitcodes[@]}
 }
 
 function parseopt() {
@@ -232,7 +234,15 @@ function powerset() {
 while [ "$1" != "" ]; do
     if [ "$1" == "clean" ]; then
         shift 1
-        rm -rf doc bin
+        if [ "$1" == "-p" ]; then
+            shift 1
+            echo "Cleaning all built files and documentation..."
+            rm -rf doc bin/CMakeCache.txt bin/CMakeFiles/
+        elif [ "$1" == "" ]; then
+            rm -rf doc bin
+        else
+            usage
+        fi
     elif [ "$1" == "gcc" ]; then
         shift 1
         gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]$" | sort | tail -n 1))
@@ -245,7 +255,14 @@ while [ "$1" != "" ]; do
         opts="$opts -DCMAKE_C_COMPILER=$gcc -DCMAKE_CXX_COMPILER=$gpp"
     elif [ "$1" == "doc" ]; then
         shift 1
+        if [ "$1" != "" ]; then
+            usage
+        fi
         mkdoc
+        quitter
+    elif [ "$1" == "pedantic" ]; then
+        shift 1
+        opts="$opts -DCMAKE_COMPILE_WARNING_AS_ERROR=ON -DCMAKE_LINK_WARNING_AS_ERROR=ON"
     elif [ "$1" == "gui" ]; then
         shift 1
         opts="$opts -DFCPP_BUILD_GL=ON"
@@ -259,7 +276,7 @@ while [ "$1" != "" ]; do
         done
     elif [ "$1" == "hosts" ]; then
         shift 1
-        hostfile=$1
+        hostfile="$1"
         shift 1
     elif [ "$1" == "windows" ]; then
         shift 1
@@ -461,8 +478,11 @@ while [ "$1" != "" ]; do
                     echo -e "\033[1;4mrun/$name $@\033[0m\n"
                     run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
                 else
-                    echo -e "\033[1;4mmpiexec --hostfile ../$hostfile $mpiopts run/$name $@\033[0m\n"
-                    mpiexec --hostfile "../$hostfile" $mpiopts run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
+                    if [ "$hostfile" != "" ]; then
+                        mpiopts="$mpiopts --hostfile ../$hostfile"
+                    fi
+                    echo -e "\033[1;4mmpiexec $mpiopts run/$name $@\033[0m\n"
+                    mpiexec $mpiopts run/$name $@ > ../$file.txt 2> ../$file.err & pid=$!
                 fi
                 cd ..
                 monitor $pid $name $file $raw
@@ -495,12 +515,19 @@ while [ "$1" != "" ]; do
         fi
         if [ "$?" == "0" ]; then
             for t in $alltargets; do
-                target=bin/test/$t
-                reporter $target
+                if [ $rtype == "STD" ]; then
+                    target=bin/test/$t
+                    reporter $target
+                else
+                    if [ "$hostfile" != "" ]; then
+                        mpiopts="$mpiopts --hostfile $hostfile"
+                    fi
+                    reporter mpiexec $mpiopts bin/test/$t
+                fi
             done
         fi
         quitter
-    elif [ "$1" == "all" ]; then
+    elif [ "$1" == "doctest" ]; then
         shift 1
         mkdoc
         parseopt "$@"
@@ -519,14 +546,16 @@ while [ "$1" != "" ]; do
             done
         fi
         quitter
-    elif [ "$1" == "multiall" ]; then
+    elif [ "$1" == "multitest" ]; then
         shift 1
-        $0 clean
-        reporter $0 test all
-        $0 clean
-        reporter $0 gcc test all
-        $0 clean
-        reporter $0 clang test all
+        parseopt "$@"
+        shift $?
+        if [ "$1" != "" ]; then
+            usage
+        fi
+        reporter $0 clean -p gcc pedantic test all
+        reporter $0 clean -p clang pedantic test all
+        reporter $0 clean -p mpi -n 3 pedantic test all
         reporter $0 doc
         quitter
     else

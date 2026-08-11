@@ -626,6 +626,8 @@ struct graph_connector {
                                     case request_kind::BIDISCONNECT:
                                         n.bidisconnect_from(P::net::as_final(), msg.first);
                                         break;
+                                    default:
+                                        break;
                                 }
                             }
                         }

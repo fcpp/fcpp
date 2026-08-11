@@ -1,4 +1,4 @@
-FROM debian:trixie-slim
+FROM debian:forky-slim
 LABEL maintainer="giorgio.audrito@gmail.com"
 
 # Install needed libraries

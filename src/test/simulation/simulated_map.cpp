@@ -2,6 +2,7 @@
 
 #include "gtest/gtest.h"
 
+#include "lib/common/mpi.hpp"
 #include "lib/component/base.hpp"
 #include "lib/simulation/simulated_map.hpp"
 
@@ -13,6 +14,8 @@
 
 using namespace fcpp;
 using namespace component::tags;
+
+common::mpi_manager mm(1);
 
 struct tag {};
 struct gat {};
@@ -40,38 +43,37 @@ testing::AssertionResult near_2d_vec(const vec<2> a, const vec<2> b, float delta
 }
 
 TEST(SimulatedMapTest, CollisionTest) {
-   //create test bitmap
-   std::vector<unsigned char> bitmap{137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,4,0,0,0,4,8,6,0,0,0,169,241,158,126,0,0,0,31,73,68,65,84,24,87,99,100,96,96,248,207,192,192,192,200,0,5,112,6,186,0,72,21,8,48,194,84,192,5,0,99,218,3,5,49,47,111,178,0,0,0,0,73,69,78,68,174,66,96,130,0,0};
+    //create test bitmap
+    std::vector<unsigned char> bitmap{137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,4,0,0,0,4,8,6,0,0,0,169,241,158,126,0,0,0,31,73,68,65,84,24,87,99,100,96,96,248,207,192,192,192,200,0,5,112,6,186,0,72,21,8,48,194,84,192,5,0,99,218,3,5,49,47,111,178,0,0,0,0,73,69,78,68,174,66,96,130,0,0};
 
-#if _WIN32
-    _mkdir(".\\textures\\");
-     std::ofstream test_bitmap(".\\textures\\test.png", std::ios::binary);
-#else
-    mkdir("./textures/", 0777);
-    std::ofstream test_bitmap("./textures/test.png", std::ios::binary);
-#endif
+    std::string filename = "test" + std::to_string(mm.rank) + ".png";
+    #if _WIN32
+        std::string dirname = ".\\textures\\";
+        _mkdir(dirname.c_str());
+    #else
+        std::string dirname = "./textures/";
+        mkdir(dirname.c_str(), 0777);
+    #endif
+    std::ofstream test_bitmap(dirname + filename, std::ios::binary);
+    test_bitmap.write((char *)bitmap.data(),bitmap.size());
+    test_bitmap.close();
 
-   test_bitmap.write((char *)bitmap.data(),bitmap.size());
-   test_bitmap.close();
+    map_navigator m = map_navigator(filename, color(BLACK), 0.5);
+    constexpr float delta = 0.1;
+    //start analysis
+    combo1::net net{common::make_tagged_tuple<navigator, area_min, area_max>(m, make_vec(0,0), make_vec(40,40))};
+    EXPECT_TRUE(net.is_obstacle(make_vec(0.82,32.36)));
+    EXPECT_FALSE(net.is_obstacle(make_vec(11.45,33.58)));
+    EXPECT_TRUE(near_2d_vec(net.closest_obstacle(make_vec(1.78,23.78)), make_vec(1.78,30), delta));
+    EXPECT_TRUE(near_2d_vec(net.closest_obstacle(make_vec(14.3,36.7)), make_vec(10,36.70), delta));
+    EXPECT_TRUE(near_2d_vec(net.closest_space(make_vec(0.82,32.36)), make_vec(0.82,30), delta));
+    EXPECT_TRUE(near_2d_vec(net.closest_space(make_vec(23.45,13.64)), make_vec(30,13.64), delta));
 
-   map_navigator m = map_navigator("test.png", color(BLACK), 0.5);
-
-   constexpr float delta = 0.1;
-   //start analysis
-   combo1::net net{common::make_tagged_tuple<navigator, area_min, area_max>(m, make_vec(0,0), make_vec(40,40))};
-   EXPECT_TRUE(net.is_obstacle(make_vec(0.82,32.36)));
-   EXPECT_FALSE(net.is_obstacle(make_vec(11.45,33.58)));
-   EXPECT_TRUE(near_2d_vec(net.closest_obstacle(make_vec(1.78,23.78)), make_vec(1.78,30), delta));
-   EXPECT_TRUE(near_2d_vec(net.closest_obstacle(make_vec(14.3,36.7)), make_vec(10,36.70), delta));
-   EXPECT_TRUE(near_2d_vec(net.closest_space(make_vec(0.82,32.36)), make_vec(0.82,30), delta));
-   EXPECT_TRUE(near_2d_vec(net.closest_space(make_vec(23.45,13.64)), make_vec(30,13.64), delta));
-
-   //remove test bitmap
-#if _WIN32
-    std::remove(".\\textures\\test.png");
-    _rmdir(".\\textures\\");
-#else
-    std::remove("./textures/test.png");
-    rmdir("./textures/");
-#endif
+    //remove test bitmap
+    std::remove((dirname + filename).c_str());
+    #if _WIN32
+        _rmdir(dirname.c_str());
+    #else
+        rmdir(dirname.c_str());
+    #endif
 }

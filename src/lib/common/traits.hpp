@@ -56,6 +56,11 @@ namespace fcpp {
 namespace common {
 
 
+//! @brief Temporary backport of C++17 `std::invoke_result_t` for C++14, before the full project migration to C++17.
+template <typename F, typename... Args>
+using invoke_result_t = decltype(std::declval<F>()(std::declval<Args>()...));
+
+
 // GENERAL METAPROGRAMMING SUPPORT
 
 

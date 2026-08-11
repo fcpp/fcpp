@@ -7,19 +7,19 @@ on:
     branches: [ master, dev ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository...
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Run tests...
         uses: ./.github/action-test
-      - name: Setting up node.js...
-        uses: actions/setup-node@v3
         with:
-          node-version: 16
-      - name: Installing surge...
-        run: npm install -g surge
+          command: ${{ (github.ref == 'refs/heads/master' || github.base_ref == 'master') && 'multitest' || 'doctest' }}
       - name: Deploy documentation...
-        run: surge './src/doc/html' 'fcpp-doc.surge.sh' --token ${{ secrets.SURGE_TOKEN }}
+        if: github.event_name == 'push' && github.repository == 'fcpp/fcpp'
+        run: npx surge './src/doc/html' 'fcpp-doc.surge.sh' --token ${{ secrets.SURGE_TOKEN }}

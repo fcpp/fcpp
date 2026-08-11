@@ -62,10 +62,10 @@ TEST(BasicsTest, ResultType) {
     auto tf = [](field<int>){
         return tuple<std::string, double>("foo", 2.5);
     };
-    EXPECT_SAME(coordination::return_result_type<int, decltype(rf)(int)>, double);
-    EXPECT_SAME(coordination::export_result_type<int, decltype(rf)(int)>, double);
-    EXPECT_SAME(coordination::return_result_type<int, decltype(tf)(int)>, std::string);
-    EXPECT_SAME(coordination::export_result_type<int, decltype(tf)(int)>, double);
+    EXPECT_SAME(coordination::return_result_type<int, decltype(rf), int>, double);
+    EXPECT_SAME(coordination::export_result_type<int, decltype(rf), int>, double);
+    EXPECT_SAME(coordination::return_result_type<int, decltype(tf), int>, std::string);
+    EXPECT_SAME(coordination::export_result_type<int, decltype(tf), int>, double);
 }
 
 template <typename node_t>

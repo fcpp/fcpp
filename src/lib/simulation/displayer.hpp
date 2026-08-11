@@ -313,7 +313,7 @@ class info_window {
         );
     }
 
- private:
+  private:
     //! @brief Produces a title given the list of UIDs.
     std::string get_title() {
         if (m_uid.size() == 1) return "node " + std::to_string(m_uid[0]);
@@ -322,8 +322,8 @@ class info_window {
         return s;
     }
 
-    //! @brief It sets the window resize callback.
-    void setResizeCallback() {
+    //! @brief It sets the window callbacks.
+    void setCallbacks() {
         // Associates this (the info_window instance) to m_window
         glfwSetWindowUserPointer(m_renderer.getWindow(), this);
 
@@ -335,12 +335,19 @@ class info_window {
             info.m_renderer.viewportResize(winWidth, winHeight, width, height);
             info.set_modified();
         });
+
+        // Keyboard callback
+        glfwSetKeyCallback(m_renderer.getWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+            if (action == GLFW_PRESS and key == GLFW_KEY_ESCAPE) {
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+            }
+        });
     }
 
     //! @brief Main cycle.
     void draw_cycle() {
         m_renderer.initializeContext(false);
-        setResizeCallback();
+        setCallbacks();
         while (m_running) {
             if (m_modified) {
                 draw();

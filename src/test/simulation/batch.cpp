@@ -10,13 +10,25 @@
 
 using namespace fcpp;
 
+// Force initialisation/finalisation of MPI at start/end of all tests
+common::mpi_manager mm(1);
+
 struct tag {};
 struct gat {};
 struct oth {};
 struct hto {};
 
+struct fake_plot : std::vector<std::string> {
+    using std::vector<std::string>::vector;
+
+    fake_plot& operator+=(fake_plot const& o) {
+        insert(end(), o.begin(), o.end());
+        return *this;
+    }
+};
+
 common::mutex<true> m;
-std::vector<std::string> v;
+fake_plot v;
 
 // slow computation
 int workhard(int& t, int n=30) {
@@ -523,9 +535,16 @@ TEST(BatchTest, Run) {
     std::sort(w.begin(), w.end());
     EXPECT_EQ(v, w);
     v = {};
-    batch::run(combomock{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5,8), batch::list<double>(2,7)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0,6), batch::list<char>(1,2,4)));
-    std::sort(v.begin(), v.end());
-    EXPECT_EQ(v, w);
+    using component::tags::plotter;
+    batch::run(combomock{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5,8), batch::list<double>(2,7), batch::constant<plotter>(&v)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0,6), batch::list<char>(1,2,4), batch::constant<plotter>(&v)));
+    if (mm.rank == 0) {
+        for (auto& s : v) {
+            s.resize(w[0].size() - 1);
+            s.push_back(')');
+        }
+        std::sort(v.begin(), v.end());
+        EXPECT_EQ(v, w);
+    }
     v = {};
     w = {};
 }
@@ -535,8 +554,11 @@ TEST(BatchTest, Options) {
     using types = option_combine<genericombok, void, options<int, bool>, common::type_sequence<char,long>, options<common::type_sequence<double>, short>>;
     EXPECT_SAME(types, common::type_sequence<genericombok<void, int, char, long, double>, genericombok<void, bool, char, long, double>, genericombok<void, int, char, long, short>, genericombok<void, bool, char, long, short>>);
     v = {};
-    batch::run(types{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5), batch::list<double>(2)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0), batch::list<char>(1,2)));
-    EXPECT_EQ(v.size(), 28ULL);
+    using component::tags::plotter;
+    batch::run(types{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5), batch::list<double>(2), batch::constant<plotter>(&v)), batch::make_tagged_tuple_sequence(batch::list<double>(3,0), batch::list<char>(1,2), batch::constant<plotter>(&v)));
+    if (mm.rank == 0) {
+        EXPECT_EQ(v.size(), 28ULL);
+    }
     v = {};
     batch::run(types{}, common::tags::sequential_execution{}, batch::make_tagged_tuple_sequence(batch::list<char>(1,2,5), batch::list<double>(2,1)));
     EXPECT_EQ(v.size(), 24ULL);

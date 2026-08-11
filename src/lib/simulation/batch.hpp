@@ -20,11 +20,8 @@
 #include <type_traits>
 #include <vector>
 
-#ifdef FCPP_MPI
-#include <mpi.h>
-#endif
-
 #include "lib/common/algorithm.hpp"
+#include "lib/common/mpi.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/tagged_tuple.hpp"
 #include "lib/component/logger.hpp"
@@ -703,16 +700,6 @@ template <template <class...> class C, typename... Ts>
 using option_combine = details::map_template_t<C, common::type_product<details::option_decay_t<Ts>...>>;
 
 
-//! @brief Initialises MPI communication.
-bool mpi_init(int& rank, int& n_procs);
-
-//! @brief Forces MPI processes to wait for each other.
-void mpi_barrier();
-
-//! @brief Closes MPI communication.
-void mpi_finalize();
-
-
 /**
  *  @brief Runs a series of experiments with a non-distributed execution policy.
  *
@@ -737,34 +724,35 @@ run(common::type_sequence<Ts...> x, exec_t e, tagged_tuple_sequences<Ss...> vs) 
     std::cerr << "done." << std::endl;
 }
 
-#ifdef FCPP_MPI
-
 //! @cond INTERNAL
 namespace details {
     //! @brief Uses MPI to aggregate plots produced on different MPI processes.
     template <typename P>
-    void aggregate_plots(P& p, int n_procs, int rank) {
-        constexpr int rank_master = 0;
-        if (rank == rank_master) {
-            int size;
-            int max_size = 128 * 1024 * 1024;
-            char* buf = new char[max_size];
-            MPI_Status status;
-            for (int i = 1; i < n_procs; ++i) {
+    void aggregate_plots(P& p, common::mpi_manager& mpi) {
+        constexpr int master = 0;
+        if (mpi.rank == master) {
+            for (int r = 1; r < mpi.n_procs; ++r) {
+                common::mpi_message msg = mpi.recv(1);
                 P q;
-                MPI_Recv(buf, max_size, MPI_CHAR, MPI_ANY_SOURCE, 1, MPI_COMM_WORLD, &status);
-                MPI_Get_count(&status, MPI_CHAR, &size);
-                common::isstream is({buf, buf+size});
+                common::isstream is(std::move(msg.data));
                 is >> q;
                 p += q;
             }
-            delete [] buf;
         } else {
             common::osstream os;
             os << p;
-            MPI_Send(os.data().data(), os.data().size(), MPI_CHAR, rank_master, 1, MPI_COMM_WORLD);
+            mpi.send(1, {master, std::move(os.data())});
             p = P{};
         }
+    }
+
+    //! @brief Maybe uses MPI to aggregate plots (inactive overload).
+    inline void maybe_aggregate_plots(nullptr_t, common::mpi_manager&) {}
+
+    //! @brief Maybe uses MPI to aggregate plots (active overload).
+    template <typename P>
+    inline void maybe_aggregate_plots(P* p, common::mpi_manager& mpi) {
+        aggregate_plots(*p, mpi);
     }
 } // details
 //! @endcond
@@ -784,16 +772,18 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
     if (e.shuffle) vs.shuffle();
     auto plot = common::get_or<component::tags::plotter>(vs[0], nullptr);
     constexpr int rank_master = 0;
-    int rank, n_procs;
-    bool initialized = mpi_init(rank, n_procs);
+    common::mpi_manager mpi(4);
+    assert(mpi.multithread);
 
     // setup initial chunks
-    size_t initial_chunk = std::max(size_t((1 - e.dynamic) * vs.size()), std::min(vs.size(), e.num * n_procs));
-    int pool_size = std::min(e.num, (initial_chunk + n_procs - 1) / n_procs);
-    int istart = rank, i = istart, istep = n_procs;
+    size_t initial_chunk = std::max(size_t((1 - e.dynamic) * vs.size()), std::min(vs.size(), e.num * mpi.n_procs));
+    int pool_size = std::min(e.num, (initial_chunk + mpi.n_procs - 1) / mpi.n_procs);
+    int istart = mpi.rank, i = istart, istep = mpi.n_procs;
     int rest = initial_chunk, iend = rest;
-    int c = 0, p = 0;
-    if (rank == rank_master) {
+    common::mpi_message cmsg(0, std::vector<char>(sizeof(int), 0));
+    int& c = *reinterpret_cast<int*>(cmsg.data.data());
+    int p = 0;
+    if (mpi.rank == rank_master) {
         details::print_types(x);
         std::cerr << ": running " << vs.size() << " simulations..." << std::flush;
     }
@@ -810,7 +800,7 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
                 if (i < iend or i >= vs.size()) {   // there are things in local queue, grab one
                     j = i;
                     i = j + istep;
-                } else if (rank == rank_master) {  // i am master, grab a whole chunk then one
+                } else if (mpi.rank == rank_master) {  // i am master, grab a whole chunk then one
                     istep = 1;
                     istart = rest + c * e.size;
                     iend = istart + e.size;
@@ -819,8 +809,9 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
                     ++c;
                 } else { // use MPI to ask for a chunk
                     if (rest + c * e.size < vs.size()) {
-                        MPI_Send(&c, 0, MPI_INT, 0, 2, MPI_COMM_WORLD);
-                        MPI_Recv(&c, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        mpi.send(2, {0, {}});
+                        common::mpi_message r = mpi.recv(0, 0);
+                        c = *reinterpret_cast<int*>(r.data.data());
                     }
                     istep = 1;
                     istart = rest + c * e.size;
@@ -830,28 +821,27 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
                 }
                 m.unlock();
                 if (j >= vs.size()) break;
-                int q = i < rest ? i : i * n_procs - (2 * istart + e.size) * (n_procs - 1) / 2;
+                int q = i < rest ? i : i * mpi.n_procs - (2 * istart + e.size) * (mpi.n_procs - 1) / 2;
                 q = q * 100 / vs.size();
-                if (rank == rank_master and t == 0 and q > p) {
+                if (mpi.rank == rank_master and t == 0 and q > p) {
                     p = q;
                     std::cerr << p << "%..." << std::flush;
                 }
                 auto tup = vs.empty_tuple();
                 if (vs.assign(tup, j)) details::network_run(x, common::get_or<tags::type_index>(tup, 0), tup);
             }
-            if (rank == rank_master and t == 0) std::cerr << "done." << std::endl;
+            if (mpi.rank == rank_master and t == 0) std::cerr << "done." << std::endl;
         });
 
     // start MPI manager thread
     std::thread manager;
-    if (rank == rank_master) manager = std::thread([&](){
-        int reqs = rest < vs.size() ? n_procs - 1  : 0;
-        MPI_Status status;
+    if (mpi.rank == rank_master) manager = std::thread([&](){
+        int reqs = rest < vs.size() ? mpi.n_procs - 1  : 0;
         while (reqs > 0) {
-            MPI_Recv(&c, 0, MPI_INT, MPI_ANY_SOURCE, 2, MPI_COMM_WORLD, &status);
-            int source = status.MPI_SOURCE;
+            common::mpi_message r = mpi.recv(2);
             m.lock();
-            MPI_Send(&c, 1, MPI_INT, source, 0, MPI_COMM_WORLD);
+            cmsg.rank = r.rank;
+            mpi.send(0, cmsg);
             ++c;
             m.unlock();
             if (rest + c * e.size >= vs.size()) --reqs;
@@ -860,29 +850,9 @@ void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, 
 
     // wait threads to close and finalize
     for (std::thread& t : pool) t.join();
-    if (rank == 0) manager.join();
-    if (plot != nullptr)
-        details::aggregate_plots(*plot, n_procs, rank);
-    if (initialized) mpi_finalize();
+    if (mpi.rank == rank_master) manager.join();
+    details::maybe_aggregate_plots(plot, mpi);
 }
-
-#else
-
-/**
- *  @brief Runs a series of experiments with a distributed execution policy through MPI.
- *
- * If FCPP_MPI is not defined, it raises an error with an assert.
- *
- * @param x The network types to be run.
- * @param e An execution policy (see \ref common::tags::distributed_execution "distributed_execution").
- * @param vs Tagged tuple sequences used to initialise the various runs.
- */
-template <typename... Ts, typename... Ss>
-inline void run(common::type_sequence<Ts...> x, common::tags::distributed_execution e, tagged_tuple_sequences<Ss...> vs) {
-    assert(false);
-}
-
-#endif
 
 //! @brief Runs a series of experiments (network types, explicit execution policy, sequence parameters).
 template <typename... Ts, typename exec_t, typename... Gs, typename... Ss>

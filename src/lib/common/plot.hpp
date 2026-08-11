@@ -544,6 +544,7 @@ class first_rows {
     size_t m_row_size;
 };
 
+//! @brief The expected limit size of the object.
 template <typename C, typename M, typename F, size_t max_size>
 constexpr size_t first_rows<C,M,F,max_size>::limit_size;
 

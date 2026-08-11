@@ -270,13 +270,13 @@ namespace details {
 }
 //! @endcond
 
-//! @brief The data type returned by an update function call T given default of type D.
-template <typename D, typename T>
-using return_result_type = typename details::result_unpack<std::decay_t<D>, std::decay_t<std::result_of_t<T>>>::type::front;
+//! @brief The data type returned by an update function call F(As...) given default of type D.
+template <typename D, typename F, typename... As>
+using return_result_type = typename details::result_unpack<std::decay_t<D>, std::decay_t<common::invoke_result_t<F, As...>>>::type::front;
 
-//! @brief The export type written by an update function call T given default of type D.
-template <typename D, typename T>
-using export_result_type = typename details::result_unpack<std::decay_t<D>, std::decay_t<std::result_of_t<T>>>::type::back;
+//! @brief The export type written by an update function call F(As...) given default of type D.
+template <typename D, typename F, typename... As>
+using export_result_type = typename details::result_unpack<std::decay_t<D>, std::decay_t<common::invoke_result_t<F, As...>>>::type::back;
 
 
 //! @name old-based coordination operators
@@ -291,8 +291,8 @@ using export_result_type = typename details::result_unpack<std::decay_t<D>, std:
  * the second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename D, typename G>
-return_result_type<D, G(D)> old(node_t& node, trace_t call_point, D const& f0, G&& op) {
-    using A = export_result_type<D, G(D)>;
+return_result_type<D, G, D> old(node_t& node, trace_t call_point, D const& f0, G&& op) {
+    using A = export_result_type<D, G, D>;
     auto ctx = node.template self_context<A>(call_point);
     auto f = op(ctx.old(f0));
     ctx.insert(align(node, call_point, details::maybe_second(common::type_sequence<D>{}, f)));
@@ -342,8 +342,8 @@ using old_t = common::export_list<T>;
  * the second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename D, typename G>
-return_result_type<D, G(to_field<D>)> nbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
-    using A = export_result_type<D, G(to_field<D>)>;
+return_result_type<D, G, to_field<D>> nbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
+    using A = export_result_type<D, G, to_field<D>>;
     auto ctx = node.template nbr_context<A>(call_point);
     auto f = op(ctx.nbr(f0));
     ctx.insert(details::maybe_second(common::type_sequence<D>{}, f));
@@ -391,8 +391,8 @@ using nbr_t = common::export_list<T>;
  * the second element of the returned pair is written in the exports.
  */
 template <typename node_t, typename D, typename G>
-return_result_type<D, G(D, to_field<D>)> oldnbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
-    using A = export_result_type<D, G(D, to_field<D>)>;
+return_result_type<D, G, D, to_field<D>> oldnbr(node_t& node, trace_t call_point, D const& f0, G&& op) {
+    using A = export_result_type<D, G, D, to_field<D>>;
     auto ctx = node.template nbr_context<A>(call_point);
     auto f = op(ctx.old(f0), ctx.nbr(f0));
     ctx.insert(align(node, call_point, details::maybe_second(common::type_sequence<D>{}, f)));
@@ -420,7 +420,7 @@ using split_t = common::export_list<>;
 //! @{
 
 //! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with boolean status corresponding to `status::internal_output` and `status::border_output`).
-template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<common::invoke_result_t<G, K const&, Ts const&...>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
 std::enable_if_t<std::is_same<B,bool>::value, std::unordered_map<K, R, common::hash<K>>>
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
     using keyset_t = std::unordered_set<K, common::hash<K>>;
@@ -446,7 +446,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
 }
 
 //! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (overload with field<bool> status).
-template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<common::invoke_result_t<G, K const&, Ts const&...>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
 std::enable_if_t<std::is_same<B,field<bool>>::value, std::unordered_map<K, R, common::hash<K>>>
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
     using keyset_t = std::unordered_set<K, common::hash<K>>;
@@ -487,7 +487,7 @@ spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... x
  * Does not support the "external" status, which is treated equally as "border".
  * Termination propagates causing devices to get into "border" status.
  */
-template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<common::invoke_result_t<G, K const&, Ts const&...>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
 std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R, common::hash<K>>>
 spawn(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
     using keymap_t = std::unordered_map<K, B, common::hash<K>>;
@@ -531,7 +531,7 @@ using spawn_t = common::export_list<std::conditional_t<std::is_same<B, field<boo
 
 
 //! @brief Handles a process, spawning instances of it for every key in the `key_set` and passing general arguments `xs` (legacy version with full status).
-template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<std::result_of_t<G(K const&, Ts const&...)>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
+template <typename node_t, typename G, typename S, typename... Ts, typename K = typename std::decay_t<S>::value_type, typename T = std::decay_t<common::invoke_result_t<G, K const&, Ts const&...>>, typename R = std::decay_t<tuple_element_t<0,T>>, typename B = std::decay_t<tuple_element_t<1,T>>>
 std::enable_if_t<std::is_same<B,status>::value, std::unordered_map<K, R, common::hash<K>>>
 spawn_deprecated(node_t& node, trace_t call_point, G&& process, S&& key_set, Ts const&... xs) {
     using keymap_t = std::unordered_map<K, B, common::hash<K>>;

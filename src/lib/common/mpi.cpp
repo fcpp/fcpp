@@ -15,8 +15,8 @@ namespace common {
 
 mpi_manager::mpi_manager(int n_tags, bool multithread) :
 #ifdef FCPP_MPI
-    initialized(get_initialized(multithread, m_allowed_thread)), multithread(multithread), rank(get_rank()), n_procs(get_n_procs()), n_tags(n_tags),
-    m_sends(), m_sends_it(m_sends.end()), m_recvs(n_procs+1, std::vector<promise>(n_tags)) {
+    initialized(get_initialized(multithread)), multithread(multithread), rank(get_rank()), n_procs(get_n_procs()), n_tags(n_tags),
+    m_allowed_thread(std::this_thread::get_id()), m_sends(), m_sends_it(m_sends.end()), m_recvs(n_procs+1, std::vector<promise>(n_tags)) {
         m_recvs[rank].clear();
     }
 #else
@@ -111,7 +111,7 @@ option<mpi_message> mpi_manager::irecv(int tag, int rank) {
 
 
 #ifdef FCPP_MPI
-    bool mpi_manager::get_initialized(bool& multithread, std::thread::id& allowed_thread) {
+    bool mpi_manager::get_initialized(bool& multithread) {
         int init;
         MPI_Initialized(&init);
         if (init) return false;
@@ -119,10 +119,7 @@ option<mpi_message> mpi_manager::irecv(int tag, int rank) {
         char** noargv = nullptr;
         int provided;
         MPI_Init_thread(&noargc, &noargv, multithread ? MPI_THREAD_MULTIPLE : MPI_THREAD_FUNNELED, &provided);
-        if (provided < MPI_THREAD_MULTIPLE) {
-            multithread = false;
-            allowed_thread = std::this_thread::get_id();
-        }
+        if (provided < MPI_THREAD_MULTIPLE) multithread = false;
         return true;
     }
 #endif

@@ -97,10 +97,10 @@ struct mpi_manager {
     //! @brief Receives messages from another rank (non-blocking). Concurrent irecvs with the same tag and rank are undefined behaviour.
     option<mpi_message> irecv(int tag, int rank = MPI_ANY_SOURCE);
 
-    //! @brief Whether this manager supports multithreaded use.
-    bool const multithread;
     //! @brief Whether this manager initialized MPI.
     bool const initialized;
+    //! @brief Whether this manager supports multithreaded use.
+    bool const multithread;
     //! @brief The rank of the current MPI process.
     int const rank;
     //! @brief The total number of MPI processes.
@@ -111,7 +111,7 @@ struct mpi_manager {
 #ifdef FCPP_MPI
 private:
     //! @brief Wrapper to MPI_Initialized and MPI_Init (_thread).
-    static bool get_initialized(bool& multithread, std::thread::id& allowed_thread);
+    static bool get_initialized(bool& multithread);
 
     //! @brief Wrapper to MPI_Comm_rank.
     inline static int get_rank() {

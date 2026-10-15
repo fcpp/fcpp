@@ -214,6 +214,7 @@ class info_window {
         m_renderer(0, get_title(), false, n.getRenderer().getWindow()),
         m_thread(&info_window::draw_cycle, this) {
         m_spacing = m_uid.size() == 1 ? 200 : std::max(70 - 10*(int)m_uid.size(), 15);
+        m_header_rows = m_uid.size() > 1 ? 2 : 0;
         using U = std::decay_t<decltype(m_net.node_at(0).storage_tuple())>;
         init_storage_values(m_keys, (typename U::tags){});
         init_storage_values(m_types, (typename U::types){});
@@ -237,6 +238,8 @@ class info_window {
         };
         m_keys.insert(m_keys.end(), vk.begin(), vk.end());
         std::sort(m_uid.begin(), m_uid.end());
+        m_is_data_row.resize(m_keys.size());
+        for (size_t i = 0; i < m_keys.size(); ++i) m_is_data_row[i] = not m_keys[i].empty();
         size_t ml = 0;
         for (auto const& s : m_keys) {
             ml = std::max(ml, s.size());
@@ -323,56 +326,38 @@ class info_window {
         return s;
     }
 
-    //! @brief Number of header lines (0, or 2 if there are multiple UIDs).
-    int header_rows() const {
-        return m_uid.size() > 1 ? 2 : 0;
-    }
-
-    //! @brief If line i corresponds to a real value (not an empty separator).
-    bool is_data_row(size_t i) const {
-        return m_keys[i].find_first_not_of(' ') != std::string::npos;
-    }
-
     //! @brief Vertical center (y-up coordinates of `drawText`) of line i.
-    float row_center_y(size_t i) {
-        return (1 - (i + header_rows() + 0.5f) / (m_keys.size() + header_rows())) * m_renderer.getWindowHeight();
+    inline float row_center_y(size_t i) {
+        return (1 - (i + m_header_rows + 0.5f) / (m_keys.size() + m_header_rows)) * m_renderer.getWindowHeight();
     }
 
-    //! @brief Find the column (uid index) at the x-coordinate.
-    static constexpr float m_char_px = 7.0f;
-    bool column_at(size_t row, float x, int& col) const {
-        float key_w = m_keys.empty() ? 0.f : m_keys[0].size() * m_char_px;
-        float x0 = 0.16f; // must match drawText's x in draw()
-        if (x < x0) return false;
-        if (x < x0 + key_w) { 
-            col = -2; // -2 indicates that we are hovering over a label
-            return true; 
-        }
-        for (size_t j = 0; j < m_uid.size(); ++j) {
-            float left = x0 + key_w + m_spacing * j * m_char_px;
-            // use the live buffer, not the stale value, for the cell being edited
-            std::string v = (m_editing and (int)row == m_edit_row and (int)j == m_edit_col) ? m_edit_buffer : trimmed(m_values[row][j]);
-            // mirror draw()'s truncation so the hit-box matches what's shown
-            size_t display_len = v.size() >= (size_t)m_spacing ? (size_t)m_spacing - 1 : v.size();
-            float right = left + display_len * m_char_px;
-            if (x >= left and x < right) { col = (int)j; return true; }
-        }
-        return false;
-    }
-
-    //! @brief From mouse coordinates (GLFW, y down) to (row, column) in the table.
+    //! @brief Converts mouse coordinates into (row, column) in O(1): the row via the
+    //! closed-form inverse of row_center_y(), the column via a fixed-width division,
+    //! then verified against that cell's actual displayed content (so a short value's
+    //! hit-box never bleeds into the next column). col is -2 over the property name.
     bool point_to_cell(double mx, double my, int& row, int& col) {
+        constexpr float char_px = 7.0f;
         float H = (float)m_renderer.getWindowHeight();
         float y_up = H - (float)my; // GLFW is y-down, drawText is y-up
-        float half_h = H / (2.0f * (m_keys.size() + header_rows()));
-        for (size_t i = 0; i < m_keys.size(); ++i) {
-            if (not is_data_row(i)) continue;
-            if (std::abs(y_up - row_center_y(i)) <= half_h) {
-                if (column_at(i, (float)mx, col)) { row = (int)i; return true; }
-                return false;
-            }
-        }
-        return false;
+        float N = (float)(m_keys.size() + m_header_rows);
+        int i = (int)std::lround(N * (1.0f - y_up / H) - m_header_rows - 0.5f);
+        if (i < 0 or i >= (int)m_keys.size() or not m_is_data_row[i]) return false;
+
+        float x0 = 0.16f;
+        float key_w = m_keys.empty() ? 0.f : m_keys[0].size() * char_px;
+        if ((float)mx < x0) return false;
+        if ((float)mx < x0 + key_w) { row = i; col = -2; return true; }
+
+        int j = (int)(((float)mx - x0 - key_w) / (m_spacing * char_px));
+        if (j < 0 or j >= (int)m_uid.size()) return false;
+        float left = x0 + key_w + m_spacing * j * char_px;
+        std::string const& v = (m_editing and i == m_edit_row and j == m_edit_col) ? m_edit_buffer : m_values[i][j];
+        size_t display_len = v.size() >= (size_t)m_spacing ? (size_t)m_spacing - 1 : v.size();
+        if ((float)mx >= left + display_len * char_px) return false; // beyond the text that has actually been drawn
+
+        row = i;
+        col = j;
+        return true;
     }
 
     //! @brief Removes spaces at the beginning and end.
@@ -385,13 +370,8 @@ class info_window {
     //! @brief Whether (row, col) can be clicked to start editing.
     bool is_editable_cell(int row, int col) {
         if (row < 0 or row >= (int)m_editable.size() or not m_editable[row]) return false;
-        if (col == -2) { // property name: editable if any node has a value
-            for (size_t j = 0; j < m_uid.size(); ++j)
-                if (not trimmed(m_values[row][j]).empty()) return true;
-            return false;
-        }
-        if (col < 0) return false;
-        return not trimmed(m_values[row][col]).empty();
+        if (col == -2) return true; // property name: editable whenever the row itself is
+        return col >= 0 and col < (int)m_uid.size();
     }
 
     //! @brief Enter edit mode for the specified cell.
@@ -400,7 +380,7 @@ class info_window {
         m_editing = true;
         m_edit_row = row;
         m_edit_col = col;
-        m_edit_buffer = trimmed(m_values[row][col]);
+        m_edit_buffer = m_values[row][col];
         m_hover_row = m_hover_col = -1;
         set_modified();
     }
@@ -411,7 +391,7 @@ class info_window {
         m_editing = true;
         m_edit_row = row;
         m_edit_col = -2;
-        m_edit_buffer = trimmed(m_values[row][0]); // starts with the value of the first node
+        m_edit_buffer = m_values[row][0]; // starts with the value of the first node
         m_hover_row = m_hover_col = -1;
         set_modified();
     }
@@ -479,9 +459,6 @@ class info_window {
                         break;
                     case GLFW_KEY_ESCAPE:
                         info.cancel_edit(); // Undoes the change; does NOT close the window
-                        break;
-                    default:
-                        break;
                 }
                 return;
             }
@@ -547,19 +524,16 @@ class info_window {
     void draw() {
         if (m_uid.size() == 1 and m_net.node_count(m_uid[0]) == 0)
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid[0]) + " (terminated)").c_str());
-        int offs = 0;
         if (m_uid.size() > 1) {
             float y = (1 - (0.5f) / (m_keys.size()+2)) * (m_renderer.getWindowHeight());
             m_renderer.drawText(m_nodes_list, 0.16f, y, 0.25f);
-            offs = 2;
         }
         for (size_t i=0; i<m_keys.size(); ++i) {
             float yc = row_center_y(i);
-            bool row_hovered_label = not m_editing and (int)i == m_hover_row and m_hover_col == -2;
-            bool row_hovered_value = not m_editing and (int)i == m_hover_row and m_hover_col >= 0;
+            bool row_hovered = not m_editing and (int)i == m_hover_row;
             bool row_editing = m_editing and (int)i == m_edit_row;
             bool editing_all = row_editing and m_edit_col == -2;
-            bool label_active = row_hovered_label or row_hovered_value or row_editing;
+            bool label_active = row_hovered or row_editing;
 
             std::string s = m_keys[i];
             std::string underline;
@@ -579,7 +553,7 @@ class info_window {
                     val = this_editing ? (m_edit_buffer + "_") : m_values[i][j]; // "_" as a caret while editing
                     if (val.size() >= m_spacing) { val.resize(m_spacing - 4); val += "..."; }
                 }
-                bool val_underlined = row_hovered_label or (row_hovered_value and (int)j == m_hover_col) or this_editing;
+                bool val_underlined = (row_hovered and (m_hover_col == -2 or (int)j == m_hover_col)) or this_editing;
                 if (val_underlined) {
                     while (underline.size() < s.size()) underline.push_back(' ');
                     underline += std::string(val.size(), '_');
@@ -704,6 +678,9 @@ class info_window {
     //! @brief The length of each column.
     int m_spacing;
 
+    //! @brief Number of header lines (0, or 2 if there are multiple UIDs).
+    int m_header_rows;
+
     //! @brief The unique identifier of the displayed device.
     std::vector<device_t> m_uid;
 
@@ -742,6 +719,9 @@ class info_window {
 
     //! @brief Keys to be represented.
     std::vector<std::string> m_keys;
+
+    //! @brief If line i corresponds to a real value (not an empty separator).
+    std::vector<bool> m_is_data_row;
 
     //! @brief Values to be represented.
     std::vector<std::vector<std::string>> m_values;
@@ -1322,10 +1302,9 @@ struct displayer {
                                 {"L",           "show/hide connection links between nodes"},
                                 {"G",           "show/hide the reference grid and node pins"},
                                 {"M",           "enable/disable the marker for selecting nodes"},
-                                {"left-click",  "open a window with selected node details"},
-                                {"left-drag",   "select a group of nodes to open their details together"},
-                                {"alt+click",   "drag a highlighted node (or group) to move it"},
-                                {"alt+drag",    "select a group of nodes without opening their info"},
+                                {"left-click",  "open a window with details for the selected node or group"},
+                                {"drag",        "select a group of nodes"},
+                                {"alt+drag",    "move the selected node or group"},
                                 {"C",           "resets the camera to the starting position"},
                                 {"A/D",         "move the camera left/right"},
                                 {"W/S",         "move the camera up/down"},
@@ -1701,7 +1680,7 @@ struct displayer {
                                 }
                                 glfwMakeContextCurrent(m_renderer.getWindow());
                             }
-                            else if (m_mouseStartX == std::numeric_limits<float>::infinity()) {
+                            else if (not (mods & GLFW_MOD_ALT) and m_mouseStartX == std::numeric_limits<float>::infinity()) {
                                 m_mouseStartX = x;
                                 m_mouseStartY = y;
                                 m_selected_nodes.clear();
@@ -1713,20 +1692,10 @@ struct displayer {
                             auto end{ P::net::node_end() };
                             for (size_t i = 0; i < end - beg; ++i) {
                                 device_t node = beg[i].second.uid;
-                                int h = beg[i].second.get_highlight();
-                                if (h == 1) {
-                                    nodes.emplace_back(node);
-                                }
+                                if (beg[i].second.get_highlight() == 1) nodes.emplace_back(node);
                             }
-                            if (nodes.size() > 0 and not (mods & GLFW_MOD_ALT)) {
-                                glfwMakeContextCurrent(NULL);
-                                m_info.emplace_back(new info_window<F>(*this, nodes));
-                                glfwMakeContextCurrent(m_renderer.getWindow());
-                            }
-                            else if (mods & GLFW_MOD_ALT) {
-                                m_selected_nodes.clear();
-                                m_selected_nodes.insert(nodes.begin(), nodes.end());
-                            }
+                            m_selected_nodes.clear();
+                            m_selected_nodes.insert(nodes.begin(), nodes.end());
                             m_mouseStartX = std::numeric_limits<float>::infinity();
                             m_mouseStartY = std::numeric_limits<float>::infinity();
                         }

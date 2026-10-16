@@ -319,31 +319,28 @@ class info_window {
 
   private:
     //! @brief Produces a title given the list of UIDs.
-    std::string get_title() {
+    std::string get_title() const {
         if (m_uid.size() == 1) return "node " + std::to_string(m_uid[0]);
         std::string s = "nodes " + std::to_string(m_uid[0]);
         for (int i=1; i<m_uid.size(); ++i) s += ", " + std::to_string(m_uid[i]);
         return s;
     }
 
-    //! @brief Vertical center (y-up coordinates of `drawText`) of line i.
-    inline float row_center_y(size_t i) const {
-        return (1 - (i + m_header_rows + 0.5f) / (m_keys.size() + m_header_rows)) * m_renderer.getWindowHeight();
-    }
-
-    //! @brief Converts mouse coordinates into (row, column) in O(1): the row via the
-    //! closed-form inverse of row_center_y(), the column via a fixed-width division,
-    //! then verified against that cell's actual displayed content (so a short value's
-    //! hit-box never bleeds into the next column). col is -2 over the property name.
-    bool point_to_cell(double mx, double my, int& row, int& col) {
-        constexpr float char_px = 7.0f;
+    /**
+     * @brief Converts mouse coordinates into a (row, column) pair.
+     *
+     * Computes row and column via a fixed-width division, then verified against that cell's actual displayed content
+     * (so a short value's hit-box never bleeds into the next column). col is -2 over the property name.
+     */
+    bool point_to_cell(double mx, double my, int& row, int& col) const {
         float H = (float)m_renderer.getWindowHeight();
         float y_up = H - (float)my; // GLFW is y-down, drawText is y-up
         float N = (float)(m_keys.size() + m_header_rows);
         int i = (int)std::lround(N * (1.0f - y_up / H) - m_header_rows - 0.5f);
         if (i < 0 or i >= (int)m_keys.size() or not m_is_data_row[i]) return false;
 
-        float x0 = 0.16f;
+        constexpr float char_px = 7.0f;
+        constexpr float x0 = 0.16f;
         float key_w = m_keys.empty() ? 0.f : m_keys[0].size() * char_px;
         if ((float)mx < x0) return false;
         if ((float)mx < x0 + key_w) { row = i; col = -2; return true; }
@@ -361,7 +358,7 @@ class info_window {
     }
 
     //! @brief Whether (row, col) can be clicked to start editing.
-    bool is_editable_cell(int row, int col) {
+    bool is_editable_cell(int row, int col) const {
         if (row < 0 or row >= (int)m_editable.size() or not m_editable[row]) return false;
         if (col == -2) return true; // property name: editable whenever the row itself is
         return col >= 0 and col < (int)m_uid.size();
@@ -522,7 +519,7 @@ class info_window {
             m_renderer.drawText(m_nodes_list, 0.16f, y, 0.25f);
         }
         for (size_t i=0; i<m_keys.size(); ++i) {
-            float yc = row_center_y(i);
+            float yc = (1 - (i + m_header_rows + 0.5f) / (m_keys.size() + m_header_rows)) * m_renderer.getWindowHeight();
             bool row_hovered = not m_editing and (int)i == m_hover_row;
             bool row_editing = m_editing and (int)i == m_edit_row;
             bool editing_all = row_editing and m_edit_col == -2;

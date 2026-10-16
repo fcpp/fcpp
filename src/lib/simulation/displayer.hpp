@@ -360,13 +360,6 @@ class info_window {
         return true;
     }
 
-    //! @brief Removes spaces at the beginning and end.
-    static std::string trimmed(std::string s) {
-        size_t a = s.find_first_not_of(' ');
-        size_t b = s.find_last_not_of(' ');
-        return a == std::string::npos ? "" : s.substr(a, b-a+1);
-    }
-
     //! @brief Whether (row, col) can be clicked to start editing.
     bool is_editable_cell(int row, int col) {
         if (row < 0 or row >= (int)m_editable.size() or not m_editable[row]) return false;
@@ -538,9 +531,8 @@ class info_window {
             std::string s = m_keys[i];
             std::string underline;
             if (label_active) {
-                std::string name = trimmed(m_keys[i]);
-                underline = std::string(name.size(), '_');
-                while (underline.size() < s.size()) underline.push_back(' ');
+                underline = std::string(m_keys[i].size(), '_');
+                for (int j=underline.size()-1; j>=0 and m_keys[i][j]==' '; --j) underline[j] = ' ';
             }
 
             for (size_t j=0; j<m_uid.size(); ++j) {

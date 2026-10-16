@@ -96,22 +96,22 @@ namespace fcpp {
             void drawRectangle(float x, float y, float a, float b) const;
 
             //! @brief Returns the aspect ratio of the window.
-            float getAspectRatio();
+            float getAspectRatio() const;
 
             //! @brief Returns window's current width.
-            int getWindowWidth();
+            int getWindowWidth() const;
 
             //! @brief Returns window's current height.
-            int getWindowHeight();
+            int getWindowHeight() const;
 
             //! @brief Returns framebuffer's current width.
-            int getFramebufferWidth();
+            int getFramebufferWidth() const;
 
             //! @brief Returns framebuffer's current height.
-            int getFramebufferHeight();
+            int getFramebufferHeight() const;
 
             //! @brief Returns the render scale.
-            double getRenderScale();
+            double getRenderScale() const;
 
             //! @brief Returns the pointer to the renderer's m_window
             GLFWwindow* getWindow() const;

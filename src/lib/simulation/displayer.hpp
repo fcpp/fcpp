@@ -327,7 +327,7 @@ class info_window {
     }
 
     //! @brief Vertical center (y-up coordinates of `drawText`) of line i.
-    inline float row_center_y(size_t i) {
+    inline float row_center_y(size_t i) const {
         return (1 - (i + m_header_rows + 0.5f) / (m_keys.size() + m_header_rows)) * m_renderer.getWindowHeight();
     }
 

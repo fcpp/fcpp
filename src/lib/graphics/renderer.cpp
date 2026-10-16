@@ -932,27 +932,27 @@ void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, fl
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-float renderer::getAspectRatio() {
+float renderer::getAspectRatio() const {
     return (float)(m_windowWidth) / (float)(m_windowHeight);
 }
 
-int renderer::getWindowWidth() {
+int renderer::getWindowWidth() const {
     return m_windowWidth;
 }
 
-int renderer::getWindowHeight() {
+int renderer::getWindowHeight() const {
     return m_windowHeight;
 }
 
-int renderer::getFramebufferWidth() {
+int renderer::getFramebufferWidth() const {
     return m_framebufferWidth;
 }
 
-int renderer::getFramebufferHeight() {
+int renderer::getFramebufferHeight() const {
     return m_framebufferHeight;
 }
 
-double renderer::getRenderScale() {
+double renderer::getRenderScale() const {
     return m_renderScale;
 }
 

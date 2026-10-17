@@ -502,8 +502,8 @@ class info_window {
         setCallbacks();
         while (m_running) {
             if (m_modified) {
-                draw();
                 m_modified = false;
+                draw();
                 m_renderer.swapAndNext();
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }

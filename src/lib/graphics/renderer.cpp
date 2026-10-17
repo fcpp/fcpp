@@ -56,6 +56,7 @@ unsigned int renderer::s_shadowVBO[(int)shape::SIZE];
 unsigned int renderer::s_meshVBO[(int)vertex::SIZE];
 unsigned int renderer::s_meshEBO[(int)index::SIZE];
 std::unordered_map<char, glyph> renderer::s_glyphs{};
+double renderer::s_textScale{ 0 };
 GLFWcursor* renderer::s_cursorArrow;
 GLFWcursor* renderer::s_cursorCross;
 GLFWcursor* renderer::s_cursorHand;
@@ -165,14 +166,15 @@ void renderer::allocateGlyphTextures() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // now store character for later use
-        glyph gl = {
+        s_glyphs.emplace(c, glyph{
             texture,
             glm::ivec2(ftFace->glyph->bitmap.width, ftFace->glyph->bitmap.rows),
             glm::ivec2(ftFace->glyph->bitmap_left, ftFace->glyph->bitmap_top),
             (unsigned int)(ftFace->glyph->advance.x)
-        };
-        s_glyphs.insert(std::pair<char, glyph>(c, gl));
+        });
+        s_textScale = std::max(s_textScale, (double)(ftFace->glyph->advance.x));
     }
+    s_textScale = 64 / s_textScale;
 
     // Deallocate FreeType structures
     FT_Done_Face(ftFace);
@@ -841,6 +843,7 @@ void renderer::drawText(std::string text, float x, float y, float scale) const {
     x *= m_renderScale;
     y *= m_renderScale;
     scale *= m_renderScale;
+    double fontScale = scale * s_textScale;
 
     // Activate corresponding render state
     m_shaderProgramFont.use();
@@ -851,15 +854,14 @@ void renderer::drawText(std::string text, float x, float y, float scale) const {
     glBindVertexArray(m_fontVAO);
 
     // Iterate through all characters
-    std::string::const_iterator c;
-    for (c = text.begin(); c != text.end(); c++) {
-        glyph ch = s_glyphs[*c];
+    for (char c : text) {
+        glyph& ch = s_glyphs[c];
 
-        float xpos = x + ch.bearing.x * scale;
-        float ypos = y - (ch.size.y - ch.bearing.y) * scale;
+        float xpos = x + ch.bearing.x * fontScale;
+        float ypos = y - (ch.size.y - ch.bearing.y) * fontScale;
 
-        float w = ch.size.x * scale;
-        float h = ch.size.y * scale;
+        float w = ch.size.x * fontScale;
+        float h = ch.size.y * fontScale;
         // Update VBO for each character
         float vertices[24] = {
             xpos,     ypos + h,   0.0f, 0.0f,
@@ -878,8 +880,8 @@ void renderer::drawText(std::string text, float x, float y, float scale) const {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         // Render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-        x += (ch.advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+        // Now advance cursors for next glyph (advance is number of 1/64 pixels)
+        x += ch.advance * fontScale / 64;
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -898,15 +900,15 @@ void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, fl
 
     // Iterate through all characters
     float x = p.x;
-    std::string::const_iterator c;
-    for (c = text.begin(); c != text.end(); c++) {
-        glyph ch = s_glyphs[*c];
+    double fontScale = scale * s_textScale;
+    for (char c : text) {
+        const glyph& ch = s_glyphs[c];
 
-        float xpos = x + ch.bearing.x * scale;
-        float ypos = p.y - (ch.size.y - ch.bearing.y) * scale;
+        float xpos = x + ch.bearing.x * fontScale;
+        float ypos = p.y - (ch.size.y - ch.bearing.y) * fontScale;
 
-        float w = ch.size.x * scale;
-        float h = ch.size.y * scale;
+        float w = ch.size.x * fontScale;
+        float h = ch.size.y * fontScale;
         // Update VBO for each character
         float vertices[30] = {
             xpos,     ypos + h,   p.z, 0.0f, 0.0f,
@@ -925,8 +927,8 @@ void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, fl
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         // Render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-        x += ch.advance * scale / 64; // bitshift by 6 to get value in pixels (2^6 = 64)
+        // Now advance cursors for next glyph (advance is number of 1/64 pixels)
+        x += ch.advance * fontScale / 64;
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);

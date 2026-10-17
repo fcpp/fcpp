@@ -86,10 +86,10 @@ namespace fcpp {
             //! @brief It draws the tail of a node, as a sequence of lines given their endpoints, the color to be used and a width.
             void drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const& n, color const& c, float w) const;
 
-            //! @brief It draws the specified text in the specified window coordinates, scale and color.
+            //! @brief It draws the specified text in the specified window coordinates and scale (in pixels).
             void drawText(std::string text, float x, float y, float scale) const;
 
-            //! @brief It draws the specified label in the specified window coordinates, scale and color.
+            //! @brief It draws the specified label in the specified scene coordinates, scale and color.
             void drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const;
 
             //! @brief It draws the defined rectangle, given the information on color(s) and position
@@ -212,6 +212,9 @@ namespace fcpp {
 
             //! @brief Data structure mapping chars with glyphs.
             static std::unordered_map<char, glyph> s_glyphs;
+
+            //! @brief Scaling factor for the text.
+            static double s_textScale;
 
             //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
             static int s_planeIndexSize;

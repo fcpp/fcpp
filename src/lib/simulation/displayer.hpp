@@ -340,20 +340,23 @@ class info_window {
         if (i < 0 or i >= (int)m_keys.size() or not m_is_data_row[i]) return false;
 
         constexpr float char_px = 7.0f;
-        constexpr float x0 = 0.16f;
-        float key_w = m_keys.empty() ? 0.f : m_keys[0].size() * char_px;
+        constexpr float x0 = 0.16f - char_px/2;
+        float key_w = m_keys[i].size() * char_px;
         if ((float)mx < x0) return false;
-        if ((float)mx < x0 + key_w) { row = i; col = -2; return true; }
+        if ((float)mx < x0 + key_w) {
+            int j = (mx-x0)/char_px;
+            if (j > 0 and m_keys[i][j-1] == ' ') return false; // beyond the text that has actually been drawn
+            row = i; col = -2;
+            return true;
+        }
 
         int j = (int)(((float)mx - x0 - key_w) / (m_spacing * char_px));
         if (j < 0 or j >= (int)m_uid.size()) return false;
         float left = x0 + key_w + m_spacing * j * char_px;
         std::string const& v = (m_editing and i == m_edit_row and j == m_edit_col) ? m_edit_buffer : m_values[i][j];
         size_t display_len = v.size() >= (size_t)m_spacing ? (size_t)m_spacing - 1 : v.size();
-        if ((float)mx >= left + display_len * char_px) return false; // beyond the text that has actually been drawn
-
-        row = i;
-        col = j;
+        if ((float)mx >= left + (display_len+1) * char_px) return false; // beyond the text that has actually been drawn
+        row = i; col = j;
         return true;
     }
 
@@ -516,7 +519,7 @@ class info_window {
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid[0]) + " (terminated)").c_str());
         if (m_uid.size() > 1) {
             float y = (1 - (0.5f) / (m_keys.size()+2)) * (m_renderer.getWindowHeight());
-            m_renderer.drawText(m_nodes_list, 0.16f, y, 0.25f);
+            m_renderer.drawText(m_nodes_list, 0.16f, y, 7);
         }
         for (size_t i=0; i<m_keys.size(); ++i) {
             float yc = (1 - (i + m_header_rows + 0.5f) / (m_keys.size() + m_header_rows)) * m_renderer.getWindowHeight();
@@ -549,9 +552,9 @@ class info_window {
                 }
                 s += val;
             }
-            m_renderer.drawText(s, 0.16f, yc, 0.25f);
+            m_renderer.drawText(s, 0.16f, yc, 7);
             if (not underline.empty())
-                m_renderer.drawText(underline, 0.16f, yc - 3.0f, 0.25f);
+                m_renderer.drawText(underline, 0.16f, yc - 3.0f, 7);
         }
     }
 
@@ -1283,7 +1286,7 @@ struct displayer {
                         PROFILE_COUNT("displayer/text");
                         if (m_legenda) {
                             // todo
-                            m_renderer.drawText("LEGENDA", m_renderer.getWindowWidth() / 2, m_renderer.getWindowHeight() - 32.0f, 0.5f);
+                            m_renderer.drawText("LEGENDA", m_renderer.getWindowWidth() / 2, m_renderer.getWindowHeight() - 32.0f, 14);
                             std::vector<std::pair<std::string, std::string>> text = {
                                 {"ESC",         "stop and exit the simulation"},
                                 {"P",           "play/pause the simulation"},
@@ -1309,11 +1312,11 @@ struct displayer {
                             for (auto& line : text) while (line.first.size() < ml) line.first.push_back(' ');
                             for (size_t i = 0; i < text.size(); ++i) {
                                 float y = (1 - (i+0.5f) / text.size()) * (m_renderer.getWindowHeight() - 64);
-                                m_renderer.drawText(text[i].first + text[i].second, 16.0f, y, 0.25f);
+                                m_renderer.drawText(text[i].first + text[i].second, 16.0f, y, 7);
                             }
                         } else {
                             // Draw hovered node, simulation time (t) and FPS
-                            if (m_hoveredNode != device_t(-1)) m_renderer.drawText("Node " + std::to_string(m_hoveredNode), 16.0f, m_renderer.getWindowHeight() - 16.0f, 0.25f);
+                            if (m_hoveredNode != device_t(-1)) m_renderer.drawText("Node " + std::to_string(m_hoveredNode), 16.0f, m_renderer.getWindowHeight() - 16.0f, 7);
                             std::string tt = "Simulation time: " + std::to_string(t);
                             if (frequency() != 1 and frequency() != 0) {
                                 tt += " (";
@@ -1323,8 +1326,8 @@ struct displayer {
                                 else if (frequency() < 10) tt += "." + std::to_string(int((frequency() - f)*10));
                                 tt += "x)";
                             }
-                            m_renderer.drawText(tt, 16.0f, 16.0f, 0.25f);
-                            m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 0.25f);
+                            m_renderer.drawText(tt, 16.0f, 16.0f, 7);
+                            m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 7);
                         }
                     }
                     {
@@ -1691,7 +1694,6 @@ struct displayer {
                         m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;
                     }
-
 
                     case mouse_type::drag: {
                         if (m_dragging) {

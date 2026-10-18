@@ -931,8 +931,8 @@ void renderer::setStandardCursor(bool selection, bool setNow) {
 void renderer::mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
     // Set proper cursor shape
     if (type == mouse_type::click) {
-        if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) glfwSetCursor(m_window, s_cursorHand);
-        else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) glfwSetCursor(m_window, m_standardCursor);
+        if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS or glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT)) glfwSetCursor(m_window, s_cursorHand);
+        else if (glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE or glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) glfwSetCursor(m_window, m_standardCursor);
     }
 
     // Call camera's mouse input handler

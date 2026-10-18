@@ -750,6 +750,11 @@ namespace details {
         for (size_t i=0; i<n; ++i) w[i] = v[i];
         return w;
     }
+    //! @brief Moves a vec by a glm vector delta.
+    template <size_t n>
+    inline void position_delta(vec<n>& p, glm::vec3 delta) {
+        for (size_t i=0; i<n; ++i) p[i] += delta[i];
+    }
 }
 //! @endcond
 
@@ -1316,8 +1321,14 @@ struct displayer {
                             }
                         } else {
                             // Draw hovered node, simulation time (t) and FPS
-                            if (m_hoveredNode != device_t(-1)) m_renderer.drawText("Node " + std::to_string(m_hoveredNode), 16.0f, m_renderer.getWindowHeight() - 16.0f, 7);
-                            std::string tt = "Simulation time: " + std::to_string(t);
+                            std::string tt = "";
+                            if (m_hoveredNode != device_t(-1)) tt = "Node " + std::to_string(m_hoveredNode);
+                            if (m_selected_nodes.size()) {
+                                if (tt.size()) tt += ", ";
+                                tt += std::to_string(m_selected_nodes.size()) + " nodes selected";
+                            }
+                            if (tt.size()) m_renderer.drawText(tt, 16.0f, m_renderer.getWindowHeight() - 16.0f, 7);
+                            tt = "Simulation time: " + std::to_string(t);
                             if (frequency() != 1 and frequency() != 0) {
                                 tt += " (";
                                 int f = frequency();
@@ -1538,7 +1549,7 @@ struct displayer {
                         }
                     }
                 }
-                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 0) {
+                if (m_hoveredNode != device_t(-1) and P::net::node_at(m_hoveredNode).get_highlight() == 0) {
                     typename P::net::lock_type l;
                     P::net::node_at(m_hoveredNode, l).highlight(1);
                 }
@@ -1557,59 +1568,9 @@ struct displayer {
                 return worldPerPixel * (mouseDelta.x * right - mouseDelta.y * up);
             }
 
-            //! @brief Starts dragging every currently-highlighted node.
-            void beginDrag() {
-                m_dragged_nodes.clear();
-                auto beg{ P::net::node_begin() };
-                auto end{ P::net::node_end() };
-                for (size_t i = 0; i < end - beg; ++i)
-                    if (beg[i].second.get_highlight() == 1) m_dragged_nodes.push_back(beg[i].second.uid);
-                if (not m_dragged_nodes.empty()) {
-                    m_dragging = true;
-                    // disables the OS cursor so drag deltas keep arriving even when the
-                    // pointer passes over another window (e.g. an open info_window)
-                    glfwSetInputMode(m_renderer.getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                }
-            }
-
-            //! @brief Ends the current drag and switches off highlight on every dragged/selected node.
-            void endDrag() {
-                m_dragging = false;
-                for (device_t uid : m_dragged_nodes) {
-                    if (not P::net::node_count(uid)) continue;
-                    typename P::net::lock_type l;
-                    P::net::node_at(uid, l).highlight(0);
-                }
-                m_dragged_nodes.clear();
-                m_selected_nodes.clear();
-                glfwSetInputMode(m_renderer.getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            }
-
-            //! @brief Applies one frame's worth of mouse movement to every dragged node.
-            void updateDrag(float xoffset, float yoffset) {
-                glm::vec3 worldDelta = mouseToWorld(glm::vec2(xoffset, -yoffset));
-                for (device_t uid : m_dragged_nodes) {
-                    if (not P::net::node_count(uid)) continue;
-                    typename P::net::lock_type l;
-                    node& n = P::net::node_at(uid, l);
-                    glm::vec3 base = details::vec_to_glm(n.position(), 0.0f);
-                    on_node_dragged(uid, base + worldDelta);
-                }
-            }
-
-            //! @brief Applies the dragged node's new position (Alt+click drag).
-            void on_node_dragged(device_t uid, glm::vec3 const& new_pos) {
-                if (not P::net::node_count(uid)) return;
-                typename P::net::lock_type l;
-                node& n = P::net::node_at(uid, l);
-                n.position() = { real_t(new_pos.x), real_t(new_pos.y), real_t(new_pos.z) };
-            }
-
-            inline bool pointInsideRectangle(float x, float y) {
-                return x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX) and y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY);
-            }
-
+            //! @brief Multiple node selection through mouse dragging.
             void dragSelect() {
+                m_selected_nodes.clear();
                 auto beg{ P::net::node_begin() };
                 auto end{ P::net::node_end() };
                 for (size_t i = 0; i < end - beg; ++i) {
@@ -1618,8 +1579,9 @@ struct displayer {
                     float x = (ndcSpacePos.x + 1.0 ) * (m_renderer.getFramebufferWidth() / 2.0);
                     float y = (-ndcSpacePos.y + 1.0) * (m_renderer.getFramebufferHeight() / 2.0);
                     int h = beg[i].second.get_highlight();
-                    bool inRect = pointInsideRectangle(x,y);
+                    bool inRect = x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX) and y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY);
                     if (not inRect == h) beg[i].second.highlight(inRect);
+                    if (inRect) m_selected_nodes.insert(beg[i].second.uid);
                 }
             }
 
@@ -1627,7 +1589,7 @@ struct displayer {
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
                 switch (type) {
                     case mouse_type::hover: {
-                        // Raycast caluclation
+                        // Raycast calculation
                         // (x, y) from screen space coordinates to NDC
                         float rayX{ (2.0f * (float)x) / m_renderer.getFramebufferWidth() - 1.0f };
                         float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getFramebufferHeight() };
@@ -1645,51 +1607,40 @@ struct displayer {
                         glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
                         m_rayCast.x = worldRay4.x; m_rayCast.y = worldRay4.y; m_rayCast.z = worldRay4.z;
                         m_rayCast = glm::normalize(m_rayCast);
-
                         break;
                     }
 
                     case mouse_type::click: {
                         GLFWwindow* window{ m_renderer.getWindow() };
-
-                        if (m_dragging) {
-                            if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) endDrag();
-                            m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
-                            break;
-                        }
-
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-                            if ((mods & GLFW_MOD_ALT) and P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
-                                beginDrag();
-                            }
-                            else if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
+                            if (mods & GLFW_MOD_ALT) {
+                                // starting to drag around the selected nodes
+                                if (m_selected_nodes.count(m_hoveredNode)) m_dragging = true;
+                            } else if (m_hoveredNode != device_t(-1)) {
+                                // opening an info window
                                 glfwMakeContextCurrent(NULL);
-                                if (m_selected_nodes.find(m_hoveredNode) != m_selected_nodes.end()) {
+                                if (m_selected_nodes.count(m_hoveredNode)) {
                                     std::vector<device_t> nodes(m_selected_nodes.begin(), m_selected_nodes.end());
                                     m_info.emplace_back(new info_window<F>(*this, nodes));
+                                    m_selected_nodes.clear();
                                 } else {
                                     m_info.emplace_back(new info_window<F>(*this, {m_hoveredNode}));
                                 }
-                                glfwMakeContextCurrent(m_renderer.getWindow());
-                            }
-                            else if (not (mods & GLFW_MOD_ALT) and m_mouseStartX == std::numeric_limits<float>::infinity()) {
+                                glfwMakeContextCurrent(window);
+                            } else if (m_mouseStartX == std::numeric_limits<float>::infinity()) {
+                                // empty click, unselecting and starting a potential new drag select
                                 m_mouseStartX = x;
                                 m_mouseStartY = y;
                                 m_selected_nodes.clear();
                             }
                         }
-                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE and m_mouseStartX != std::numeric_limits<float>::infinity()) {
-                            std::vector<device_t> nodes;
-                            auto beg{ P::net::node_begin() };
-                            auto end{ P::net::node_end() };
-                            for (size_t i = 0; i < end - beg; ++i) {
-                                device_t node = beg[i].second.uid;
-                                if (beg[i].second.get_highlight() == 1) nodes.emplace_back(node);
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+                            // ends the current drag
+                            if (m_dragging) m_dragging = false;
+                            if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
+                                m_mouseStartX = std::numeric_limits<float>::infinity();
+                                m_mouseStartY = std::numeric_limits<float>::infinity();
                             }
-                            m_selected_nodes.clear();
-                            m_selected_nodes.insert(nodes.begin(), nodes.end());
-                            m_mouseStartX = std::numeric_limits<float>::infinity();
-                            m_mouseStartY = std::numeric_limits<float>::infinity();
                         }
                         m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;
@@ -1697,11 +1648,17 @@ struct displayer {
 
                     case mouse_type::drag: {
                         if (m_dragging) {
-                            updateDrag((float)x, (float)y);
-                            break; // No camera rotation while dragging nodes
+                            // Applies one frame's worth of mouse movement to every dragged node.
+                            glm::vec3 worldDelta = mouseToWorld(glm::vec2((float)x, -(float)y));
+                            for (device_t uid : m_selected_nodes) if (P::net::node_count(uid)) {
+                                typename P::net::lock_type l;
+                                details::position_delta(P::net::node_at(uid, l).position(), worldDelta);
+                            }
+                            break;
                         }
                         GLFWwindow* window{ m_renderer.getWindow() };
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                            // camera rotation
                             if (!m_mouseRight) {
                                 m_mouseRight = 1;
                                 m_mouseRightX = m_mouseLastX - (float)(m_renderer.getFramebufferWidth() / 2);
@@ -1713,6 +1670,7 @@ struct displayer {
                             m_renderer.mouseInput(x, y, m_mouseRightX, m_mouseRightY, mouse_type::drag, mods);
                         }
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+                            // camera rotation end
                             m_mouseRight = 0;
                             m_mouseRightX = 0.0f;
                             m_mouseRightY = 0.0f;
@@ -1915,11 +1873,7 @@ struct displayer {
             //! @brief Whether a drag (Alt+click) is currently in progress.
             bool m_dragging = false;
 
-            //! @brief The currently-highlighted nodes being dragged together.
-            std::vector<device_t> m_dragged_nodes;
-
-            //! @brief Nodes selected via a rectangle (with Alt held), immune to being
-            //! un-highlighted by mere mouse hover, kept persistent until a new selection starts.
+            //! @brief The currently selected nodes (independently of mouse hover).
             std::unordered_set<device_t> m_selected_nodes;
 
             //! @brief List of currently stroked keys.

@@ -1000,7 +1000,7 @@ struct displayer {
                 if (shadow_d > 0) {
                     shape shadow_s = common::get_or<shadow_shape_tag>(P::node::storage_tuple(), shadow_shape_val == -1 ? s : shape(shadow_shape_val));
                     color shadow_c = common::get_or<shadow_color_tag>(P::node::storage_tuple(), shadow_color_val == -1 ? m_colors[0] : color(shadow_color_val));
-                    P::node::net.getRenderer().drawShadow(shadow_s, p, shadow_d, {shadow_c.rgba[0], shadow_c.rgba[1], shadow_c.rgba[2], shadow_c.rgba[3]});
+                    P::node::net.getRenderer().drawShadow(shadow_s, p, shadow_d, shadow_c);
                 }
                 if (star) {
                     // gather neighbours' positions
@@ -1026,7 +1026,7 @@ struct displayer {
                     glm::vec3 p = get_cached_position() + glm::vec3(d,d,d);
                     double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), double(label_size_val));
                     color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), color(label_color_val));
-                    P::node::net.getRenderer().drawLabel(label_text, p, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
+                    P::node::net.getRenderer().drawLabel(label_text, p, label_size, label_color);
                 }
                 if (m_tail_points.size() > 1) {
                     double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));

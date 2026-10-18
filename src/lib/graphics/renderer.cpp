@@ -1,4 +1,4 @@
-// Copyright © 2025 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
 #include <iostream>
@@ -14,29 +14,25 @@ using namespace fcpp::internal;
 
 /* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
-    std::string const renderer::VERTEX_PHONG_PATH{ ".\\shaders\\vertex_diff.glsl" };
-    std::string const renderer::FRAGMENT_PHONG_PATH{ ".\\shaders\\fragment_diff.glsl" };
+    std::string const renderer::VERTEX_DIFF_PATH{ ".\\shaders\\vertex_diff.glsl" };
+    std::string const renderer::FRAGMENT_DIFF_PATH{ ".\\shaders\\fragment_diff.glsl" };
     std::string const renderer::VERTEX_COLOR_PATH{ ".\\shaders\\vertex_col.glsl" };
     std::string const renderer::FRAGMENT_COLOR_PATH{ ".\\shaders\\fragment_col.glsl" };
     std::string const renderer::VERTEX_TEXTURE_PATH{ ".\\shaders\\vertex_texture.glsl" };
     std::string const renderer::FRAGMENT_TEXTURE_PATH{ ".\\shaders\\fragment_texture.glsl" };
-    std::string const renderer::VERTEX_FONT_PATH{ ".\\shaders\\vertex_font.glsl" };
-    std::string const renderer::FRAGMENT_FONT_PATH{ ".\\shaders\\fragment_font.glsl" };
-    std::string const renderer::VERTEX_LABEL_PATH{ ".\\shaders\\vertex_label.glsl" };
-    std::string const renderer::FRAGMENT_LABEL_PATH{ ".\\shaders\\fragment_label.glsl" };
+    std::string const renderer::VERTEX_TEXT_PATH{ ".\\shaders\\vertex_text.glsl" };
+    std::string const renderer::FRAGMENT_TEXT_PATH{ ".\\shaders\\fragment_text.glsl" };
     std::string const renderer::FONT_PATH{ ".\\fonts\\hack\\Hack-Regular.ttf" };
     std::string const renderer::TEXTURE_PATH{ ".\\textures\\" };
 #else
-    std::string const renderer::VERTEX_PHONG_PATH{ "./shaders/vertex_diff.glsl" };
-    std::string const renderer::FRAGMENT_PHONG_PATH{ "./shaders/fragment_diff.glsl" };
+    std::string const renderer::VERTEX_DIFF_PATH{ "./shaders/vertex_diff.glsl" };
+    std::string const renderer::FRAGMENT_DIFF_PATH{ "./shaders/fragment_diff.glsl" };
     std::string const renderer::VERTEX_COLOR_PATH{ "./shaders/vertex_col.glsl" };
     std::string const renderer::FRAGMENT_COLOR_PATH{ "./shaders/fragment_col.glsl" };
     std::string const renderer::VERTEX_TEXTURE_PATH{ "./shaders/vertex_texture.glsl" };
     std::string const renderer::FRAGMENT_TEXTURE_PATH{ "./shaders/fragment_texture.glsl" };
-    std::string const renderer::VERTEX_FONT_PATH{ "./shaders/vertex_font.glsl" };
-    std::string const renderer::FRAGMENT_FONT_PATH{ "./shaders/fragment_font.glsl" };
-    std::string const renderer::VERTEX_LABEL_PATH{ "./shaders/vertex_label.glsl" };
-    std::string const renderer::FRAGMENT_LABEL_PATH{ "./shaders/fragment_label.glsl" };
+    std::string const renderer::VERTEX_TEXT_PATH{ "./shaders/vertex_text.glsl" };
+    std::string const renderer::FRAGMENT_TEXT_PATH{ "./shaders/fragment_text.glsl" };
     std::string const renderer::FONT_PATH{ "./fonts/hack/Hack-Regular.ttf" };
     std::string const renderer::TEXTURE_PATH{ "./textures/" };
 #endif
@@ -146,25 +142,27 @@ void renderer::allocateGlyphTextures() {
             continue;
         }
         // generate texture
-        unsigned int texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RED,
-            ftFace->glyph->bitmap.width,
-            ftFace->glyph->bitmap.rows,
-            0,
-            GL_RED,
-            GL_UNSIGNED_BYTE,
-            ftFace->glyph->bitmap.buffer
-        );
-        // set texture options
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        unsigned int texture = -1;
+        if (ftFace->glyph->bitmap.width > 0) {
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RED,
+                ftFace->glyph->bitmap.width,
+                ftFace->glyph->bitmap.rows,
+                0,
+                GL_RED,
+                GL_UNSIGNED_BYTE,
+                ftFace->glyph->bitmap.buffer
+            );
+            // set texture options
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
         // now store character for later use
         s_glyphs.emplace(c, glyph{
             texture,
@@ -351,25 +349,12 @@ void renderer::generateMeshAttributePointers() {
 
 void renderer::generateFontBuffers() {
     // Generate VAO and VBO
-    glGenVertexArrays(1, &m_fontVAO);
-    glGenBuffers(1, &m_fontVBO);
+    glGenVertexArrays(1, &m_textVAO);
+    glGenBuffers(1, &m_textVBO);
 
     // Allocate (dynamic) font buffers
-    glBindVertexArray(m_fontVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, m_fontVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    // Generate VAO and VBO
-    glGenVertexArrays(1, &m_labelVAO);
-    glGenBuffers(1, &m_labelVBO);
-
-    // Allocate (dynamic) font buffers
-    glBindVertexArray(m_labelVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
+    glBindVertexArray(m_textVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_textVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 5, NULL, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -382,12 +367,11 @@ void renderer::generateFontBuffers() {
 void renderer::generateShaderPrograms() {
     // Generate actual shader programs
     if (m_master) {
-        m_shaderProgramDiff = shader{ VERTEX_PHONG_PATH.c_str(), FRAGMENT_PHONG_PATH.c_str() };
+        m_shaderProgramDiff = shader{ VERTEX_DIFF_PATH.c_str(), FRAGMENT_DIFF_PATH.c_str() };
         m_shaderProgramCol = shader{ VERTEX_COLOR_PATH.c_str(), FRAGMENT_COLOR_PATH.c_str() };
         m_shaderProgramTexture = shader{ VERTEX_TEXTURE_PATH.c_str(), FRAGMENT_TEXTURE_PATH.c_str() };
-        m_shaderProgramLabel = shader{ VERTEX_LABEL_PATH.c_str(), FRAGMENT_LABEL_PATH.c_str() };
     }
-    m_shaderProgramFont = shader{ VERTEX_FONT_PATH.c_str(), FRAGMENT_FONT_PATH.c_str() };
+    m_shaderProgramText = shader{ VERTEX_TEXT_PATH.c_str(), FRAGMENT_TEXT_PATH.c_str() };
 }
 
 
@@ -838,95 +822,46 @@ void renderer::drawRectangle(float x, float y, float a, float b) const {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void renderer::drawText(std::string text, float x, float y, float scale) const {
-    // Scale coordinates to renderbuffer's size
-    x *= m_renderScale;
-    y *= m_renderScale;
-    scale *= m_renderScale;
-    double fontScale = scale * s_textScale;
-
+void renderer::drawTextLabel(std::string const& text, glm::mat4 const& proj, glm::vec3 const& pos, float scale, glm::vec4 const& col = {0,0,0,1}) const {
     // Activate corresponding render state
-    m_shaderProgramFont.use();
-    m_shaderProgramFont.setVec3("u_textColor", m_foreground);
-    m_shaderProgramFont.setInt("u_text", 0);
-    m_shaderProgramFont.setMat4("u_projection", m_camera.getOrthographic());
+    m_shaderProgramText.use();
+    m_shaderProgramText.setInt("u_texture", 0);
+    m_shaderProgramText.setVec4("u_color", col);
+    m_shaderProgramText.setMat4("u_projection", proj);
     glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(m_fontVAO);
+    glBindVertexArray(m_textVAO);
 
     // Iterate through all characters
-    for (char c : text) {
-        glyph& ch = s_glyphs[c];
-
-        float xpos = x + ch.bearing.x * fontScale;
-        float ypos = y - (ch.size.y - ch.bearing.y) * fontScale;
-
-        float w = ch.size.x * fontScale;
-        float h = ch.size.y * fontScale;
-        // Update VBO for each character
-        float vertices[24] = {
-            xpos,     ypos + h,   0.0f, 0.0f,
-            xpos,     ypos,       0.0f, 1.0f,
-            xpos + w, ypos,       1.0f, 1.0f,
-
-            xpos,     ypos + h,   0.0f, 0.0f,
-            xpos + w, ypos,       1.0f, 1.0f,
-            xpos + w, ypos + h,   1.0f, 0.0f
-        };
-        // Render glyph texture over quad
-        glBindTexture(GL_TEXTURE_2D, ch.textureID);
-        // Update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, m_fontVBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // Render quad
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        // Now advance cursors for next glyph (advance is number of 1/64 pixels)
-        x += ch.advance * fontScale / 64;
-    }
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-void renderer::drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const {
-    // Activate corresponding render state
-    m_shaderProgramLabel.use();
-    m_shaderProgramLabel.setMat4("u_projection", m_camera.getPerspective());
-    m_shaderProgramLabel.setMat4("u_view", m_camera.getView());
-    m_shaderProgramLabel.setMat4("u_model", glm::mat4{ 1.0f });
-    m_shaderProgramLabel.setVec4("u_color", col);
-    m_shaderProgramLabel.setInt("u_texture", 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindVertexArray(m_labelVAO);
-
-    // Iterate through all characters
-    float x = p.x;
+    float x = pos.x;
     double fontScale = scale * s_textScale;
     for (char c : text) {
-        const glyph& ch = s_glyphs[c];
+        if (s_glyphs.count(c) == 0) c = '?';
+        const glyph& ch = s_glyphs.at(c);
+        if (ch.size.x > 0) {
+            float xpos = x + ch.bearing.x * fontScale;
+            float ypos = pos.y - (ch.size.y - ch.bearing.y) * fontScale;
 
-        float xpos = x + ch.bearing.x * fontScale;
-        float ypos = p.y - (ch.size.y - ch.bearing.y) * fontScale;
+            float w = ch.size.x * fontScale;
+            float h = ch.size.y * fontScale;
+            // Update VBO for each character
+            float vertices[30] = {
+                xpos,     ypos + h,  pos.z, 0.0f, 0.0f,
+                xpos,     ypos,      pos.z, 0.0f, 1.0f,
+                xpos + w, ypos,      pos.z, 1.0f, 1.0f,
 
-        float w = ch.size.x * fontScale;
-        float h = ch.size.y * fontScale;
-        // Update VBO for each character
-        float vertices[30] = {
-            xpos,     ypos + h,   p.z, 0.0f, 0.0f,
-            xpos,     ypos,       p.z, 0.0f, 1.0f,
-            xpos + w, ypos,       p.z, 1.0f, 1.0f,
-
-            xpos,     ypos + h,   p.z, 0.0f, 0.0f,
-            xpos + w, ypos,       p.z, 1.0f, 1.0f,
-            xpos + w, ypos + h,   p.z, 1.0f, 0.0f
-        };
-        // Render glyph texture over quad
-        glBindTexture(GL_TEXTURE_2D, ch.textureID);
-        // Update content of VBO memory
-        glBindBuffer(GL_ARRAY_BUFFER, m_labelVBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // Render quad
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+                xpos,     ypos + h,  pos.z, 0.0f, 0.0f,
+                xpos + w, ypos,      pos.z, 1.0f, 1.0f,
+                xpos + w, ypos + h,  pos.z, 1.0f, 0.0f
+            };
+            // Render glyph texture over quad
+            glBindTexture(GL_TEXTURE_2D, ch.textureID);
+            // Update content of VBO memory
+            glBindBuffer(GL_ARRAY_BUFFER, m_textVBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            // Render quad
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
         // Now advance cursors for next glyph (advance is number of 1/64 pixels)
         x += ch.advance * fontScale / 64;
     }

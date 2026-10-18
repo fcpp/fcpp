@@ -1,4 +1,4 @@
-// Copyright © 2025 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 /**
  * @file renderer.hpp
@@ -87,10 +87,14 @@ namespace fcpp {
             void drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const& n, color const& c, float w) const;
 
             //! @brief It draws the specified text in the specified window coordinates and scale (in pixels).
-            void drawText(std::string text, float x, float y, float scale) const;
+            void drawText(std::string const& text, float x, float y, float scale, glm::vec4 const& col = {0,0,0,1}) const {
+                drawTextLabel(text, m_camera.getOrthographic(), {x*m_renderScale, y*m_renderScale, 0}, scale*m_renderScale, col);
+            }
 
             //! @brief It draws the specified label in the specified scene coordinates, scale and color.
-            void drawLabel(std::string text, glm::vec3 const& p, glm::vec4 col, float scale) const;
+            void drawLabel(std::string const& text, glm::vec3 const& pos, float scale, glm::vec4 const& col = {0,0,0,1}) const {
+                drawTextLabel(text, m_camera.getPerspective() * m_camera.getView(), pos, scale, col);
+            }
 
             //! @brief It draws the defined rectangle, given the information on color(s) and position
             void drawRectangle(float x, float y, float a, float b) const;
@@ -145,10 +149,10 @@ namespace fcpp {
 
         private:
             //! @brief Default path to vertex_phong shader.
-            static std::string const VERTEX_PHONG_PATH;
+            static std::string const VERTEX_DIFF_PATH;
 
             //! @brief Default path to fragment_phong shader.
-            static std::string const FRAGMENT_PHONG_PATH;
+            static std::string const FRAGMENT_DIFF_PATH;
 
             //! @brief Default path to vertex_col shader.
             static std::string const VERTEX_COLOR_PATH;
@@ -163,16 +167,10 @@ namespace fcpp {
             static std::string const FRAGMENT_TEXTURE_PATH;
 
             //! @brief Default path to vertex_font shader.
-            static std::string const VERTEX_FONT_PATH;
+            static std::string const VERTEX_TEXT_PATH;
 
             //! @brief Default path to fragment_font shader.
-            static std::string const FRAGMENT_FONT_PATH;
-
-            //! @brief Default path to vertex_label shader.
-            static std::string const VERTEX_LABEL_PATH;
-
-            //! @brief Default path to fragment_label shader.
-            static std::string const FRAGMENT_LABEL_PATH;
+            static std::string const FRAGMENT_TEXT_PATH;
 
             //! @brief Default path to font.
             static std::string const FONT_PATH;
@@ -277,16 +275,10 @@ namespace fcpp {
             unsigned int m_meshVAO[(int)vertex::SIZE];
 
             //! @brief Vertex Array Object dedicated to font rendering; it's per context and it can't be shared with others.
-            unsigned int m_fontVAO;
+            unsigned int m_textVAO;
 
             //! @brief Vertex Buffer Object dedicated to font rendering; it's per renderer and it shouldn't be shared with others.
-            unsigned int m_fontVBO;
-
-            //! @brief Vertex Array Object dedicated to label rendering; it's per context and it can't be shared with others.
-            unsigned int m_labelVAO;
-
-            //! @brief Vertex Buffer Object dedicated to label rendering; it's per renderer and it shouldn't be shared with others.
-            unsigned int m_labelVBO;
+            unsigned int m_textVBO;
 
             //! @brief Main shader program, with diffuse lighting caluclations and color info; it's per context and it shouldn't be shared with others.
             shader m_shaderProgramDiff;
@@ -298,10 +290,7 @@ namespace fcpp {
             shader m_shaderProgramTexture;
 
             //! @brief Additional shader program used for fonts; it's per context and it shouldn't be shared with others.
-            shader m_shaderProgramFont;
-
-            //! @brief Additional shader program used for labels; it's per context and it shouldn't be shared with others.
-            shader m_shaderProgramLabel;
+            shader m_shaderProgramText;
 
             //! @brief Current width of the window.
             int m_windowWidth;
@@ -356,6 +345,9 @@ namespace fcpp {
 
             //! @brief It compiles the shader programs.
             void generateShaderPrograms();
+
+            //! @brief It draws the specified text or label in the specified coordinates and scale with a given projection.
+            void drawTextLabel(std::string const& text, glm::mat4 const& proj, glm::vec3 const& pos, float scale, glm::vec4 const& col) const;
         };
     }
 }

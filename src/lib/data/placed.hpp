@@ -513,7 +513,7 @@ auto pmap_hood(F&& op, Ts const&... xs) {
 namespace details {
     //! @brief The result type of a placed fold operation.
     template <tier_t tier, typename F, typename A, typename B, tier_t p>
-    using fold_result = placed<tier, std::result_of_t<F(A const&, B const&)>, p, 0>;
+    using fold_result = placed<tier, common::invoke_result_t<F, A const&, B const&>, p, 0>;
 
     //! @{
     //! @brief Exclusive folding.

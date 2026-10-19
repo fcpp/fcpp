@@ -560,6 +560,50 @@ namespace fcpp {
             return fcpp::details::multi_stringify("()", common::escape(t.first()), common::escape(t.second()));
         }
     }
+
+    //! @cond INTERNAL
+    namespace details {
+        //! @brief Detects whether a type can be extracted from a `std::stringstream` (general form).
+        template <typename T, typename = void>
+        struct has_stream_extraction : std::false_type {};
+        //! @brief Detects whether a type can be extracted from a `std::stringstream` (active form).
+        template <typename T>
+        struct has_stream_extraction<
+            T,
+            decltype(
+                void(std::declval<std::stringstream&>()
+                    >> std::declval<T&>())
+            )
+        > : std::true_type {};
+
+        //! @brief Reads a value from a string (stream extraction overload).
+        template <typename T, typename B>
+        inline void from_string(std::string const& str, T& value, std::true_type, B) {
+            std::stringstream ss(str);
+            ss >> value;
+        }
+
+        //! @brief Reads a value from a string (string conversion overload).
+        template <typename T>
+        inline void from_string(std::string const& str, T& value, std::false_type, std::true_type) {
+            value = T(str.c_str());
+        }
+
+        //! @brief Reads a value from a string (inactive overload).
+        template <typename T>
+        inline void from_string(std::string const&, T&, std::false_type, std::false_type) {}
+    }
+    //! @endcond
+
+    //! @brief Reads a value from a string using stream extraction or construction from a string if available.
+    template <typename T>
+    void from_string(std::string const& str, T& value) {
+        details::from_string(str, value, details::has_stream_extraction<T>{}, std::is_constructible<T, const char*>{});
+    }
+
+    //! @brief Whether a type can be read with `from_string`.
+    template <typename T>
+    constexpr bool has_from_string = details::has_stream_extraction<T>::value || std::is_constructible<T, const char*>::value;
 }
 
 

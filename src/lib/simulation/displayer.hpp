@@ -214,9 +214,11 @@ class info_window {
         m_renderer(0, get_title(), false, n.getRenderer().getWindow()),
         m_thread(&info_window::draw_cycle, this) {
         m_spacing = m_uid.size() == 1 ? 200 : std::max(70 - 10*(int)m_uid.size(), 15);
+        m_header_rows = m_uid.size() > 1 ? 2 : 0;
         using U = std::decay_t<decltype(m_net.node_at(0).storage_tuple())>;
         init_storage_values(m_keys, (typename U::tags){});
         init_storage_values(m_types, (typename U::types){});
+        init_editable_values(m_editable, (typename U::types){});
         std::vector<std::string> vk{
             "",
             "previous_time",
@@ -236,6 +238,8 @@ class info_window {
         };
         m_keys.insert(m_keys.end(), vk.begin(), vk.end());
         std::sort(m_uid.begin(), m_uid.end());
+        m_is_data_row.resize(m_keys.size());
+        for (size_t i = 0; i < m_keys.size(); ++i) m_is_data_row[i] = not m_keys[i].empty();
         size_t ml = 0;
         for (auto const& s : m_keys) {
             ml = std::max(ml, s.size());
@@ -315,11 +319,107 @@ class info_window {
 
   private:
     //! @brief Produces a title given the list of UIDs.
-    std::string get_title() {
+    std::string get_title() const {
         if (m_uid.size() == 1) return "node " + std::to_string(m_uid[0]);
         std::string s = "nodes " + std::to_string(m_uid[0]);
         for (int i=1; i<m_uid.size(); ++i) s += ", " + std::to_string(m_uid[i]);
         return s;
+    }
+
+    /**
+     * @brief Converts mouse coordinates into a (row, column) pair.
+     *
+     * Computes row and column via a fixed-width division, then verified against that cell's actual displayed content
+     * (so a short value's hit-box never bleeds into the next column). col is -2 over the property name.
+     */
+    bool point_to_cell(double mx, double my, int& row, int& col) const {
+        float H = (float)m_renderer.getWindowHeight();
+        float y_up = H - (float)my; // GLFW is y-down, drawText is y-up
+        float N = (float)(m_keys.size() + m_header_rows);
+        int i = (int)std::lround(N * (1.0f - y_up / H) - m_header_rows - 0.5f);
+        if (i < 0 or i >= (int)m_keys.size() or not m_is_data_row[i]) return false;
+
+        constexpr float char_px = 7.0f;
+        constexpr float x0 = 0.16f - char_px/2;
+        float key_w = m_keys[i].size() * char_px;
+        if ((float)mx < x0) return false;
+        if ((float)mx < x0 + key_w) {
+            int j = (mx-x0)/char_px;
+            if (j > 0 and m_keys[i][j-1] == ' ') return false; // beyond the text that has actually been drawn
+            row = i; col = -2;
+            return true;
+        }
+
+        int j = (int)(((float)mx - x0 - key_w) / (m_spacing * char_px));
+        if (j < 0 or j >= (int)m_uid.size()) return false;
+        float left = x0 + key_w + m_spacing * j * char_px;
+        std::string const& v = (m_editing and i == m_edit_row and j == m_edit_col) ? m_edit_buffer : m_values[i][j];
+        size_t display_len = v.size() >= (size_t)m_spacing ? (size_t)m_spacing - 1 : v.size();
+        if ((float)mx >= left + (display_len+1) * char_px) return false; // beyond the text that has actually been drawn
+        row = i; col = j;
+        return true;
+    }
+
+    //! @brief Whether (row, col) can be clicked to start editing.
+    bool is_editable_cell(int row, int col) const {
+        if (row < 0 or row >= (int)m_editable.size() or not m_editable[row]) return false;
+        if (col == -2) return true; // property name: editable whenever the row itself is
+        return col >= 0 and col < (int)m_uid.size();
+    }
+
+    //! @brief Enter edit mode for the specified cell.
+    void begin_edit(int row, int col) {
+        if (not is_editable_cell(row, col)) return;
+        m_editing = true;
+        m_edit_row = row;
+        m_edit_col = col;
+        m_edit_buffer = m_values[row][col];
+        m_hover_row = m_hover_col = -1;
+        set_modified();
+    }
+
+    //! @brief Enter edit mode for all nodes on the specified property.
+    void begin_edit_all(int row) {
+        if (not is_editable_cell(row, -2)) return;
+        m_editing = true;
+        m_edit_row = row;
+        m_edit_col = -2;
+        m_edit_buffer = m_values[row][0]; // starts with the value of the first node
+        m_hover_row = m_hover_col = -1;
+        set_modified();
+    }
+
+    //! @brief Apply the change and exit edit mode.
+    void confirm_edit() {
+        if (m_edit_col == -2) {
+            for (size_t j = 0; j < m_uid.size(); ++j)
+                on_edit_confirmed(m_edit_row, (int)j, m_edit_buffer); // same value for each node
+        } else {
+            on_edit_confirmed(m_edit_row, m_edit_col, m_edit_buffer);
+        }
+        m_editing = false;
+        m_edit_row = m_edit_col = -1;
+        set_modified();
+    }
+
+    //! @brief Discard the change without editing the original data.
+    void cancel_edit() {
+        m_editing = false;
+        m_edit_row = m_edit_col = -1;
+        m_edit_buffer.clear();
+        set_modified();
+    }
+
+    //! @brief Attachment point for the effective set on the node.
+    void on_edit_confirmed(int row, int col, std::string const& value) {
+        if (row < 0 or row >= (int)m_editable.size() or not m_editable[row]) return;
+        if (col < 0 or col >= (int)m_uid.size()) return;
+        device_t uid = m_uid[col];
+        if (not m_net.node_count(uid)) return;
+        typename net::lock_type l;
+        node& n = m_net.node_at(uid, l);
+        read(row, value, n.storage_tuple());
+        update_values(n);
     }
 
     //! @brief It sets the window callbacks.
@@ -338,8 +438,59 @@ class info_window {
 
         // Keyboard callback
         glfwSetKeyCallback(m_renderer.getWindow(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-            if (action == GLFW_PRESS and key == GLFW_KEY_ESCAPE) {
+            info_window& info = *((info_window*)glfwGetWindowUserPointer(window));
+            if (action != GLFW_PRESS and action != GLFW_REPEAT) return;
+            if (info.m_editing) {
+                switch (key) {
+                    case GLFW_KEY_BACKSPACE:
+                        if (not info.m_edit_buffer.empty()) info.m_edit_buffer.pop_back();
+                        info.set_modified();
+                        break;
+                    case GLFW_KEY_ENTER:
+                    case GLFW_KEY_KP_ENTER:
+                        info.confirm_edit();
+                        break;
+                    case GLFW_KEY_ESCAPE:
+                        info.cancel_edit(); // Undoes the change; does NOT close the window
+                }
+                return;
+            }
+            if (key == GLFW_KEY_ESCAPE) {
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
+            }
+        });
+
+        // Char callback (text entered during editing)
+        glfwSetCharCallback(m_renderer.getWindow(), [](GLFWwindow* window, unsigned int codepoint) {
+            info_window& info = *((info_window*)glfwGetWindowUserPointer(window));
+            if (not info.m_editing or codepoint >= 128) return; // ASCII
+            info.m_edit_buffer.push_back((char)codepoint);
+            info.set_modified();
+        });
+
+        // Cursor position callback
+        glfwSetCursorPosCallback(m_renderer.getWindow(), [](GLFWwindow* window, double xpos, double ypos) {
+            info_window& info = *((info_window*)glfwGetWindowUserPointer(window));
+            if (info.m_editing) return; // No hover effect while editing
+            int row = -1, col = -1;
+            bool over = info.point_to_cell(xpos, ypos, row, col);
+            bool editable = over and info.is_editable_cell(row, col);
+            int nr = editable ? row : -1, nc = editable ? col : -1;
+            if (nr != info.m_hover_row or nc != info.m_hover_col) {
+                info.m_hover_row = nr;
+                info.m_hover_col = nc;
+                glfwSetCursor(window, info.is_editable_cell(nr, nc) ? info.m_hand_cursor : NULL);
+                info.set_modified();
+            }
+        });
+
+        // Mouse click callback (enter edit mode)
+        glfwSetMouseButtonCallback(m_renderer.getWindow(), [](GLFWwindow* window, int button, int action, int mods) {
+            info_window& info = *((info_window*)glfwGetWindowUserPointer(window));
+            if (button == GLFW_MOUSE_BUTTON_LEFT and action == GLFW_PRESS and not info.m_editing) {
+                if (info.m_hover_row < 0) return;
+                if (info.m_hover_col == -2) info.begin_edit_all(info.m_hover_row);
+                else if (info.m_hover_col >= 0) info.begin_edit(info.m_hover_row, info.m_hover_col);
             }
         });
     }
@@ -347,16 +498,18 @@ class info_window {
     //! @brief Main cycle.
     void draw_cycle() {
         m_renderer.initializeContext(false);
+        m_hand_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
         setCallbacks();
         while (m_running) {
             if (m_modified) {
-                draw();
                 m_modified = false;
+                draw();
                 m_renderer.swapAndNext();
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
             else std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        glfwDestroyCursor(m_hand_cursor);
         glfwMakeContextCurrent(NULL);
     }
 
@@ -364,24 +517,44 @@ class info_window {
     void draw() {
         if (m_uid.size() == 1 and m_net.node_count(m_uid[0]) == 0)
             glfwSetWindowTitle(m_renderer.getWindow(), ("node " + std::to_string(m_uid[0]) + " (terminated)").c_str());
-        int offs = 0;
         if (m_uid.size() > 1) {
             float y = (1 - (0.5f) / (m_keys.size()+2)) * (m_renderer.getWindowHeight());
-            m_renderer.drawText(m_nodes_list, 0.16f, y, 0.25f);
-            offs = 2;
+            m_renderer.drawText(m_nodes_list, 0.16f, y, 7);
         }
         for (size_t i=0; i<m_keys.size(); ++i) {
+            float yc = (1 - (i + m_header_rows + 0.5f) / (m_keys.size() + m_header_rows)) * m_renderer.getWindowHeight();
+            bool row_hovered = not m_editing and (int)i == m_hover_row;
+            bool row_editing = m_editing and (int)i == m_edit_row;
+            bool editing_all = row_editing and m_edit_col == -2;
+            bool label_active = row_hovered or row_editing;
+
             std::string s = m_keys[i];
+            std::string underline;
+            if (label_active) {
+                underline = std::string(m_keys[i].size(), '_');
+                for (int j=underline.size()-1; j>=0 and m_keys[i][j]==' '; --j) underline[j] = ' ';
+            }
+
             for (size_t j=0; j<m_uid.size(); ++j) {
                 while (s.size() < m_keys[i].size() + m_spacing * j) s.push_back(' ');
-                if (m_values[i][j].size() >= m_spacing) {
-                    m_values[i][j].resize(m_spacing - 4);
-                    m_values[i][j] += "...";
+                bool this_editing = row_editing and ((int)j == m_edit_col or editing_all);
+                std::string val;
+                if (editing_all) {
+                    val = (j == 0) ? (m_edit_buffer + "_") : ""; // other nodes that are currently empty
+                } else {
+                    val = this_editing ? (m_edit_buffer + "_") : m_values[i][j]; // "_" as a caret while editing
+                    if (val.size() >= m_spacing) { val.resize(m_spacing - 4); val += "..."; }
                 }
-                s += m_values[i][j];
+                bool val_underlined = (row_hovered and (m_hover_col == -2 or (int)j == m_hover_col)) or this_editing;
+                if (val_underlined) {
+                    while (underline.size() < s.size()) underline.push_back(' ');
+                    underline += std::string(val.size(), '_');
+                }
+                s += val;
             }
-            float y = (1 - (i+offs+0.5f) / (m_keys.size()+offs)) * (m_renderer.getWindowHeight());
-            m_renderer.drawText(s, 0.16f, y, 0.25f);
+            m_renderer.drawText(s, 0.16f, yc, 7);
+            if (not underline.empty())
+                m_renderer.drawText(underline, 0.16f, yc - 3.0f, 7);
         }
     }
 
@@ -391,6 +564,28 @@ class info_window {
     inline void init_storage_values(std::vector<std::string>& v, common::type_sequence<S, Ss...>) {
         v.push_back(common::strip_namespaces(common::type_name<S>()));
         init_storage_values(v, common::type_sequence<Ss...>{});
+    }
+
+    //! @brief Fills m_editable: whether each storage field's type can be parsed back from a string.
+    inline void init_editable_values(std::vector<bool>&, common::type_sequence<>) {}
+    template <typename S, typename... Ss>
+    inline void init_editable_values(std::vector<bool>& v, common::type_sequence<S, Ss...>) {
+        v.push_back(has_from_string<S>);
+        init_editable_values(v, common::type_sequence<Ss...>{});
+    }
+
+    //! @brief Writes value into the row-th field of a tagged tuple's storage.
+    template <typename T>
+    inline void read(int row, common::type_sequence<>, std::string const&, T&) {}
+    template <typename S, typename... Ss, typename T>
+    inline void read(int row, common::type_sequence<S, Ss...>, std::string const& value, T& t) {
+        if (row == 0) from_string(value, common::get<S>(t));
+        else read(row-1, common::type_sequence<Ss...>{}, value, t);
+    }
+    //! @brief Entry point: writes value into the row-th field of the given tagged tuple.
+    template <typename S, typename T>
+    void read(int row, std::string const& value, common::tagged_tuple<S,T>& t) {
+        read(row, S{}, value, t);
     }
 
     //! @brief Compile-time check whether type T is convertible to string (base case).
@@ -475,6 +670,9 @@ class info_window {
     //! @brief The length of each column.
     int m_spacing;
 
+    //! @brief Number of header lines (0, or 2 if there are multiple UIDs).
+    int m_header_rows;
+
     //! @brief The unique identifier of the displayed device.
     std::vector<device_t> m_uid;
 
@@ -487,17 +685,44 @@ class info_window {
     //! @brief Whether the contents of the window have been modified.
     bool m_modified = false;
 
+    //! @brief The row of the table currently under the mouse pointer (-1 if none).
+    int m_hover_row = -1;
+
+    //! @brief Column (UID index) currently under the mouse cursor (-1 if none).
+    int m_hover_col = -1;
+
+    //! @brief If a cell is currently being edited.
+    bool m_editing = false;
+
+    //! @brief Row number of the cell being edited (-1 if none).
+    int m_edit_row = -1;
+    
+    //! @brief Column of the cell being edited (-1 if none).
+    int m_edit_col = -1;
+
+    //! @brief Local buffer containing the value currently being modified.
+    std::string m_edit_buffer;
+
+    //! @brief “Hand” cursor, shown above an editable value.
+    GLFWcursor* m_hand_cursor = nullptr;
+
     //! @brief Rendering thread.
     std::thread m_thread;
 
     //! @brief Keys to be represented.
     std::vector<std::string> m_keys;
 
+    //! @brief If line i corresponds to a real value (not an empty separator).
+    std::vector<bool> m_is_data_row;
+
     //! @brief Values to be represented.
     std::vector<std::vector<std::string>> m_values;
 
     //! @brief Types of the values represented.
     std::vector<std::string> m_types;
+
+    //! @brief For each storage field (same order as m_types).
+    std::vector<bool> m_editable;
 };
 
 
@@ -524,6 +749,11 @@ namespace details {
         glm::vec3 w(x, x, x);
         for (size_t i=0; i<n; ++i) w[i] = v[i];
         return w;
+    }
+    //! @brief Moves a vec by a glm vector delta.
+    template <size_t n>
+    inline void position_delta(vec<n>& p, glm::vec3 delta) {
+        for (size_t i=0; i<n; ++i) p[i] += delta[i];
     }
 }
 //! @endcond
@@ -775,7 +1005,7 @@ struct displayer {
                 if (shadow_d > 0) {
                     shape shadow_s = common::get_or<shadow_shape_tag>(P::node::storage_tuple(), shadow_shape_val == -1 ? s : shape(shadow_shape_val));
                     color shadow_c = common::get_or<shadow_color_tag>(P::node::storage_tuple(), shadow_color_val == -1 ? m_colors[0] : color(shadow_color_val));
-                    P::node::net.getRenderer().drawShadow(shadow_s, p, shadow_d, {shadow_c.rgba[0], shadow_c.rgba[1], shadow_c.rgba[2], shadow_c.rgba[3]});
+                    P::node::net.getRenderer().drawShadow(shadow_s, p, shadow_d, shadow_c);
                 }
                 if (star) {
                     // gather neighbours' positions
@@ -801,7 +1031,7 @@ struct displayer {
                     glm::vec3 p = get_cached_position() + glm::vec3(d,d,d);
                     double label_size = common::get_or<label_size_tag>(P::node::storage_tuple(), double(label_size_val));
                     color label_color = common::get_or<label_color_tag>(P::node::storage_tuple(), color(label_color_val));
-                    P::node::net.getRenderer().drawLabel(label_text, p, {label_color.rgba[0], label_color.rgba[1], label_color.rgba[2], label_color.rgba[3]}, label_size);
+                    P::node::net.getRenderer().drawLabel(label_text, p, label_size, label_color);
                 }
                 if (m_tail_points.size() > 1) {
                     double d = common::get_or<size_tag>(P::node::storage_tuple(), double(size_val));
@@ -1003,7 +1233,7 @@ struct displayer {
                     PROFILE_COUNT("displayer");
                     if (not m_legenda) {
                         PROFILE_COUNT("displayer/nodes");
-                        if (m_pointer && m_mouseStartX == std::numeric_limits<float>::infinity()) highlightHoveredNode();
+                        if (m_pointer && m_mouseStartX == std::numeric_limits<float>::infinity() and not m_dragging) highlightHoveredNode();
                         common::parallel_for(common::tags::general_execution<parallel>(m_threads), n_end-n_beg, [&] (size_t i, size_t) {
                             viewport_update(n_beg[i].second.cache_position(t));
                         });
@@ -1061,7 +1291,7 @@ struct displayer {
                         PROFILE_COUNT("displayer/text");
                         if (m_legenda) {
                             // todo
-                            m_renderer.drawText("LEGENDA", m_renderer.getWindowWidth() / 2, m_renderer.getWindowHeight() - 32.0f, 0.5f);
+                            m_renderer.drawText("LEGENDA", m_renderer.getWindowWidth() / 2, m_renderer.getWindowHeight() - 32.0f, 14);
                             std::vector<std::pair<std::string, std::string>> text = {
                                 {"ESC",         "stop and exit the simulation"},
                                 {"P",           "play/pause the simulation"},
@@ -1069,7 +1299,9 @@ struct displayer {
                                 {"L",           "show/hide connection links between nodes"},
                                 {"G",           "show/hide the reference grid and node pins"},
                                 {"M",           "enable/disable the marker for selecting nodes"},
-                                {"left-click",  "open a window with selected node details"},
+                                {"left-click",  "open a window with details for the selected node or group"},
+                                {"drag",        "select a group of nodes"},
+                                {"alt+drag",    "move the selected node or group"},
                                 {"C",           "resets the camera to the starting position"},
                                 {"A/D",         "move the camera left/right"},
                                 {"W/S",         "move the camera up/down"},
@@ -1085,12 +1317,18 @@ struct displayer {
                             for (auto& line : text) while (line.first.size() < ml) line.first.push_back(' ');
                             for (size_t i = 0; i < text.size(); ++i) {
                                 float y = (1 - (i+0.5f) / text.size()) * (m_renderer.getWindowHeight() - 64);
-                                m_renderer.drawText(text[i].first + text[i].second, 16.0f, y, 0.25f);
+                                m_renderer.drawText(text[i].first + text[i].second, 16.0f, y, 7);
                             }
                         } else {
                             // Draw hovered node, simulation time (t) and FPS
-                            if (m_hoveredNode != device_t(-1)) m_renderer.drawText("Node " + std::to_string(m_hoveredNode), 16.0f, m_renderer.getWindowHeight() - 16.0f, 0.25f);
-                            std::string tt = "Simulation time: " + std::to_string(t);
+                            std::string tt = "";
+                            if (m_hoveredNode != device_t(-1)) tt = "Node " + std::to_string(m_hoveredNode);
+                            if (m_selected_nodes.size()) {
+                                if (tt.size()) tt += ", ";
+                                tt += std::to_string(m_selected_nodes.size()) + " nodes selected";
+                            }
+                            if (tt.size()) m_renderer.drawText(tt, 16.0f, m_renderer.getWindowHeight() - 16.0f, 7);
+                            tt = "Simulation time: " + std::to_string(t);
                             if (frequency() != 1 and frequency() != 0) {
                                 tt += " (";
                                 int f = frequency();
@@ -1099,8 +1337,8 @@ struct displayer {
                                 else if (frequency() < 10) tt += "." + std::to_string(int((frequency() - f)*10));
                                 tt += "x)";
                             }
-                            m_renderer.drawText(tt, 16.0f, 16.0f, 0.25f);
-                            m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 0.25f);
+                            m_renderer.drawText(tt, 16.0f, 16.0f, 7);
+                            m_renderer.drawText(std::to_string(m_FPS) + " FPS", m_renderer.getWindowWidth() - 60.0f, 16.0f, 7);
                         }
                     }
                     {
@@ -1296,7 +1534,7 @@ struct displayer {
                 auto beg{ P::net::node_begin() };
                 auto end{ P::net::node_end() };
                 float minDist{ (float)INF };
-                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
+                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1 and m_selected_nodes.find(m_hoveredNode) == m_selected_nodes.end()) {
                     typename P::net::lock_type l;
                     P::net::node_at(m_hoveredNode, l).highlight(0);
                 }
@@ -1311,17 +1549,28 @@ struct displayer {
                         }
                     }
                 }
-                if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 0) {
+                if (m_hoveredNode != device_t(-1) and P::net::node_at(m_hoveredNode).get_highlight() == 0) {
                     typename P::net::lock_type l;
                     P::net::node_at(m_hoveredNode, l).highlight(1);
                 }
             }
 
-            inline bool pointInsideRectangle(float x, float y) {
-                return x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX) and y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY);
+            //! @brief Converts a mouse displacement (raw screen pixels, y growing downward) into
+            //! a world-space displacement, at the camera's current focus distance.
+            glm::vec3 mouseToWorld(glm::vec2 mouseDelta) {
+                auto const& cam = m_renderer.getCamera();
+                glm::mat4 const inverseView = glm::affineInverse(cam.getView());
+                glm::vec3 const right = glm::vec3{inverseView[0]};
+                glm::vec3 const up = glm::vec3{inverseView[1]};
+                float const fovY = 2.0f * std::atan(1.0f / cam.getPerspective()[1][1]);
+                float const worldHeight = 2.0f * cam.getDepth() * std::tan(fovY / 2.0f);
+                float const worldPerPixel = worldHeight / (float)m_renderer.getFramebufferHeight();
+                return worldPerPixel * (mouseDelta.x * right - mouseDelta.y * up);
             }
 
+            //! @brief Multiple node selection through mouse dragging.
             void dragSelect() {
+                m_selected_nodes.clear();
                 auto beg{ P::net::node_begin() };
                 auto end{ P::net::node_end() };
                 for (size_t i = 0; i < end - beg; ++i) {
@@ -1330,8 +1579,9 @@ struct displayer {
                     float x = (ndcSpacePos.x + 1.0 ) * (m_renderer.getFramebufferWidth() / 2.0);
                     float y = (-ndcSpacePos.y + 1.0) * (m_renderer.getFramebufferHeight() / 2.0);
                     int h = beg[i].second.get_highlight();
-                    bool inRect = pointInsideRectangle(x,y);
+                    bool inRect = x >= std::min(m_mouseStartX,m_mouseLastX) and x <= std::max(m_mouseStartX,m_mouseLastX) and y >= std::min(m_mouseStartY,m_mouseLastY) and y <= std::max(m_mouseStartY,m_mouseLastY);
                     if (not inRect == h) beg[i].second.highlight(inRect);
+                    if (inRect) m_selected_nodes.insert(beg[i].second.uid);
                 }
             }
 
@@ -1339,7 +1589,7 @@ struct displayer {
             void mouseInput(double x, double y, double xFirst, double yFirst, mouse_type type, int mods) {
                 switch (type) {
                     case mouse_type::hover: {
-                        // Raycast caluclation
+                        // Raycast calculation
                         // (x, y) from screen space coordinates to NDC
                         float rayX{ (2.0f * (float)x) / m_renderer.getFramebufferWidth() - 1.0f };
                         float rayY{ 1.0f - (2.0f * (float)y) / m_renderer.getFramebufferHeight() };
@@ -1357,50 +1607,58 @@ struct displayer {
                         glm::vec4 worldRay4{ glm::affineInverse(m_renderer.getCamera().getView()) * viewRay };
                         m_rayCast.x = worldRay4.x; m_rayCast.y = worldRay4.y; m_rayCast.z = worldRay4.z;
                         m_rayCast = glm::normalize(m_rayCast);
-
                         break;
                     }
 
                     case mouse_type::click: {
                         GLFWwindow* window{ m_renderer.getWindow() };
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-                            if (P::net::node_count(m_hoveredNode) and P::net::node_at(m_hoveredNode).get_highlight() == 1) {
+                            if (mods & GLFW_MOD_ALT) {
+                                // starting to drag around the selected nodes
+                                if (m_selected_nodes.count(m_hoveredNode)) m_dragging = true;
+                            } else if (m_hoveredNode != device_t(-1)) {
+                                // opening an info window
                                 glfwMakeContextCurrent(NULL);
-                                m_info.emplace_back(new info_window<F>(*this, {m_hoveredNode}));
-                                glfwMakeContextCurrent(m_renderer.getWindow());
-                            }
-                            else if (m_mouseStartX == std::numeric_limits<float>::infinity()) {
+                                if (m_selected_nodes.count(m_hoveredNode)) {
+                                    std::vector<device_t> nodes(m_selected_nodes.begin(), m_selected_nodes.end());
+                                    m_info.emplace_back(new info_window<F>(*this, nodes));
+                                    m_selected_nodes.clear();
+                                } else {
+                                    m_info.emplace_back(new info_window<F>(*this, {m_hoveredNode}));
+                                }
+                                glfwMakeContextCurrent(window);
+                            } else if (m_mouseStartX == std::numeric_limits<float>::infinity()) {
+                                // empty click, unselecting and starting a potential new drag select
                                 m_mouseStartX = x;
                                 m_mouseStartY = y;
+                                m_selected_nodes.clear();
                             }
                         }
-                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE and m_mouseStartX != std::numeric_limits<float>::infinity()) {
-                            std::vector<device_t> nodes;
-                            auto beg{ P::net::node_begin() };
-                            auto end{ P::net::node_end() };
-                            for (size_t i = 0; i < end - beg; ++i) {
-                                device_t node = beg[i].second.uid;
-                                int h = beg[i].second.get_highlight();
-                                if (h == 1) {
-                                    nodes.emplace_back(node);
-                                }
+                        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+                            // ends the current drag
+                            if (m_dragging) m_dragging = false;
+                            if (m_mouseStartX != std::numeric_limits<float>::infinity()) {
+                                m_mouseStartX = std::numeric_limits<float>::infinity();
+                                m_mouseStartY = std::numeric_limits<float>::infinity();
                             }
-                            if (nodes.size() > 0) {
-                                glfwMakeContextCurrent(NULL);
-                                m_info.emplace_back(new info_window<F>(*this, nodes));
-                                glfwMakeContextCurrent(m_renderer.getWindow());
-                            }
-                            m_mouseStartX = std::numeric_limits<float>::infinity();
-                            m_mouseStartY = std::numeric_limits<float>::infinity();
                         }
                         m_renderer.mouseInput(x, y, 0.0f, 0.0f, mouse_type::click, mods);
                         break;
                     }
 
-
                     case mouse_type::drag: {
+                        if (m_dragging) {
+                            // Applies one frame's worth of mouse movement to every dragged node.
+                            glm::vec3 worldDelta = mouseToWorld(glm::vec2((float)x, -(float)y));
+                            for (device_t uid : m_selected_nodes) if (P::net::node_count(uid)) {
+                                typename P::net::lock_type l;
+                                details::position_delta(P::net::node_at(uid, l).position(), worldDelta);
+                            }
+                            break;
+                        }
                         GLFWwindow* window{ m_renderer.getWindow() };
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                            // camera rotation
                             if (!m_mouseRight) {
                                 m_mouseRight = 1;
                                 m_mouseRightX = m_mouseLastX - (float)(m_renderer.getFramebufferWidth() / 2);
@@ -1412,6 +1670,7 @@ struct displayer {
                             m_renderer.mouseInput(x, y, m_mouseRightX, m_mouseRightY, mouse_type::drag, mods);
                         }
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+                            // camera rotation end
                             m_mouseRight = 0;
                             m_mouseRightX = 0.0f;
                             m_mouseRightY = 0.0f;
@@ -1610,6 +1869,12 @@ struct displayer {
 
             //! @brief The node currently hovered by the cursor.
             device_t m_hoveredNode;
+
+            //! @brief Whether a drag (Alt+click) is currently in progress.
+            bool m_dragging = false;
+
+            //! @brief The currently selected nodes (independently of mouse hover).
+            std::unordered_set<device_t> m_selected_nodes;
 
             //! @brief List of currently stroked keys.
             std::unordered_set<int> m_key_stroked;

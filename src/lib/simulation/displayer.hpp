@@ -505,7 +505,7 @@ class info_window {
                 m_modified = false;
                 draw();
                 m_renderer.swapAndNext();
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
             else std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }

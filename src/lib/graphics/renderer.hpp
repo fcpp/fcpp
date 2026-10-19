@@ -37,14 +37,14 @@ namespace fcpp {
 
         //! @brief Glyph struct.
         struct glyph {
-            //! @brief ID handle of the glyph texture.
-            unsigned int textureID;
             //! @brief Size of glyph.
-            glm::ivec2   size;
+            glm::ivec2 size;
             //! @brief Offset from baseline to left/top of glyph.
-            glm::ivec2   bearing;
+            glm::vec2 bearing;
             //! @brief Offset to advance to next glyph.
             unsigned int advance;
+            //! @brief Normalized coordinates of the glyph in the font atlas.
+            glm::vec4 offsets;
         };
 
         //! @brief Renderer class; it has the responsability of calling OpenGL directives.
@@ -209,10 +209,13 @@ namespace fcpp {
             static unsigned int s_meshEBO[(int)index::SIZE];
 
             //! @brief Data structure mapping chars with glyphs.
-            static std::unordered_map<char, glyph> s_glyphs;
+            static std::array<glyph, CHAR_MAX+1> s_glyphs;
 
             //! @brief Scaling factor for the text.
             static double s_textScale;
+
+            //! @brief Scaling factor for the text.
+            static unsigned int s_fontAtlas;
 
             //! @brief Size (in bytes) of the index data of grid's plane; it is used since the size of such buffer is not defined until the first frame is up to be rendered.
             static int s_planeIndexSize;
@@ -240,12 +243,6 @@ namespace fcpp {
 
             //! @brief It initializes all the static structures and variables, common to the renderer instances.
             static void initializeCommon();
-
-            //! @brief It loads the defined texture and returns its ID, or 0 if not loaded.
-            static unsigned int loadTexture(std::string path);
-
-            //! @brief It unloads the defined texture, given its path.
-            static bool unloadTexture(unsigned int id);
 
             //! @brief It loads glyphs' texture buffers.
             static void allocateGlyphTextures();
@@ -279,6 +276,9 @@ namespace fcpp {
 
             //! @brief Vertex Buffer Object dedicated to font rendering; it's per renderer and it shouldn't be shared with others.
             unsigned int m_textVBO;
+
+            //! @brief Content of the m_textVBO.
+            mutable std::vector<float> m_textVBOcontent;
 
             //! @brief Main shader program, with diffuse lighting caluclations and color info; it's per context and it shouldn't be shared with others.
             shader m_shaderProgramDiff;

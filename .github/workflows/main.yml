@@ -21,5 +21,7 @@ jobs:
         with:
           command: ${{ (github.ref == 'refs/heads/master' || github.base_ref == 'master') && 'multitest' || 'doctest' }}
       - name: Deploy documentation...
-        if: github.event_name == 'push' && github.repository == 'fcpp/fcpp'
-        run: npx surge './src/doc/html' 'fcpp-doc.surge.sh' --token ${{ secrets.SURGE_TOKEN }}
+        if: github.event_name != 'pull_request'
+        env:
+          SURGE_DOMAIN: ${{ github.ref_name == 'master' && 'fcpp-doc.surge.sh' || 'fcpp-dev.surge.sh' }}
+        run: npx surge './src/doc/html' "$SURGE_DOMAIN" --token ${{ secrets.SURGE_TOKEN }}

@@ -216,17 +216,6 @@ void renderer::allocateMeshVertex() {
     // Generate VBOs and EBOs for general meshes
     glGenBuffers((int)vertex::SIZE, s_meshVBO);
     glGenBuffers((int)index::SIZE, s_meshEBO);
-
-    // Allocate (dynamic) single line VBO
-    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
-
-    // Allocate (dynamic) neighbour star VBO
-    glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6, NULL, GL_DYNAMIC_DRAW);
-
-    // Unbind current VBO
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 
@@ -668,7 +657,7 @@ void renderer::drawShape(shape sh, glm::vec3 const& p, double d, std::vector<col
         m_shaderProgramCol.setVec4("u_color", color_to_vec(c[0]));
         glBindVertexArray(m_meshVAO[(int)vertex::singleLine]);
         glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::singleLine]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pinData), pinData);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(pinData), pinData, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_LINES, 0, 2);
     }

@@ -14,7 +14,9 @@
 #include <string>
 #include <type_traits>
 
+#ifdef FCPP_GUI
 #include <glm/gtc/type_ptr.hpp>
+#endif
 
 
 /**
@@ -356,10 +358,12 @@ struct color {
     //! @brief Color constructor from a packed integral RGBA value.
     explicit color(packed_color irgba);
 
+#ifdef FCPP_GUI
     //! @brief Implicit conversion operator to glm::vec4.
     operator glm::vec4() const {
         return glm::make_vec4(rgba);
     }
+#endif
 
     //! @brief Compares colors.
     bool operator==(color const&) const;

@@ -397,7 +397,7 @@ namespace details {
 
     template <typename T, typename S>
     hstream& iterable_serialize(hstream& s, T& x, S, wrapper<void> = {}) {
-        s.write(x.size());
+        s.write(static_cast<uint64_t>(x.size()));
         for (auto& i : x) s & i;
         return s;
     }

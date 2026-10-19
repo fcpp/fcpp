@@ -51,7 +51,7 @@ template <typename A>
 using to_field = field<common::extract_template<field, A>>;
 //! @brief Computes the result type of applying F pointwise to local versions of A.
 template <typename F, typename... A>
-using local_result = std::result_of_t<F(to_local<A const&>...)>;
+using local_result = common::invoke_result_t<F, to_local<A const&>...>;
 //! @brief Computes the result type of applying F pointwise to local versions of A.
 template <typename F, typename... A>
 using field_result = field<local_result<F, A...>>;

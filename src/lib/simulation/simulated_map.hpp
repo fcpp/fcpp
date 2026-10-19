@@ -9,22 +9,23 @@
 #define FCPP_SIMULATED_MAP_H_
 
 
-#include <math.h>
+#include <cmath>
 #include <cstring>
 #include <stack>
 #include <queue>
 #include <set>
 #include <limits>
 #include <map>
-#include <stb_image_write.h>
 #include <cassert>
+
+#include <stb_image.h>
+#include <stb_image_write.h>
 
 #include "lib/common/traits.hpp"
 #include "lib/component/base.hpp"
 #include "lib/data/color.hpp"
 #include "lib/data/vec.hpp"
 
-#include "external/stb_image/stb_image.h"
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.

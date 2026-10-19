@@ -56,6 +56,11 @@ namespace fcpp {
 namespace common {
 
 
+//! @brief Temporary backport of C++17 `std::invoke_result_t` for C++14, before the full project migration to C++17.
+template <typename F, typename... Args>
+using invoke_result_t = decltype(std::declval<F>()(std::declval<Args>()...));
+
+
 // GENERAL METAPROGRAMMING SUPPORT
 
 
@@ -790,6 +795,16 @@ namespace details {
     template <typename T>
     using type_sequence_if_possible = typename type_sequence_if_possible_impl<T()>::type;
 
+    //! @brief Decays types into a type sequence to type sequences if possible.
+    template <typename T>
+    struct type_sequence_multidecay;
+
+    //! @brief Decays types into a type sequence to type sequences if possible (only overload).
+    template <typename... Ts>
+    struct type_sequence_multidecay<type_sequence<Ts...>> {
+        using type = type_sequence<type_sequence_if_possible<Ts>...>;
+    };
+
     //! @brief General form.
     template <typename... Ts>
     struct export_list {
@@ -797,16 +812,18 @@ namespace details {
     };
     //! @brief Type argument.
     template <typename T, typename... Ts>
-    struct export_list<T,Ts...> : public type_unite<common::type_sequence<T>, typename export_list<Ts...>::type> {};
+    struct export_list<T,Ts...> {
+        using type = typename export_list<Ts...>::type::template push_front<T>;
+    };
     //! @brief Type sequence argument.
     template <typename... Ts, typename... Ss>
-    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<type_sequence_if_possible<Ts>...,Ss...> {};
+    struct export_list<type_sequence<Ts...>,Ss...> : public export_list<Ts...,Ss...> {};
 }
 //! @endcond
 
 //! @brief Merges export lists and types into a single type sequence.
 template <typename... Ts>
-using export_list = typename details::export_list<details::type_sequence_if_possible<Ts>...>::type;
+using export_list = typename details::export_list<Ts...>::type::uniq;
 
 
 //! @cond INTERNAL
@@ -833,7 +850,7 @@ namespace details {
 
 //! @brief Merges storage lists and types into a single type sequence.
 template <typename... Ts>
-using storage_list = typename details::storage_list<details::type_sequence_if_possible<Ts>...>::type;
+using storage_list = typename details::export_list<Ts...>::type;
 
 
 // TYPE REPRESENTATION

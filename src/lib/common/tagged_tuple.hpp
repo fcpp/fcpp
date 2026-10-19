@@ -355,7 +355,7 @@ struct tagged_tuple<type_sequence<Ss...>, type_sequence<Ts...>>: public std::tup
 
     //! @brief Call operator returning a tagged tuple of call results.
     template <typename... Us>
-    tagged_tuple<type_sequence<Ss...>, type_sequence<std::result_of_t<Ts(Us&&...)>...>> operator()(Us&&... vs) {
+    tagged_tuple<type_sequence<Ss...>, type_sequence<common::invoke_result_t<Ts, Us&&...>...>> operator()(Us&&... vs) {
         return make_tagged_tuple<Ss...>(get<Ss>(*this)(std::forward<Us>(vs)...)...);
     }
 

@@ -11,7 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "../../external/rapidxml-1.13/rapidxml.hpp"
+#include <rapidxml.hpp>
 
 
 /**

@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_spawner.hpp
@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "lib/common/utilities.hpp"
 #include "lib/component/base.hpp"
 #include "lib/component/storage.hpp"
 #include "lib/option/sequence.hpp"
@@ -30,36 +31,24 @@ namespace component {
 
 // Namespace of tags to be used for initialising components.
 namespace tags {
-    //! @brief Declaration tag associating to the sequence of attributes tags and types describing nodes (defaults to the empty sequence).
-    template <typename... Ts>
-    struct node_attributes {};
-
     //! @brief Declaration tag associating to a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
     template <typename... Ts>
     struct init;
 
-    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes (default to "index").
-    struct nodesinput {};
+    //! @brief Declaration tag associating to the sequence of attributes tags and types describing nodes (defaults to the empty sequence).
+    template <typename... Ts>
+    struct node_attributes {};
 
     //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph arcs (default to "arcs").
     struct arcsinput {};
+
+    //! @brief Net initialisation tag associating to the name of the file or input stream specifying graph nodes (default to "nodes").
+    struct nodesinput {};
 
     //! @brief Node initialisation tag associating to a starting time of execution (defaults to \ref TIME_MAX).
     struct start;
 }
 
-//! @cond INTERNAL
-namespace details {
-    //! @brief Makes an istream reference from a `std::string` path.
-    std::shared_ptr<std::istream> make_istream(std::string const& s);
-
-    //! @brief Makes an istream reference from a `char const*` path.
-    std::shared_ptr<std::istream> make_istream(char const* s);
-
-    //! @brief Makes an istream reference from a stream pointer.
-    std::shared_ptr<std::istream> make_istream(std::istream* i);
-}
-//! @endcond
 
 /**
  * @brief Component handling generation of nodes from a graph.
@@ -69,11 +58,15 @@ namespace details {
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
  *
  * <b>Declaration tags:</b>
+ * - \ref tags::init defines a sequence of node initialisation tags and generating distributions (defaults to the empty sequence).
  * - \ref tags::node_attributes defines the sequence of attributes tags and types describing nodes (defaults to the empty sequence).
  *
  * <b>Net initialisation tags:</b>
- * - \ref tags::nodesinput defines the name of the file or input stream specifying graph nodes (default to "index").
  * - \ref tags::arcsinput defines the name of the file or input stream specifying graph arcs (default to "arcs").
+ * - \ref tags::nodesinput defines the name of the file or input stream specifying graph nodes (default to "nodes").
+ *
+ * <b>Node initialisation tags:</b>
+ * - \ref tags::start defines a starting time of execution (defaults to \ref TIME_MAX).
  *
  * Nodes generated receive all tags produced by generating distributions, and \ref tags::start associated to the creation time.
  */
@@ -123,11 +116,11 @@ struct graph_spawner {
             template <typename S, typename T>
             explicit net(common::tagged_tuple<S,T> const& t) : P::net(t) {
                 read_nodes(
-                    details::make_istream(common::get_or<tags::nodesinput>(t, "nodes")),
+                    common::make_istream(common::get_or<tags::nodesinput>(t, "nodes")),
                     build_distributions(t, typename init_tuple_type::tags(), typename init_tuple_type::types()),
                     common::get_or<tags::start>(t, 0)
                 );
-                read_arcs(details::make_istream(common::get_or<tags::arcsinput>(t, "arcs")));
+                read_arcs(common::make_istream(common::get_or<tags::arcsinput>(t, "arcs")));
             }
 
           private: // implementation details
@@ -135,7 +128,7 @@ struct graph_spawner {
             void read_nodes(std::shared_ptr<std::istream> is, init_tuple_type dist, times_t start) {
                 attributes_tuple_type row;
                 while (read_row(*is, row, typename attributes_tuple_type::tags{})) {
-                    using res_type = std::result_of_t<init_tuple_type(crand, common::tagged_tuple_t<>)>;
+                    using res_type = common::invoke_result_t<init_tuple_type, crand, common::tagged_tuple_t<>>;
                     using full_type = common::tagged_tuple_cat<attributes_tuple_type, res_type>;
                     full_type tt = row;
                     call_distribution(dist, get_generator(has_randomizer<P>{}, *this), tt, typename init_tuple_type::tags{});
@@ -161,6 +154,7 @@ struct graph_spawner {
 
             //! @brief Reads arc information from file and creates corresponding connections.
             void read_arcs(std::shared_ptr<std::istream> is) {
+                if (!*is) return;
                 device_t d1, d2;
                 while (true) {
                     *is >> d1;

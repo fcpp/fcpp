@@ -112,9 +112,10 @@ endfunction()
 # MAIN PROJECT SETUP #
 ######################
 
+include(FetchContent)
 project(
     fcpp
-    VERSION 0.8.1
+    VERSION 0.9.2
     DESCRIPTION "FieldCalc++ is an efficient C++14 implementation of the Pure Field Calculus."
 )
 option(FCPP_BUILD_GL        "Build OpenGL features."          OFF)
@@ -143,6 +144,7 @@ set(
     lib/common/tagged_tuple.cpp
     lib/common/traits.cpp
     lib/common/type_sequence.cpp
+    lib/common/utilities.cpp
     lib/component.cpp
     lib/component/base.cpp
     lib/component/calculus.cpp
@@ -233,11 +235,14 @@ add_library(
         ./external/rapidxml-1.13/rapidxml.hpp
 )
 target_include_directories(stb_image PUBLIC ./external/stb_image)
+add_library(rapidxml INTERFACE)
+target_include_directories(rapidxml INTERFACE ./external/rapidxml-1.13)
 if(FCPP_BUILD_MPI)
     find_package(MPI REQUIRED)
     target_link_libraries(
         fcpp PUBLIC
         stb_image
+        rapidxml
         ${MPI_LIBRARIES}
     )
     target_include_directories(fcpp PUBLIC ${MPI_INCLUDE_PATH})
@@ -251,6 +256,7 @@ else()
     target_link_libraries(
         fcpp PUBLIC
         stb_image
+        rapidxml
     )
 endif(FCPP_BUILD_MPI)
 set_target_properties(${target_name} PROPERTIES PREFIX "run/")
@@ -267,18 +273,26 @@ if(FCPP_BUILD_GL)
         ./external/glad-core-3.3/include/glad/glad.h
         ./external/glad-core-3.3/src/glad.c
     )
-    add_subdirectory(./external/glm-1.0.2)
-    add_subdirectory(./external/glfw-3.4)
-    add_subdirectory(./external/freetype-2.14.1)
     target_include_directories(glad PUBLIC ./external/glad-core-3.3/include)
-    target_include_directories(
-        fcpp PUBLIC
-        ./external
-        ./external/glad-core-3.3/include
-        ./external/glm-1.0.2
-        ./external/glfw-3.4/include
-        ./external/freetype-2.14.1/devel
+    FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        GIT_TAG        1.0.3
+        GIT_SHALLOW    TRUE
     )
+    FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+        GIT_TAG        3.4
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_Declare(
+        freetype
+        GIT_REPOSITORY https://github.com/freetype/freetype.git
+        GIT_TAG        VER-2-14-3
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(glm glfw freetype)
     target_link_libraries(
         fcpp PUBLIC
         glad
@@ -297,8 +311,6 @@ endif(FCPP_BUILD_GL)
 ################
 
 if(FCPP_BUILD_TESTS)
-    cmake_minimum_required(VERSION 3.14)
-    include(FetchContent)
     if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
         cmake_policy(SET CMP0135 NEW)
     endif()
@@ -338,6 +350,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/common/tagged_tuple.cpp)
         fcpp_test(test/common/traits.cpp)
         fcpp_test(test/common/type_sequence.cpp)
+        fcpp_test(test/common/utilities.cpp)
         fcpp_test(test/component/base.cpp)
         fcpp_test(test/component/calculus.cpp)
         fcpp_test(test/component/identifier.cpp)

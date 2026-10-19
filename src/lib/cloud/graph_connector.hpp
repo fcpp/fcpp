@@ -1,4 +1,4 @@
-// Copyright © 2023 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2026 Giorgio Audrito. All Rights Reserved.
 
 /**
  * @file graph_connector.hpp
@@ -18,6 +18,7 @@
 #include "lib/common/algorithm.hpp"
 #include "lib/common/option.hpp"
 #include "lib/common/serialize.hpp"
+#include "lib/common/utilities.hpp"
 #include "lib/component/base.hpp"
 #include "lib/data/field.hpp"
 #include "lib/internal/twin.hpp"
@@ -51,10 +52,6 @@ namespace tags {
     template <bool b>
     struct symmetric;
 
-    //! @brief Declaration flag associating to whether the topology of the graph is static (for future use).
-    template <bool b>
-    struct static_topology;
-
     //! @brief Net initialisation tag associating to the number of threads that can be created.
     struct threads;
 }
@@ -67,12 +64,14 @@ namespace tags {
  *
  * <b>Declaration tags:</b>
  * - \ref tags::send_delay defines the delay generator for sending messages after rounds (defaults to zero delay through \ref distribution::constant_n "distribution::constant_n<times_t, 0>").
- * - \ref tags::dimension defines the dimensionality of the space (defaults to 2).
  *
  * <b>Declaration flags:</b>
  * - \ref tags::message_size defines whether message sizes should be emulated (defaults to false).
  * - \ref tags::parallel defines whether parallelism is enabled (defaults to \ref FCPP_PARALLEL).
  * - \ref tags::symmetric defines whether the neighbour relation is symmetric (defaults to true).
+ *
+ * <b>Net initialisation tags:</b>
+ * - \ref tags::threads defines the number of threads that can be created (default to \ref FCPP_THREADS).
  */
 template <class... Ts>
 struct graph_connector {
@@ -326,6 +325,7 @@ struct graph_connector {
                 });
             }
 
+          private: // implementation details
             //! @brief The number of threads to be used.
             size_t const m_threads;
         };

@@ -4,7 +4,7 @@
 
 #include "lib/data/gps_trace.hpp"
 
-#include "../../external/rapidxml-1.13/rapidxml.hpp"
+#include <rapidxml.hpp>
 
 
 using namespace fcpp;

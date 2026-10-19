@@ -27,7 +27,7 @@ DECLARE_OPTIONS(options,
     online_drop<(O & 4) == 4>
 );
 
-DECLARE_COMBINE(calc_only, component::storage, component::calculus);
+DECLARE_COMBINE(calc_only, component::storage, component::calculus, component::base);
 
 template <int O>
 using combo = calc_only<options<O>>;
@@ -65,10 +65,10 @@ TEST(BasicsTest, ResultType) {
     auto tf = [](field<int>){
         return tuple<std::string, double>("foo", 2.5);
     };
-    EXPECT_SAME(coordination::return_result_type<int, decltype(rf)(int)>, double);
-    EXPECT_SAME(coordination::export_result_type<int, decltype(rf)(int)>, double);
-    EXPECT_SAME(coordination::return_result_type<int, decltype(tf)(int)>, std::string);
-    EXPECT_SAME(coordination::export_result_type<int, decltype(tf)(int)>, double);
+    EXPECT_SAME(coordination::return_result_type<int, decltype(rf), int>, double);
+    EXPECT_SAME(coordination::export_result_type<int, decltype(rf), int>, double);
+    EXPECT_SAME(coordination::return_result_type<int, decltype(tf), int>, std::string);
+    EXPECT_SAME(coordination::export_result_type<int, decltype(tf), int>, double);
 }
 
 template <typename node_t>

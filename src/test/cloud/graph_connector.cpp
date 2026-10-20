@@ -15,6 +15,9 @@
 using namespace fcpp;
 using namespace component::tags;
 
+// Force initialisation/finalisation of MPI at start/end of all tests
+common::mpi_manager mm(1);
+
 
 struct tag {};
 struct gat {};

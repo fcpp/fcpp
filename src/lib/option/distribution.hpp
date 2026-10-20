@@ -25,6 +25,50 @@
 namespace fcpp {
 
 
+//! @brief Lightweight interface for non-random generators to C++ distributions.
+struct norand {
+    //! @brief The data produced by the generator.
+    using result_type = uint16_t;
+
+    //! @brief Default constructor.
+    norand() {}
+
+    //! @brief Constructor with seed.
+    norand(result_type) {}
+
+    //! @brief The minimum generated value.
+    static constexpr result_type min() {
+        return 0;
+    }
+
+    //! @brief The maximum generated value.
+    static constexpr result_type max() {
+        return 65535;
+    }
+
+    //! @brief Feeds a given seed.
+    inline void seed(result_type val = 0) {}
+
+    //! @brief Generates a new element.
+    inline result_type operator()() {
+        return 42;
+    }
+
+    //! @brief Discards bits of random data.
+    inline void discard(unsigned long long) {}
+
+    //! @brief Equality operator.
+    inline bool operator==(norand const&) {
+        return true;
+    }
+
+    //! @brief Inequality operator.
+    inline bool operator!=(norand const&) {
+        return false;
+    }
+};
+
+
 //! @brief Lightweight interface for C random generators to C++ distributions.
 struct crand {
     //! @brief The data produced by the generator.

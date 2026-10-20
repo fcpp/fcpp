@@ -15,7 +15,11 @@ function(fcpp_copy target source dest folder)
 endfunction()
 
 macro(fcpp_setup)
-    set(CMAKE_CXX_STANDARD 14)
+	if(FCPP_BUILD_MPI)
+        set(CMAKE_CXX_STANDARD 17)
+    else(FCPP_BUILD_MPI)
+        set(CMAKE_CXX_STANDARD 14)
+    endif(FCPP_BUILD_MPI)
     set(CMAKE_CXX_STANDARD_REQUIRED True)
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -g")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
@@ -99,7 +103,6 @@ function(fcpp_test target_executable)
         target_link_libraries(${target_name}_test PRIVATE
             fcpp
             fcpp_testlib
-            gtest
             gtest_main
         )
         target_include_directories(${target_name}_test PRIVATE .)
@@ -132,6 +135,7 @@ set(
     lib/common.cpp
     lib/common/algorithm.cpp
     lib/common/immutable_map.cpp
+    lib/common/mpi.cpp
     lib/common/multitype_map.cpp
     lib/common/mutex.cpp
     lib/common/number_sequence.cpp
@@ -336,6 +340,7 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/cloud/graph_spawner.cpp)
         fcpp_test(test/common/algorithm.cpp)
         fcpp_test(test/common/immutable_map.cpp)
+        fcpp_test(test/common/mpi.cpp)
         fcpp_test(test/common/multitype_map.cpp)
         fcpp_test(test/common/mutex.cpp)
         fcpp_test(test/common/number_sequence.cpp)

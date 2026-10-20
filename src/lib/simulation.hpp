@@ -14,8 +14,8 @@
 #include "lib/simulation/batch.hpp"
 #include "lib/simulation/displayer.hpp"
 #include "lib/simulation/simulated_connector.hpp"
-#include "lib/simulation/simulated_positioner.hpp"
 #include "lib/simulation/simulated_map.hpp"
+#include "lib/simulation/simulated_positioner.hpp"
 #include "lib/simulation/spawner.hpp"
 
 

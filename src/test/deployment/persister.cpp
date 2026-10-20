@@ -6,6 +6,7 @@
 
 #include "gtest/gtest.h"
 
+#include "lib/common/mpi.hpp"
 #include "lib/component/timer.hpp"
 #include "lib/component/storage.hpp"
 #include "lib/coordination/basics.hpp"
@@ -18,6 +19,7 @@
 using namespace fcpp;
 using namespace component::tags;
 
+common::mpi_manager mm(1);
 
 struct tag {};
 struct gat {};
@@ -60,9 +62,10 @@ using combo1 = component::combine_spec<
 
 
 MULTI_TEST(PersisterTest, Main, O, 3) {
-    remove(".persistence");
+    std::string file = ".persistence" + std::to_string(mm.rank);
+    remove(file.c_str());
     {
-        typename combo1<O>::net network{common::make_tagged_tuple<persistence_path>(".persistence")};
+        typename combo1<O>::net network{common::make_tagged_tuple<persistence_path>(file.c_str())};
         auto l = network.node_lock();
         auto& n = network.node_at(42, l);
         EXPECT_EQ(0, n.storage(gat{}));
@@ -80,7 +83,7 @@ MULTI_TEST(PersisterTest, Main, O, 3) {
         EXPECT_EQ(5.5f, network.next());
     }
     {
-        typename combo1<O>::net network{common::make_tagged_tuple<persistence_path>(".persistence")};
+        typename combo1<O>::net network{common::make_tagged_tuple<persistence_path>(file.c_str())};
         auto l = network.node_lock();
         auto& n = network.node_at(42, l);
         EXPECT_EQ(2, n.storage(gat{}));
@@ -98,5 +101,5 @@ MULTI_TEST(PersisterTest, Main, O, 3) {
         EXPECT_EQ(5.5f, network.next());
         network.run();
     }
-    remove(".persistence");
+    remove(file.c_str());
 }

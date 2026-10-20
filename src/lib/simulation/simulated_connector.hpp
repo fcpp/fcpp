@@ -132,7 +132,6 @@ namespace details {
  *
  * Requires a \ref simulated_positioner parent component.
  * If a \ref randomizer parent component is not found, \ref crand is used as random generator.
- * Any \ref simulated_connector component cannot be a parent of a \ref timer otherwise round planning may block message exchange.
  *
  * <b>Declaration tags:</b>
  * - \ref tags::connector defines the connector class (defaults to \ref connect::clique "connect::clique<dimension>").

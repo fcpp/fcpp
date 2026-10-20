@@ -219,6 +219,30 @@ struct div {
 };
 
 
+//! @brief Functor computing the remainder of elements' division.
+template <typename A, typename B, typename R = size_t>
+struct mod {
+    //! @brief Result type.
+    using type = R;
+
+    //! @brief Constructor.
+    template <typename G, typename T>
+    mod(G&& g, T const& t) : m_a(g, t), m_b(g, t) {}
+
+    //! @brief Functor computation.
+    template <typename G, typename T>
+    type operator()(G&& g, T const& row) {
+        return m_a(g, row) % m_b(g, row);
+    }
+
+  private:
+    //! @brief The first element.
+    details::element<A> m_a;
+    //! @brief The second element.
+    details::element<B> m_b;
+};
+
+
 //! @brief Functor elevating elements as powers.
 template <typename A, typename B, typename R = real_t>
 struct pow {

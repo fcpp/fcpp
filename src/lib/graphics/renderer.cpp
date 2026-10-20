@@ -1,6 +1,8 @@
 // Copyright © 2026 Giorgio Audrito and Luigi Rapetta. All Rights Reserved.
 
 #include <cmath>
+
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
@@ -457,9 +459,9 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
     int i{ 0 }; // for putting vertices into gridMesh
     int j{ 0 }; // for putting indices into gridHighMesh
     int k{ 0 }; // for putting indices into gridNormMesh
-    float gridMesh[numX * 6 + numY * 6]; // will contain the vertex data of the grid
-    int gridNormIndex[(numX - numHighX) * 2 + (numY - numHighY) * 2]; // will contain the index data of the normal lines of the grid
-    int gridHighIndex[numHighX * 2 + numHighY * 2]; // will contain the index data of the highlighted lines of the grid
+    std::vector<float> gridMesh(numX * 6 + numY * 6); // will contain the vertex data of the grid
+    std::vector<int> gridNormIndex((numX - numHighX) * 2 + (numY - numHighY) * 2); // will contain the index data of the normal lines of the grid
+    std::vector<int> gridHighIndex(numHighX * 2 + numHighY * 2); // will contain the index data of the highlighted lines of the grid
     for (int x = grid_min_x; x <= grid_max_x; ++x) {
         gridMesh[0 + i * 6] = (float)(x * gridScale);
         gridMesh[1 + i * 6] = gridMin.y;
@@ -498,19 +500,19 @@ void renderer::makeGrid(glm::vec3 gridMin, glm::vec3 gridMax, double gridScale) 
         }
         ++i;
     }
+    s_gridNormIndexSize = gridNormIndex.size() * sizeof(int);
+    s_gridHighIndexSize = gridHighIndex.size() * sizeof(int);
 
     // Storing grid mesh
     glBindVertexArray(m_meshVAO[(int)vertex::grid]);
     glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::grid]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(gridMesh), gridMesh, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, gridMesh.size() * sizeof(float), gridMesh.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridHigh]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridHighIndex), gridHighIndex, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, s_gridHighIndexSize, gridHighIndex.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::gridNorm]); // VAO stores EBO here; unbinding EBO before VAO is unbound will result in VAO pointing to no EBO
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(gridNormIndex), gridNormIndex, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, s_gridNormIndexSize, gridNormIndex.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    s_gridNormIndexSize = sizeof(gridNormIndex);
-    s_gridHighIndexSize = sizeof(gridHighIndex);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -699,7 +701,7 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<std::pair<glm::vec3, flo
     m_shaderProgramCol.setVec4("u_color", color_to_vec(c));
 
     if (nl.size()) {
-        float starVertices[6 * nl.size()];
+        std::vector<float> starVertices(6 * nl.size());
         for (int i = 0; i < nl.size(); ++i) {
             glm::vec3 q = (nl[i] + p) * 0.5f;
             starVertices[6 * i + 0] = p[0];
@@ -711,12 +713,12 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<std::pair<glm::vec3, flo
         }
         glBindVertexArray(m_meshVAO[(int)vertex::star]);
         glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::star]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(starVertices), starVertices, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, starVertices.size() * sizeof(float), starVertices.data(), GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glDrawArrays(GL_LINES, 0, 2 * nl.size());
     }
     if (np.size()) {
-        float starVertices[12 * np.size()];
+        std::vector<float> starVertices(12 * np.size());
         for (int i = 0; i < np.size(); ++i) {
             glm::vec2 n = glm::normalize(glm::vec2(p[1] - np[i].first[1], np[i].first[0] - p[0])) * np[i].second;
             glm::vec3 q = (np[i].first + p) * 0.5f;
@@ -733,7 +735,7 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<std::pair<glm::vec3, flo
             starVertices[12 * i + 10] = q[1] - n[1];
             starVertices[12 * i + 11] = q[2];
         }
-        unsigned int starIndices[6 * np.size()];
+        std::vector<unsigned int> starIndices(6 * np.size());
         for (int i = 0; i < np.size(); ++i) {
             starIndices[6 * i + 0] = 4*i;
             starIndices[6 * i + 1] = 4*i + 1;
@@ -744,16 +746,17 @@ void renderer::drawStar(glm::vec3 const& p, std::vector<std::pair<glm::vec3, flo
         }
         glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);
         glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(starVertices), starVertices, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, starVertices.size() * sizeof(float), starVertices.data(), GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::rectangle]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(starIndices), starIndices, GL_DYNAMIC_DRAW);
-        glDrawElements(GL_TRIANGLES, sizeof(starIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, starIndices.size() * sizeof(unsigned int), starIndices.data(), GL_DYNAMIC_DRAW);
+        glDrawElements(GL_TRIANGLES, starIndices.size(), GL_UNSIGNED_INT, 0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 }
 
 //! @brief It draws the tail of a node, as a sequence of lines given their endpoints, the color to be used and a width.
 void renderer::drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const& n, color const& c, float w) const {
+    if (p.size() < 2) return;
     glm::vec4 col = color_to_vec(c);
     col.a /= 2;
     // Create matrices (used several times)
@@ -763,7 +766,7 @@ void renderer::drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const
     m_shaderProgramCol.setMat4("u_model", glm::mat4{ 1.0f });
     m_shaderProgramCol.setVec4("u_color", col);
 
-    float tailVertices[6 * p.size()];
+    std::vector<float> tailVertices(6 * p.size());
     for (int i = 0; i < p.size(); ++i) {
         float k = i/(p.size()-1.0f);
         k *= k * w * 0.62f;
@@ -774,7 +777,7 @@ void renderer::drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const
         tailVertices[6 * i + 4] = p[i][1] - n[i][1] * k;
         tailVertices[6 * i + 5] = p[i][2];
     }
-    unsigned int tailIndices[6 * p.size() - 6];
+    std::vector<unsigned int> tailIndices(6 * p.size() - 6);
     for (int i = 0; i < p.size()-1; ++i) {
         tailIndices[6 * i + 0] = 2*i;
         tailIndices[6 * i + 1] = 2*i + 1;
@@ -786,10 +789,10 @@ void renderer::drawTail(std::deque<glm::vec3> const& p, std::deque<vec<2>> const
 
     glBindVertexArray(m_meshVAO[(int)vertex::rectangle]);
     glBindBuffer(GL_ARRAY_BUFFER, s_meshVBO[(int)vertex::rectangle]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(tailVertices), tailVertices, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, tailVertices.size() * sizeof(float), tailVertices.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_meshEBO[(int)index::rectangle]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tailIndices), tailIndices, GL_DYNAMIC_DRAW);
-    glDrawElements(GL_TRIANGLES, sizeof(tailIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, tailIndices.size() * sizeof(unsigned int), tailIndices.data(), GL_DYNAMIC_DRAW);
+    glDrawElements(GL_TRIANGLES, tailIndices.size(), GL_UNSIGNED_INT, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

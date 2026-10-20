@@ -957,30 +957,32 @@ struct displayer {
             //! @brief Caches the current position for later use.
             glm::vec3 const& cache_position(times_t t) {
                 m_position = to_vec3(P::node::position(t));
-                if (m_tail_times.size() > 1 and t - m_tail_times[m_tail_times.size()-2] < tail_granularity) {
-                    m_tail_points.pop_back();
-                    m_tail_normals.pop_back();
-                    m_tail_times.pop_back();
-                }
-                m_tail_points.push_back(m_position);
-                m_tail_times.push_back(t);
-                size_t s = m_tail_times.size();
-                if (s > 2) {
-                    vec<2> n{m_tail_points[s-3].y - m_tail_points[s-1].y, m_tail_points[s-1].x - m_tail_points[s-3].x};
-                    if (n < 0.1) m_tail_normals.back() = {0,0};
-                    else m_tail_normals.back() = unit(std::move(n));
-                }
-                if (s == 1) m_tail_normals.push_back({0,0});
-                else {
-                    vec<2> n{m_tail_points[s-2].y - m_tail_points[s-1].y, m_tail_points[s-1].x - m_tail_points[s-2].x};
-                    if (n < 0.1) m_tail_normals.push_back({0,0});
-                    else m_tail_normals.push_back(unit(std::move(n)));
-                }
                 double dt = common::get_or<tail_time_tag>(P::node::storage_tuple(), double(tail_time_val));
-                while (m_tail_times.front() < t - dt) {
-                    m_tail_points.pop_front();
-                    m_tail_normals.pop_front();
-                    m_tail_times.pop_front();
+                if (dt > 0) {
+                    if (m_tail_times.size() > 1 and t - m_tail_times[m_tail_times.size()-2] < tail_granularity) {
+                        m_tail_points.pop_back();
+                        m_tail_normals.pop_back();
+                        m_tail_times.pop_back();
+                    }
+                    m_tail_points.push_back(m_position);
+                    m_tail_times.push_back(t);
+                    size_t s = m_tail_times.size();
+                    if (s > 2) {
+                        vec<2> n{m_tail_points[s-3].y - m_tail_points[s-1].y, m_tail_points[s-1].x - m_tail_points[s-3].x};
+                        if (n < 0.1) m_tail_normals.back() = {0,0};
+                        else m_tail_normals.back() = unit(std::move(n));
+                    }
+                    if (s == 1) m_tail_normals.push_back({0,0});
+                    else {
+                        vec<2> n{m_tail_points[s-2].y - m_tail_points[s-1].y, m_tail_points[s-1].x - m_tail_points[s-2].x};
+                        if (n < 0.1) m_tail_normals.push_back({0,0});
+                        else m_tail_normals.push_back(unit(std::move(n)));
+                    }
+                    while (m_tail_times.front() < t - dt) {
+                        m_tail_points.pop_front();
+                        m_tail_normals.pop_front();
+                        m_tail_times.pop_front();
+                    }
                 }
                 return m_position;
             }
@@ -1615,7 +1617,7 @@ struct displayer {
                         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
                             if (mods & GLFW_MOD_ALT) {
                                 // starting to drag around the selected nodes
-                                if (m_selected_nodes.count(m_hoveredNode)) m_dragging = true;
+                                if (m_selected_nodes.count(m_hoveredNode) or (m_selected_nodes.size() == 0 and m_hoveredNode != device_t(-1))) m_dragging = true;
                             } else if (m_hoveredNode != device_t(-1)) {
                                 // opening an info window
                                 glfwMakeContextCurrent(NULL);
@@ -1650,6 +1652,10 @@ struct displayer {
                         if (m_dragging) {
                             // Applies one frame's worth of mouse movement to every dragged node.
                             glm::vec3 worldDelta = mouseToWorld(glm::vec2((float)x, -(float)y));
+                            if (m_selected_nodes.size() == 0 and m_hoveredNode != device_t(-1)) {
+                                typename P::net::lock_type l;
+                                details::position_delta(P::net::node_at(m_hoveredNode, l).position(), worldDelta);
+                            }
                             for (device_t uid : m_selected_nodes) if (P::net::node_count(uid)) {
                                 typename P::net::lock_type l;
                                 details::position_delta(P::net::node_at(uid, l).position(), worldDelta);

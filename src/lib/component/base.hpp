@@ -19,7 +19,8 @@
 #include "lib/common/tagged_tuple.hpp"
 
 #ifdef __EMSCRIPTEN__
-#include <emscripten.h>
+    #include <emscripten.h>
+    #define BROWSER_FPS 60    
 #endif
 
 /**
@@ -254,23 +255,10 @@ struct base {
             void update() {}
 
             #ifdef __EMSCRIPTEN__
-                private:
-                //! @brief Static wrapper containing wasm instance for emscripten callback
-                static net*& wasm_instance() {
-                    static net* inst = nullptr;
-                    return inst;
-                }
-
-                //! @brief Static callback required by emscripten_set_main_loop
-                static void wasm_loop_callback() {
-                    if (wasm_instance()) static_cast<typename F::net*>(wasm_instance())->update();
-                }
-
-                public:
                 //! @brief Run main loop in browser by requestAnimationFrame
-                void run(times_t = TIME_FAR) {
+                void run(times_t end = TIME_FAR) {
                     wasm_instance() = this;
-                    emscripten_set_main_loop(wasm_loop_callback, 0, 1);
+                    emscripten_set_main_loop(wasm_loop_callback, BROWSER_FPS, 1);
                 }
             #else
             //! @brief Runs the events until a given maximum time. Should NEVER be overridden.
@@ -337,6 +325,27 @@ struct base {
 
             //! @brief The minimum delay triggering a warning.
             times_t m_warn_delay;
+
+            #ifdef __EMSCRIPTEN__
+                //! @brief Override for batch_simulator
+                bool frame_ready(){ return false; }
+
+                //! @brief Static wrapper containing wasm instance for emscripten callback
+                static net*& wasm_instance() {
+                    static net* inst = nullptr;
+                    return inst;
+                }
+
+                //! @brief Static callback required by emscripten_set_main_loop
+                static void wasm_loop_callback() {
+                    if (!wasm_instance()) return;
+                    typename F::net& f = *static_cast<typename F::net*>(wasm_instance());
+                    double before_update = emscripten_get_now();
+                    do { 
+                        f.update(); 
+                    } while (!f.frame_ready() and emscripten_get_now() - before_update < (1000.0/BROWSER_FPS));
+                }
+            #endif
         };
     };
 };

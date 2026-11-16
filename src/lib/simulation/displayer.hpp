@@ -1383,6 +1383,10 @@ struct displayer {
                         }
                         // Swap buffers and prepare for next frame to draw
                         m_renderer.swapAndNext();
+                        #ifdef __EMSCRIPTEN__
+                            // Set frame as ready for browser
+                            m_frame_ready = true;
+                        #endif
                         // Update m_refresh
                         m_refresh = rt + m_step;
                     }
@@ -1413,6 +1417,15 @@ struct displayer {
             inline void set_color_theme(color background, color foreground, color selection) {
                 m_renderer.setColorTheme(background, foreground, selection);
             }
+
+            #ifdef __EMSCRIPTEN__
+            //! @brief Returns and resets a frame
+            bool frame_ready() {
+                bool b = m_frame_ready;
+                m_frame_ready = false;
+                return b;
+            }
+            #endif
 
         private: // implementation details
             //! @brief Sets the color theme based on options (empty overload).
@@ -1920,6 +1933,11 @@ struct displayer {
 
             //! @brief A mutex for regulating access to the viewport boundaries.
             common::mutex<parallel> m_viewport_mutex;
+
+            #ifdef __EMSCRIPTEN__
+                //! @brief Frame ready boolean
+                bool m_frame_ready = false;
+            #endif
         };
     };
 };

@@ -74,7 +74,11 @@ function(fcpp_target target_executable enable_gui)
     fcpp_copy(${target_name} ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR} input)
     set_target_properties(${target_name} PROPERTIES PREFIX "run/")
     if(EMSCRIPTEN)
-        set_target_properties(${target_name} PROPERTIES SUFFIX ".html")
+        if(FCPP_BUILD_GL)
+            set_target_properties(${target_name} PROPERTIES SUFFIX ".html")
+        else()
+            set_target_properties(${target_name} PROPERTIES SUFFIX ".js")
+        endif()
         fcpp_copy_file(${target_name} "$<TARGET_FILE:fcpp>" "${CMAKE_BINARY_DIR}/run")
         fcpp_copy_file(${target_name} "${CMAKE_BINARY_DIR}/fcpp/src/libstb_image.a" "${CMAKE_BINARY_DIR}/run")
     endif()
@@ -240,7 +244,7 @@ if(FCPP_BUILD_GL)
     if(EMSCRIPTEN)
         target_link_options(fcpp PUBLIC 
             --preload-file=${CMAKE_BINARY_DIR}/fonts@/fonts
-            --preload-file=${CMAKE_BINARY_DIR}/shaders@/shaders)
+            --preload-file=${CMAKE_BINARY_DIR}/shaders/web@/shaders)
     endif()
 endif(FCPP_BUILD_GL)
 
@@ -334,7 +338,6 @@ if(FCPP_BUILD_GL)
             -sMIN_WEBGL_VERSION=2
             -sMAX_WEBGL_VERSION=2
             -sSHARED_MEMORY=1
-            -sNO_DISABLE_EXCEPTION_CATCHING
             -sSTACK_SIZE=1MB
             -sGROWABLE_ARRAYBUFFERS=2
             -sINITIAL_MEMORY=67108864)
@@ -446,3 +449,30 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/simulation/spawner.cpp)
     endif(FCPP_INTERNAL_TESTS)
 endif(FCPP_BUILD_TESTS)
+
+#########################
+# WASM BUILD EMSCRIPTEN #
+#########################
+
+# NOT READY 
+if(FCPP_BUILD_WASM)
+    set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB True)
+    set(CMAKE_DISABLE_FIND_PACKAGE_PNG True)
+    set(CMAKE_DISABLE_FIND_PACKAGE_BZip2 True)
+    set(CMAKE_DISABLE_FIND_PACKAGE_BrotliDec True)
+    set(FT_DISABLE_HARFBUZZ TRUE CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(glm freetype)
+    target_compile_options(freetype PUBLIC -fPIC -matomics -mbulk-memory)
+    target_compile_options(glm PUBLIC -matomics -mbulk-memory)
+    target_link_libraries(fcpp PUBLIC glm freetype)
+    target_compile_options(fcpp PUBLIC -matomics -mbulk-memory -Wno-shift-count-overflow)
+    target_link_options(fcpp PUBLIC
+        --use-port=contrib.glfw3
+        -sFULL_ES3=1
+        -sMIN_WEBGL_VERSION=2
+        -sMAX_WEBGL_VERSION=2
+        -sSHARED_MEMORY=1
+        -sSTACK_SIZE=1MB
+        -sGROWABLE_ARRAYBUFFERS=2
+        -sINITIAL_MEMORY=67108864)
+endif()

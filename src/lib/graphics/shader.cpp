@@ -6,23 +6,6 @@
 
 #include "lib/graphics/shader.hpp"
 
-#ifdef __EMSCRIPTEN__
-namespace {
-    /**
-    * @brief Run-time conversion of shaders version from 3.3 to 3.0 (accepted one by WebGL)
-    */
-    std::string toGlslEs(std::string src) {
-        if (src.compare(0, 3, "\xEF\xBB\xBF") == 0) src.erase(0, 3);
-        std::size_t pos = src.find("#version");
-        if (pos != std::string::npos) {
-            std::size_t end = src.find('\n', pos);
-            src.erase(pos, end == std::string::npos ? std::string::npos : end - pos);
-        }
-        return "#version 300 es\nprecision highp float;\nprecision highp int;\n" + src;
-    }
-}
-#endif
-
 shader::shader() : m_ID{ 0 } { }
 
 shader::shader(char const* vertexPath, char const* fragmentPath)
@@ -57,12 +40,6 @@ shader::shader(char const* vertexPath, char const* fragmentPath)
     {
         std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ\n";
     }
-
-    #ifdef __EMSCRIPTEN__
-        // Vertex & fragment shaders conversion
-        vertexCode = toGlslEs(vertexCode);
-        fragmentCode = toGlslEs(fragmentCode);
-    #endif
 
     // Getting code from strings
     char const* vShaderCode{ vertexCode.c_str() };

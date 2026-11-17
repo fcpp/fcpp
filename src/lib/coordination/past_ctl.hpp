@@ -64,17 +64,15 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in the same device up to k metric steps in the past.
-GEN(T) bool S(ARGS, T k, field<T> metric, bool f1, bool f2) { CODE
-    return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
-        T value = self(CALL, l);
-        T unit = self(CALL, metric);
-        // Check to handle overflow
-        if (value < std::numeric_limits<T>::max() - unit)
-          value += unit;
-        else
-          value = std::numeric_limits<T>::max();
-        return mix<T>(f1, f2, value);
-        }) < k;
+GEN(T) bool S(ARGS, T k, T metric, bool f1, bool f2) { CODE
+    return old(CALL, std::numeric_limits<T>::max(), [&](T value) {
+               T max = std::numeric_limits<T>::max();
+               if (value < max && value + metric < max)
+                   value += metric;
+               else
+                   value = max;
+               return mix<T>(f1, f2, value);
+           }) < k;
 }
 
 //! @brief f1 holds since f2 held in all devices.
@@ -84,11 +82,43 @@ FUN bool AS(ARGS, bool f1, bool f2) { CODE
     });
 }
 
+//! @brief f1 holds since f2 held in all devices up to k metric steps in the past.
+GEN(T) bool AS(ARGS, T k, field<T> const& metric, bool f1, bool f2) { CODE
+    return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
+               field<T> update = map_hood(
+                   [&](T value, T unit) {
+                       if (value < std::numeric_limits<T>::max() - unit)
+                           value += unit;
+                       else
+                           value = std::numeric_limits<T>::max();
+                       return value;
+                   },
+                   l, metric);
+               return mix<T>(f1, f2, max_hood(CALL, update));
+           }) < k;
+}
+
 //! @brief f1 holds since f2 held in any device.
 FUN bool ES(ARGS, bool f1, bool f2) { CODE
     return nbr(CALL, false, [&](field<bool> n) -> bool {
         return f2 | (f1 & any_hood(CALL, n));
     });
+}
+
+//! @brief f1 holds since f2 held in at least one device up to k metric steps in the past.
+GEN(T) bool ES(ARGS, T k, field<T> const& metric, bool f1, bool f2) { CODE
+    return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
+               field<T> update = map_hood(
+                   [&](T value, T unit) {
+                       if (value < std::numeric_limits<T>::max() - unit)
+                           value += unit;
+                       else
+                           value = std::numeric_limits<T>::max();
+                       return value;
+                   },
+                   l, metric);
+               return mix<T>(f1, f2, min_hood(CALL, update));
+           }) < k;
 }
 
 //! @brief Previously in the same device.

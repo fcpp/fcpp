@@ -28,6 +28,7 @@ GEN_EXPORT(T) bounded_past_ctl_t = export_list<bool,T>;
 //! @brief Namespace containing logical operators and formulas.
 namespace logic {
 
+//! @brief Support function for bounded past operator
 template <typename T>
 T mix(bool f1, bool f2, T ol) {
   if (f2)
@@ -62,13 +63,18 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
     });
 }
 
-GEN(T) bool S(ARGS, T k, T unit, bool f1, bool f2) { CODE
+//! @brief f1 holds since f2 held in the same device up to k metric steps in the past.
+GEN(T) bool S(ARGS, T k, field<T> metric, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
         T value = self(CALL, l);
-        if (value < std::numeric_limits<T>::max())
-          value + unit;
-        return mix<T>(f1, f2, value) < k;
-        });
+        T unit = self(CALL, metric);
+        // Check to handle overflow
+        if (value < std::numeric_limits<T>::max() - unit)
+          value += unit;
+        else
+          value = std::numeric_limits<T>::max();
+        return mix<T>(f1, f2, value);
+        }) < k;
 }
 
 //! @brief f1 holds since f2 held in all devices.

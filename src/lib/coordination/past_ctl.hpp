@@ -8,6 +8,7 @@
 #ifndef FCPP_COORDINATION_PAST_CTL_H_
 #define FCPP_COORDINATION_PAST_CTL_H_
 
+#include <limits>
 #include "lib/beautify.hpp"
 #include "lib/coordination/utils.hpp"
 
@@ -22,9 +23,22 @@ namespace coordination {
 
 //! @brief Exports for Past-CTL logic formulas.
 using past_ctl_t = export_list<bool>;
+GEN_EXPORT(T) bounded_past_ctl_t = export_list<T>;
 
 //! @brief Namespace containing logical operators and formulas.
 namespace logic {
+
+template <typename T>
+T mix(bool f1, bool f2, T ol) {
+  if (f2)
+    return 0;
+  else {
+    if (f1)
+      return ol;
+    else
+      return std::numeric_limits<T>::max();
+  }
+}
 
 //! @brief Yesterday in the same device.
 FUN bool Y(ARGS, bool f) { CODE
@@ -46,6 +60,15 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
     return old(CALL, false, [&](bool o) -> bool {
         return f2 | (f1 & o);
     });
+}
+
+GEN(T) bool S(ARGS, T k, T unit, bool f1, bool f2) { CODE
+    return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
+        T value = self(CALL, l);
+        if (value < std::numeric_limits<T>::max())
+          value + unit;
+        return mix<T>(f1, f2, value) < k;
+        });
 }
 
 //! @brief f1 holds since f2 held in all devices.

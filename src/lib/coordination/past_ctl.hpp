@@ -23,7 +23,7 @@ namespace coordination {
 
 //! @brief Exports for Past-CTL logic formulas.
 using past_ctl_t = export_list<bool>;
-GEN_EXPORT(T) bounded_past_ctl_t = export_list<T>;
+GEN_EXPORT(T) bounded_past_ctl_t = export_list<bool,T>;
 
 //! @brief Namespace containing logical operators and formulas.
 namespace logic {

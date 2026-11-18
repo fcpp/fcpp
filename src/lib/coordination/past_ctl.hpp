@@ -80,16 +80,16 @@ FUN bool AS(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in all devices up to k metric steps in the past.
-GEN(T) bool AS(ARGS, T k, field<T> const& metric, bool f1, bool f2) { CODE
+GEN(T) bool AS(ARGS, T k, field<T> const& metric, field<bool> f1, field<bool> f2) { CODE
     return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
                field<T> update = map_hood(
-                   [&](T value, T unit) {
+                   [&](T value, T unit, bool ff1, bool ff2) {
                        if (value < std::numeric_limits<T>::max())
                            value += unit;
-                       return value;
+                       return mix<T>(ff1, ff2, value);
                    },
-                   l, metric);
-               return mix<T>(f1, f2, max_hood(CALL, update));
+                   l, metric, f1, f2);
+               return max_hood(CALL, update);
            }) < k;
 }
 
@@ -104,13 +104,13 @@ FUN bool ES(ARGS, bool f1, bool f2) { CODE
 GEN(T) bool ES(ARGS, T k, field<T> const& metric, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
                field<T> update = map_hood(
-                   [&](T value, T unit) {
+                   [&](T value, T unit, bool ff1, bool ff2) {
                        if (value < std::numeric_limits<T>::max())
                            value += unit;
-                       return value;
+                       return mix<T>(ff1, ff2, value);
                    },
-                   l, metric);
-               return mix<T>(f1, f2, min_hood(CALL, update));
+                   l, metric, f1, f2);
+               return min_hood(CALL, update);
            }) < k;
 }
 
@@ -121,11 +121,19 @@ FUN bool P(ARGS, bool f) { CODE
     });
 }
 
+GEN(T) bool P(ARGS, T k, T metric, bool f) { CODE
+  return S(CALL, k, metric, true, f);
+}
+
 //! @brief Previously in all devices.
 FUN bool AP(ARGS, bool f) { CODE
     return nbr(CALL, false, [&](field<bool> n) -> bool {
         return f | all_hood(CALL, n);
     });
+}
+
+GEN(T) bool AP(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
+  return AS(CALL, k, metric, nbr(CALL, true), f);
 }
 
 //! @brief Previously in any device.
@@ -135,11 +143,19 @@ FUN bool EP(ARGS, bool f) { CODE
     });
 }
 
+GEN(T) bool EP(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
+  return ES(CALL, k, metric, nbr(CALL, true), f);
+}
+
 //! @brief Historically in the same device.
 FUN bool H(ARGS, bool f) { CODE
     return old(CALL, true, [&](bool o) -> bool {
         return f & o;
     });
+}
+
+GEN(T) bool H(ARGS, T k, T metric, bool f) { CODE
+    return not P(CALL, k, metric, not f);
 }
 
 //! @brief Historically in all devices.
@@ -149,11 +165,19 @@ FUN bool AH(ARGS, bool f) { CODE
     });
 }
 
+GEN(T) bool AH(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
+    return not EP(CALL, k, metric, not f);
+}
+
 //! @brief Historically in any device.
 FUN bool EH(ARGS, bool f) { CODE
     return nbr(CALL, true, [&](field<bool> n) -> bool {
         return f & any_hood(CALL, n);
     });
+}
+
+GEN(T) bool EH(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
+    return not AP(CALL, k, metric, not f);
 }
 
 } // logic

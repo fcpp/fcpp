@@ -566,11 +566,11 @@ while [ "$1" != "" ]; do
             if [ "$alltargets" != "" ]; then
                 cmake_builderx_wasm $alltargets
             fi
-        fi
-        html_target="wasm-bin/run/${targets}.html"
+        fi 
+        html_target="wasm-bin/run/index.html"
         if [ -f "$html_target" ]; then
             emrun "$html_target"
-        elif js_target="wasm-bin/run/${targets}.js" && [ -f "$js_target" ]; then
+        elif js_target="wasm-bin/run/index.js" && [ -f "$js_target" ]; then
             node "$js_target"
         else
             echo -e "\033[1mtarget \"$targets\" not found\033[0m"

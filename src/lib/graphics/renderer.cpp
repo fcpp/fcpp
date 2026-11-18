@@ -8,6 +8,11 @@
 
 #include "lib/graphics/renderer.hpp"
 
+#ifdef __EMSCRIPTEN__
+    #define INTERNAL_FORMAT GL_R8
+#else
+    #define INTERNAL_FORMAT GL_RED
+#endif
 
 // using namespace fcpp and fcpp::internal to prevent very verbose code...
 using namespace fcpp;
@@ -183,11 +188,7 @@ void renderer::allocateGlyphTextures() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s_fontAtlas);
 
-    #ifdef __EMSCRIPTEN__
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, atlasWidth, atlasHeight, 0, GL_RED, GL_UNSIGNED_BYTE, atlas.data());
-    #else 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlasWidth, atlasHeight, 0, GL_RED, GL_UNSIGNED_BYTE, atlas.data());
-    #endif
+    glTexImage2D(GL_TEXTURE_2D, 0, INTERNAL_FORMAT, atlasWidth, atlasHeight, 0, GL_RED, GL_UNSIGNED_BYTE, atlas.data());
 
     // Set texture options
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

@@ -20,7 +20,12 @@
 
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
-    #define BROWSER_FPS 60    
+    #define BROWSER_FPS 60
+    #define BROWSER_RUN \
+        void run(times_t end = TIME_FAR) { \
+            wasm_instance() = this; \
+            emscripten_set_main_loop(wasm_loop_callback, BROWSER_FPS, 1); \
+        }
 #endif
 
 /**
@@ -256,10 +261,7 @@ struct base {
 
             #ifdef __EMSCRIPTEN__
                 //! @brief Run main loop in browser by requestAnimationFrame
-                void run(times_t end = TIME_FAR) {
-                    wasm_instance() = this;
-                    emscripten_set_main_loop(wasm_loop_callback, BROWSER_FPS, 1);
-                }
+                BROWSER_RUN
             #else
             //! @brief Runs the events until a given maximum time. Should NEVER be overridden.
             void run(times_t end = TIME_FAR) {

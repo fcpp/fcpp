@@ -204,7 +204,7 @@ namespace tags {
 
 #ifdef FCPP_GUI
 #ifdef __EMSCRIPTEN__
-//! @brief Placeholder: no separate info windows on the Web.
+//! @brief Inert version of info_window
 template <typename F>
 class info_window {
   public:

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="fcpp.png">
+    <style>
+        @import url("https://fonts.googleapis.com/css?family=Open+Sans:400,700&display=swap");
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            color: #606c71;
+            background-color: #ffffff;
+        }
+        #fcpp-header{
+            color: #fff;
+            text-align: center;
+            background-color: #159957;
+            background-image: linear-gradient(120deg, #155799, #159957);
+            padding: 1px;
+            margin-bottom: 8px;
+        }
+        #title{
+            text-align: center;
+            margin-bottom: 0;
+        }
+        #simulation-name{
+            margin: 2px auto 8px;
+            font-size: 15px;
+            opacity: 0.85;
+        }
+        canvas {
+            background: transparent; 
+            display: block; 
+            margin: auto;
+            border: 2px solid #0257ac;
+            border-radius: 6px;
+        }
+        #footer{
+            color: #f3f6fa;
+            display: block;
+            background-color: #ababab;
+            background-image: linear-gradient(120deg, #126b528a, #ababab);
+            margin-top: 8px;
+        }
+        #output-header{
+            display: flex;
+            margin-bottom: 0;
+            padding: 2px;
+        }
+        #output-header > h2{
+            width: 50%;
+            padding: 5px;    
+            margin: 1% 15%;
+            margin-bottom: 0;
+            text-align: center;
+            font-size: 14px;
+            background-color: black;
+            border: 2px solid #f3f6fa;
+            border-radius: 7px;
+        }
+        #output-container {
+            display: flex;
+            width: 100%;
+        }
+        #output, #error-output {
+            width: 48%;
+            height: 200px;
+            margin: 1%;
+            border-left: 0;
+            border-right: 0px;
+            border-radius: 4px;
+            padding-right: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Lucida Console', Monaco, monospace;
+            outline: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="fcpp-header">
+        <h1 id="title">FCPP Simulator</h1>
+        <p id="simulation-name">Spreading collection</p>
+    </div>
+    <div id="main-content">
+        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+        <div id="footer">
+            <div id="output-header">
+                <h2>INFO LOGS (std::cout)</h2>
+                <h2>ERRORS (std::cerr)</h2>
+            </div>
+            <div id="output-container">
+                <textarea id="output" readonly rows="8"></textarea>
+                <textarea id="error-output" readonly rows="8"></textarea>
+            </div>
+        </div>
+    </div>
+    <script>
+        var canvasElement = document.getElementById("canvas"),
+            outputElement = document.getElementById("output"),
+            errorElement = document.getElementById("error-output");
+        var Module = {
+            canvas: canvasElement,
+            print(...e) {
+                console.log(...e);
+                if (outputElement) {
+                    outputElement.value += e.join(" ") + "\n";
+                    outputElement.scrollTop = outputElement.scrollHeight;
+                }
+            },
+            printErr(...e) {
+                console.error(...e);
+                if (errorElement) {
+                    errorElement.value += e.join(" ") + "\n";
+                    errorElement.scrollTop = errorElement.scrollHeight;
+                }
+            },
+        };
+    </script>
+    <script src="index.js"></script>
+</body>
+</html>

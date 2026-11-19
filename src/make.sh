@@ -573,7 +573,7 @@ while [ "$1" != "" ]; do
         elif js_target="wasm-bin/run/index.js" && [ -f "$js_target" ]; then
             node "$js_target"
         else
-            echo -e "\033[1mtarget \"$targets\" not found\033[0m"
+            echo -e "\033[1mwasm outputs for \"$targets\" not found\033[0m"
         fi
         quitter
     else

@@ -77,7 +77,10 @@ function(fcpp_target target_executable enable_gui)
     if(EMSCRIPTEN)
         set_target_properties(${target_name} PROPERTIES OUTPUT_NAME "index" SUFFIX ".js")
         if(FCPP_BUILD_GL)
-            fcpp_copy_file(${target_name} "${CMAKE_SOURCE_DIR}/wasm/index.html" "${CMAKE_BINARY_DIR}/run")
+            fcpp_copy_file(${target_name} "${CMAKE_SOURCE_DIR}/fcpp/src/extras/wasm/index.html" "${CMAKE_BINARY_DIR}/run")
+        else()
+            target_compile_options(fcpp PUBLIC -Wno-shift-count-overflow)
+            target_link_options(fcpp PUBLIC -sALLOW_MEMORY_GROWTH=1 -Wno-pthreads-mem-growth)
         endif()
         fcpp_copy_file(${target_name} "$<TARGET_FILE:fcpp>" "${CMAKE_BINARY_DIR}/run")
         fcpp_copy_file(${target_name} "${CMAKE_BINARY_DIR}/fcpp/src/libstb_image.a" "${CMAKE_BINARY_DIR}/run")
@@ -449,36 +452,3 @@ if(FCPP_BUILD_TESTS)
         fcpp_test(test/simulation/spawner.cpp)
     endif(FCPP_INTERNAL_TESTS)
 endif(FCPP_BUILD_TESTS)
-
-#########################
-# WASM BUILD EMSCRIPTEN #
-#########################
-
-# NOT READY 
-if(FCPP_BUILD_WASM)
-    set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB True)
-    set(CMAKE_DISABLE_FIND_PACKAGE_PNG True)
-    set(CMAKE_DISABLE_FIND_PACKAGE_BZip2 True)
-    set(CMAKE_DISABLE_FIND_PACKAGE_BrotliDec True)
-    set(FT_DISABLE_HARFBUZZ TRUE CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(glm freetype)
-    target_compile_options(freetype PUBLIC -fPIC -matomics -mbulk-memory)
-    target_compile_options(glm PUBLIC -matomics -mbulk-memory)
-    target_link_libraries(fcpp PUBLIC glm freetype)
-    target_compile_options(fcpp PUBLIC -matomics -mbulk-memory -Wno-shift-count-overflow)
-    target_link_options(fcpp PUBLIC
-        --use-port=contrib.glfw3
-        -sFULL_ES3=1
-        -sMIN_WEBGL_VERSION=2
-        -sMAX_WEBGL_VERSION=2
-        -sSHARED_MEMORY=1
-        -sSTACK_SIZE=1MB
-        -sGROWABLE_ARRAYBUFFERS=2
-        -sINITIAL_MEMORY=67108864)
-    if(FCPP_PARALLEL)
-        target_link_options(fcpp PUBLIC
-            -sPTHREAD_POOL_SIZE=4
-            -sPROXY_TO_PTHREAD=1 # Web Worker
-            -sALLOW_MEMORY_GROWTH=1)
-    endif()
-endif()

@@ -18,6 +18,13 @@
 using namespace fcpp;
 using namespace fcpp::internal;
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+    EM_JS(void, set_html_title, (const char* title), {
+        const el = document.getElementById("simulation-name");
+        if(el) el.textContent = UTF8ToString(title) || "No simulation";
+    });
+#endif
 
 /* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
@@ -265,6 +272,10 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
 
     // Create window (and its context)
     m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, name.c_str(), NULL, masterPtr);
+
+    #ifdef __EMSCRIPTEN__
+        set_html_title(name.c_str());
+    #endif
 
     if (m_window == NULL) {
         glfwTerminate();

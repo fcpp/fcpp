@@ -25,7 +25,12 @@
 #include <utility>
 #include <vector>
 
+#ifdef __EMSCRIPTEN__
+#include <GLES3/gl3.h>
+#else
 #include <glad/glad.h>
+#endif
+
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -198,6 +203,18 @@ namespace tags {
 
 
 #ifdef FCPP_GUI
+#ifdef __EMSCRIPTEN__
+//! @brief Inert version of info_window
+template <typename F>
+class info_window {
+  public:
+    template <typename N>
+    info_window(N&, std::vector<device_t>) {}
+    bool closing() const { return true; }
+    template <typename N>
+    void update_values(N&) {}
+};
+#else
 //! @brief Class displaying detailed node information in a separate window.
 template <typename F>
 class info_window {
@@ -724,6 +741,7 @@ class info_window {
     //! @brief For each storage field (same order as m_types).
     std::vector<bool> m_editable;
 };
+#endif
 
 
 //! @cond INTERNAL
@@ -1229,6 +1247,9 @@ struct displayer {
             void update() {
                 times_t rt = std::min(m_refresh, P::net::real_time());
                 if (rt < warped_next()) {
+                    #ifdef __EMSCRIPTEN__
+                        m_renderer.clearFrame();
+                    #endif
                     times_t t = internal_time();
                     auto n_beg = P::net::node_begin();
                     auto n_end = P::net::node_end();
@@ -1362,6 +1383,10 @@ struct displayer {
                         }
                         // Swap buffers and prepare for next frame to draw
                         m_renderer.swapAndNext();
+                        #ifdef __EMSCRIPTEN__
+                            // Set frame as ready for browser
+                            m_frame_ready = true;
+                        #endif
                         // Update m_refresh
                         m_refresh = rt + m_step;
                     }
@@ -1392,6 +1417,15 @@ struct displayer {
             inline void set_color_theme(color background, color foreground, color selection) {
                 m_renderer.setColorTheme(background, foreground, selection);
             }
+
+            #ifdef __EMSCRIPTEN__
+            //! @brief Returns and resets a frame
+            bool frame_ready() {
+                bool b = m_frame_ready;
+                m_frame_ready = false;
+                return b;
+            }
+            #endif
 
         private: // implementation details
             //! @brief Sets the color theme based on options (empty overload).
@@ -1899,6 +1933,11 @@ struct displayer {
 
             //! @brief A mutex for regulating access to the viewport boundaries.
             common::mutex<parallel> m_viewport_mutex;
+
+            #ifdef __EMSCRIPTEN__
+                //! @brief Frame ready boolean
+                bool m_frame_ready = false;
+            #endif
         };
     };
 };

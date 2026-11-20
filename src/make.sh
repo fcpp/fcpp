@@ -28,6 +28,8 @@ function usage() {
     echo -e "       <copts...>"
     echo -e "    \033[1mmultiall\033[0m:                        tests everything with both clang and gcc"
     echo -e "       <copts...>"
+    echo -e "    \033[1mwasm\033[0m:                            build with emscripten and run on browser"
+    echo -e "       <copts...> <targets...>"
     echo -e "Targets can be substrings demanding builds for all possible expansions."
     exit 1
 }
@@ -217,6 +219,17 @@ function cmake_builderx() {
     reporter cmake --build ./bin/ $opt "$@"
 }
 
+function cmake_builderx_wasm() {
+    reporter emcmake cmake -S ./ -B ./wasm-bin -G "$platform Makefiles" -DCMAKE_BUILD_TYPE=Release $opts "$cmakeopts"
+    if which nproc 2>/dev/null >&2; then
+        opt="-j `nproc`"
+    fi
+    if [ "$1" != "" ]; then
+        opt="$opt --target"
+    fi
+    reporter cmake --build ./wasm-bin/ $opt "$@"
+}
+
 function powerset() {
     first="$1"
     if [ "$first" == "" ]; then
@@ -232,7 +245,7 @@ function powerset() {
 while [ "$1" != "" ]; do
     if [ "$1" == "clean" ]; then
         shift 1
-        rm -rf doc bin
+        rm -rf doc bin wasm-bin
     elif [ "$1" == "gcc" ]; then
         shift 1
         gcc=$(which $(compgen -c gcc- | grep "^gcc-[1-9][0-9]$" | sort | tail -n 1))
@@ -528,6 +541,40 @@ while [ "$1" != "" ]; do
         $0 clean
         reporter $0 clang test all
         reporter $0 doc
+        quitter
+    elif [ "$1" == "wasm" ]; then
+        shift 1
+        parseopt "$@"
+        shift $?
+        alltargets=""
+        if [ "$*" ==  "all" ]; then
+            cmake_builderx_wasm
+        else
+            while [ "$1" != "" ]; do
+                if [ "$1" == "fcpp" ]; then
+                    alltargets="$alltargets fcpp"
+                else
+                    cmake_finderx "$1" target test
+                    if [ "$targets" == "" ]; then
+                        echo -e "\033[1mtarget \"$1\" not found\033[0m"
+                    else
+                        alltargets="$alltargets $targets"
+                    fi
+                fi
+                shift 1
+            done
+            if [ "$alltargets" != "" ]; then
+                cmake_builderx_wasm $alltargets
+            fi
+        fi 
+        html_target="wasm-bin/run/index.html"
+        if [ -f "$html_target" ]; then
+            emrun "$html_target"
+        elif js_target="wasm-bin/run/index.js" && [ -f "$js_target" ]; then
+            node "$js_target"
+        else
+            echo -e "\033[1mwasm outputs for \"$targets\" not found\033[0m"
+        fi
         quitter
     else
         usage

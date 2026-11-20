@@ -18,6 +18,15 @@
 #include "lib/common/profiler.hpp"
 #include "lib/common/tagged_tuple.hpp"
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+    #define BROWSER_FPS 60
+    #define BROWSER_RUN \
+        void run(times_t end = TIME_FAR) { \
+            wasm_instance() = this; \
+            emscripten_set_main_loop(wasm_loop_callback, BROWSER_FPS, 1); \
+        }
+#endif
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -250,6 +259,10 @@ struct base {
             //! @brief Updates the internal status of net component.
             void update() {}
 
+            #ifdef __EMSCRIPTEN__
+                //! @brief Run main loop in browser by requestAnimationFrame
+                BROWSER_RUN
+            #else
             //! @brief Runs the events until a given maximum time. Should NEVER be overridden.
             void run(times_t end = TIME_FAR) {
                 times_t nxt;
@@ -261,6 +274,7 @@ struct base {
                 }
                 PROFILE_REPORT();
             }
+            #endif
 
             //! @brief A measure of the internal time clock.
             times_t internal_time() const {
@@ -313,6 +327,27 @@ struct base {
 
             //! @brief The minimum delay triggering a warning.
             times_t m_warn_delay;
+
+            #ifdef __EMSCRIPTEN__
+                //! @brief Override for batch_simulator
+                bool frame_ready(){ return false; }
+
+                //! @brief Static wrapper containing wasm instance for emscripten callback
+                static net*& wasm_instance() {
+                    static net* inst = nullptr;
+                    return inst;
+                }
+
+                //! @brief Static callback required by emscripten_set_main_loop
+                static void wasm_loop_callback() {
+                    if (!wasm_instance()) return;
+                    typename F::net& f = *static_cast<typename F::net*>(wasm_instance());
+                    double before_update = emscripten_get_now();
+                    do { 
+                        f.update(); 
+                    } while (!f.frame_ready() and emscripten_get_now() - before_update < (1000.0/BROWSER_FPS));
+                }
+            #endif
         };
     };
 };

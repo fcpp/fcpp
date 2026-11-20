@@ -8,11 +8,23 @@
 
 #include "lib/graphics/renderer.hpp"
 
+#ifdef __EMSCRIPTEN__
+    #define INTERNAL_FORMAT GL_R8
+#else
+    #define INTERNAL_FORMAT GL_RED
+#endif
 
 // using namespace fcpp and fcpp::internal to prevent very verbose code...
 using namespace fcpp;
 using namespace fcpp::internal;
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+    EM_JS(void, set_html_title, (const char* title), {
+        const el = document.getElementById("simulation-name");
+        if(el) el.textContent = UTF8ToString(title) || "No simulation";
+    });
+#endif
 
 /* --- PRIVATE (NON-INTEGRAL) STATIC CONSTANTS --- */
 #ifdef _WIN32
@@ -182,7 +194,9 @@ void renderer::allocateGlyphTextures() {
     glGenTextures(1, &s_fontAtlas);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s_fontAtlas);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, atlasWidth, atlasHeight, 0, GL_RED, GL_UNSIGNED_BYTE, atlas.data());
+
+    glTexImage2D(GL_TEXTURE_2D, 0, INTERNAL_FORMAT, atlasWidth, atlasHeight, 0, GL_RED, GL_UNSIGNED_BYTE, atlas.data());
+
     // Set texture options
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -238,17 +252,30 @@ renderer::renderer(size_t antialias, std::string name, bool master, GLFWwindow* 
     /* DEFINITION */
     // Initialize GLFW
     if (m_master) glfwInit();
-
+    
     // Set context options
+    #ifdef __EMSCRIPTEN__
+    // WebGL 2 configuration
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    #else
+    // Desktop configuration
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+    #endif
+
     if (antialias > 1)
         glfwWindowHint(GLFW_SAMPLES, antialias);
 
     // Create window (and its context)
     m_window = glfwCreateWindow(SCR_DEFAULT_WIDTH, SCR_DEFAULT_HEIGHT, name.c_str(), NULL, masterPtr);
+
+    #ifdef __EMSCRIPTEN__
+        set_html_title(name.c_str());
+    #endif
 
     if (m_window == NULL) {
         glfwTerminate();
@@ -382,9 +409,11 @@ void renderer::initializeContext(bool master) {
     // Set window's context as thread's current
     glfwMakeContextCurrent(m_window);
 
-    // Initialize GLAD
-    if (master and !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-        throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
+    #ifndef __EMSCRIPTEN__ 
+        // Initialize GLAD
+        if (master and !gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+            throw std::runtime_error("ERROR::RENDERER::GLAD::INIT_FAILED\n");
+    #endif
 
     // Enabling V-Sync
     glfwSwapInterval(1);
@@ -396,8 +425,10 @@ void renderer::initializeContext(bool master) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Enable antialiasing
-    glEnable(GL_MULTISAMPLE);
+    #ifndef __EMSCRIPTEN__
+        // Enable antialiasing
+        glEnable(GL_MULTISAMPLE);
+    #endif
 
     // Initialize common resources
     initializeCommon();
@@ -414,7 +445,11 @@ void renderer::initializeContext(bool master) {
 
     // Set initial window metrics
     glfwGetFramebufferSize(m_window, (int*)&m_framebufferWidth, (int*)&m_framebufferHeight);
+    #ifdef __EMSCRIPTEN__
+    m_renderScale = (double)m_framebufferWidth / m_windowWidth;
+    #else
     m_renderScale = m_framebufferWidth / m_windowWidth;
+    #endif
     m_camera.setScreen(m_framebufferWidth, m_framebufferHeight);
     glViewport(0, 0, m_framebufferWidth, m_framebufferHeight);
 
@@ -431,6 +466,10 @@ void renderer::swapAndNext() {
         glViewport(0, 0, m_framebufferWidth, m_framebufferHeight);
         m_resizeOnSwap = false;
     }
+
+    #ifdef __EMSCRIPTEN__
+        if (m_master) return;
+    #endif
 
     // Clear frame
     glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
@@ -980,7 +1019,11 @@ void renderer::viewportResize(int winWidth, int winHeight, int fbWidth, int fbHe
     m_windowHeight = winHeight;
     m_framebufferWidth = fbWidth;
     m_framebufferHeight = fbHeight;
+    #ifdef __EMSCRIPTEN__
+    m_renderScale = (double)fbWidth / winWidth;
+    #else
     m_renderScale = fbWidth / winWidth;
+    #endif
     m_camera.setScreen(fbWidth, fbHeight);
 }
 
@@ -989,3 +1032,10 @@ void renderer::setColorTheme(color background, color foreground, color selection
     m_foreground = {foreground.rgba[0], foreground.rgba[1], foreground.rgba[2], foreground.rgba[3]};
     m_rectangle_col = {selection.rgba[0], selection.rgba[1], selection.rgba[2], selection.rgba[3]*0.5f};
 }
+
+#ifdef __EMSCRIPTEN__
+    void renderer::clearFrame() const {
+        glClearColor(m_background[0], m_background[1], m_background[2], m_background[3]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+#endif

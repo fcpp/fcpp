@@ -23,22 +23,15 @@ namespace coordination {
 
 //! @brief Exports for Past-CTL logic formulas.
 using past_ctl_t = export_list<bool>;
-GEN_EXPORT(T) bounded_past_ctl_t = export_list<bool,T>;
 
 //! @brief Namespace containing logical operators and formulas.
 namespace logic {
 
 //! @brief Support function for bounded past operator
-template <typename T>
-T mix(bool f1, bool f2, T ol) {
-  if (f2)
-    return 0;
-  else {
-    if (f1)
-      return ol;
-    else
-      return std::numeric_limits<T>::max();
-  }
+template <typename T> T mix(bool f1, bool f2, T ol) {
+    if (f2) return 0;
+    if (f1) return ol;
+    return std::numeric_limits<T>::max();
 }
 
 //! @brief Yesterday in the same device.
@@ -64,11 +57,19 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in the same device up to k metric steps in the past.
-GEN(T) bool S(ARGS, T k, T metric, bool f1, bool f2) { CODE
-    return old(CALL, std::numeric_limits<T>::max(), [&](T value) {
-               if (value < std::numeric_limits<T>::max())
+FUN bool S(ARGS, int k, int metric, bool f1, bool f2) { CODE
+    return old(CALL, std::numeric_limits<int>::max(), [&](int value) {
+               if (value < std::numeric_limits<int>::max())
                    value += metric;
-               return mix<T>(f1, f2, value);
+               return mix<int>(f1, f2, value);
+           }) < k;
+}
+
+FUN bool S(ARGS, times_t k, times_t metric, bool f1, bool f2) { CODE
+    return old(CALL, std::numeric_limits<times_t>::max(), [&](times_t value) {
+               if (value < std::numeric_limits<times_t>::max())
+                   value += metric;
+               return mix<times_t>(f1, f2, value);
            }) < k;
 }
 
@@ -80,19 +81,31 @@ FUN bool AS(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in all devices up to k metric steps in the past.
-GEN(T) bool AS(ARGS, T k, field<T> const& metric, field<bool> f1, field<bool> f2) { CODE
-    return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
-               field<T> update = map_hood(
-                   [&](T value, T unit, bool ff1, bool ff2) {
-                       if (value < std::numeric_limits<T>::max())
+FUN bool AS(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
+    return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) {
+               field<int> update = map_hood(
+                   [&](int value, int unit) {
+                       if (value < std::numeric_limits<int>::max())
                            value += unit;
-                       return mix<T>(ff1, ff2, value);
+                       return mix<int>(f1, f2, value);
                    },
-                   l, metric, f1, f2);
+                   l, metric);
                return max_hood(CALL, update);
            }) < k;
 }
 
+FUN bool AS(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { CODE
+    return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) {
+               field<times_t> update = map_hood(
+                   [&](times_t value, times_t unit) {
+                       if (value < std::numeric_limits<times_t>::max())
+                           value += unit;
+                       return mix<times_t>(f1, f2, value);
+                   },
+                   l, metric);
+               return max_hood(CALL, update);
+           }) < k;
+}
 //! @brief f1 holds since f2 held in any device.
 FUN bool ES(ARGS, bool f1, bool f2) { CODE
     return nbr(CALL, false, [&](field<bool> n) -> bool {
@@ -101,15 +114,27 @@ FUN bool ES(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in at least one device up to k metric steps in the past.
-GEN(T) bool ES(ARGS, T k, field<T> const& metric, bool f1, bool f2) { CODE
-    return nbr(CALL, std::numeric_limits<T>::max(), [&](field<T> l) {
-               field<T> update = map_hood(
-                   [&](T value, T unit, bool ff1, bool ff2) {
-                       if (value < std::numeric_limits<T>::max())
+FUN bool ES(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
+    return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) {
+               field<int> update = map_hood(
+                   [&](int value, int unit) {
+                       if (value < std::numeric_limits<int>::max())
                            value += unit;
-                       return mix<T>(ff1, ff2, value);
+                       return mix<int>(f1, f2, value);
                    },
-                   l, metric, f1, f2);
+                   l, metric);
+               return min_hood(CALL, update);
+           }) < k;
+}
+FUN bool ES(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { CODE
+    return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) {
+               field<times_t> update = map_hood(
+                   [&](times_t value, times_t unit) {
+                       if (value < std::numeric_limits<times_t>::max())
+                           value += unit;
+                       return mix<times_t>(f1, f2, value);
+                   },
+                   l, metric);
                return min_hood(CALL, update);
            }) < k;
 }
@@ -121,7 +146,11 @@ FUN bool P(ARGS, bool f) { CODE
     });
 }
 
-GEN(T) bool P(ARGS, T k, T metric, bool f) { CODE
+FUN bool P(ARGS, int k, int metric, bool f) { CODE
+  return S(CALL, k, metric, true, f);
+}
+
+FUN bool P(ARGS, times_t k, times_t metric, bool f) { CODE
   return S(CALL, k, metric, true, f);
 }
 
@@ -132,8 +161,12 @@ FUN bool AP(ARGS, bool f) { CODE
     });
 }
 
-GEN(T) bool AP(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
-  return AS(CALL, k, metric, nbr(CALL, true), f);
+FUN bool AP(ARGS, int k, field<int> const& metric, bool f) { CODE
+  return AS(CALL, k, metric, true, f);
+}
+
+FUN bool AP(ARGS, times_t k, field<times_t> const& metric, bool f) { CODE
+  return AS(CALL, k, metric, true, f);
 }
 
 //! @brief Previously in any device.
@@ -143,8 +176,12 @@ FUN bool EP(ARGS, bool f) { CODE
     });
 }
 
-GEN(T) bool EP(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
-  return ES(CALL, k, metric, nbr(CALL, true), f);
+FUN bool EP(ARGS, int k, field<int> const& metric, bool f) { CODE
+  return ES(CALL, k, metric, true, f);
+}
+
+FUN bool EP(ARGS, times_t k, field<times_t> const& metric, bool f) { CODE
+  return ES(CALL, k, metric, true, f);
 }
 
 //! @brief Historically in the same device.
@@ -154,7 +191,11 @@ FUN bool H(ARGS, bool f) { CODE
     });
 }
 
-GEN(T) bool H(ARGS, T k, T metric, bool f) { CODE
+FUN bool H(ARGS, int k, int metric, bool f) { CODE
+    return not P(CALL, k, metric, not f);
+}
+
+FUN bool H(ARGS, times_t k, times_t metric, bool f) { CODE
     return not P(CALL, k, metric, not f);
 }
 
@@ -165,7 +206,10 @@ FUN bool AH(ARGS, bool f) { CODE
     });
 }
 
-GEN(T) bool AH(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
+FUN bool AH(ARGS, int k, field<int> const& metric, bool f) { CODE
+    return not EP(CALL, k, metric, not f);
+}
+FUN bool AH(ARGS, times_t k, field<times_t> const& metric, bool f) { CODE
     return not EP(CALL, k, metric, not f);
 }
 
@@ -176,7 +220,11 @@ FUN bool EH(ARGS, bool f) { CODE
     });
 }
 
-GEN(T) bool EH(ARGS, T k, field<T> const& metric, field<bool> const& f) { CODE
+FUN bool EH(ARGS, int k, field<int> const& metric, bool f) { CODE
+    return not AP(CALL, k, metric, not f);
+}
+
+FUN bool EH(ARGS, times_t k, field<times_t> const& metric, bool f) { CODE
     return not AP(CALL, k, metric, not f);
 }
 

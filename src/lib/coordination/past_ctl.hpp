@@ -27,11 +27,15 @@ using past_ctl_t = export_list<bool>;
 //! @brief Namespace containing logical operators and formulas.
 namespace logic {
 
+namespace details {
+
 //! @brief Support function for bounded past operator
 template <typename T> T mix(bool f1, bool f2, T ol) {
     if (f2) return 0;
     if (f1) return ol;
     return std::numeric_limits<T>::max();
+}
+
 }
 
 //! @brief Yesterday in the same device.
@@ -61,7 +65,7 @@ FUN bool S(ARGS, int k, int metric, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<int>::max(), [&](int value) {
                if (value < std::numeric_limits<int>::max())
                    value += metric;
-               return mix<int>(f1, f2, value);
+               return details::mix<int>(f1, f2, value);
            }) < k;
 }
 
@@ -69,7 +73,7 @@ FUN bool S(ARGS, times_t k, times_t metric, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<times_t>::max(), [&](times_t value) {
                if (value < std::numeric_limits<times_t>::max())
                    value += metric;
-               return mix<times_t>(f1, f2, value);
+               return details::mix<times_t>(f1, f2, value);
            }) < k;
 }
 
@@ -87,7 +91,7 @@ FUN bool AS(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
                    [&](int value, int unit) {
                        if (value < std::numeric_limits<int>::max())
                            value += unit;
-                       return mix<int>(f1, f2, value);
+                       return details::mix<int>(f1, f2, value);
                    },
                    l, metric);
                return max_hood(CALL, update);
@@ -100,7 +104,7 @@ FUN bool AS(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { C
                    [&](times_t value, times_t unit) {
                        if (value < std::numeric_limits<times_t>::max())
                            value += unit;
-                       return mix<times_t>(f1, f2, value);
+                       return details::mix<times_t>(f1, f2, value);
                    },
                    l, metric);
                return max_hood(CALL, update);
@@ -120,7 +124,7 @@ FUN bool ES(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
                    [&](int value, int unit) {
                        if (value < std::numeric_limits<int>::max())
                            value += unit;
-                       return mix<int>(f1, f2, value);
+                       return details::mix<int>(f1, f2, value);
                    },
                    l, metric);
                return min_hood(CALL, update);
@@ -132,7 +136,7 @@ FUN bool ES(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { C
                    [&](times_t value, times_t unit) {
                        if (value < std::numeric_limits<times_t>::max())
                            value += unit;
-                       return mix<times_t>(f1, f2, value);
+                       return details::mix<times_t>(f1, f2, value);
                    },
                    l, metric);
                return min_hood(CALL, update);

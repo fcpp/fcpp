@@ -62,7 +62,7 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
 
 //! @brief f1 holds since f2 held in the same device up to k metric steps in the past.
 FUN bool S(ARGS, int k, int metric, bool f1, bool f2) { CODE
-    return old(CALL, std::numeric_limits<int>::max(), [&](int value) {
+    return old(CALL, std::numeric_limits<int>::max(), [&](int value) -> int {
                if (value < std::numeric_limits<int>::max())
                    value += metric;
                return details::mix<int>(f1, f2, value);
@@ -70,7 +70,7 @@ FUN bool S(ARGS, int k, int metric, bool f1, bool f2) { CODE
 }
 
 FUN bool S(ARGS, times_t k, times_t metric, bool f1, bool f2) { CODE
-    return old(CALL, std::numeric_limits<times_t>::max(), [&](times_t value) {
+    return old(CALL, std::numeric_limits<times_t>::max(), [&](times_t value) -> times_t {
                if (value < std::numeric_limits<times_t>::max())
                    value += metric;
                return details::mix<times_t>(f1, f2, value);
@@ -86,7 +86,7 @@ FUN bool AS(ARGS, bool f1, bool f2) { CODE
 
 //! @brief f1 holds since f2 held in all devices up to k metric steps in the past.
 FUN bool AS(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
-    return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) {
+    return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
                field<int> update = map_hood(
                    [&](int value, int unit) {
                        if (value < std::numeric_limits<int>::max())
@@ -99,7 +99,7 @@ FUN bool AS(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
 }
 
 FUN bool AS(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { CODE
-    return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) {
+    return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) -> times_t {
                field<times_t> update = map_hood(
                    [&](times_t value, times_t unit) {
                        if (value < std::numeric_limits<times_t>::max())
@@ -119,7 +119,7 @@ FUN bool ES(ARGS, bool f1, bool f2) { CODE
 
 //! @brief f1 holds since f2 held in at least one device up to k metric steps in the past.
 FUN bool ES(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
-    return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) {
+    return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
                field<int> update = map_hood(
                    [&](int value, int unit) {
                        if (value < std::numeric_limits<int>::max())
@@ -131,7 +131,7 @@ FUN bool ES(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
            }) < k;
 }
 FUN bool ES(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { CODE
-    return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) {
+    return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) -> times_t {
                field<times_t> update = map_hood(
                    [&](times_t value, times_t unit) {
                        if (value < std::numeric_limits<times_t>::max())

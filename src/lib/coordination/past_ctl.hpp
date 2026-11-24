@@ -63,17 +63,15 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
 //! @brief f1 holds since f2 held in the same device up to k metric steps in the past.
 FUN bool S(ARGS, int k, int metric, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<int>::max(), [&](int value) -> int {
-               if (value < std::numeric_limits<int>::max())
-                   value += metric;
-               return details::mix<int>(f1, f2, value);
+               value += (value < std::numeric_limits<int>::max()) ? metric : 0;
+               return details::mix(f1, f2, value);
            }) < k;
 }
 
 FUN bool S(ARGS, times_t k, times_t metric, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<times_t>::max(), [&](times_t value) -> times_t {
-               if (value < std::numeric_limits<times_t>::max())
-                   value += metric;
-               return details::mix<times_t>(f1, f2, value);
+               value += (value < std::numeric_limits<times_t>::max()) ? metric : 0;
+               return details::mix(f1, f2, value);
            }) < k;
 }
 
@@ -89,12 +87,10 @@ FUN bool AS(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
                field<int> update = map_hood(
                    [&](int value, int unit) {
-                       if (value < std::numeric_limits<int>::max())
-                           value += unit;
-                       return details::mix<int>(f1, f2, value);
-                   },
-                   l, metric);
-               return max_hood(CALL, update);
+                       value += (value < std::numeric_limits<int>::max()) ? unit : 0;
+                       return value;
+                   }, l, metric);
+               return details::mix(f1, f2, max_hood(CALL, update));
            }) < k;
 }
 
@@ -102,12 +98,10 @@ FUN bool AS(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { C
     return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) -> times_t {
                field<times_t> update = map_hood(
                    [&](times_t value, times_t unit) {
-                       if (value < std::numeric_limits<times_t>::max())
-                           value += unit;
-                       return details::mix<times_t>(f1, f2, value);
-                   },
-                   l, metric);
-               return max_hood(CALL, update);
+                       value += (value < std::numeric_limits<times_t>::max()) ? unit : 0;
+                       return value;
+                   }, l, metric);
+               return details::mix(f1, f2, max_hood(CALL, update));
            }) < k;
 }
 //! @brief f1 holds since f2 held in any device.
@@ -122,24 +116,20 @@ FUN bool ES(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
                field<int> update = map_hood(
                    [&](int value, int unit) {
-                       if (value < std::numeric_limits<int>::max())
-                           value += unit;
-                       return details::mix<int>(f1, f2, value);
-                   },
-                   l, metric);
-               return min_hood(CALL, update);
+                       value += (value < std::numeric_limits<int>::max()) ? unit : 0;
+                       return value;
+                   }, l, metric);
+               return details::mix(f1, f2, min_hood(CALL, update));
            }) < k;
 }
 FUN bool ES(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) -> times_t {
                field<times_t> update = map_hood(
                    [&](times_t value, times_t unit) {
-                       if (value < std::numeric_limits<times_t>::max())
-                           value += unit;
-                       return details::mix<times_t>(f1, f2, value);
-                   },
-                   l, metric);
-               return min_hood(CALL, update);
+                       value += (value < std::numeric_limits<times_t>::max()) ? unit : 0;
+                       return value;
+                   }, l, metric);
+               return details::mix(f1, f2, min_hood(CALL, update));
            }) < k;
 }
 

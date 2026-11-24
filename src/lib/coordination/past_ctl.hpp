@@ -63,14 +63,14 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
 //! @brief f1 holds since f2 held in the same device up to k metric steps in the past.
 FUN bool S(ARGS, int k, int metric, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<int>::max(), [&](int value) -> int {
-               value += (value < std::numeric_limits<int>::max()) ? metric : 0;
+               value = mux(value < std::numeric_limits<int>::max(), value+metric, value);
                return details::mix(f1, f2, value);
            }) < k;
 }
 
 FUN bool S(ARGS, times_t k, times_t metric, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<times_t>::max(), [&](times_t value) -> times_t {
-               value += (value < std::numeric_limits<times_t>::max()) ? metric : 0;
+               value = mux(value < std::numeric_limits<times_t>::max(), value+metric, value);
                return details::mix(f1, f2, value);
            }) < k;
 }

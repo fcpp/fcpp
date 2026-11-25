@@ -38,7 +38,7 @@ template <typename T> T mix(bool f1, bool f2, T ol) {
 }
 
 }
-// @endcond
+//! @endcond
 
 //! @brief Yesterday in the same device.
 FUN bool Y(ARGS, bool f) { CODE

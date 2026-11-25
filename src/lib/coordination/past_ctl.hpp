@@ -63,17 +63,17 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
 //! @brief f1 holds since f2 held in the same device up to k rounds in the past.
 FUN bool S(ARGS, int k, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<int>::max(), [&](int value) -> int {
-               value = mux(value < std::numeric_limits<int>::max(), value+1, value);
-               return details::mix(f1, f2, value);
-           }) < k;
+        value = mux(value < std::numeric_limits<int>::max(), value+1, value);
+        return details::mix(f1, f2, value);
+    }) < k;
 }
 
 //! @brief f1 holds since f2 held in the same device up to k seconds in the past.
 FUN bool S(ARGS, times_t k, times_t metric, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<times_t>::max(), [&](times_t value) -> times_t {
-               value = mux(value < std::numeric_limits<times_t>::max(), value+metric, value);
-               return details::mix(f1, f2, value);
-           }) < k;
+        value = mux(value < std::numeric_limits<times_t>::max(), value+metric, value);
+        return details::mix(f1, f2, value);
+    }) < k;
 }
 
 //! @brief f1 holds since f2 held in all devices.
@@ -86,17 +86,17 @@ FUN bool AS(ARGS, bool f1, bool f2) { CODE
 //! @brief f1 holds since f2 held in all devices up to k rounds in the past.
 FUN bool AS(ARGS, int k, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
-               field<int> update = mux(l < std::numeric_limits<int>::max(), l+1, l);
-               return details::mix(f1, f2, max_hood(CALL, update));
-           }) < k;
+        field<int> update = mux(l < std::numeric_limits<int>::max(), l+1, l);
+        return details::mix(f1, f2, max_hood(CALL, update));
+    }) < k;
 }
 
 //! @brief f1 holds since f2 held in all devices up to k seconds in the past.
 FUN bool AS(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) -> times_t {
-               field<times_t> update = mux(l < std::numeric_limits<times_t>::max(), l+metric, l);
-               return details::mix(f1, f2, max_hood(CALL, update));
-           }) < k;
+        field<times_t> update = mux(l < std::numeric_limits<times_t>::max(), l+metric, l);
+        return details::mix(f1, f2, max_hood(CALL, update));
+    }) < k;
 }
 
 //! @brief f1 holds since f2 held in any device.
@@ -109,17 +109,17 @@ FUN bool ES(ARGS, bool f1, bool f2) { CODE
 //! @brief f1 holds since f2 held in at least one device up to k rounds in the past.
 FUN bool ES(ARGS, int k, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
-               field<int> update = mux(l < std::numeric_limits<int>::max(), l+1, l);
-               return details::mix(f1, f2, min_hood(CALL, update));
-           }) < k;
+        field<int> update = mux(l < std::numeric_limits<int>::max(), l+1, l);
+        return details::mix(f1, f2, min_hood(CALL, update));
+    }) < k;
 }
 
 //! @brief f1 holds since f2 held in at least one device up to k seconds in the past.
 FUN bool ES(ARGS, times_t k, field<times_t> const& metric, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<times_t>::max(), [&](field<times_t> l) -> times_t {
-               field<times_t> update = mux(l < std::numeric_limits<times_t>::max(), l+metric, l);
-               return details::mix(f1, f2, min_hood(CALL, update));
-           }) < k;
+        field<times_t> update = mux(l < std::numeric_limits<times_t>::max(), l+metric, l);
+        return details::mix(f1, f2, min_hood(CALL, update));
+    }) < k;
 }
 
 //! @brief Previously in the same device.

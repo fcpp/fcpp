@@ -61,9 +61,9 @@ FUN bool S(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in the same device up to k rounds in the past.
-FUN bool S(ARGS, int k, int metric, bool f1, bool f2) { CODE
+FUN bool S(ARGS, int k, bool f1, bool f2) { CODE
     return old(CALL, std::numeric_limits<int>::max(), [&](int value) -> int {
-               value = mux(value < std::numeric_limits<int>::max(), value+metric, value);
+               value = mux(value < std::numeric_limits<int>::max(), value+1, value);
                return details::mix(f1, f2, value);
            }) < k;
 }
@@ -84,9 +84,9 @@ FUN bool AS(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in all devices up to k rounds in the past.
-FUN bool AS(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
+FUN bool AS(ARGS, int k, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
-               field<int> update = mux(l < std::numeric_limits<int>::max(), l+metric, l);
+               field<int> update = mux(l < std::numeric_limits<int>::max(), l+1, l);
                return details::mix(f1, f2, max_hood(CALL, update));
            }) < k;
 }
@@ -107,9 +107,9 @@ FUN bool ES(ARGS, bool f1, bool f2) { CODE
 }
 
 //! @brief f1 holds since f2 held in at least one device up to k rounds in the past.
-FUN bool ES(ARGS, int k, field<int> const& metric, bool f1, bool f2) { CODE
+FUN bool ES(ARGS, int k, bool f1, bool f2) { CODE
     return nbr(CALL, std::numeric_limits<int>::max(), [&](field<int> l) -> int {
-               field<int> update = mux(l < std::numeric_limits<int>::max(), l+metric, l);
+               field<int> update = mux(l < std::numeric_limits<int>::max(), l+1, l);
                return details::mix(f1, f2, min_hood(CALL, update));
            }) < k;
 }
@@ -130,8 +130,8 @@ FUN bool P(ARGS, bool f) { CODE
 }
 
 //! @brief Previously in the same device up to k rounds in the past.
-FUN bool P(ARGS, int k, int metric, bool f) { CODE
-  return S(CALL, k, metric, true, f);
+FUN bool P(ARGS, int k, bool f) { CODE
+  return S(CALL, k, true, f);
 }
 
 //! @brief Previously in the same device up to k seconds in the past.
@@ -147,8 +147,8 @@ FUN bool AP(ARGS, bool f) { CODE
 }
 
 //! @brief Previously in all devices up to k rounds in the past.
-FUN bool AP(ARGS, int k, field<int> const& metric, bool f) { CODE
-  return AS(CALL, k, metric, true, f);
+FUN bool AP(ARGS, int k, bool f) { CODE
+  return AS(CALL, k, true, f);
 }
 
 //! @brief Previously in all devices up to k seconds in the past.
@@ -164,8 +164,8 @@ FUN bool EP(ARGS, bool f) { CODE
 }
 
 //! @brief Previously in any device up to k rounds in the past.
-FUN bool EP(ARGS, int k, field<int> const& metric, bool f) { CODE
-  return ES(CALL, k, metric, true, f);
+FUN bool EP(ARGS, int k, bool f) { CODE
+  return ES(CALL, k, true, f);
 }
 
 //! @brief Previously in any device up to k seconds in the past.
@@ -181,8 +181,8 @@ FUN bool H(ARGS, bool f) { CODE
 }
 
 //! @brief Historically in the same device up to k rounds in the past.
-FUN bool H(ARGS, int k, int metric, bool f) { CODE
-    return not P(CALL, k, metric, not f);
+FUN bool H(ARGS, int k, bool f) { CODE
+    return not P(CALL, k, not f);
 }
 
 //! @brief Historically in the same device up to k seconds in the past.
@@ -198,8 +198,8 @@ FUN bool AH(ARGS, bool f) { CODE
 }
 
 //! @brief Historically in all devices up to k rounds in the past.
-FUN bool AH(ARGS, int k, field<int> const& metric, bool f) { CODE
-    return not EP(CALL, k, metric, not f);
+FUN bool AH(ARGS, int k, bool f) { CODE
+    return not EP(CALL, k, not f);
 }
 
 //! @brief Historically in all devices up to k seconds in the past.
@@ -215,8 +215,8 @@ FUN bool EH(ARGS, bool f) { CODE
 }
 
 //! @brief Historically in any device up to k rounds in the past.
-FUN bool EH(ARGS, int k, field<int> const& metric, bool f) { CODE
-    return not AP(CALL, k, metric, not f);
+FUN bool EH(ARGS, int k, bool f) { CODE
+    return not AP(CALL, k, not f);
 }
 
 //! @brief Historically in any device up to k seconds in the past.

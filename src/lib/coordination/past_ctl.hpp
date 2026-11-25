@@ -27,6 +27,7 @@ using past_ctl_t = export_list<bool>;
 //! @brief Namespace containing logical operators and formulas.
 namespace logic {
 
+//! @cond INTERNAL
 namespace details {
 
 //! @brief Support function for bounded past operator
@@ -37,6 +38,7 @@ template <typename T> T mix(bool f1, bool f2, T ol) {
 }
 
 }
+// @endcond
 
 //! @brief Yesterday in the same device.
 FUN bool Y(ARGS, bool f) { CODE
